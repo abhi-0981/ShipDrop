@@ -1,6 +1,5 @@
 const db = require("../config/db");
 
-
 // ======================================================
 // QUERY HELPER
 // ======================================================
@@ -31,6 +30,25 @@ const query = (
 };
 
 
+
+// ======================================================
+// TRANSACTION QUERY HELPER
+// ======================================================
+
+const txQuery = async (
+  connection,
+  sql,
+  params = []
+) => {
+  const [result] = await connection.query(
+    sql,
+    params
+  );
+
+  return result;
+};
+
+
 // ======================================================
 // GET MANIFESTED ORDERS
 // ======================================================
@@ -50,10 +68,6 @@ const getManifestedOrders = async (
     `
       SELECT
 
-        /* ==========================================
-           MANIFEST
-        ========================================== */
-
         m.id AS manifest_id,
         m.order_id,
         m.user_id AS manifest_user_id,
@@ -65,12 +79,9 @@ const getManifestedOrders = async (
         m.status AS manifest_status,
         m.created_at AS manifest_created_at,
 
-
-        /* ==========================================
-           ORDER
-        ========================================== */
-
         o.id AS order_db_id,
+        o.awb,
+
         o.consignee_name,
         o.mobile,
         o.alternate_mobile,
@@ -95,19 +106,9 @@ const getManifestedOrders = async (
         o.status AS order_status,
         o.created_at AS order_created_at,
 
-
-        /* ==========================================
-           PICKUP ADDRESS
-        ========================================== */
-
         pa.pickup_address,
         pa.pickup_pincode,
         pa.pickup_city,
-
-
-        /* ==========================================
-           PRODUCT
-        ========================================== */
 
         op.product_name,
         op.sku,
@@ -115,39 +116,29 @@ const getManifestedOrders = async (
         op.qty,
         op.tax,
 
-
-        /* ==========================================
-           PACKAGE
-        ========================================== */
-
         pkg.length,
         pkg.width,
         pkg.height,
         pkg.weight,
         pkg.package_count
 
-
       FROM manifests m
-
 
       INNER JOIN orders o
         ON o.id = m.order_id
        AND o.user_id = m.user_id
 
-
       LEFT JOIN pickup_addresses pa
         ON pa.id = o.pickup_address_id
-
 
       LEFT JOIN order_products op
         ON op.order_id = o.id
 
-
       LEFT JOIN order_packages pkg
         ON pkg.order_id = o.id
 
-
       WHERE
+
         m.user_id = ?
 
         AND UPPER(
@@ -163,7 +154,6 @@ const getManifestedOrders = async (
             ''
           )
         ) = 'MANIFESTED'
-
 
       ORDER BY
         m.created_at DESC
@@ -189,10 +179,6 @@ const getManifestedOrders = async (
       row.manifest_id;
 
 
-    // ================================================
-    // CREATE MANIFEST OBJECT
-    // ================================================
-
     if (
       !manifestMap[
         manifestId
@@ -209,9 +195,15 @@ const getManifestedOrders = async (
         order_id:
           row.order_id,
 
+        awb:
+          row.awb
+            ? String(
+                row.awb
+              ).trim()
+            : null,
+
         user_id:
           row.manifest_user_id,
-
 
         shipping_charge:
           Number(
@@ -226,25 +218,17 @@ const getManifestedOrders = async (
             row.distance_km || 0
           ),
 
-
         service_type:
           row.service_type ||
           "ROAD",
-
 
         status:
           row.manifest_status ||
           "Confirmed",
 
-
         created_at:
           row.manifest_created_at ||
           row.order_created_at,
-
-
-        // ==========================================
-        // CUSTOMER
-        // ==========================================
 
         consignee_name:
           row.consignee_name,
@@ -258,11 +242,6 @@ const getManifestedOrders = async (
         email:
           row.email,
 
-
-        // ==========================================
-        // DELIVERY ADDRESS
-        // ==========================================
-
         gstin:
           row.gstin,
 
@@ -274,7 +253,6 @@ const getManifestedOrders = async (
 
         landmark:
           row.landmark,
-
 
         address_line1:
           row.address_line1,
@@ -294,21 +272,11 @@ const getManifestedOrders = async (
         country:
           row.country,
 
-
-        // ==========================================
-        // PAYMENT
-        // ==========================================
-
         payment_type:
           row.payment_type,
 
         risk_type:
           row.risk_type,
-
-
-        // ==========================================
-        // PICKUP
-        // ==========================================
 
         pickup_address:
           row.pickup_address,
@@ -319,32 +287,12 @@ const getManifestedOrders = async (
         pickup_city:
           row.pickup_city,
 
-
-        // ==========================================
-        // ORDER STATUS
-        // ==========================================
-
         order_status:
           row.order_status,
 
-
-        // ==========================================
-        // PRODUCTS
-        // ==========================================
-
         products: [],
 
-
-        // ==========================================
-        // PACKAGES
-        // ==========================================
-
         packages: [],
-
-
-        // ==========================================
-        // TOTAL WEIGHT
-        // ==========================================
 
         total_weight: 0
 
@@ -420,70 +368,61 @@ const getManifestedOrders = async (
     // PACKAGE
     // =================================================
 
-    const packageExists =
-      manifest.packages.some(
-        (pkg) =>
-
-          String(
-            pkg.length
-          ) ===
-            String(
-              row.length
-            ) &&
-
-          String(
-            pkg.width
-          ) ===
-            String(
-              row.width
-            ) &&
-
-          String(
-            pkg.height
-          ) ===
-            String(
-              row.height
-            ) &&
-
-          String(
-            pkg.weight
-          ) ===
-            String(
-              row.weight
-            ) &&
-
-          String(
-            pkg.package_count
-          ) ===
-            String(
-              row.package_count
-            )
-      );
+    const hasPackageData =
+      row.length !== null ||
+      row.width !== null ||
+      row.height !== null ||
+      row.weight !== null;
 
 
     if (
-      (
-        row.length !== null &&
-        row.length !== undefined
-      ) ||
-
-      (
-        row.width !== null &&
-        row.width !== undefined
-      ) ||
-
-      (
-        row.height !== null &&
-        row.height !== undefined
-      ) ||
-
-      (
-        row.weight !== null &&
-        row.weight !== undefined
-      )
+      hasPackageData
     ) {
 
-      if (!packageExists) {
+      const packageExists =
+        manifest.packages.some(
+          (pkg) =>
+
+            String(
+              pkg.length
+            ) ===
+              String(
+                row.length
+              ) &&
+
+            String(
+              pkg.width
+            ) ===
+              String(
+                row.width
+              ) &&
+
+            String(
+              pkg.height
+            ) ===
+              String(
+                row.height
+              ) &&
+
+            String(
+              pkg.weight
+            ) ===
+              String(
+                row.weight
+              ) &&
+
+            String(
+              pkg.package_count
+            ) ===
+              String(
+                row.package_count
+              )
+        );
+
+
+      if (
+        !packageExists
+      ) {
 
         const packageWeight =
           Number(
@@ -522,10 +461,6 @@ const getManifestedOrders = async (
         });
 
 
-        // ==========================================
-        // TOTAL WEIGHT
-        // ==========================================
-
         manifest.total_weight +=
           packageWeight *
           packageCount;
@@ -536,10 +471,6 @@ const getManifestedOrders = async (
 
   }
 
-
-  // ====================================================
-  // RETURN ARRAY
-  // ====================================================
 
   return Object.values(
     manifestMap
@@ -605,6 +536,7 @@ const getManifestById = async (
 
 // ======================================================
 // CANCEL MANIFESTED ORDERS
+// DELHIVERY CANCEL + WALLET REFUND
 // ======================================================
 
 const cancelManifestedOrders = async (
@@ -613,30 +545,24 @@ const cancelManifestedOrders = async (
 ) => {
 
   if (!user_id) {
-
     throw new Error(
       "User ID is required"
     );
-
   }
 
 
   if (
-    !Array.isArray(
-      order_ids
-    ) ||
+    !Array.isArray(order_ids) ||
     order_ids.length === 0
   ) {
-
     throw new Error(
       "At least one order must be selected"
     );
-
   }
 
 
   // ====================================================
-  // CLEAN IDS
+  // CLEAN ORDER IDS
   // ====================================================
 
   const uniqueOrderIds = [
@@ -658,17 +584,11 @@ const cancelManifestedOrders = async (
   if (
     uniqueOrderIds.length === 0
   ) {
-
     throw new Error(
       "Invalid order selection"
     );
-
   }
 
-
-  // ====================================================
-  // PLACEHOLDERS
-  // ====================================================
 
   const placeholders =
     uniqueOrderIds
@@ -679,88 +599,478 @@ const cancelManifestedOrders = async (
 
 
   // ====================================================
-  // START TRANSACTION
+  // GET MANIFESTED ORDERS
   // ====================================================
 
-  await new Promise(
-    (
-      resolve,
-      reject
-    ) => {
+  const shipments =
+    await query(
+      `
+        SELECT
 
-      db.beginTransaction(
-        (err) => {
+          m.id AS manifest_id,
+          m.order_id,
+          m.shipping_charge,
 
-          if (err) {
-            reject(err);
-          } else {
-            resolve();
+          o.awb,
+          o.status AS order_status
+
+        FROM manifests m
+
+        INNER JOIN orders o
+          ON o.id = m.order_id
+         AND o.user_id = m.user_id
+
+        WHERE
+
+          m.user_id = ?
+
+          AND m.order_id IN (
+            ${placeholders}
+          )
+
+          AND UPPER(
+            COALESCE(
+              m.status,
+              ''
+            )
+          ) = 'CONFIRMED'
+
+          AND UPPER(
+            COALESCE(
+              o.status,
+              ''
+            )
+          ) = 'MANIFESTED'
+      `,
+      [
+        user_id,
+        ...uniqueOrderIds
+      ]
+    );
+
+
+  if (
+    shipments.length === 0
+  ) {
+
+    throw new Error(
+      "No manifested orders found"
+    );
+
+  }
+
+
+  // ====================================================
+  // DELHIVERY TOKEN
+  // ====================================================
+
+  const token =
+    process.env.DELHIVERY_API_TOKEN ||
+    process.env.DELHIVERY_AUTH_TOKEN ||
+    process.env.DELHIVERY_TOKEN;
+
+
+  if (!token) {
+
+    throw new Error(
+      "Delhivery API token is not configured"
+    );
+
+  }
+
+
+  // ====================================================
+  // DELHIVERY URL
+  // ====================================================
+
+  const baseUrl =
+    process.env.DELHIVERY_API_BASE_URL ||
+    "https://track.delhivery.com";
+
+
+  const url =
+    new URL(
+      "/api/p/edit",
+      baseUrl
+    ).toString();
+
+
+  // ====================================================
+  // CANCEL ON DELHIVERY
+  // ====================================================
+
+  const cancelled = [];
+  const failed = [];
+
+
+  for (
+    const shipment of shipments
+  ) {
+
+    const awb =
+      String(
+        shipment.awb || ""
+      ).trim();
+
+
+    // ==================================================
+    // AWB REQUIRED
+    // ==================================================
+
+    if (!awb) {
+
+      failed.push({
+
+        order_id:
+          shipment.order_id,
+
+        manifest_id:
+          shipment.manifest_id,
+
+        message:
+          "AWB not found"
+
+      });
+
+      continue;
+
+    }
+
+
+    try {
+
+      const response =
+        await fetch(
+          url,
+          {
+            method:
+              "POST",
+
+            headers: {
+
+              Authorization:
+                `Token ${token}`,
+
+              Accept:
+                "application/json",
+
+              "Content-Type":
+                "application/json"
+
+            },
+
+            body:
+              JSON.stringify({
+
+                waybill:
+                  awb,
+
+                cancellation:
+                  "true"
+
+              })
+
           }
+        );
 
+
+      let data = null;
+
+
+      try {
+
+        data =
+          await response.json();
+
+      } catch {
+
+        data = null;
+
+      }
+
+
+      console.log(
+        "DELHIVERY CANCEL RESPONSE:",
+        {
+          awb,
+          status:
+            response.status,
+          data
         }
       );
 
-    }
-  );
 
+      if (
+        !response.ok
+      ) {
+
+        throw new Error(
+
+          data?.error ||
+
+          data?.message ||
+
+          data?.detail ||
+
+          `Delhivery returned HTTP ${response.status}`
+
+        );
+
+      }
+
+
+      cancelled.push({
+
+        order_id:
+          shipment.order_id,
+
+        manifest_id:
+          shipment.manifest_id,
+
+        awb,
+
+        shipping_charge:
+          Number(
+            shipment.shipping_charge || 0
+          ),
+
+        response:
+          data
+
+      });
+
+
+    } catch (error) {
+
+      failed.push({
+
+        order_id:
+          shipment.order_id,
+
+        manifest_id:
+          shipment.manifest_id,
+
+        awb,
+
+        message:
+          error.message ||
+          "Unable to cancel shipment"
+
+      });
+
+    }
+
+  }
+
+
+  // ====================================================
+  // NOTHING CANCELLED
+  // ====================================================
+
+  if (
+    cancelled.length === 0
+  ) {
+
+    throw new Error(
+      failed[0]?.message ||
+      "Unable to cancel selected shipments on Delhivery"
+    );
+
+  }
+
+
+   // ====================================================
+  // DATABASE TRANSACTION
+  // ====================================================
+
+  let connection = null;
 
   try {
 
+    // Get dedicated connection from pool
+    connection = await db.promise().getConnection();
+
+    // Start transaction
+    await connection.beginTransaction();
+
+
+    const successfulIds =
+      cancelled.map(
+        (item) =>
+          item.order_id
+      );
+
+
+    const successfulPlaceholders =
+      successfulIds
+        .map(
+          () => "?"
+        )
+        .join(",");
+
+
     // ==================================================
-    // CHECK MANIFESTED ORDERS
+    // GET / LOCK WALLET
     // ==================================================
 
-    const existingRows =
-      await query(
+    const walletRows =
+      await txQuery(
+        connection,
         `
           SELECT
-
-            m.id AS manifest_id,
-            m.order_id,
-            m.shipping_charge
-
-          FROM manifests m
-
-          INNER JOIN orders o
-            ON o.id = m.order_id
-           AND o.user_id = m.user_id
-
+            id,
+            user_id,
+            balance
+          FROM wallets
           WHERE
-            m.user_id = ?
-
-            AND m.order_id IN (
-              ${placeholders}
-            )
-
-            AND UPPER(
-              COALESCE(
-                m.status,
-                ''
-              )
-            ) = 'CONFIRMED'
-
-            AND UPPER(
-              COALESCE(
-                o.status,
-                ''
-              )
-            ) = 'MANIFESTED'
-
+            user_id = ?
+          LIMIT 1
           FOR UPDATE
         `,
         [
-          user_id,
-          ...uniqueOrderIds
+          user_id
         ]
       );
 
 
     if (
-      existingRows.length === 0
+      walletRows.length === 0
     ) {
 
       throw new Error(
-        "No manifested orders found"
+        "Wallet not found"
+      );
+
+    }
+
+
+    // ==================================================
+    // CALCULATE REFUND
+    // ==================================================
+
+    const totalRefund =
+      cancelled.reduce(
+        (
+          total,
+          shipment
+        ) => {
+
+          return (
+            total +
+            Number(
+              shipment.shipping_charge || 0
+            )
+          );
+
+        },
+        0
+      );
+
+
+    if (
+      !Number.isFinite(
+        totalRefund
+      ) ||
+      totalRefund <= 0
+    ) {
+
+      throw new Error(
+        "Invalid refund amount"
+      );
+
+    }
+
+
+    // ==================================================
+    // ADD REFUND TO WALLET
+    // ==================================================
+
+    const walletUpdate =
+      await txQuery(
+        connection,
+        `
+          UPDATE wallets
+          SET
+            balance = balance + ?
+          WHERE
+            user_id = ?
+        `,
+        [
+          totalRefund,
+          user_id
+        ]
+      );
+
+
+    if (
+      walletUpdate.affectedRows !== 1
+    ) {
+
+      throw new Error(
+        "Unable to refund shipping charge"
+      );
+
+    }
+
+
+    // ==================================================
+    // WALLET TRANSACTION
+    //
+    // REFUND = RECHARGE
+    // ==================================================
+
+    for (
+      const shipment of cancelled
+    ) {
+
+      const refundAmount =
+        Number(
+          shipment.shipping_charge || 0
+        );
+
+
+      if (
+        !Number.isFinite(
+          refundAmount
+        ) ||
+        refundAmount <= 0
+      ) {
+
+        throw new Error(
+          `Invalid refund amount for Order #${shipment.order_id}`
+        );
+
+      }
+
+
+      await txQuery(
+        connection,
+        `
+          INSERT INTO wallet_transactions
+          (
+            user_id,
+            type,
+            amount,
+            razorpay_order_id,
+            razorpay_payment_id,
+            razorpay_signature,
+            status
+          )
+          VALUES
+          (
+            ?,
+            'RECHARGE',
+            ?,
+            NULL,
+            NULL,
+            NULL,
+            'SUCCESS'
+          )
+        `,
+        [
+          user_id,
+          refundAmount
+        ]
       );
 
     }
@@ -770,68 +1080,60 @@ const cancelManifestedOrders = async (
     // CANCEL MANIFESTS
     // ==================================================
 
-    const validOrderIds =
-      existingRows.map(
-        (row) =>
-          row.order_id
+    const manifestUpdate =
+      await txQuery(
+        connection,
+        `
+          UPDATE manifests
+          SET
+            status = 'Cancelled'
+          WHERE
+            user_id = ?
+            AND order_id IN (
+              ${successfulPlaceholders}
+            )
+            AND UPPER(
+              COALESCE(
+                status,
+                ''
+              )
+            ) = 'CONFIRMED'
+        `,
+        [
+          user_id,
+          ...successfulIds
+        ]
       );
 
 
-    const cancelPlaceholders =
-      validOrderIds
-        .map(
-          () => "?"
-        )
-        .join(",");
+    if (
+      manifestUpdate.affectedRows !==
+      successfulIds.length
+    ) {
 
+      throw new Error(
+        "Unable to cancel selected manifests"
+      );
 
-    await query(
-      `
-        UPDATE manifests
-
-        SET
-          status = 'Cancelled'
-
-        WHERE
-          user_id = ?
-
-          AND order_id IN (
-            ${cancelPlaceholders}
-          )
-
-          AND UPPER(
-            COALESCE(
-              status,
-              ''
-            )
-          ) = 'CONFIRMED'
-      `,
-      [
-        user_id,
-        ...validOrderIds
-      ]
-    );
+    }
 
 
     // ==================================================
-    // UPDATE ORDERS
+    // CANCEL ORDERS
     // ==================================================
 
     const orderUpdate =
-      await query(
+      await txQuery(
+        connection,
         `
           UPDATE orders
-
           SET
             status = 'Cancelled'
-
           WHERE
             user_id = ?
-
             AND id IN (
-              ${cancelPlaceholders}
+              ${successfulPlaceholders}
             )
-
             AND UPPER(
               COALESCE(
                 status,
@@ -841,13 +1143,14 @@ const cancelManifestedOrders = async (
         `,
         [
           user_id,
-          ...validOrderIds
+          ...successfulIds
         ]
       );
 
 
     if (
-      orderUpdate.affectedRows === 0
+      orderUpdate.affectedRows !==
+      successfulIds.length
     ) {
 
       throw new Error(
@@ -858,29 +1161,42 @@ const cancelManifestedOrders = async (
 
 
     // ==================================================
+    // GET FINAL WALLET BALANCE
+    // ==================================================
+
+    const updatedWallet =
+      await txQuery(
+        connection,
+        `
+          SELECT
+            balance
+          FROM wallets
+          WHERE
+            user_id = ?
+          LIMIT 1
+        `,
+        [
+          user_id
+        ]
+      );
+
+
+    const remainingBalance =
+      Number(
+        updatedWallet[0]?.balance || 0
+      );
+
+
+    // ==================================================
     // COMMIT
     // ==================================================
 
-    await new Promise(
-      (
-        resolve,
-        reject
-      ) => {
+    await connection.commit();
 
-        db.commit(
-          (err) => {
 
-            if (err) {
-              reject(err);
-            } else {
-              resolve();
-            }
-
-          }
-        );
-
-      }
-    );
+    // Release connection back to pool
+    connection.release();
+    connection = null;
 
 
     // ==================================================
@@ -889,16 +1205,32 @@ const cancelManifestedOrders = async (
 
     return {
 
-      success: true,
+      success:
+        true,
 
       message:
-        "Selected shipments cancelled successfully",
+        failed.length > 0
+          ? "Some shipments cancelled and refunded successfully"
+          : "Selected shipments cancelled and refunded successfully",
 
       cancelled_orders:
-        validOrderIds,
+        successfulIds,
 
       total_cancelled:
-        validOrderIds.length
+        successfulIds.length,
+
+      refund_amount:
+        Number(
+          totalRefund.toFixed(2)
+        ),
+
+      wallet_balance:
+        Number(
+          remainingBalance.toFixed(2)
+        ),
+
+      failed_orders:
+        failed
 
     };
 
@@ -909,21 +1241,40 @@ const cancelManifestedOrders = async (
     // ROLLBACK
     // ==================================================
 
-    await new Promise(
-      (resolve) => {
+    if (connection) {
 
-        db.rollback(
-          () => {
-            resolve();
-          }
+      try {
+
+        await connection.rollback();
+
+      } catch (rollbackError) {
+
+        console.log(
+          "Rollback error:",
+          rollbackError
         );
 
       }
-    );
+
+
+      try {
+
+        connection.release();
+
+      } catch (releaseError) {
+
+        console.log(
+          "Connection release error:",
+          releaseError
+        );
+
+      }
+
+    }
 
 
     console.log(
-      "Cancel manifested orders error:",
+      "Cancel manifested orders + refund error:",
       error
     );
 
@@ -932,7 +1283,13 @@ const cancelManifestedOrders = async (
 
   }
 
-};
+  
+
+    
+
+  }
+
+
 
 
 // ======================================================

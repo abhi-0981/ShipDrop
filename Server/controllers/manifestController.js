@@ -1,279 +1,292 @@
 const manifestModel = require("../models/manifestModel");
 
+// ======================================================
+// HELPERS
+// ======================================================
+
+const getUserId = (req) => {
+  return (
+    req.user?.id ||
+    req.user?.user_id ||
+    req.user?.userId ||
+    req.body?.user_id ||
+    req.query?.user_id ||
+    null
+  );
+};
+
+const sendError = (res, status, message) => {
+  return res.status(status).json({
+    success: false,
+    message,
+  });
+};
+
+const normalizeId = (value) => {
+  if (value === undefined || value === null || value === "") {
+    return null;
+  }
+
+  const number = Number(value);
+
+  return Number.isNaN(number) ? value : number;
+};
 
 // ======================================================
 // GET ALL MANIFESTED ORDERS
+// GET /api/manifests
 // ======================================================
 
-const getManifestedOrders = async (
-  req,
-  res
-) => {
-
+const getManifestedOrders = async (req, res) => {
   try {
+    const userId = getUserId(req);
 
-    const user_id =
-      req.user?.id ||
-      req.user?.user_id ||
-      req.body?.user_id ||
-      req.query?.user_id;
-
-
-    if (!user_id) {
-
-      return res.status(400).json({
-        success: false,
-        message: "User ID is required"
-      });
-
+    if (!userId) {
+      return sendError(
+        res,
+        400,
+        "User ID is required"
+      );
     }
-
 
     const manifests =
       await manifestModel.getManifestedOrders(
-        user_id
+        userId
       );
 
+    const list = Array.isArray(manifests)
+      ? manifests
+      : [];
 
     return res.status(200).json({
-
       success: true,
-
-      total:
-        manifests.length,
-
-      manifests
-
+      total: list.length,
+      manifests: list,
     });
 
-
   } catch (error) {
-
-    console.log(
-      "Get manifested orders error:",
+    console.error(
+      "❌ GET MANIFESTED ORDERS ERROR:",
       error
     );
 
-
-    return res.status(500).json({
-
-      success: false,
-
-      message:
-        error.message ||
+    return sendError(
+      res,
+      500,
+      error?.message ||
         "Unable to fetch manifested orders"
-
-    });
-
+    );
   }
-
 };
-
 
 // ======================================================
 // GET SINGLE MANIFEST
+// GET /api/manifests/:id
 // ======================================================
 
-const getManifestById = async (
-  req,
-  res
-) => {
-
+const getManifestById = async (req, res) => {
   try {
+    const userId = getUserId(req);
 
-    const user_id =
-      req.user?.id ||
-      req.user?.user_id ||
-      req.body?.user_id ||
-      req.query?.user_id;
-
-
-    const manifest_id =
+    const manifestId = normalizeId(
       req.params?.manifest_id ||
-      req.params?.id;
+      req.params?.id
+    );
 
-
-    if (!user_id) {
-
-      return res.status(400).json({
-
-        success: false,
-
-        message:
-          "User ID is required"
-
-      });
-
+    if (!userId) {
+      return sendError(
+        res,
+        400,
+        "User ID is required"
+      );
     }
 
-
-    if (!manifest_id) {
-
-      return res.status(400).json({
-
-        success: false,
-
-        message:
-          "Manifest ID is required"
-
-      });
-
+    if (!manifestId) {
+      return sendError(
+        res,
+        400,
+        "Manifest ID is required"
+      );
     }
-
 
     const manifest =
       await manifestModel.getManifestById(
-        user_id,
-        manifest_id
+        userId,
+        manifestId
       );
 
+    if (!manifest) {
+      return sendError(
+        res,
+        404,
+        "Manifest not found"
+      );
+    }
 
     return res.status(200).json({
-
       success: true,
-
-      manifest
-
+      manifest,
     });
 
-
   } catch (error) {
-
-    console.log(
-      "Get manifest error:",
+    console.error(
+      "❌ GET MANIFEST BY ID ERROR:",
       error
     );
 
-
     if (
-      error.message ===
+      error?.message ===
       "Manifest not found"
     ) {
-
-      return res.status(404).json({
-
-        success: false,
-
-        message:
-          "Manifest not found"
-
-      });
-
+      return sendError(
+        res,
+        404,
+        "Manifest not found"
+      );
     }
 
-
-    return res.status(500).json({
-
-      success: false,
-
-      message:
-        error.message ||
+    return sendError(
+      res,
+      500,
+      error?.message ||
         "Unable to fetch manifest"
-
-    });
-
+    );
   }
-
 };
-
 
 // ======================================================
 // CANCEL MANIFESTED ORDERS
+// POST /api/manifests/cancel
 // ======================================================
 
 const cancelManifestedOrders = async (
   req,
   res
 ) => {
-
   try {
+    const userId = getUserId(req);
 
-    const user_id =
-      req.user?.id ||
-      req.user?.user_id ||
-      req.body?.user_id;
-
-
-    const order_ids =
+    const rawOrderIds =
       req.body?.order_ids;
 
-
-    if (!user_id) {
-
-      return res.status(400).json({
-
-        success: false,
-
-        message:
-          "User ID is required"
-
-      });
-
+    if (!userId) {
+      return sendError(
+        res,
+        400,
+        "User ID is required"
+      );
     }
 
-
-    if (
-      !Array.isArray(order_ids) ||
-      order_ids.length === 0
-    ) {
-
-      return res.status(400).json({
-
-        success: false,
-
-        message:
-          "At least one order must be selected"
-
-      });
-
+    if (!Array.isArray(rawOrderIds)) {
+      return sendError(
+        res,
+        400,
+        "order_ids must be an array"
+      );
     }
 
+    if (rawOrderIds.length === 0) {
+      return sendError(
+        res,
+        400,
+        "At least one order must be selected"
+      );
+    }
+
+    // Remove empty values
+    const orderIds = rawOrderIds
+      .map(normalizeId)
+      .filter(
+        (id) =>
+          id !== null &&
+          id !== undefined &&
+          id !== ""
+      );
+
+    if (orderIds.length === 0) {
+      return sendError(
+        res,
+        400,
+        "At least one valid order ID is required"
+      );
+    }
+
+    // Remove duplicate IDs
+    const uniqueOrderIds = [
+      ...new Set(orderIds),
+    ];
+
+    console.log(
+      "=========================================="
+    );
+
+    console.log(
+      "🚫 CANCEL MANIFESTED ORDERS"
+    );
+
+    console.log(
+      "USER ID:",
+      userId
+    );
+
+    console.log(
+      "ORDER IDS:",
+      uniqueOrderIds
+    );
+
+    console.log(
+      "=========================================="
+    );
 
     const result =
       await manifestModel.cancelManifestedOrders(
-        user_id,
-        order_ids
+        userId,
+        uniqueOrderIds
       );
 
+    return res.status(200).json({
+      success:
+        result?.success !== false,
 
-    return res.status(200).json(
-      result
-    );
+      message:
+        result?.message ||
+        "Selected shipments cancelled",
 
+      ...(result || {}),
+    });
 
   } catch (error) {
-
-    console.log(
-      "Cancel manifested orders error:",
+    console.error(
+      "❌ CANCEL MANIFESTED ORDERS ERROR:",
       error
     );
 
+    if (
+      error?.message ===
+      "Manifest not found"
+    ) {
+      return sendError(
+        res,
+        404,
+        "Manifest not found"
+      );
+    }
 
-    return res.status(500).json({
-
-      success: false,
-
-      message:
-        error.message ||
+    return sendError(
+      res,
+      500,
+      error?.message ||
         "Unable to cancel manifested orders"
-
-    });
-
+    );
   }
-
 };
-
 
 // ======================================================
 // EXPORT
 // ======================================================
 
 module.exports = {
-
   getManifestedOrders,
-
   getManifestById,
-
-  cancelManifestedOrders
-
+  cancelManifestedOrders,
 };

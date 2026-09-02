@@ -73,6 +73,9 @@ const manifestRoutes =
 const shipmentRoutes =
   require("./routes/shipmentRoutes");
 
+const warehouseRoutes =
+  require("./routes/warehouseRoutes");
+
 
 // ======================================================
 // MIDDLEWARE
@@ -162,6 +165,13 @@ app.use(
 app.use(
   "/api/shipments",
   shipmentRoutes
+);
+
+
+// WAREHOUSES
+app.use(
+  "/api/warehouses",
+  warehouseRoutes
 );
 
 

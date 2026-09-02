@@ -12,6 +12,7 @@ import {
   HiOutlineCreditCard,
   HiOutlineCash,
   HiOutlineScale,
+  HiOutlineCog,
   HiChevronRight,
   HiChevronDown,
 } from "react-icons/hi";
@@ -21,34 +22,65 @@ import { FiMenu } from "react-icons/fi";
 function Sidebar({ collapsed, setCollapsed }) {
   const location = useLocation();
 
-  const [showOrders, setShowOrders] =
-    useState(false);
+  const [showOrders, setShowOrders] = useState(
+    location.pathname === "/processing-orders" ||
+      location.pathname === "/all-orders" ||
+      location.pathname === "/manifested"
+  );
 
-  const [showFinance, setShowFinance] =
-    useState(false);
+  const [showFinance, setShowFinance] = useState(
+    location.pathname === "/wallet" ||
+      location.pathname === "/weight-mismatch"
+  );
 
+  const [showSettings, setShowSettings] = useState(
+    location.pathname.startsWith("/settings")
+  );
+
+
+  // ======================================================
+  // ACTIVE MAIN MENU
+  // ======================================================
 
   const activeClass = (path) =>
     location.pathname === path
-      ? "bg-[#008dd2] text-white"
+      ? "bg-[#008dd2] text-white shadow-sm"
       : "text-slate-600 hover:bg-slate-100";
+
+
+  // ======================================================
+  // ACTIVE SUB MENU
+  // ======================================================
+
+  const subActiveClass = (path) =>
+    location.pathname === path
+      ? "bg-slate-100 text-[#008dd2] font-medium"
+      : "text-slate-600 hover:bg-slate-100 hover:text-[#008dd2]";
 
 
   return (
     <div
-      className={`fixed left-0 top-0 z-50 h-screen bg-white shadow-lg transition-all duration-300 ${
+      className={`fixed left-0 top-0 z-50 h-screen bg-white shadow-md transition-all duration-300 ${
         collapsed
-          ? "w-24"
-          : "w-64"
+          ? "w-[76px]"
+          : "w-[250px]"
       }`}
     >
 
-      {/* LOGO */}
+      {/* ================================================= */}
+      {/* HEADER - FIXED / NEVER SCROLLS */}
+      {/* ================================================= */}
 
-      <div className="flex h-20 items-center justify-between px-5">
+      <div
+        className={`flex h-[68px] shrink-0 items-center border-b border-slate-100 ${
+          collapsed
+            ? "justify-center px-3"
+            : "justify-between px-4"
+        }`}
+      >
 
         {!collapsed && (
-          <h1 className="text-3xl font-bold text-[#008dd2]">
+          <h1 className="text-[25px] font-bold tracking-tight text-[#008dd2]">
             ShipDrop
           </h1>
         )}
@@ -57,293 +89,445 @@ function Sidebar({ collapsed, setCollapsed }) {
           onClick={() =>
             setCollapsed(!collapsed)
           }
-          className="rounded-lg p-2 text-slate-600 transition hover:bg-slate-100"
+          className="rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
         >
-          <FiMenu size={24} />
+          <FiMenu size={20} />
         </button>
 
       </div>
 
 
-      {/* MENU */}
+      {/* ================================================= */}
+      {/* SCROLLABLE MENU ONLY */}
+      {/* ================================================= */}
 
-      <div className="space-y-2 p-4">
+      <div
+        className="
+          h-[calc(100vh-68px)]
+          overflow-y-auto
+          overflow-x-hidden
+          [scrollbar-width:none]
+          [&::-webkit-scrollbar]:hidden
+        "
+      >
 
-
-        {/* DASHBOARD */}
-
-        <Link
-          to="/dashboard"
-          className={`flex items-center rounded-xl px-4 py-3 ${activeClass(
-            "/dashboard"
-          )}`}
-        >
-
-          <HiOutlineViewGrid size={20} />
-
-          {!collapsed && (
-            <span className="ml-4">
-              Dashboard
-            </span>
-          )}
-
-        </Link>
+        <div className="space-y-1 px-3 py-3 pb-6">
 
 
-        {/* CREATE ORDER */}
+          {/* ================================================= */}
+          {/* DASHBOARD */}
+          {/* ================================================= */}
 
-        <Link
-          to="/create-order"
-          className={`flex items-center rounded-xl px-4 py-3 ${activeClass(
-            "/create-order"
-          )}`}
-        >
+          <Link
+            to="/dashboard"
+            title={collapsed ? "Dashboard" : ""}
+            className={`flex items-center rounded-lg px-3 py-2 text-[14px] transition ${
+              activeClass("/dashboard")
+            } ${
+              collapsed
+                ? "justify-center"
+                : ""
+            }`}
+          >
 
-          <HiOutlinePlusCircle size={20} />
+            <HiOutlineViewGrid size={18} />
 
-          {!collapsed && (
-            <span className="ml-4">
-              Create Order
-            </span>
-          )}
-
-        </Link>
-
-
-        {/* PROCESSING ORDERS */}
-
-        <Link
-          to="/processing-orders"
-          className={`flex items-center rounded-xl px-4 py-3 ${activeClass(
-            "/processing-orders"
-          )}`}
-        >
-
-          <HiOutlineClock size={20} />
-
-          {!collapsed && (
-            <span className="ml-4 whitespace-nowrap">
-              Processing Orders
-            </span>
-          )}
-
-        </Link>
-
-
-        {/* ORDERS */}
-
-        <button
-          onClick={() =>
-            setShowOrders(!showOrders)
-          }
-          className="flex w-full items-center rounded-xl px-4 py-3 text-slate-600 transition hover:bg-slate-100"
-        >
-
-          <HiOutlineCube size={20} />
-
-          {!collapsed && (
-            <>
-              <span className="ml-4 flex-1 text-left">
-                Orders
+            {!collapsed && (
+              <span className="ml-3 whitespace-nowrap">
+                Dashboard
               </span>
+            )}
 
-              {showOrders ? (
-                <HiChevronDown size={18} />
-              ) : (
-                <HiChevronRight size={18} />
-              )}
-            </>
-          )}
-
-        </button>
+          </Link>
 
 
-        {/* ORDER SUB MENU */}
+          {/* ================================================= */}
+          {/* CREATE ORDER */}
+          {/* ================================================= */}
 
-        {showOrders && !collapsed && (
-          <div className="ml-10 space-y-2">
+          <Link
+            to="/create-order"
+            title={collapsed ? "Create Order" : ""}
+            className={`flex items-center rounded-lg px-3 py-2 text-[14px] transition ${
+              activeClass("/create-order")
+            } ${
+              collapsed
+                ? "justify-center"
+                : ""
+            }`}
+          >
 
-            <Link
-              to="/processing-orders"
-              className="block py-2 text-slate-600 transition hover:text-[#008dd2]"
-            >
-              Processing Orders
-            </Link>
+            <HiOutlinePlusCircle size={18} />
 
-            <Link
-              to="/all-orders"
-              className="block py-2 text-slate-600 transition hover:text-[#008dd2]"
-            >
-              All Orders
-            </Link>
-
-            <Link
-              to="/manifested"
-              className="block py-2 text-slate-600 transition hover:text-[#008dd2]"
-            >
-              Manifested
-            </Link>
-
-          </div>
-        )}
-
-
-        {/* RATE CALCULATOR */}
-
-        <Link
-          to="/rate-calculator"
-          className={`flex items-center rounded-xl px-4 py-3 ${activeClass(
-            "/rate-calculator"
-          )}`}
-        >
-
-          <HiOutlineCalculator size={20} />
-
-          {!collapsed && (
-            <span className="ml-4">
-              Rate Calculator
-            </span>
-          )}
-
-        </Link>
-
-
-        {/* RATE CARD */}
-
-        <Link
-          to="/rate-card"
-          className={`flex items-center rounded-xl px-4 py-3 ${activeClass(
-            "/rate-card"
-          )}`}
-        >
-
-          <HiOutlineCreditCard size={20} />
-
-          {!collapsed && (
-            <span className="ml-4">
-              Rate Card
-            </span>
-          )}
-
-        </Link>
-
-
-        {/* ================================================= */}
-        {/* FINANCE */}
-        {/* ================================================= */}
-
-        <button
-          onClick={() =>
-            setShowFinance(!showFinance)
-          }
-          className="flex w-full items-center rounded-xl px-4 py-3 text-slate-600 transition hover:bg-slate-100"
-        >
-
-          <HiOutlineCash size={20} />
-
-          {!collapsed && (
-            <>
-              <span className="ml-4 flex-1 text-left">
-                Finance
+            {!collapsed && (
+              <span className="ml-3 whitespace-nowrap">
+                Create Order
               </span>
+            )}
 
-              {showFinance ? (
-                <HiChevronDown size={18} />
-              ) : (
-                <HiChevronRight size={18} />
-              )}
-            </>
-          )}
-
-        </button>
+          </Link>
 
 
-        {/* FINANCE SUB MENU */}
+          {/* ================================================= */}
+          {/* PROCESSING ORDERS */}
+          {/* ================================================= */}
 
-        {showFinance && !collapsed && (
-          <div className="ml-10 space-y-2">
+          <Link
+            to="/processing-orders"
+            title={collapsed ? "Processing Orders" : ""}
+            className={`flex items-center rounded-lg px-3 py-2 text-[14px] transition ${
+              activeClass("/processing-orders")
+            } ${
+              collapsed
+                ? "justify-center"
+                : ""
+            }`}
+          >
 
-            {/* WALLET */}
+            <HiOutlineClock size={18} />
 
-            <Link
-              to="/wallet"
-              className={`flex items-center gap-2 rounded-lg px-3 py-2 ${
-                location.pathname === "/wallet"
-                  ? "bg-slate-100 text-[#008dd2]"
-                  : "text-slate-600 hover:text-[#008dd2]"
-              }`}
-            >
-
-              <HiOutlineCreditCard size={17} />
-
-              <span>
-                Wallet
+            {!collapsed && (
+              <span className="ml-3 whitespace-nowrap">
+                Processing Orders
               </span>
+            )}
 
-            </Link>
+          </Link>
 
 
-            {/* WEIGHT MISMATCH */}
+          {/* ================================================= */}
+          {/* ORDERS */}
+          {/* ================================================= */}
 
-            <Link
-              to="/weight-mismatch"
-              className={`flex items-center gap-2 rounded-lg px-3 py-2 ${
-                location.pathname === "/weight-mismatch"
-                  ? "bg-slate-100 text-[#008dd2]"
-                  : "text-slate-600 hover:text-[#008dd2]"
-              }`}
-            >
+          <button
+            onClick={() =>
+              setShowOrders(!showOrders)
+            }
+            title={collapsed ? "Orders" : ""}
+            className={`flex w-full items-center rounded-lg px-3 py-2 text-[14px] text-slate-600 transition hover:bg-slate-100 ${
+              collapsed
+                ? "justify-center"
+                : ""
+            }`}
+          >
 
-              <HiOutlineScale size={17} />
+            <HiOutlineCube size={18} />
 
-              <span>
-                Weight Mismatch
+            {!collapsed && (
+              <>
+                <span className="ml-3 flex-1 text-left whitespace-nowrap">
+                  Orders
+                </span>
+
+                {showOrders ? (
+                  <HiChevronDown size={16} />
+                ) : (
+                  <HiChevronRight size={16} />
+                )}
+              </>
+            )}
+
+          </button>
+
+
+          {/* ================================================= */}
+          {/* ORDER SUB MENU */}
+          {/* ================================================= */}
+
+          {showOrders && !collapsed && (
+            <div className="ml-9 space-y-0.5">
+
+              <Link
+                to="/processing-orders"
+                className={`block rounded-md px-3 py-1.5 text-[13px] whitespace-nowrap transition ${
+                  subActiveClass(
+                    "/processing-orders"
+                  )
+                }`}
+              >
+                Processing Orders
+              </Link>
+
+              <Link
+                to="/all-orders"
+                className={`block rounded-md px-3 py-1.5 text-[13px] whitespace-nowrap transition ${
+                  subActiveClass(
+                    "/all-orders"
+                  )
+                }`}
+              >
+                All Orders
+              </Link>
+
+              <Link
+                to="/manifested"
+                className={`block rounded-md px-3 py-1.5 text-[13px] whitespace-nowrap transition ${
+                  subActiveClass(
+                    "/manifested"
+                  )
+                }`}
+              >
+                Manifested
+              </Link>
+
+            </div>
+          )}
+
+
+          {/* ================================================= */}
+          {/* RATE CALCULATOR */}
+          {/* ================================================= */}
+
+          <Link
+            to="/rate-calculator"
+            title={collapsed ? "Rate Calculator" : ""}
+            className={`flex items-center rounded-lg px-3 py-2 text-[14px] transition ${
+              activeClass("/rate-calculator")
+            } ${
+              collapsed
+                ? "justify-center"
+                : ""
+            }`}
+          >
+
+            <HiOutlineCalculator size={18} />
+
+            {!collapsed && (
+              <span className="ml-3 whitespace-nowrap">
+                Rate Calculator
               </span>
+            )}
 
-            </Link>
-
-          </div>
-        )}
+          </Link>
 
 
-        {/* TICKETS */}
+          {/* ================================================= */}
+          {/* RATE CARD */}
+          {/* ================================================= */}
 
-        <Link
-          to="/tickets"
-          className={`flex items-center rounded-xl px-4 py-3 ${activeClass(
-            "/tickets"
-          )}`}
-        >
+          <Link
+            to="/rate-card"
+            title={collapsed ? "Rate Card" : ""}
+            className={`flex items-center rounded-lg px-3 py-2 text-[14px] transition ${
+              activeClass("/rate-card")
+            } ${
+              collapsed
+                ? "justify-center"
+                : ""
+            }`}
+          >
 
-          <HiOutlineTicket size={20} />
+            <HiOutlineCreditCard size={18} />
 
-          {!collapsed && (
-            <span className="ml-4">
-              Tickets
-            </span>
+            {!collapsed && (
+              <span className="ml-3 whitespace-nowrap">
+                Rate Card
+              </span>
+            )}
+
+          </Link>
+
+
+          {/* ================================================= */}
+          {/* FINANCE */}
+          {/* ================================================= */}
+
+          <button
+            onClick={() =>
+              setShowFinance(!showFinance)
+            }
+            title={collapsed ? "Finance" : ""}
+            className={`flex w-full items-center rounded-lg px-3 py-2 text-[14px] text-slate-600 transition hover:bg-slate-100 ${
+              collapsed
+                ? "justify-center"
+                : ""
+            }`}
+          >
+
+            <HiOutlineCash size={18} />
+
+            {!collapsed && (
+              <>
+                <span className="ml-3 flex-1 text-left whitespace-nowrap">
+                  Finance
+                </span>
+
+                {showFinance ? (
+                  <HiChevronDown size={16} />
+                ) : (
+                  <HiChevronRight size={16} />
+                )}
+              </>
+            )}
+
+          </button>
+
+
+          {/* ================================================= */}
+          {/* FINANCE SUB MENU */}
+          {/* ================================================= */}
+
+          {showFinance && !collapsed && (
+            <div className="ml-9 space-y-0.5">
+
+              {/* WALLET */}
+
+              <Link
+                to="/wallet"
+                className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-[13px] whitespace-nowrap transition ${
+                  subActiveClass(
+                    "/wallet"
+                  )
+                }`}
+              >
+
+                <HiOutlineCreditCard size={16} />
+
+                <span>
+                  Wallet
+                </span>
+
+              </Link>
+
+
+              {/* WEIGHT MISMATCH */}
+
+              <Link
+                to="/weight-mismatch"
+                className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-[13px] whitespace-nowrap transition ${
+                  subActiveClass(
+                    "/weight-mismatch"
+                  )
+                }`}
+              >
+
+                <HiOutlineScale size={16} />
+
+                <span>
+                  Weight Mismatch
+                </span>
+
+              </Link>
+
+            </div>
           )}
 
-        </Link>
+
+          {/* ================================================= */}
+          {/* TICKETS */}
+          {/* ================================================= */}
+
+          <Link
+            to="/tickets"
+            title={collapsed ? "Tickets" : ""}
+            className={`flex items-center rounded-lg px-3 py-2 text-[14px] transition ${
+              activeClass("/tickets")
+            } ${
+              collapsed
+                ? "justify-center"
+                : ""
+            }`}
+          >
+
+            <HiOutlineTicket size={18} />
+
+            {!collapsed && (
+              <span className="ml-3 whitespace-nowrap">
+                Tickets
+              </span>
+            )}
+
+          </Link>
 
 
-        {/* LOGOUT */}
+          {/* ================================================= */}
+          {/* SETTINGS */}
+          {/* ================================================= */}
 
-        <Link
-          to="/login"
-          className={`flex items-center rounded-xl px-4 py-3 ${activeClass(
-            "/login"
-          )}`}
-        >
+          <button
+            onClick={() =>
+              setShowSettings(!showSettings)
+            }
+            title={collapsed ? "Settings" : ""}
+            className={`flex w-full items-center rounded-lg px-3 py-2 text-[14px] transition ${
+              location.pathname.startsWith("/settings")
+                ? "bg-[#008dd2] text-white shadow-sm"
+                : "text-slate-600 hover:bg-slate-100"
+            } ${
+              collapsed
+                ? "justify-center"
+                : ""
+            }`}
+          >
 
-          <HiOutlineLogout size={20} />
+            <HiOutlineCog size={18} />
 
-          {!collapsed && (
-            <span className="ml-4">
-              Logout
-            </span>
+            {!collapsed && (
+              <>
+                <span className="ml-3 flex-1 text-left whitespace-nowrap">
+                  Settings
+                </span>
+
+                {showSettings ? (
+                  <HiChevronDown size={16} />
+                ) : (
+                  <HiChevronRight size={16} />
+                )}
+              </>
+            )}
+
+          </button>
+
+
+          {/* ================================================= */}
+          {/* SETTINGS SUB MENU */}
+          {/* ================================================= */}
+
+          {showSettings && !collapsed && (
+            <div className="ml-9 space-y-0.5">
+
+              <Link
+                to="/settings/pickup-address"
+                className={`block rounded-md px-3 py-1.5 text-[13px] whitespace-nowrap transition ${
+                  subActiveClass(
+                    "/settings/pickup-address"
+                  )
+                }`}
+              >
+                Pickup Address
+              </Link>
+
+            </div>
           )}
 
-        </Link>
+
+          {/* ================================================= */}
+          {/* LOGOUT */}
+          {/* ================================================= */}
+
+          <Link
+            to="/login"
+            title={collapsed ? "Logout" : ""}
+            className={`flex items-center rounded-lg px-3 py-2 text-[14px] transition ${
+              activeClass("/login")
+            } ${
+              collapsed
+                ? "justify-center"
+                : ""
+            }`}
+          >
+
+            <HiOutlineLogout size={18} />
+
+            {!collapsed && (
+              <span className="ml-3 whitespace-nowrap">
+                Logout
+              </span>
+            )}
+
+          </Link>
+
+        </div>
 
       </div>
 

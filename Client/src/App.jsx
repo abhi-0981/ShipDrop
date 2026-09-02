@@ -14,12 +14,18 @@ import RateCalculator from "./pages/Dashboard/RateCalculator";
 import Tickets from "./pages/Dashboard/Tickets";
 import GeneralSettings from "./pages/Dashboard/GeneralSettings";
 import RateCard from "./pages/Dashboard/RateCard";
+import PickupAddress from "./pages/Dashboard/PickupAddress";
+
 
 function App() {
+
   return (
+
     <Routes>
 
-      {/* Public Pages */}
+      {/* ================================================= */}
+      {/* PUBLIC PAGES */}
+      {/* ================================================= */}
 
       <Route
         path="/"
@@ -37,63 +43,101 @@ function App() {
       />
 
 
-      {/* Dashboard Pages */}
+      {/* ================================================= */}
+      {/* DASHBOARD */}
+      {/* ================================================= */}
 
       <Route
         element={<DashboardLayout />}
       >
+
+        {/* DASHBOARD */}
 
         <Route
           path="/dashboard"
           element={<Dashboard />}
         />
 
+
+        {/* CREATE ORDER */}
+
         <Route
           path="/create-order"
           element={<CreateOrder />}
         />
+
+
+        {/* PROCESSING */}
 
         <Route
           path="/processing-orders"
           element={<ProcessingOrders />}
         />
 
+
+        {/* ALL ORDERS */}
+
         <Route
           path="/all-orders"
           element={<AllOrders />}
         />
+
+
+        {/* MANIFESTED */}
 
         <Route
           path="/manifested"
           element={<Manifested />}
         />
 
+
+        {/* RATE CALCULATOR */}
+
         <Route
           path="/rate-calculator"
           element={<RateCalculator />}
         />
+
+
+        {/* TICKETS */}
 
         <Route
           path="/tickets"
           element={<Tickets />}
         />
 
-        {/* General Settings */}
+
+        {/* GENERAL SETTINGS */}
 
         <Route
           path="/general-settings"
           element={<GeneralSettings />}
         />
 
+
+        {/* RATE CARD */}
+
         <Route
-  path="/rate-card"
-  element={<RateCard />}
-/>
+          path="/rate-card"
+          element={<RateCard />}
+        />
+
+
+        {/* ================================================= */}
+        {/* SETTINGS → PICKUP ADDRESS */}
+        {/* ================================================= */}
+
+        <Route
+          path="/settings/pickup-address"
+          element={<PickupAddress />}
+        />
 
       </Route>
 
     </Routes>
+
   );
+
 }
 
 export default App;

@@ -18,6 +18,15 @@ const Icon = ({ name, size = 16 }) => {
     strokeLinejoin: "round",
   };
 
+  if (name === "search") {
+    return (
+      <svg {...common}>
+        <circle cx="11" cy="11" r="7" />
+        <path d="m20 20-4-4" />
+      </svg>
+    );
+  }
+
   if (name === "truck") {
     return (
       <svg {...common}>
@@ -78,6 +87,12 @@ function ProcessingOrders() {
   const navigate = useNavigate();
 
   const [selectedOrders, setSelectedOrders] = useState([]);
+
+  // ====================================================
+  // SEARCH
+  // ====================================================
+
+  const [search, setSearch] = useState("");
 
   // ====================================================
   // SHIP POPUP
@@ -693,7 +708,7 @@ if (!userId) {
   // EDIT ORDER
   // ====================================================
 
-  const handleEdit = (
+  const handleEdit = async (
     order
   ) => {
     const orderId =
@@ -711,9 +726,61 @@ if (!userId) {
     try {
       setEditingOrder(true);
 
+      // ==================================================
+      // FETCH COMPLETE ORDER
+      // ==================================================
+      // Processing list can contain flattened product/package
+      // data. Create Order needs the complete order object,
+      // including ALL products and ALL packages.
+      const storedUser =
+        localStorage.getItem("user");
+
+      let user = {};
+
+      try {
+        user = storedUser
+          ? JSON.parse(storedUser)
+          : {};
+      } catch (error) {
+        console.log(
+          "User parse error:",
+          error
+        );
+      }
+
+      const userId =
+        user.id ||
+        user.user_id ||
+        user.userId;
+
+      if (!userId) {
+        throw new Error(
+          "User session not found. Please login again."
+        );
+      }
+
+      const response = await api.get(
+        `/orders/${orderId}?user_id=${userId}`
+      );
+
+      const result =
+        response.data;
+
+      if (
+        !result?.success ||
+        !result?.order
+      ) {
+        throw new Error(
+          result?.message ||
+            "Unable to load order details"
+        );
+      }
+
+      // Store the COMPLETE order returned by backend.
+      // This includes products[] and packages[].
       sessionStorage.setItem(
         "editingProcessingOrder",
-        JSON.stringify(order)
+        JSON.stringify(result.order)
       );
 
       navigate(
@@ -726,7 +793,10 @@ if (!userId) {
       );
 
       showToast(
-        "Unable to open order for editing",
+        error.response
+          ?.data?.message ||
+          error.message ||
+          "Unable to open order for editing",
         "error"
       );
 
@@ -735,30 +805,58 @@ if (!userId) {
   };
 
   // ====================================================
+  // SEARCH / FILTERED ORDERS
+  // ====================================================
+
+  const searchText = search.trim().toLowerCase();
+
+  const filteredOrders = orders.filter((order) => {
+    if (!searchText) return true;
+
+    const searchableText = [
+      getId(order),
+      getCustomer(order),
+      getMobile(order),
+      getPickupCity(order),
+      getPickupPincode(order),
+      getDeliveryCity(order),
+      getDeliveryPincode(order),
+      getProduct(order),
+      getPayment(order),
+      getStatus(order),
+      order.awb,
+      order.order_number,
+      order.orderNumber,
+    ]
+      .map((value) => String(value ?? "").toLowerCase())
+      .join(" ");
+
+    return searchableText.includes(searchText);
+  });
+
+  // ====================================================
   // SELECT ALL
   // ====================================================
 
+  const visibleIds = filteredOrders.map((order, index) =>
+    getId(order, index)
+  );
+
   const allSelected =
-    orders.length > 0 &&
-    selectedOrders.length ===
-      orders.length;
+    visibleIds.length > 0 &&
+    visibleIds.every((id) => selectedOrders.includes(id));
 
   const toggleAll = () => {
     if (allSelected) {
-      setSelectedOrders([]);
-
+      setSelectedOrders((previous) =>
+        previous.filter((id) => !visibleIds.includes(id))
+      );
       return;
     }
 
-    setSelectedOrders(
-      orders.map(
-        (order, index) =>
-          getId(
-            order,
-            index
-          )
-      )
-    );
+    setSelectedOrders((previous) => [
+      ...new Set([...previous, ...visibleIds]),
+    ]);
   };
 
   // ====================================================
@@ -1785,61 +1883,65 @@ const response =
 
         {/* HEADER */}
 
-        <div className="rounded-t-[5px] border border-slate-200 bg-white">
-          <div className="flex min-h-[73px] items-center justify-between gap-4 px-[18px]">
+        <div className="mb-3 rounded-xl border border-slate-200 bg-white px-5 py-3.5">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#f0ecff] text-[#7052ff]">
+                <Icon name="truck" size={20} />
+              </div>
+              <div>
+                <h1 className="text-[17px] font-medium tracking-[-0.2px] text-slate-900">
+                  Processing Orders
+                </h1>
+                <p className="mt-0.5 text-[11px] text-slate-500">
+                  Showing <span className="font-medium text-slate-700">{filteredOrders.length}</span> Out Of <span className="font-medium text-slate-700">{orders.length}</span> Orders
+                </p>
+              </div>
+            </div>
 
-            <h1 className="text-[18px] font-normal text-slate-900">
-              Processing Orders
-
-              <span className="ml-1">
-                (Showing{" "}
-                {orders.length} Out Of{" "}
-                {orders.length})
-              </span>
-            </h1>
-
-            <div className="flex items-center gap-2">
-
-              {/* SHIP */}
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <div className="relative w-full sm:w-[290px]">
+                <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                  <Icon name="search" size={16} />
+                </div>
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Search orders, customer, mobile..."
+                  className="h-[38px] w-full rounded-lg border border-slate-200 bg-white pl-9 pr-9 text-[12px] text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#a996ff] focus:ring-2 focus:ring-[#7451ff]/10"
+                />
+                {search && (
+                  <button
+                    type="button"
+                    onClick={() => setSearch("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[17px] leading-none text-slate-400 hover:text-slate-700"
+                    title="Clear search"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
 
               <button
                 type="button"
                 onClick={handleShip}
-                disabled={
-                  selectedOrders.length ===
-                  0
-                }
-                className="flex h-[36px] items-center gap-1.5 rounded-[5px] bg-[#7451ff] px-3 text-[13px] font-medium text-white hover:bg-[#6745ec] disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={selectedOrders.length === 0}
+                className="flex h-[38px] items-center gap-1.5 rounded-lg bg-[#7451ff] px-3.5 text-[12px] font-medium text-white shadow-sm transition hover:bg-[#6745ec] disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <Icon
-                  name="truck"
-                  size={15}
-                />
-
+                <Icon name="truck" size={15} />
                 Ship
               </button>
 
-              {/* DELETE */}
-
               <button
                 type="button"
-                onClick={() =>
-                  handleDelete()
-                }
-                disabled={
-                  selectedOrders.length ===
-                  0
-                }
-                className="flex h-[36px] items-center gap-1.5 rounded-[5px] bg-[#ff3340] px-3 text-[13px] font-medium text-white hover:bg-[#e92d39] disabled:cursor-not-allowed disabled:opacity-50"
+                onClick={() => handleDelete()}
+                disabled={selectedOrders.length === 0}
+                className="flex h-[38px] items-center gap-1.5 rounded-lg bg-[#ff3340] px-3.5 text-[12px] font-medium text-white shadow-sm transition hover:bg-[#e92d39] disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <Icon
-                  name="trash"
-                  size={15}
-                />
-
+                <Icon name="trash" size={15} />
                 Delete
               </button>
-
             </div>
           </div>
         </div>
@@ -1848,9 +1950,9 @@ const response =
             TABLE
         ================================================== */}
 
-        <div className="overflow-x-auto border-x border-b border-slate-200 bg-white">
+        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
 
-          <table className="w-full min-w-[1120px] table-fixed border-collapse">
+          <table className="w-full min-w-[1160px] table-fixed border-collapse">
 
             <colgroup>
               <col className="w-[60px]" />
@@ -1905,7 +2007,7 @@ const response =
 
             <tbody>
 
-              {orders.length ===
+              {filteredOrders.length ===
               0 ? (
                 <tr>
 
@@ -1918,7 +2020,7 @@ const response =
 
                       <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-100">
                         <Icon
-                          name="file"
+                          name={searchText ? "search" : "file"}
                           size={21}
                         />
                       </div>
@@ -1933,7 +2035,7 @@ const response =
 
                 </tr>
               ) : (
-                orders.map(
+                filteredOrders.map(
                   (
                     order,
                     index
@@ -1952,7 +2054,7 @@ const response =
                     return (
                       <tr
                         key={id}
-                        className="h-[96px] hover:bg-slate-50"
+                        className="h-[88px] transition-colors hover:bg-slate-50"
                       >
 
                         <td className="border-r border-b border-slate-200 px-4">

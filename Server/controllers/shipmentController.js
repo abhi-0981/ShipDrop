@@ -16,15 +16,23 @@ const confirmShipmentController = async (
 
     const {
       user_id,
+
+      // PICKUP
       pickup_address,
       pickup_pincode,
+      warehouse_id,
+
+      // ORDER
       orderData,
       products,
       packages,
+
+      // RATE
       shipping_charge,
       zone,
       distance_km,
       service_type,
+
     } = req.body;
 
 
@@ -33,10 +41,59 @@ const confirmShipmentController = async (
     // ========================================
 
     if (!user_id) {
+
       return res.status(400).json({
+
         success: false,
-        message: "User ID is required",
+
+        message:
+          "User ID is required",
+
       });
+
+    }
+
+
+    // ========================================
+    // WAREHOUSE ID
+    // ========================================
+
+    if (!warehouse_id) {
+
+      return res.status(400).json({
+
+        success: false,
+
+        message:
+          "Pickup warehouse is required",
+
+      });
+
+    }
+
+
+    const normalizedWarehouseId =
+      Number(
+        warehouse_id
+      );
+
+
+    if (
+      !Number.isInteger(
+        normalizedWarehouseId
+      ) ||
+      normalizedWarehouseId <= 0
+    ) {
+
+      return res.status(400).json({
+
+        success: false,
+
+        message:
+          "Valid pickup warehouse is required",
+
+      });
+
     }
 
 
@@ -45,7 +102,10 @@ const confirmShipmentController = async (
     // ========================================
 
     const normalizedServiceType =
-      String(service_type || "ROAD")
+      String(
+        service_type ||
+        "ROAD"
+      )
         .trim()
         .toUpperCase();
 
@@ -59,11 +119,16 @@ const confirmShipmentController = async (
         normalizedServiceType
       )
     ) {
+
       return res.status(400).json({
+
         success: false,
+
         message:
           "Valid service type is required",
+
       });
+
     }
 
 
@@ -73,13 +138,20 @@ const confirmShipmentController = async (
 
     if (
       !pickup_address ||
-      !String(pickup_address).trim()
+      !String(
+        pickup_address
+      ).trim()
     ) {
+
       return res.status(400).json({
+
         success: false,
+
         message:
           "Pickup address is required",
+
       });
+
     }
 
 
@@ -90,14 +162,21 @@ const confirmShipmentController = async (
     if (
       !pickup_pincode ||
       !/^\d{6}$/.test(
-        String(pickup_pincode).trim()
+        String(
+          pickup_pincode
+        ).trim()
       )
     ) {
+
       return res.status(400).json({
+
         success: false,
+
         message:
           "Valid 6-digit pickup pincode is required",
+
       });
+
     }
 
 
@@ -105,12 +184,40 @@ const confirmShipmentController = async (
     // ORDER DATA
     // ========================================
 
-    if (!orderData) {
+    if (
+      !orderData ||
+      typeof orderData !== "object"
+    ) {
+
       return res.status(400).json({
+
         success: false,
+
         message:
           "Order data is required",
+
       });
+
+    }
+
+
+    // ========================================
+    // ORDER INTERNAL ID
+    // ========================================
+
+    if (
+      !orderData.id
+    ) {
+
+      return res.status(400).json({
+
+        success: false,
+
+        message:
+          "Order ID is required",
+
+      });
+
     }
 
 
@@ -119,14 +226,21 @@ const confirmShipmentController = async (
     // ========================================
 
     if (
-      !Array.isArray(products) ||
+      !Array.isArray(
+        products
+      ) ||
       products.length === 0
     ) {
+
       return res.status(400).json({
+
         success: false,
+
         message:
           "At least one product is required",
+
       });
+
     }
 
 
@@ -135,14 +249,21 @@ const confirmShipmentController = async (
     // ========================================
 
     if (
-      !Array.isArray(packages) ||
+      !Array.isArray(
+        packages
+      ) ||
       packages.length === 0
     ) {
+
       return res.status(400).json({
+
         success: false,
+
         message:
           "At least one package is required",
+
       });
+
     }
 
 
@@ -153,13 +274,20 @@ const confirmShipmentController = async (
     if (
       shipping_charge === undefined ||
       shipping_charge === null ||
-      Number(shipping_charge) <= 0
+      Number(
+        shipping_charge
+      ) <= 0
     ) {
+
       return res.status(400).json({
+
         success: false,
+
         message:
           "Valid shipping charge is required",
+
       });
+
     }
 
 
@@ -167,12 +295,22 @@ const confirmShipmentController = async (
     // ZONE
     // ========================================
 
-    if (!zone) {
+    if (
+      !zone ||
+      !String(
+        zone
+      ).trim()
+    ) {
+
       return res.status(400).json({
+
         success: false,
+
         message:
           "Shipping zone is required",
+
       });
+
     }
 
 
@@ -188,6 +326,9 @@ const confirmShipmentController = async (
         pickup_address,
 
         pickup_pincode,
+
+        warehouse_id:
+          normalizedWarehouseId,
 
         orderData,
 
@@ -206,6 +347,10 @@ const confirmShipmentController = async (
 
       });
 
+
+    // ========================================
+    // SUCCESS
+    // ========================================
 
     return res.status(201).json(
       result
@@ -248,6 +393,10 @@ const confirmShipmentController = async (
     }
 
 
+    // ========================================
+    // DELHIVERY / WAREHOUSE ERROR
+    // ========================================
+
     return res.status(500).json({
 
       success: false,
@@ -267,7 +416,10 @@ const confirmShipmentController = async (
 // ========================================
 
 const bulkConfirmShipmentController =
-  async (req, res) => {
+  async (
+    req,
+    res
+  ) => {
 
     try {
 
@@ -301,7 +453,10 @@ const bulkConfirmShipmentController =
       // ========================================
 
       const normalizedServiceType =
-        String(service_type || "ROAD")
+        String(
+          service_type ||
+          "ROAD"
+        )
           .trim()
           .toUpperCase();
 
@@ -333,7 +488,9 @@ const bulkConfirmShipmentController =
       // ========================================
 
       if (
-        !Array.isArray(order_ids) ||
+        !Array.isArray(
+          order_ids
+        ) ||
         order_ids.length === 0
       ) {
 
@@ -360,7 +517,8 @@ const bulkConfirmShipmentController =
           order_ids
 
             .map(
-              (id) => Number(id)
+              (id) =>
+                Number(id)
             )
 
             .filter(
@@ -373,6 +531,10 @@ const bulkConfirmShipmentController =
 
       ];
 
+
+      // ========================================
+      // VALID IDS
+      // ========================================
 
       if (
         cleanOrderIds.length === 0
@@ -407,6 +569,10 @@ const bulkConfirmShipmentController =
 
         });
 
+
+      // ========================================
+      // SUCCESS
+      // ========================================
 
       return res.status(201).json(
         result
@@ -448,6 +614,10 @@ const bulkConfirmShipmentController =
 
       }
 
+
+      // ========================================
+      // GENERAL ERROR
+      // ========================================
 
       return res.status(500).json({
 

@@ -1,6 +1,35 @@
 import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 import api from "../../services/api";
+import L from "leaflet";
+import { MapContainer, Marker, TileLayer, useMapEvents } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+
+const warehouseMarkerIcon = L.icon({
+  iconUrl: new URL("leaflet/dist/images/marker-icon.png", import.meta.url).href,
+  iconRetinaUrl: new URL(
+    "leaflet/dist/images/marker-icon-2x.png",
+    import.meta.url,
+  ).href,
+  shadowUrl: new URL("leaflet/dist/images/marker-shadow.png", import.meta.url)
+    .href,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
+});
+
+const DEFAULT_WAREHOUSE_MAP_POSITION = [22.9734, 78.6569];
+
+function WarehouseMapClickHandler({ onSelect }) {
+  useMapEvents({
+    click(event) {
+      onSelect(event.latlng.lat, event.latlng.lng);
+    },
+  });
+
+  return null;
+}
 
 function CreateOrder() {
   // ========================================
@@ -85,6 +114,55 @@ function CreateOrder() {
   const [selectedShippingType, setSelectedShippingType] = useState(null);
 
   // ========================================
+  // WAREHOUSE / PICKUP ADDRESS
+  // ========================================
+
+  const initialWarehouseForm = {
+    warehouse_name: "",
+    contact_name: "",
+    phone: "",
+    email: "",
+    gstin: "",
+    address_line1: "",
+    address_line2: "",
+    floor_no: "",
+    landmark: "",
+    pincode: "",
+    city: "",
+    state: "",
+    country: "India",
+    return_address: "",
+    return_city: "",
+    return_pincode: "",
+    return_state: "",
+    return_country: "India",
+  };
+
+  const [warehouses, setWarehouses] = useState([]);
+  const [warehousesLoading, setWarehousesLoading] = useState(false);
+  const [warehouseSaving, setWarehouseSaving] = useState(false);
+  const [showWarehouseDropdown, setShowWarehouseDropdown] = useState(false);
+  const [warehouseSearch, setWarehouseSearch] = useState("");
+  const [showWarehouseModal, setShowWarehouseModal] = useState(false);
+  const [warehouseForm, setWarehouseForm] = useState({
+    ...initialWarehouseForm,
+  });
+  const [selectedWarehouse, setSelectedWarehouse] = useState(null);
+  const [warehousePincodeLoading, setWarehousePincodeLoading] = useState(false);
+
+  // ========================================
+  // WAREHOUSE MAP
+  // ========================================
+
+  const [warehouseMapPosition, setWarehouseMapPosition] = useState(
+    DEFAULT_WAREHOUSE_MAP_POSITION,
+  );
+  const [warehouseMapMarker, setWarehouseMapMarker] = useState(null);
+  const [warehouseLocationSearch, setWarehouseLocationSearch] = useState("");
+  const [warehouseLocationLoading, setWarehouseLocationLoading] =
+    useState(false);
+
+  // ========================================
   // CLASSES
   // ========================================
 
@@ -97,138 +175,163 @@ function CreateOrder() {
   const labelClass = "block text-xs font-semibold text-slate-700 mb-1.5";
 
   // ========================================
+  // ========================================
   // REQUIRED FIELD VALIDATION
   // ========================================
 
   const validateRequiredFields = () => {
-    // Pickup address
-    if (!formData.pickup_address.trim()) {
+    // ========================================
+    // RESOLVE PICKUP WAREHOUSE
+    // ========================================
+    // selectedWarehouse is the primary source.
+    // If React state is temporarily empty, resolve the
+    // warehouse from the address currently shown in the field.
+
+    const currentPickupAddress = String(
+      formData.pickup_address || warehouseSearch || "",
+    )
+      .trim()
+      .toLowerCase();
+
+    const effectiveWarehouse = selectedWarehouse?.id
+      ? selectedWarehouse
+      : warehouses.find((warehouse) => {
+          const warehouseAddress = getWarehouseDisplayAddress(warehouse)
+            .trim()
+            .toLowerCase();
+
+          const addressLine = String(warehouse.address_line1 || "")
+            .trim()
+            .toLowerCase();
+
+          return (
+            warehouseAddress === currentPickupAddress ||
+            addressLine === currentPickupAddress
+          );
+        }) || null;
+
+    // ========================================
+    // EFFECTIVE PICKUP ADDRESS
+    // ========================================
+
+    const effectivePickupAddress = String(
+      formData.pickup_address ||
+        warehouseSearch ||
+        (effectiveWarehouse
+          ? getWarehouseDisplayAddress(effectiveWarehouse)
+          : ""),
+    ).trim();
+
+    // ========================================
+    // EFFECTIVE PICKUP PINCODE
+    // ========================================
+
+    const effectivePickupPincode = String(
+      formData.pickup_pincode || effectiveWarehouse?.pincode || "",
+    ).trim();
+
+    // ========================================
+    // PICKUP WAREHOUSE
+    // ========================================
+
+    if (!effectiveWarehouse?.id) {
+      toast.error("Please select a pickup warehouse");
+      return false;
+    }
+
+    // ========================================
+    // PICKUP ADDRESS
+    // ========================================
+
+    if (!effectivePickupAddress) {
       toast.error("Please enter pickup address");
-
       return false;
     }
 
-    // Pickup pincode
-    if (!/^\d{6}$/.test(formData.pickup_pincode)) {
+    // ========================================
+    // PICKUP PINCODE
+    // ========================================
+
+    if (!/^\d{6}$/.test(effectivePickupPincode)) {
       toast.error("Please enter a valid 6-digit pickup pincode");
-
       return false;
     }
 
-    // Consignee
-    if (!formData.consignee_name.trim()) {
+    // ========================================
+    // CONSIGNEE
+    // ========================================
+
+    if (!String(formData.consignee_name || "").trim()) {
       toast.error("Please enter consignee name");
-
       return false;
     }
 
-    // Mobile
-    if (!/^\d{10}$/.test(formData.mobile)) {
+    // ========================================
+    // MOBILE
+    // ========================================
+
+    if (!/^\d{10}$/.test(String(formData.mobile || "").trim())) {
       toast.error("Please enter a valid 10-digit mobile number");
-
       return false;
     }
 
-    // Delivery address
-    if (!formData.address_line1.trim()) {
+    // ========================================
+    // DELIVERY ADDRESS
+    // ========================================
+
+    if (!String(formData.address_line1 || "").trim()) {
       toast.error("Please enter delivery address");
-
       return false;
     }
 
-    // Delivery pincode
-    if (!/^\d{6}$/.test(formData.pincode)) {
+    // ========================================
+    // DELIVERY PINCODE
+    // ========================================
+
+    if (!/^\d{6}$/.test(String(formData.pincode || "").trim())) {
       toast.error("Please enter a valid 6-digit delivery pincode");
-
       return false;
     }
 
-    // City/state
-    if (!formData.city.trim() || !formData.state.trim()) {
+    // ========================================
+    // CITY / STATE
+    // ========================================
+
+    if (
+      !String(formData.city || "").trim() ||
+      !String(formData.state || "").trim()
+    ) {
       toast.error("Please enter a valid delivery pincode");
-
       return false;
     }
 
-    // ======================================
+    // ========================================
     // PRODUCT VALIDATION
-    // ======================================
+    // ========================================
 
     if (!Array.isArray(products) || products.length === 0) {
       toast.error("At least one product is required");
-
       return false;
     }
 
-    for (let index = 0; index < products.length; index++) {
-      const product = products[index];
-
-      if (!product?.product || !product.product.trim()) {
-        toast.error(`Please enter product title for product ${index + 1}`);
-
-        return false;
-      }
-
-      if (!product.price || Number(product.price) <= 0) {
-        toast.error(`Please enter valid price for product ${index + 1}`);
-
-        return false;
-      }
-
-      if (!product.qty || Number(product.qty) <= 0) {
-        toast.error(`Please enter valid quantity for product ${index + 1}`);
-
-        return false;
-      }
-    }
-
-    // ======================================
+    // ========================================
     // PACKAGE VALIDATION
-    // ======================================
+    // ========================================
 
     if (!Array.isArray(packages) || packages.length === 0) {
       toast.error("At least one package is required");
-
       return false;
     }
 
-    for (let index = 0; index < packages.length; index++) {
-      const item = packages[index];
-
-      if (!item.length || Number(item.length) <= 0) {
-        toast.error(`Please enter package length for package ${index + 1}`);
-
-        return false;
-      }
-
-      if (!item.width || Number(item.width) <= 0) {
-        toast.error(`Please enter package width for package ${index + 1}`);
-
-        return false;
-      }
-
-      if (!item.height || Number(item.height) <= 0) {
-        toast.error(`Please enter package height for package ${index + 1}`);
-
-        return false;
-      }
-
-      if (!item.weight || Number(item.weight) <= 0) {
-        toast.error(`Please enter package weight for package ${index + 1}`);
-
-        return false;
-      }
-
-      if (!item.count || Number(item.count) <= 0) {
-        toast.error(`Please enter package count for package ${index + 1}`);
-
-        return false;
-      }
-    }
+    // ========================================
+    // SUCCESS
+    // ========================================
 
     return true;
   };
-
+  // ========================================
+  // RESET SHIPPING RATE
+  // ========================================
   // ========================================
   // RESET SHIPPING RATE
   // ========================================
@@ -238,6 +341,768 @@ function CreateOrder() {
     setShippingOptions(null);
     setSelectedShippingType(null);
   };
+
+  // ========================================
+  // WAREHOUSE HELPERS
+  // ========================================
+
+  const getUserId = () => {
+    try {
+      const user = JSON.parse(localStorage.getItem("user"));
+      return user?.id || null;
+    } catch (error) {
+      return null;
+    }
+  };
+
+  const getWarehouseDisplayAddress = (warehouse) => {
+    if (!warehouse) return "";
+
+    const parts = [
+      warehouse.address_line1,
+      warehouse.address_line2,
+      warehouse.landmark,
+      warehouse.city,
+      warehouse.state,
+    ].filter(Boolean);
+
+    const address = parts.join(", ");
+    return warehouse.pincode ? `${address} - ${warehouse.pincode}` : address;
+  };
+
+  const applyWarehouseToPickup = (warehouse) => {
+    if (!warehouse) return;
+
+    setSelectedWarehouse(warehouse);
+
+    setFormData((prev) => ({
+      ...prev,
+      pickup_address: getWarehouseDisplayAddress(warehouse),
+      pickup_pincode: String(warehouse.pincode || ""),
+      pickup_city: warehouse.city || "",
+    }));
+
+    setWarehouseSearch("");
+    setShowWarehouseDropdown(false);
+    resetShippingRate();
+  };
+
+  // ========================================
+  // DEFAULT PICKUP WAREHOUSE
+  // ========================================
+
+  const getStoredDefaultWarehouse = (userId, list) => {
+    if (!userId || !Array.isArray(list) || list.length === 0) {
+      return null;
+    }
+
+    // ================================================================
+    // SOURCE OF TRUTH #1: backend default flag / default id
+    // ================================================================
+    // The Pickup Address page may save the default on the server.  The
+    // pincode is NOT used here because two warehouses can share a pincode.
+    const explicitDefault = list.find((warehouse) => {
+      const values = [
+        warehouse.is_default,
+        warehouse.isDefault,
+        warehouse.default,
+        warehouse.is_default_pickup,
+        warehouse.isDefaultPickup,
+        warehouse.default_pickup,
+        warehouse.defaultPickup,
+        warehouse.is_primary,
+        warehouse.isPrimary,
+      ];
+
+      return values.some(
+        (value) =>
+          value === true ||
+          value === 1 ||
+          String(value).trim().toLowerCase() === "true" ||
+          String(value).trim().toLowerCase() === "default",
+      );
+    });
+
+    if (explicitDefault) {
+      return explicitDefault;
+    }
+
+    // ================================================================
+    // SOURCE OF TRUTH #2: localStorage values used by Settings
+    // ================================================================
+    const possibleKeys = [
+      `shipdrop_default_warehouse_${userId}`,
+      "shipdrop_default_warehouse",
+      `default_warehouse_${userId}`,
+      "default_warehouse",
+      `defaultWarehouseId_${userId}`,
+      "defaultWarehouseId",
+      `default_warehouse_id_${userId}`,
+      "default_warehouse_id",
+      "defaultPickupWarehouse",
+      "default_pickup_warehouse",
+      "defaultPickupAddress",
+      "default_pickup_address",
+    ];
+
+    const readStoredValue = (key) => {
+      try {
+        const raw = localStorage.getItem(key);
+        if (!raw) return null;
+        try {
+          return JSON.parse(raw);
+        } catch {
+          return raw;
+        }
+      } catch {
+        return null;
+      }
+    };
+
+    const findFromStoredValue = (stored) => {
+      if (stored === null || stored === undefined) return null;
+
+      const findById = (id) => {
+        if (id === null || id === undefined || String(id).trim() === "") {
+          return null;
+        }
+        return (
+          list.find((warehouse) => String(warehouse.id) === String(id)) || null
+        );
+      };
+
+      if (typeof stored === "string" || typeof stored === "number") {
+        return findById(stored);
+      }
+
+      if (typeof stored === "object") {
+        const id =
+          stored.id ??
+          stored.warehouse_id ??
+          stored.warehouseId ??
+          stored.pickup_address_id ??
+          stored.pickupAddressId ??
+          stored.default_warehouse_id ??
+          stored.defaultWarehouseId;
+
+        const byId = findById(id);
+        if (byId) return byId;
+
+        const storedName =
+          stored.warehouse_name || stored.warehouseName || stored.name;
+
+        if (storedName) {
+          const byName = list.find(
+            (warehouse) =>
+              String(warehouse.warehouse_name || "")
+                .trim()
+                .toLowerCase() === String(storedName).trim().toLowerCase(),
+          );
+          if (byName) return byName;
+        }
+
+        const storedAddress = [
+          stored.address_line1,
+          stored.address_line2,
+          stored.landmark,
+          stored.city,
+          stored.state,
+        ]
+          .filter(Boolean)
+          .join(", ");
+
+        if (storedAddress) {
+          const byAddress = list.find(
+            (warehouse) =>
+              getWarehouseDisplayAddress(warehouse)
+                .replace(/\s+/g, " ")
+                .trim()
+                .toLowerCase() ===
+              `${storedAddress}${stored.pincode ? ` - ${stored.pincode}` : ""}`
+                .replace(/\s+/g, " ")
+                .trim()
+                .toLowerCase(),
+          );
+          if (byAddress) return byAddress;
+        }
+      }
+
+      return null;
+    };
+
+    // First check known keys in a stable order.
+    for (const key of possibleKeys) {
+      const match = findFromStoredValue(readStoredValue(key));
+      if (match) return match;
+    }
+
+    // Compatibility fallback for older Settings builds.
+    // Only consider keys that clearly represent a default pickup/warehouse.
+    try {
+      for (let index = 0; index < localStorage.length; index += 1) {
+        const key = localStorage.key(index);
+        if (!key) continue;
+
+        const normalizedKey = key.toLowerCase();
+        if (
+          !normalizedKey.includes("default") ||
+          (!normalizedKey.includes("warehouse") &&
+            !normalizedKey.includes("pickup"))
+        ) {
+          continue;
+        }
+
+        const match = findFromStoredValue(readStoredValue(key));
+        if (match) return match;
+      }
+    } catch (error) {
+      console.log("Default warehouse storage read error:", error);
+    }
+
+    return null;
+  };
+
+  const applyDefaultWarehouseIfAvailable = (list = warehouses) => {
+    const userId = getUserId();
+
+    if (!userId || !Array.isArray(list) || list.length === 0) {
+      return false;
+    }
+
+    // Never overwrite pickup details while editing an order.
+    if (sessionStorage.getItem("editingProcessingOrder")) {
+      return false;
+    }
+
+    const defaultWarehouse = getStoredDefaultWarehouse(userId, list);
+
+    if (!defaultWarehouse) {
+      return false;
+    }
+
+    applyWarehouseToPickup(defaultWarehouse);
+    return true;
+  };
+
+  const loadWarehouses = async () => {
+    const userId = getUserId();
+
+    if (!userId) return;
+
+    setWarehousesLoading(true);
+
+    try {
+      const response = await api.get("/warehouses", {
+        params: { user_id: userId },
+      });
+
+      const list = Array.isArray(response.data?.warehouses)
+        ? response.data.warehouses
+        : [];
+
+      const activeList = list.filter((item) => item.status !== "INACTIVE");
+
+      setWarehouses(activeList);
+
+      const apiDefaultId =
+        response.data?.default_warehouse_id ??
+        response.data?.defaultWarehouseId ??
+        response.data?.default_pickup_address_id ??
+        response.data?.defaultPickupAddressId ??
+        response.data?.default_warehouse?.id ??
+        response.data?.defaultWarehouse?.id;
+
+      const apiDefaultWarehouse = apiDefaultId
+        ? activeList.find(
+            (warehouse) => String(warehouse.id) === String(apiDefaultId),
+          )
+        : null;
+
+      if (apiDefaultWarehouse) {
+        applyWarehouseToPickup(apiDefaultWarehouse);
+      } else {
+        // Settings -> Pickup Address -> Default
+        // is automatically applied in Create Order.
+        applyDefaultWarehouseIfAvailable(activeList);
+      }
+    } catch (error) {
+      console.log("Warehouse load error:", error);
+      toast.error(
+        error.response?.data?.message || "Unable to load pickup warehouses",
+      );
+    } finally {
+      setWarehousesLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadWarehouses();
+
+    const refreshDefaultWarehouse = () => {
+      if (warehouses.length > 0) {
+        applyDefaultWarehouseIfAvailable(warehouses);
+      } else {
+        loadWarehouses();
+      }
+    };
+
+    window.addEventListener("warehouseDefaultChanged", refreshDefaultWarehouse);
+
+    window.addEventListener(
+      "pickupAddressDefaultChanged",
+      refreshDefaultWarehouse,
+    );
+
+    window.addEventListener("defaultWarehouseChanged", refreshDefaultWarehouse);
+
+    window.addEventListener("storage", refreshDefaultWarehouse);
+
+    return () => {
+      window.removeEventListener(
+        "warehouseDefaultChanged",
+        refreshDefaultWarehouse,
+      );
+
+      window.removeEventListener(
+        "pickupAddressDefaultChanged",
+        refreshDefaultWarehouse,
+      );
+
+      window.removeEventListener(
+        "defaultWarehouseChanged",
+        refreshDefaultWarehouse,
+      );
+
+      window.removeEventListener("storage", refreshDefaultWarehouse);
+    };
+  }, []);
+
+  const openWarehouseModal = () => {
+    setWarehouseForm({ ...initialWarehouseForm });
+    setWarehouseMapPosition(DEFAULT_WAREHOUSE_MAP_POSITION);
+    setWarehouseMapMarker(null);
+    setWarehouseLocationSearch("");
+    setShowWarehouseModal(true);
+    setShowWarehouseDropdown(false);
+  };
+
+  const closeWarehouseModal = () => {
+    if (warehouseSaving) return;
+
+    setShowWarehouseModal(false);
+    setWarehouseForm({ ...initialWarehouseForm });
+    setWarehouseMapMarker(null);
+    setWarehouseLocationSearch("");
+  };
+
+  // ========================================
+  // WAREHOUSE MAP / LOCATION
+  // ========================================
+
+  const applyReverseGeocode = async (latitude, longitude) => {
+    setWarehouseLocationLoading(true);
+
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(
+          latitude,
+        )}&lon=${encodeURIComponent(longitude)}&addressdetails=1`,
+        {
+          headers: {
+            Accept: "application/json",
+          },
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error("Unable to find this location");
+      }
+
+      const data = await response.json();
+      const address = data?.address || {};
+
+      const city =
+        address.city ||
+        address.town ||
+        address.village ||
+        address.municipality ||
+        address.county ||
+        "";
+
+      const state = address.state || "";
+      const postcode = String(address.postcode || "")
+        .replace(/\D/g, "")
+        .slice(0, 6);
+
+      const roadParts = [
+        address.house_number,
+        address.road,
+        address.neighbourhood,
+        address.suburb,
+      ].filter(Boolean);
+
+      const detectedAddress = roadParts.join(", ");
+
+      setWarehouseForm((prev) => ({
+        ...prev,
+        address_line1: detectedAddress || prev.address_line1,
+        pincode: postcode || prev.pincode,
+        city: city || prev.city,
+        state: state || prev.state,
+        country: "India",
+      }));
+
+      setWarehouseLocationSearch(
+        data?.display_name ||
+          [detectedAddress, city, state, postcode].filter(Boolean).join(", "),
+      );
+
+      return true;
+    } catch (error) {
+      console.log("Warehouse reverse geocode error:", error);
+      toast.error("Unable to read address from this location");
+      return false;
+    } finally {
+      setWarehouseLocationLoading(false);
+    }
+  };
+
+  const handleWarehouseMapLocation = async (latitude, longitude) => {
+    setWarehouseMapPosition([latitude, longitude]);
+    setWarehouseMapMarker([latitude, longitude]);
+    await applyReverseGeocode(latitude, longitude);
+  };
+
+  const searchWarehouseLocation = async (e) => {
+    e?.preventDefault?.();
+
+    const query = warehouseLocationSearch.trim();
+
+    if (!query) {
+      toast.error("Enter an area, street or building");
+      return;
+    }
+
+    setWarehouseLocationLoading(true);
+
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=in&addressdetails=1&q=${encodeURIComponent(
+          query,
+        )}`,
+        {
+          headers: {
+            Accept: "application/json",
+          },
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error("Unable to search location");
+      }
+
+      const data = await response.json();
+      const result = data?.[0];
+
+      if (!result) {
+        toast.error("Location not found");
+        return;
+      }
+
+      const latitude = Number(result.lat);
+      const longitude = Number(result.lon);
+
+      if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+        throw new Error("Invalid map coordinates");
+      }
+
+      setWarehouseMapPosition([latitude, longitude]);
+      setWarehouseMapMarker([latitude, longitude]);
+
+      const address = result.address || {};
+      const city =
+        address.city ||
+        address.town ||
+        address.village ||
+        address.municipality ||
+        address.county ||
+        "";
+      const state = address.state || "";
+      const postcode = String(address.postcode || "")
+        .replace(/\D/g, "")
+        .slice(0, 6);
+
+      const roadParts = [
+        address.house_number,
+        address.road,
+        address.neighbourhood,
+        address.suburb,
+      ].filter(Boolean);
+
+      setWarehouseForm((prev) => ({
+        ...prev,
+        address_line1: roadParts.length
+          ? roadParts.join(", ")
+          : prev.address_line1,
+        pincode: postcode || prev.pincode,
+        city: city || prev.city,
+        state: state || prev.state,
+        country: "India",
+      }));
+
+      setWarehouseLocationSearch(result.display_name || query);
+      toast.success("Location selected");
+    } catch (error) {
+      console.log("Warehouse location search error:", error);
+      toast.error("Unable to search this location");
+    } finally {
+      setWarehouseLocationLoading(false);
+    }
+  };
+
+  const detectWarehouseLocation = () => {
+    if (!navigator.geolocation) {
+      toast.error("Location detection is not supported by this browser");
+      return;
+    }
+
+    setWarehouseLocationLoading(true);
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        await handleWarehouseMapLocation(
+          position.coords.latitude,
+          position.coords.longitude,
+        );
+        setWarehouseLocationLoading(false);
+      },
+      (error) => {
+        console.log("Warehouse geolocation error:", error);
+        setWarehouseLocationLoading(false);
+
+        if (error.code === error.PERMISSION_DENIED) {
+          toast.error("Please allow location access to use Detect");
+        } else {
+          toast.error("Unable to detect your location");
+        }
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 60000,
+      },
+    );
+  };
+
+  const handleWarehouseFormChange = (e) => {
+    const { name, value } = e.target;
+
+    const numberOnlyFields = ["phone", "pincode", "return_pincode"];
+
+    if (numberOnlyFields.includes(name)) {
+      const maxLength = name === "phone" ? 10 : 6;
+      const cleanValue = value.replace(/\D/g, "").slice(0, maxLength);
+
+      setWarehouseForm((prev) => ({
+        ...prev,
+        [name]: cleanValue,
+      }));
+
+      return;
+    }
+
+    setWarehouseForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const lookupWarehousePincode = async (value) => {
+    const cleanValue = value.replace(/\D/g, "").slice(0, 6);
+
+    setWarehouseForm((prev) => ({
+      ...prev,
+      pincode: cleanValue,
+      city: "",
+      state: "",
+    }));
+
+    if (cleanValue.length !== 6) return;
+
+    setWarehousePincodeLoading(true);
+
+    try {
+      const response = await fetch(
+        `https://api.postalpincode.in/pincode/${cleanValue}`,
+      );
+
+      if (!response.ok) throw new Error("Unable to lookup pincode");
+
+      const data = await response.json();
+
+      if (
+        !data?.[0] ||
+        data[0].Status !== "Success" ||
+        !data[0].PostOffice?.length
+      ) {
+        throw new Error("Invalid pincode");
+      }
+
+      const postOffice = data[0].PostOffice[0];
+
+      setWarehouseForm((prev) => ({
+        ...prev,
+        pincode: cleanValue,
+        city: postOffice.District || postOffice.Block || "",
+        state: postOffice.State || "",
+        country: "India",
+      }));
+    } catch (error) {
+      console.log("Warehouse pincode lookup error:", error);
+
+      setWarehouseForm((prev) => ({
+        ...prev,
+        city: "",
+        state: "",
+      }));
+
+      toast.error("Unable to verify warehouse pincode");
+    } finally {
+      setWarehousePincodeLoading(false);
+    }
+  };
+
+  const handleCreateWarehouse = async (e) => {
+    e.preventDefault();
+
+    const userId = getUserId();
+
+    if (!userId) {
+      toast.error("User session not found. Please login again.");
+      return;
+    }
+
+    if (!warehouseForm.warehouse_name.trim()) {
+      toast.error("Please enter warehouse name");
+      return;
+    }
+
+    if (!warehouseForm.contact_name.trim()) {
+      toast.error("Please enter contact name");
+      return;
+    }
+
+    if (!/^\d{10}$/.test(warehouseForm.phone)) {
+      toast.error("Please enter a valid 10-digit phone number");
+      return;
+    }
+
+    if (!/^\d{6}$/.test(warehouseForm.pincode)) {
+      toast.error("Please enter a valid 6-digit warehouse pincode");
+      return;
+    }
+
+    if (!warehouseForm.address_line1.trim()) {
+      toast.error("Please enter warehouse address");
+      return;
+    }
+
+    if (!warehouseForm.city.trim() || !warehouseForm.state.trim()) {
+      toast.error("Please enter a valid warehouse pincode");
+      return;
+    }
+
+    const payload = {
+      user_id: userId,
+      ...warehouseForm,
+      return_address:
+        warehouseForm.return_address.trim() || warehouseForm.address_line1,
+      return_city: warehouseForm.return_city || warehouseForm.city,
+      return_pincode: warehouseForm.return_pincode || warehouseForm.pincode,
+      return_state: warehouseForm.return_state || warehouseForm.state,
+      return_country:
+        warehouseForm.return_country || warehouseForm.country || "India",
+    };
+
+    setWarehouseSaving(true);
+
+    try {
+      const response = await api.post("/warehouses/create", payload);
+      const result = response.data;
+
+      if (!result?.success) {
+        throw new Error(result?.message || "Unable to create warehouse");
+      }
+
+      toast.success("Warehouse created successfully");
+      setShowWarehouseModal(false);
+      setWarehouseForm({ ...initialWarehouseForm });
+
+      await loadWarehouses();
+
+      if (result.warehouse_id) {
+        const refreshed = await api.get("/warehouses", {
+          params: { user_id: userId },
+        });
+
+        const refreshedList = Array.isArray(refreshed.data?.warehouses)
+          ? refreshed.data.warehouses
+          : [];
+
+        const newWarehouse = refreshedList.find(
+          (item) => Number(item.id) === Number(result.warehouse_id),
+        );
+
+        if (newWarehouse) {
+          setWarehouses(
+            refreshedList.filter((item) => item.status !== "INACTIVE"),
+          );
+          applyWarehouseToPickup(newWarehouse);
+        }
+      }
+    } catch (error) {
+      console.log("Create warehouse error:", error);
+
+      toast.error(
+        error.response?.data?.message ||
+          error.message ||
+          "Unable to create warehouse",
+      );
+    } finally {
+      setWarehouseSaving(false);
+    }
+  };
+
+  const filteredWarehouses = warehouses.filter((warehouse) => {
+    const search = warehouseSearch.trim().toLowerCase();
+
+    // If the field currently contains a selected warehouse address,
+    // opening the dropdown must show EVERY saved warehouse.  The full
+    // address is a display string, while the DB fields are separate, so
+    // searching that whole string otherwise produces "No warehouse found".
+    if (
+      selectedWarehouse &&
+      search ===
+        getWarehouseDisplayAddress(selectedWarehouse).trim().toLowerCase()
+    ) {
+      return true;
+    }
+
+    if (!search) return true;
+
+    return [
+      warehouse.warehouse_name,
+      warehouse.contact_name,
+      warehouse.address_line1,
+      warehouse.address_line2,
+      warehouse.landmark,
+      warehouse.city,
+      warehouse.state,
+      warehouse.pincode,
+    ]
+      .filter(Boolean)
+      .some((value) => String(value).toLowerCase().includes(search));
+  });
 
   // ========================================
   // GENERAL FORM CHANGE
@@ -282,7 +1147,6 @@ function CreateOrder() {
 
     const fieldOrder = [
       "pickup_address",
-      "pickup_pincode",
       "consignee_name",
       "mobile",
       "address_line1",
@@ -598,44 +1462,38 @@ function CreateOrder() {
   };
 
   // ========================================
-// TOTAL VOLUMETRIC WEIGHT
-// ========================================
+  // TOTAL VOLUMETRIC WEIGHT
+  // ========================================
 
-const getTotalVolumetricWeight = () => {
-  return packages.reduce((sum, item) => {
-    const length = Number(item.length) || 0;
-    const width = Number(item.width) || 0;
-    const height = Number(item.height) || 0;
-    const count = Number(item.count) || 1;
+  const getTotalVolumetricWeight = () => {
+    return packages.reduce((sum, item) => {
+      const length = Number(item.length) || 0;
+      const width = Number(item.width) || 0;
+      const height = Number(item.height) || 0;
+      const count = Number(item.count) || 1;
 
-    if (!length || !width || !height) {
-      return sum;
-    }
+      if (!length || !width || !height) {
+        return sum;
+      }
 
-    const volumetricWeight =
-      (length * width * height) / 5000;
+      const volumetricWeight = (length * width * height) / 5000;
 
-    return sum + volumetricWeight * count;
-  }, 0);
-};
+      return sum + volumetricWeight * count;
+    }, 0);
+  };
 
+  // ========================================
+  // CHARGEABLE WEIGHT
+  // DEADWEIGHT vs VOLUMETRIC WEIGHT
+  // ========================================
 
-// ========================================
-// CHARGEABLE WEIGHT
-// DEADWEIGHT vs VOLUMETRIC WEIGHT
-// ========================================
+  const getChargeableWeight = () => {
+    const deadWeight = getTotalWeight();
 
-const getChargeableWeight = () => {
-  const deadWeight = getTotalWeight();
+    const volumetricWeight = getTotalVolumetricWeight();
 
-  const volumetricWeight =
-    getTotalVolumetricWeight();
-
-  return Math.max(
-    deadWeight,
-    volumetricWeight
-  );
-};
+    return Math.max(deadWeight, volumetricWeight);
+  };
 
   // ========================================
   // TOTAL WEIGHT
@@ -689,6 +1547,18 @@ const getChargeableWeight = () => {
         risk_type: order.risk_type || "Owner Risk",
       });
 
+      // Restore the exact warehouse used by this order.
+      if (order.warehouse_id && warehouses.length) {
+        const matchingWarehouse = warehouses.find(
+          (warehouse) => Number(warehouse.id) === Number(order.warehouse_id),
+        );
+
+        if (matchingWarehouse) {
+          setSelectedWarehouse(matchingWarehouse);
+          setWarehouseSearch(getWarehouseDisplayAddress(matchingWarehouse));
+        }
+      }
+
       if (Array.isArray(order.products) && order.products.length) {
         setProducts(
           order.products.map((item) => ({
@@ -718,6 +1588,67 @@ const getChargeableWeight = () => {
     }
   }, []);
 
+  useEffect(() => {
+    const storedOrder = sessionStorage.getItem("editingProcessingOrder");
+    if (!storedOrder || !warehouses.length || selectedWarehouse) return;
+
+    try {
+      const order = JSON.parse(storedOrder);
+      if (!order?.warehouse_id) return;
+
+      const matchingWarehouse = warehouses.find(
+        (warehouse) => Number(warehouse.id) === Number(order.warehouse_id),
+      );
+
+      if (matchingWarehouse) {
+        setSelectedWarehouse(matchingWarehouse);
+        setWarehouseSearch(getWarehouseDisplayAddress(matchingWarehouse));
+        setFormData((prev) => ({
+          ...prev,
+          pickup_address: getWarehouseDisplayAddress(matchingWarehouse),
+          pickup_pincode: String(matchingWarehouse.pincode || ""),
+          pickup_city: matchingWarehouse.city || "",
+        }));
+      }
+    } catch (error) {
+      console.log("Edit warehouse restore error:", error);
+    }
+  }, [warehouses, selectedWarehouse]);
+
+  useEffect(() => {
+    if (!warehouses.length || selectedWarehouse) return;
+
+    // IMPORTANT:
+    // Never replace an already selected warehouse just because another
+    // warehouse has the same pincode. Multiple warehouses can share one
+    // pincode (for example Kunal and Abhishek both use 302012).
+    // The selected warehouse/default warehouse must win.
+    if (selectedWarehouse) {
+      return;
+    }
+
+    const exactAddress = String(formData.pickup_address || "")
+      .trim()
+      .toLowerCase();
+
+    const matchByAddress = exactAddress
+      ? warehouses.find(
+          (warehouse) =>
+            getWarehouseDisplayAddress(warehouse).trim().toLowerCase() ===
+            exactAddress,
+        )
+      : null;
+
+    const match = matchByAddress;
+
+    if (match) {
+      setSelectedWarehouse(match);
+      setWarehouseSearch(getWarehouseDisplayAddress(match));
+    } else {
+      setWarehouseSearch(formData.pickup_address || "");
+    }
+  }, [warehouses, formData.pickup_address, selectedWarehouse]);
+
   const cancelEdit = () => {
     sessionStorage.removeItem("editingProcessingOrder");
 
@@ -736,11 +1667,23 @@ const getChargeableWeight = () => {
       ...initialFormData,
     });
 
+    setSelectedWarehouse(null);
+    setWarehouseSearch("");
+    setShowWarehouseDropdown(false);
+
     setProducts([{ ...initialProduct }]);
 
     setPackages([{ ...initialPackage }]);
 
     resetShippingRate();
+
+    // Reset ke baad bhi Settings wala Default Pickup
+    // Warehouse automatically select rahe.
+    if (!sessionStorage.getItem("editingProcessingOrder")) {
+      requestAnimationFrame(() => {
+        applyDefaultWarehouseIfAvailable(warehouses);
+      });
+    }
   };
 
   // ========================================
@@ -773,6 +1716,8 @@ const getChargeableWeight = () => {
     }));
 
     const orderData = {
+      warehouse_id: selectedWarehouse?.id || null,
+      warehouse_id: selectedWarehouse?.id || null,
       consignee_name: formData.consignee_name,
 
       mobile: formData.mobile,
@@ -826,22 +1771,15 @@ const getChargeableWeight = () => {
 
     const deadWeight = getTotalWeight();
 
-const volumetricWeight =
-  getTotalVolumetricWeight();
+    const volumetricWeight = getTotalVolumetricWeight();
 
-const chargeableWeight =
-  Math.max(
-    deadWeight,
-    volumetricWeight
-  );
+    const chargeableWeight = Math.max(deadWeight, volumetricWeight);
 
-if (chargeableWeight <= 0) {
-  toast.error(
-    "Please enter valid package weight or dimensions"
-  );
+    if (chargeableWeight <= 0) {
+      toast.error("Please enter valid package weight or dimensions");
 
-  return;
-}
+      return;
+    }
 
     setRateLoading(true);
 
@@ -853,16 +1791,16 @@ if (chargeableWeight <= 0) {
         return;
       }
 
-     const response = await api.post("/rate/calculate-options", {
-  user_id: user.id,
-  pickup_pincode: formData.pickup_pincode,
-  delivery_pincode: formData.pincode,
-  weight: chargeableWeight,
+      const response = await api.post("/rate/calculate-options", {
+        user_id: user.id,
+        pickup_pincode: formData.pickup_pincode,
+        delivery_pincode: formData.pincode,
+        weight: chargeableWeight,
 
-  // COD calculation ke liye
-  payment_type: formData.payment_type,
-  product_value: totalInvoiceValue,
-});
+        // COD calculation ke liye
+        payment_type: formData.payment_type,
+        product_value: totalInvoiceValue,
+      });
 
       const result = response.data;
 
@@ -973,6 +1911,7 @@ if (chargeableWeight <= 0) {
         pickup_address: formData.pickup_address,
         pickup_pincode: formData.pickup_pincode,
         pickup_city: formData.pickup_city,
+        warehouse_id: selectedWarehouse?.id || null,
         orderData,
         products: productData,
         packages: packageData,
@@ -1033,6 +1972,17 @@ if (chargeableWeight <= 0) {
 
     const { productData, packageData, orderData } = buildOrderData();
 
+    const effectivePickupAddress = String(
+      formData.pickup_address ||
+        (selectedWarehouse
+          ? getWarehouseDisplayAddress(selectedWarehouse)
+          : ""),
+    ).trim();
+
+    const effectivePickupPincode = String(
+      formData.pickup_pincode || selectedWarehouse?.pincode || "",
+    ).trim();
+
     // ======================================
     // CREATE ORDER
     // ======================================
@@ -1040,11 +1990,12 @@ if (chargeableWeight <= 0) {
     const orderPayload = {
       user_id: user.id,
 
-      pickup_address: formData.pickup_address,
+      pickup_address: effectivePickupAddress,
 
-      pickup_pincode: formData.pickup_pincode,
+      pickup_pincode: effectivePickupPincode,
 
-      pickup_city: formData.pickup_city,
+      pickup_city: formData.pickup_city || selectedWarehouse?.city || "",
+      warehouse_id: selectedWarehouse?.id || null,
 
       orderData,
 
@@ -1087,98 +2038,470 @@ if (chargeableWeight <= 0) {
     }
   };
 
-  // ========================================
-  // CONFIRM & SHIP NOW
-  // ========================================
-
   const handleConfirmShipment = async () => {
+    // ======================================================
+    // SHIPPING RATE
+    // ======================================================
+
+    console.log("🔥 HANDLE CONFIRM SHIPMENT CLICKED");
+    console.log("FORM DATA:", formData);
+    console.log("SELECTED WAREHOUSE:", selectedWarehouse);
+    console.log("WAREHOUSE SEARCH:", warehouseSearch);
+
     if (!shippingRate) {
       toast.error("Please calculate shipping rate first");
-
       return;
     }
+
+    // ======================================================
+    // SHIPPING SERVICE
+    // ======================================================
 
     if (!selectedShippingType) {
       toast.error("Please select a shipping service");
-
       return;
     }
+
+    // ======================================================
+    // GET ACTUAL VISIBLE PICKUP INPUT VALUE
+    // ======================================================
+    // React state kabhi-kabhi selected warehouse ke display value
+    // ke saath sync nahi hoti. Isliye actual input value ko bhi read
+    // kar rahe hain.
+
+    const pickupInput = document.querySelector('input[name="pickup_address"]');
+
+    const visiblePickupAddress = String(pickupInput?.value || "").trim();
+
+    // ======================================================
+    // POSSIBLE PICKUP ADDRESSES
+    // ======================================================
+
+    const possiblePickupAddresses = [
+      formData.pickup_address,
+      warehouseSearch,
+      visiblePickupAddress,
+    ]
+      .map((value) =>
+        String(value || "")
+          .trim()
+          .toLowerCase(),
+      )
+      .filter(Boolean);
+
+    // ======================================================
+    // RESOLVE WAREHOUSE
+    // ======================================================
+
+    let effectiveWarehouse = null;
+
+    // ------------------------------------------------------
+    // 1. SELECTED WAREHOUSE
+    // ------------------------------------------------------
+
+    if (selectedWarehouse?.id) {
+      effectiveWarehouse = selectedWarehouse;
+    }
+
+    // ------------------------------------------------------
+    // 2. MATCH USING PICKUP ADDRESS
+    // ------------------------------------------------------
+
+    if (!effectiveWarehouse && Array.isArray(warehouses)) {
+      effectiveWarehouse =
+        warehouses.find((warehouse) => {
+          const warehouseFullAddress = getWarehouseDisplayAddress(warehouse)
+            .trim()
+            .toLowerCase();
+
+          const warehouseAddressLine = String(warehouse.address_line1 || "")
+            .trim()
+            .toLowerCase();
+
+          return possiblePickupAddresses.some(
+            (pickupAddress) =>
+              pickupAddress === warehouseFullAddress ||
+              pickupAddress === warehouseAddressLine,
+          );
+        }) || null;
+    }
+
+    // ------------------------------------------------------
+    // 3. MATCH USING PINCODE
+    // ------------------------------------------------------
+
+    if (!effectiveWarehouse && Array.isArray(warehouses)) {
+      const pickupPincode = String(formData.pickup_pincode || "").trim();
+
+      if (pickupPincode) {
+        effectiveWarehouse =
+          warehouses.find(
+            (warehouse) =>
+              String(warehouse.pincode || "").trim() === pickupPincode,
+          ) || null;
+      }
+    }
+
+    // ======================================================
+    // EFFECTIVE PICKUP ADDRESS
+    // ======================================================
+
+    const effectivePickupAddress = String(
+      formData.pickup_address ||
+        visiblePickupAddress ||
+        warehouseSearch ||
+        (effectiveWarehouse
+          ? getWarehouseDisplayAddress(effectiveWarehouse)
+          : ""),
+    ).trim();
+
+    // ======================================================
+    // EFFECTIVE PICKUP PINCODE
+    // ======================================================
+
+    const effectivePickupPincode = String(
+      formData.pickup_pincode || effectiveWarehouse?.pincode || "",
+    ).trim();
+
+    // ======================================================
+    // EFFECTIVE PICKUP CITY
+    // ======================================================
+
+    const effectivePickupCity = String(
+      formData.pickup_city || effectiveWarehouse?.city || "",
+    ).trim();
+
+    // ======================================================
+    // DEBUG
+    // ======================================================
+
+    console.log("========== CONFIRM SHIPMENT PICKUP DEBUG ==========");
+
+    console.log("formData.pickup_address:", formData.pickup_address);
+
+    console.log("warehouseSearch:", warehouseSearch);
+
+    console.log("visiblePickupAddress:", visiblePickupAddress);
+
+    console.log("selectedWarehouse:", selectedWarehouse);
+
+    console.log("effectiveWarehouse:", effectiveWarehouse);
+
+    console.log("effectivePickupAddress:", effectivePickupAddress);
+
+    console.log("effectivePickupPincode:", effectivePickupPincode);
+
+    console.log("effectivePickupCity:", effectivePickupCity);
+
+    console.log("===================================================");
+
+    // ======================================================
+    // WAREHOUSE CHECK
+    // ======================================================
+
+    if (!effectiveWarehouse?.id) {
+      toast.error("Please select a pickup warehouse");
+      return;
+    }
+
+    // ======================================================
+    // PICKUP ADDRESS CHECK
+    // ======================================================
+
+    if (!effectivePickupAddress) {
+      toast.error("Pickup address is required");
+      return;
+    }
+
+    // ======================================================
+    // PICKUP PINCODE CHECK
+    // ======================================================
+
+    if (!/^\d{6}$/.test(effectivePickupPincode)) {
+      toast.error("Valid 6-digit pickup pincode is required");
+      return;
+    }
+
+    // ======================================================
+    // NORMAL FORM VALIDATION
+    // ======================================================
 
     if (!validateRequiredFields()) {
       return;
     }
 
-    const user = JSON.parse(localStorage.getItem("user"));
+    // ======================================================
+    // USER
+    // ======================================================
 
-    if (!user || !user.id) {
+    let user = null;
+
+    try {
+      user = JSON.parse(localStorage.getItem("user"));
+    } catch (error) {
+      user = null;
+    }
+
+    if (!user?.id) {
       toast.error("User session not found. Please login again.");
-
       return;
     }
 
-    const { productData, packageData, orderData } = buildOrderData();
+    // ======================================================
+    // BUILD ORDER DATA
+    // ======================================================
 
-    // ======================================
-    // SHIPMENT DATA
-    // ======================================
+    const {
+      productData,
+      packageData,
+      orderData: baseOrderData,
+    } = buildOrderData();
 
-    const shipmentData = {
-      user_id: user.id,
-
-      pickup_address: formData.pickup_address,
-
-      pickup_pincode: formData.pickup_pincode,
-
-      orderData,
-
-      products: productData,
-      packages: packageData,
-      // ====================================
-      // ROAD / AIR / SHADOWFAX
-      // ====================================
-      service_type:
-        selectedShippingType === "SHADOWFAX_ROAD"
-          ? "SHADOWFAX_ROAD"
-          : shippingRate.service_type || selectedShippingType || "ROAD",
-
-      shipping_charge: Number(shippingRate.shipping_charge),
-
-      zone: shippingRate.zone,
-
-      distance_km:
-        shippingRate.distance_km === null
-          ? null
-          : Number(shippingRate.distance_km),
-    };
+    // ======================================================
+    // LOADING
+    // ======================================================
 
     setLoading(true);
 
     try {
-      const response = await api.post("/shipments/confirm", shipmentData);
+      let orderId = null;
 
-      const result = response.data;
+      // ====================================================
+      // EDIT EXISTING ORDER
+      // ====================================================
 
-      if (!result?.success) {
-        throw new Error(result?.message || "Unable to confirm shipment");
+      if (isEditMode && editingOrderId) {
+        orderId = Number(editingOrderId);
+
+        if (!Number.isInteger(orderId) || orderId <= 0) {
+          throw new Error("Invalid order ID");
+        }
+
+        const updateResponse = await api.put(`/orders/${orderId}`, {
+          user_id: Number(user.id),
+
+          pickup_address: effectivePickupAddress,
+
+          pickup_pincode: effectivePickupPincode,
+
+          pickup_city: effectivePickupCity,
+
+          warehouse_id: Number(effectiveWarehouse.id),
+
+          orderData: {
+            ...baseOrderData,
+
+            id: Number(orderId),
+
+            warehouse_id: Number(effectiveWarehouse.id),
+          },
+
+          products: productData,
+
+          packages: packageData,
+        });
+
+        const updateResult = updateResponse.data;
+
+        if (!updateResult?.success) {
+          throw new Error(updateResult?.message || "Unable to update order");
+        }
       }
+
+      // ====================================================
+      // CREATE NEW ORDER
+      // ====================================================
+      else {
+        const orderPayload = {
+          user_id: Number(user.id),
+
+          pickup_address: effectivePickupAddress,
+
+          pickup_pincode: effectivePickupPincode,
+
+          pickup_city: effectivePickupCity,
+
+          warehouse_id: Number(effectiveWarehouse.id),
+
+          orderData: {
+            ...baseOrderData,
+
+            warehouse_id: Number(effectiveWarehouse.id),
+          },
+
+          products: productData,
+
+          packages: packageData,
+        };
+
+        console.log("========== CREATE ORDER PAYLOAD ==========");
+
+        console.log(JSON.stringify(orderPayload, null, 2));
+
+        console.log("==========================================");
+
+        const orderResponse = await api.post("/orders/create", orderPayload);
+
+        const orderResult = orderResponse.data;
+
+        if (!orderResult || !orderResult.order_id) {
+          throw new Error(orderResult?.message || "Unable to create order");
+        }
+
+        orderId = Number(orderResult.order_id);
+
+        if (!Number.isInteger(orderId) || orderId <= 0) {
+          throw new Error("Invalid order ID received from server");
+        }
+
+        window.dispatchEvent(new Event("processingOrderCreated"));
+      }
+
+      // ====================================================
+      // FINAL ORDER ID
+      // ====================================================
+
+      if (!orderId) {
+        throw new Error("Order ID is required");
+      }
+
+      // ====================================================
+      // SERVICE TYPE
+      // ====================================================
+
+      const normalizedShippingType = String(selectedShippingType)
+        .trim()
+        .toUpperCase();
+
+      const finalServiceType =
+        normalizedShippingType === "SHADOWFAX_ROAD"
+          ? "SHADOWFAX_ROAD"
+          : shippingRate.service_type || normalizedShippingType || "ROAD";
+
+      // ====================================================
+      // SHIPMENT ORDER DATA
+      // ====================================================
+
+      const shipmentOrderData = {
+        ...baseOrderData,
+
+        id: Number(orderId),
+
+        warehouse_id: Number(effectiveWarehouse.id),
+      };
+
+      // ====================================================
+      // SHIPMENT DATA
+      // ====================================================
+
+      const shipmentData = {
+        user_id: Number(user.id),
+
+        order_id: Number(orderId),
+
+        pickup_address: effectivePickupAddress,
+
+        pickup_pincode: effectivePickupPincode,
+
+        pickup_city: effectivePickupCity,
+
+        warehouse_id: Number(effectiveWarehouse.id),
+
+        orderData: shipmentOrderData,
+
+        products: productData,
+
+        packages: packageData,
+
+        service_type: finalServiceType,
+
+        shipping_charge: Number(shippingRate.shipping_charge),
+
+        zone: shippingRate.zone,
+
+        distance_km:
+          shippingRate.distance_km === null ||
+          shippingRate.distance_km === undefined
+            ? null
+            : Number(shippingRate.distance_km),
+      };
+
+      // ====================================================
+      // DEBUG SHIPMENT
+      // ====================================================
+
+      console.log("========== CONFIRM SHIPMENT PAYLOAD ==========");
+
+      console.log(JSON.stringify(shipmentData, null, 2));
+
+      console.log("==============================================");
+
+      // ====================================================
+      // CONFIRM SHIPMENT
+      // ====================================================
+
+      const shipmentResponse = await api.post(
+        "/shipments/confirm",
+        shipmentData,
+      );
+
+      const shipmentResult = shipmentResponse.data;
+
+      // ====================================================
+      // RESPONSE CHECK
+      // ====================================================
+
+      if (!shipmentResult?.success) {
+        throw new Error(
+          shipmentResult?.message || "Unable to confirm shipment",
+        );
+      }
+
+      // ====================================================
+      // SERVICE NAME
+      // ====================================================
 
       const serviceNames = {
         ROAD: "Delivery By Road",
+
         AIR: "Delivery By Air",
+
         SHADOWFAX_ROAD: "Shadowfax By Road",
       };
 
+      // ====================================================
+      // SUCCESS
+      // ====================================================
+
       toast.success(
-        `Shipment confirmed ${serviceNames[selectedShippingType]} successfully`,
+        `Shipment confirmed for Order #${orderId} — ${
+          serviceNames[normalizedShippingType] || normalizedShippingType
+        }`,
       );
+
+      // ====================================================
+      // WALLET UPDATE
+      // ====================================================
 
       window.dispatchEvent(new Event("walletUpdated"));
 
+      // ====================================================
+      // PROCESSING ORDER UPDATE
+      // ====================================================
+
+      window.dispatchEvent(new Event("processingOrderUpdated"));
+
+      // ====================================================
+      // CLOSE SHIPPING MODAL
+      // ====================================================
+
       setShippingRate(null);
-
       setShippingOptions(null);
-
       setSelectedShippingType(null);
+
+      // ====================================================
+      // RESET FORM
+      // ====================================================
 
       resetForm();
 
@@ -1198,7 +2521,9 @@ if (chargeableWeight <= 0) {
       setLoading(false);
     }
   };
-
+  // ========================================
+  // JSX
+  // ========================================
   // ========================================
   // JSX
   // ========================================
@@ -1251,40 +2576,179 @@ if (chargeableWeight <= 0) {
               </span>
 
               <h2 className="text-sm font-bold uppercase tracking-wider text-slate-700">
-                Pickup Address
+                Pickup From
               </h2>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-[1fr_220px]">
-              <div>
-                <label className={labelClass}>Pickup Address *</label>
+            <div className="relative">
+              <label className={labelClass}>Pickup Address *</label>
 
-                <input
-                  name="pickup_address"
-                  value={formData.pickup_address}
-                  onChange={handleChange}
-                  onKeyDown={handleEnterKey}
-                  placeholder="Enter complete pickup warehouse or store address"
-                  className={inputClass}
-                  required
-                />
+              <div className="flex items-center gap-3">
+                <div className="relative flex-1">
+                  <input
+                    name="pickup_address"
+                    value={
+                      selectedWarehouse
+                        ? getWarehouseDisplayAddress(selectedWarehouse)
+                        : warehouseSearch
+                    }
+                    onChange={(e) => {
+                      const value = e.target.value;
+
+                      setSelectedWarehouse(null);
+                      setWarehouseSearch(value);
+                      setShowWarehouseDropdown(true);
+
+                      setFormData((prev) => ({
+                        ...prev,
+                        pickup_address: value,
+                        pickup_pincode: "",
+                        pickup_city: "",
+                      }));
+
+                      resetShippingRate();
+                    }}
+                    onFocus={() => {
+                      // Search box is separate from the displayed selected address.
+                      // Clearing only warehouseSearch makes the dropdown show all
+                      // saved warehouses without clearing the visible address.
+                      setWarehouseSearch("");
+                      setShowWarehouseDropdown(true);
+                    }}
+                    onKeyDown={handleEnterKey}
+                    placeholder="Select pickup warehouse or add a new warehouse"
+                    className={`${inputClass} h-12 border-[#7451ff] focus:border-[#7451ff] focus:ring-[#7451ff]/15 pr-10`}
+                    autoComplete="off"
+                    required
+                  />
+
+                  {warehousesLoading && (
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-semibold text-slate-400">
+                      Loading...
+                    </span>
+                  )}
+
+                  {showWarehouseDropdown && (
+                    <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-40 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_18px_45px_rgba(15,23,42,0.14)]">
+                      <div className="border-b border-slate-100 bg-slate-50/70 px-4 py-2.5">
+                        <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
+                          Saved Pickup Warehouses
+                        </div>
+                      </div>
+
+                      <div className="overflow-visible">
+                        {filteredWarehouses.length > 0 ? (
+                          filteredWarehouses.map((warehouse) => (
+                            <button
+                              key={warehouse.id}
+                              type="button"
+                              onClick={() => applyWarehouseToPickup(warehouse)}
+                              className="flex w-full items-center gap-3 border-b border-slate-100 px-4 py-3 text-left transition last:border-b-0 hover:bg-slate-50"
+                            >
+                              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#7451ff]/10 text-[#7451ff]">
+                                <svg
+                                  viewBox="0 0 24 24"
+                                  className="h-4 w-4"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="1.8"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                >
+                                  <path d="M4 20V8l8-4 8 4v12" />
+                                  <path d="M8 20v-5h8v5M9 9h.01M15 9h.01" />
+                                </svg>
+                              </div>
+
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="truncate text-xs font-bold text-slate-800">
+                                    {warehouse.warehouse_name}
+                                  </span>
+
+                                  <span className="shrink-0 rounded-full bg-emerald-50 px-2 py-0.5 text-[9px] font-bold text-emerald-600">
+                                    Active
+                                  </span>
+
+                                  {(() => {
+                                    const defaultWarehouse =
+                                      getStoredDefaultWarehouse(
+                                        getUserId(),
+                                        warehouses,
+                                      );
+
+                                    return defaultWarehouse &&
+                                      Number(defaultWarehouse.id) ===
+                                        Number(warehouse.id) ? (
+                                      <span className="shrink-0 rounded-full bg-[#7451ff]/10 px-2 py-0.5 text-[9px] font-bold text-[#7451ff]">
+                                        Default
+                                      </span>
+                                    ) : null;
+                                  })()}
+                                </div>
+
+                                <div className="mt-1 line-clamp-2 min-h-[30px] text-[11px] leading-[15px] text-slate-500">
+                                  {getWarehouseDisplayAddress(warehouse)}
+                                </div>
+                              </div>
+
+                              <svg
+                                viewBox="0 0 24 24"
+                                className="h-4 w-4 shrink-0 text-slate-300"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                              >
+                                <path d="m9 18 6-6-6-6" />
+                              </svg>
+                            </button>
+                          ))
+                        ) : (
+                          <div className="px-4 py-6 text-center">
+                            <div className="text-xs font-semibold text-slate-600">
+                              No warehouse found
+                            </div>
+
+                            <div className="mt-1 text-[11px] text-slate-400">
+                              Add a pickup warehouse using the + button.
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={openWarehouseModal}
+                  className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-[#7451ff] text-white shadow-sm transition hover:bg-[#6343ed] active:scale-95"
+                  aria-label="Add pickup warehouse"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    className="h-5 w-5"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  >
+                    <path d="M12 5v14M5 12h14" />
+                  </svg>
+                </button>
               </div>
 
-              <div>
-                <label className={labelClass}>Pickup Pincode *</label>
+              {selectedWarehouse && (
+                <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
+                  <span className="rounded-md bg-[#7451ff]/10 px-2 py-1 font-bold text-[#7451ff]">
+                    {selectedWarehouse.warehouse_name}
+                  </span>
 
-                <input
-                  name="pickup_pincode"
-                  value={formData.pickup_pincode}
-                  onChange={handlePickupPincodeChange}
-                  onKeyDown={handleEnterKey}
-                  placeholder="6-digit PIN"
-                  inputMode="numeric"
-                  maxLength={6}
-                  className={inputClass}
-                  required
-                />
-              </div>
+                  <span>PIN {selectedWarehouse.pincode}</span>
+                  <span>•</span>
+                  <span>{selectedWarehouse.city}</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -2015,29 +3479,27 @@ if (chargeableWeight <= 0) {
             </div>
 
             <div className="mt-5 flex flex-wrap justify-end gap-6 text-sm text-slate-600 border-t border-slate-100 pt-4">
+              <span>
+                Deadweight:
+                <strong className="text-slate-900 font-bold ml-1">
+                  {getTotalWeight().toFixed(2)} Kg
+                </strong>
+              </span>
 
-  <span>
-    Deadweight:
-    <strong className="text-slate-900 font-bold ml-1">
-      {getTotalWeight().toFixed(2)} Kg
-    </strong>
-  </span>
+              <span>
+                Volumetric Weight:
+                <strong className="text-slate-900 font-bold ml-1">
+                  {getTotalVolumetricWeight().toFixed(2)} Kg
+                </strong>
+              </span>
 
-  <span>
-    Volumetric Weight:
-    <strong className="text-slate-900 font-bold ml-1">
-      {getTotalVolumetricWeight().toFixed(2)} Kg
-    </strong>
-  </span>
-
-  <span>
-    Chargeable Weight:
-    <strong className="text-[#008dd2] font-black ml-1">
-      {getChargeableWeight().toFixed(2)} Kg
-    </strong>
-  </span>
-
-</div>
+              <span>
+                Chargeable Weight:
+                <strong className="text-[#008dd2] font-black ml-1">
+                  {getChargeableWeight().toFixed(2)} Kg
+                </strong>
+              </span>
+            </div>
           </div>
 
           {/* ======================================
@@ -2142,6 +3604,341 @@ if (chargeableWeight <= 0) {
           </div>
         </form>
       </div>
+
+      {/* ========================================
+          ADD PICKUP WAREHOUSE MODAL
+      ======================================== */}
+
+      {showWarehouseModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/55 p-3 sm:p-5 backdrop-blur-[3px]">
+          <div className="flex max-h-[94vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_25px_70px_rgba(15,23,42,0.24)]">
+            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4 md:px-6">
+              <div>
+                <h3 className="text-base font-bold tracking-tight text-slate-900">
+                  Add Pickup Address
+                </h3>
+                <p className="mt-0.5 text-[11px] text-slate-500">
+                  Register this pickup location with ShipDrop and Delhivery.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={closeWarehouseModal}
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                aria-label="Close"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  className="h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                >
+                  <path d="M6 6l12 12M18 6L6 18" />
+                </svg>
+              </button>
+            </div>
+
+            <form
+              id="warehouse-create-form"
+              onSubmit={handleCreateWarehouse}
+              className="overflow-y-auto px-5 py-5 md:px-6"
+            >
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div>
+                  <label className={labelClass}>
+                    Company / Warehouse Name *
+                  </label>
+                  <input
+                    name="warehouse_name"
+                    value={warehouseForm.warehouse_name}
+                    onChange={handleWarehouseFormChange}
+                    placeholder="Warehouse name"
+                    className={inputClass}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className={labelClass}>Contact Name *</label>
+                  <input
+                    name="contact_name"
+                    value={warehouseForm.contact_name}
+                    onChange={handleWarehouseFormChange}
+                    placeholder="Contact person"
+                    className={inputClass}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className={labelClass}>Phone *</label>
+                  <input
+                    name="phone"
+                    value={warehouseForm.phone}
+                    onChange={handleWarehouseFormChange}
+                    placeholder="10-digit mobile"
+                    inputMode="numeric"
+                    maxLength={10}
+                    className={inputClass}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className={labelClass}>Email</label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={warehouseForm.email}
+                    onChange={handleWarehouseFormChange}
+                    placeholder="email@domain.com"
+                    className={inputClass}
+                  />
+                </div>
+
+                <div>
+                  <label className={labelClass}>GSTIN</label>
+                  <input
+                    name="gstin"
+                    value={warehouseForm.gstin}
+                    onChange={handleWarehouseFormChange}
+                    placeholder="ENTER GSTIN"
+                    className={inputClass}
+                  />
+                </div>
+
+                <div>
+                  <label className={labelClass}>Search Location</label>
+                  <div className="flex gap-2">
+                    <input
+                      value={warehouseLocationSearch}
+                      onChange={(e) =>
+                        setWarehouseLocationSearch(e.target.value)
+                      }
+                      placeholder="Search area, street, building..."
+                      className={`${inputClass} min-w-0 flex-1`}
+                    />
+                    <button
+                      type="button"
+                      onClick={searchWarehouseLocation}
+                      disabled={warehouseLocationLoading}
+                      className="h-11 shrink-0 rounded-lg border border-[#7451ff] bg-white px-4 text-xs font-bold text-[#7451ff] transition hover:bg-[#7451ff]/5 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {warehouseLocationLoading ? "..." : "Search"}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="md:col-span-2">
+                  <div className="mb-2 flex items-center justify-between gap-3">
+                    <div>
+                      <label className={labelClass}>Location on Map</label>
+                      <p className="text-[10px] text-slate-400">
+                        Search a place, click on the map, or drag the marker.
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={detectWarehouseLocation}
+                      disabled={warehouseLocationLoading}
+                      className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-[11px] font-bold text-slate-700 shadow-sm transition hover:border-[#7451ff]/40 hover:text-[#7451ff] disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        className="h-3.5 w-3.5"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M12 3v3M12 18v3M3 12h3M18 12h3" />
+                        <circle cx="12" cy="12" r="5" />
+                        <circle cx="12" cy="12" r="1" />
+                      </svg>
+                      Detect
+                    </button>
+                  </div>
+
+                  <div className="relative overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
+                    <MapContainer
+                      center={warehouseMapPosition}
+                      zoom={13}
+                      scrollWheelZoom={true}
+                      className="h-[300px] w-full"
+                      key={`${warehouseMapPosition[0]}-${warehouseMapPosition[1]}`}
+                    >
+                      <TileLayer
+                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                      />
+
+                      <WarehouseMapClickHandler
+                        onSelect={handleWarehouseMapLocation}
+                      />
+
+                      {warehouseMapMarker && (
+                        <Marker
+                          position={warehouseMapMarker}
+                          icon={warehouseMarkerIcon}
+                          draggable
+                          eventHandlers={{
+                            dragend: (event) => {
+                              const marker = event.target;
+                              const position = marker.getLatLng();
+                              handleWarehouseMapLocation(
+                                position.lat,
+                                position.lng,
+                              );
+                            },
+                          }}
+                        />
+                      )}
+                    </MapContainer>
+
+                    {warehouseLocationLoading && (
+                      <div className="absolute left-3 top-3 z-[1000] rounded-lg border border-slate-200 bg-white/95 px-3 py-2 text-[10px] font-bold text-slate-700 shadow-sm backdrop-blur">
+                        Finding location...
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className={labelClass}>Address Line 1 *</label>
+                  <input
+                    name="address_line1"
+                    value={warehouseForm.address_line1}
+                    onChange={handleWarehouseFormChange}
+                    placeholder="House / Plot no, Area, Main road"
+                    className={inputClass}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className={labelClass}>Address Line 2</label>
+                  <input
+                    name="address_line2"
+                    value={warehouseForm.address_line2}
+                    onChange={handleWarehouseFormChange}
+                    placeholder="Locality, Street, Market"
+                    className={inputClass}
+                  />
+                </div>
+
+                <div>
+                  <label className={labelClass}>Floor No</label>
+                  <input
+                    name="floor_no"
+                    value={warehouseForm.floor_no}
+                    onChange={handleWarehouseFormChange}
+                    placeholder="Ground Floor"
+                    className={inputClass}
+                  />
+                </div>
+
+                <div>
+                  <label className={labelClass}>Landmark</label>
+                  <input
+                    name="landmark"
+                    value={warehouseForm.landmark}
+                    onChange={handleWarehouseFormChange}
+                    placeholder="Near landmark"
+                    className={inputClass}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className={labelClass}>Pincode *</label>
+                    <div className="relative">
+                      <input
+                        name="pincode"
+                        value={warehouseForm.pincode}
+                        onChange={(e) => lookupWarehousePincode(e.target.value)}
+                        placeholder="6-digit PIN"
+                        inputMode="numeric"
+                        maxLength={6}
+                        className={inputClass}
+                        required
+                      />
+
+                      {warehousePincodeLoading && (
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-[#7451ff]">
+                          Checking...
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className={labelClass}>City *</label>
+                    <input
+                      name="city"
+                      value={warehouseForm.city}
+                      readOnly
+                      placeholder="Auto-detected"
+                      className={readonlyClass}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className={labelClass}>State *</label>
+                  <input
+                    name="state"
+                    value={warehouseForm.state}
+                    readOnly
+                    placeholder="Auto-detected"
+                    className={readonlyClass}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className={labelClass}>Country</label>
+                  <input
+                    name="country"
+                    value={warehouseForm.country}
+                    readOnly
+                    className={readonlyClass}
+                  />
+                </div>
+              </div>
+            </form>
+
+            <div className="flex items-center justify-end gap-3 border-t border-slate-100 bg-slate-50/50 px-5 py-3 md:px-6">
+              <button
+                type="button"
+                onClick={closeWarehouseModal}
+                disabled={warehouseSaving}
+                className="h-10 rounded-lg px-4 text-xs font-bold text-slate-600 transition hover:bg-white hover:text-slate-900 disabled:opacity-50"
+              >
+                Close
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  document
+                    .querySelector("#warehouse-create-form")
+                    ?.requestSubmit()
+                }
+                disabled={warehouseSaving}
+                className="h-10 rounded-lg bg-[#7451ff] px-5 text-xs font-bold text-white shadow-sm transition hover:bg-[#6343ed] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {warehouseSaving ? "Saving..." : "Save Warehouse"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ========================================
     PREMIUM SHIPPING RATE MODAL

@@ -314,27 +314,39 @@ function TopNavbar() {
   }, []);
 
 
-  // ========================================
-  // WALLET UPDATE LISTENER
-  // ========================================
 
-  useEffect(() => {
-    const handleWalletUpdated = () => {
-      loadWallet();
-    };
+ // ========================================
+// WALLET UPDATE LISTENER
+// ========================================
 
-    window.addEventListener(
+useEffect(() => {
+  const handleWalletUpdated = (event) => {
+
+    const updatedBalance = Number(
+      event?.detail?.balance
+    );
+
+    if (Number.isFinite(updatedBalance)) {
+      setBalance(updatedBalance);
+      return;
+    }
+
+    // Fallback
+    loadWallet();
+  };
+
+  window.addEventListener(
+    "walletUpdated",
+    handleWalletUpdated
+  );
+
+  return () => {
+    window.removeEventListener(
       "walletUpdated",
       handleWalletUpdated
     );
-
-    return () => {
-      window.removeEventListener(
-        "walletUpdated",
-        handleWalletUpdated
-      );
-    };
-  }, []);
+  };
+}, []);
 
 
   // ========================================
