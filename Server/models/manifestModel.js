@@ -80,7 +80,8 @@ const getManifestedOrders = async (
         m.created_at AS manifest_created_at,
 
         o.id AS order_db_id,
-        o.awb,
+o.order_id AS display_order_id,
+o.awb,
 
         o.consignee_name,
         o.mobile,
@@ -105,7 +106,7 @@ const getManifestedOrders = async (
 
         o.status AS order_status,
         o.created_at AS order_created_at,
-
+        
         pa.pickup_address,
         pa.pickup_pincode,
         pa.pickup_city,
@@ -194,6 +195,9 @@ const getManifestedOrders = async (
 
         order_id:
           row.order_id,
+
+        display_order_id:
+  row.display_order_id,
 
         awb:
           row.awb
@@ -610,7 +614,7 @@ const cancelManifestedOrders = async (
           m.id AS manifest_id,
           m.order_id,
           m.shipping_charge,
-
+          o.order_id AS display_order_id,
           o.awb,
           o.status AS order_status
 
@@ -819,25 +823,26 @@ const cancelManifestedOrders = async (
       }
 
 
-      cancelled.push({
+    cancelled.push({
+  order_id:
+    shipment.order_id,
 
-        order_id:
-          shipment.order_id,
+  display_order_id:
+    shipment.display_order_id,
 
-        manifest_id:
-          shipment.manifest_id,
+  manifest_id:
+    shipment.manifest_id,
 
-        awb,
+  awb,
 
-        shipping_charge:
-          Number(
-            shipment.shipping_charge || 0
-          ),
+  shipping_charge:
+    Number(
+      shipment.shipping_charge || 0
+    ),
 
-        response:
-          data
-
-      });
+  response:
+    data
+});
 
 
     } catch (error) {
@@ -981,99 +986,116 @@ const cancelManifestedOrders = async (
     }
 
 
-    // ==================================================
-    // ADD REFUND TO WALLET
-    // ==================================================
+// ==================================================
+// ADD REFUND TO WALLET
+// ==================================================
 
-    const walletUpdate =
-      await txQuery(
-        connection,
-        `
-          UPDATE wallets
-          SET
-            balance = balance + ?
-          WHERE
-            user_id = ?
-        `,
-        [
-          totalRefund,
-          user_id
-        ]
-      );
+const openingBalance = Number(
+  walletRows[0].balance || 0
+);
 
+let runningBalance = openingBalance;
 
-    if (
-      walletUpdate.affectedRows !== 1
-    ) {
+const walletUpdate = await txQuery(
+  connection,
+  `
+    UPDATE wallets
+    SET
+      balance = balance + ?
+    WHERE
+      user_id = ?
+  `,
+  [
+    totalRefund,
+    user_id
+  ]
+);
 
-      throw new Error(
-        "Unable to refund shipping charge"
-      );
-
-    }
-
-
-    // ==================================================
-    // WALLET TRANSACTION
-    //
-    // REFUND = RECHARGE
-    // ==================================================
-
-    for (
-      const shipment of cancelled
-    ) {
-
-      const refundAmount =
-        Number(
-          shipment.shipping_charge || 0
-        );
+if (walletUpdate.affectedRows !== 1) {
+  throw new Error(
+    "Unable to refund shipping charge"
+  );
+}
 
 
-      if (
-        !Number.isFinite(
-          refundAmount
-        ) ||
-        refundAmount <= 0
-      ) {
+// ==================================================
+// WALLET TRANSACTIONS
+//
+// REFUND = RECHARGE
+// ==================================================
 
-        throw new Error(
-          `Invalid refund amount for Order #${shipment.order_id}`
-        );
+for (const shipment of cancelled) {
 
-      }
+  const refundAmount = Number(
+    shipment.shipping_charge || 0
+  );
+
+  if (
+    !Number.isFinite(refundAmount) ||
+    refundAmount <= 0
+  ) {
+    throw new Error(
+      `Invalid refund amount for Order #${shipment.order_id}`
+    );
+  }
 
 
-      await txQuery(
-        connection,
-        `
-          INSERT INTO wallet_transactions
-          (
-            user_id,
-            type,
-            amount,
-            razorpay_order_id,
-            razorpay_payment_id,
-            razorpay_signature,
-            status
-          )
-          VALUES
-          (
-            ?,
-            'RECHARGE',
-            ?,
-            NULL,
-            NULL,
-            NULL,
-            'SUCCESS'
-          )
-        `,
-        [
-          user_id,
-          refundAmount
-        ]
-      );
+  // Balance before this particular refund
+  const transactionOpeningBalance =
+    runningBalance;
 
-    }
+
+  // Balance after this particular refund
+  const transactionClosingBalance =
+    runningBalance + refundAmount;
+
+
+  await txQuery(
+    connection,
+    `
+      INSERT INTO wallet_transactions
+      (
+        user_id,
+        type,
+        amount,
+        opening_balance,
+        closing_balance,
+        description,
+        razorpay_order_id,
+        razorpay_payment_id,
+        razorpay_signature,
+        status
+      )
+      VALUES
+      (
+        ?,
+        'RECHARGE',
+        ?,
+        ?,
+        ?,
+        ?,
+        NULL,
+        NULL,
+        NULL,
+        'SUCCESS'
+      )
+    `,
+    [
+      user_id,
+      refundAmount,
+      transactionOpeningBalance,
+      transactionClosingBalance,
+      `Cancellation refund for order id ${shipment.display_order_id}`
+    ]
+  );
+
+
+  // Move running balance forward
+  runningBalance =
+    transactionClosingBalance;
+}
+
+
 
 
     // ==================================================

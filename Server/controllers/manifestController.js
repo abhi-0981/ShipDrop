@@ -1,5 +1,9 @@
 const manifestModel = require("../models/manifestModel");
 
+const {
+  attachTrackingToOrders,
+} = require("../services/delhiveryTrackingService");
+
 // ======================================================
 // HELPERS
 // ======================================================
@@ -58,10 +62,17 @@ const getManifestedOrders = async (req, res) => {
       ? manifests
       : [];
 
+    // ==================================================
+    // GET LIVE DELHIVERY TRACKING STATUS
+    // ==================================================
+
+    const manifestsWithTracking =
+      await attachTrackingToOrders(list);
+
     return res.status(200).json({
       success: true,
-      total: list.length,
-      manifests: list,
+      total: manifestsWithTracking.length,
+      manifests: manifestsWithTracking,
     });
 
   } catch (error) {

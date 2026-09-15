@@ -1,5 +1,9 @@
 import { useState } from "react";
-import { NavLink, useNavigate, useLocation } from "react-router-dom";
+import {
+  NavLink,
+  useNavigate,
+  useLocation,
+} from "react-router-dom";
 
 import {
   HiOutlineViewGrid,
@@ -8,11 +12,11 @@ import {
   HiOutlineMenuAlt2,
   HiOutlineUsers,
   HiOutlineChevronDown,
+  HiOutlineTicket,
 } from "react-icons/hi";
 
 
 function AdminLayout({ children }) {
-
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -21,9 +25,7 @@ function AdminLayout({ children }) {
 
   const [usersOpen, setUsersOpen] =
     useState(
-      location.pathname.startsWith(
-        "/users"
-      )
+      location.pathname.startsWith("/users")
     );
 
 
@@ -32,17 +34,27 @@ function AdminLayout({ children }) {
   // =====================================================
 
   const logout = () => {
-
-    localStorage.removeItem(
-      "adminToken"
-    );
-
-    localStorage.removeItem(
-      "admin"
-    );
+    localStorage.removeItem("adminToken");
+    localStorage.removeItem("admin");
 
     navigate("/login");
   };
+
+
+  // =====================================================
+  // ACTIVE MENU
+  // =====================================================
+
+  const isPathActive = (path) => {
+    return location.pathname === path;
+  };
+
+
+  const isUsersActive =
+    location.pathname.startsWith("/users");
+
+  const isTicketsActive =
+    location.pathname.startsWith("/tickets");
 
 
   // =====================================================
@@ -50,20 +62,106 @@ function AdminLayout({ children }) {
   // =====================================================
 
   const menuItems = [
-
     {
       name: "Dashboard",
       path: "/dashboard",
       icon: HiOutlineViewGrid,
     },
-
     {
       name: "Rate Card",
       path: "/rate-card",
       icon: HiOutlineCreditCard,
     },
-
+    {
+      name: "Tickets",
+      path: "/tickets",
+      icon: HiOutlineTicket,
+    },
   ];
+
+
+  // =====================================================
+  // MENU ITEM COMPONENT
+  // =====================================================
+
+  const renderMenuItem = (item) => {
+    const Icon = item.icon;
+
+    return (
+      <NavLink
+        key={item.path}
+        to={item.path}
+        title={collapsed ? item.name : ""}
+        className={({ isActive }) =>
+          `
+          group
+          relative
+          flex
+          items-center
+          rounded-xl
+          transition-all
+          duration-200
+          ${
+            collapsed
+              ? "h-11 justify-center"
+              : "h-11 px-3 gap-3"
+          }
+          ${
+            isActive
+              ? "bg-[#008dd2]/8 text-[#008dd2]"
+              : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+          }
+          `
+        }
+      >
+        {({ isActive }) => (
+          <>
+            {/* ACTIVE INDICATOR */}
+
+            {isActive && (
+              <span
+                className="
+                  absolute
+                  left-0
+                  top-2
+                  bottom-2
+                  w-[3px]
+                  rounded-r-full
+                  bg-[#008dd2]
+                "
+              />
+            )}
+
+
+            {/* ICON */}
+
+            <Icon
+              size={20}
+              className={`
+                flex-shrink-0
+                transition-colors
+                duration-200
+                ${
+                  isActive
+                    ? "text-[#008dd2]"
+                    : "text-slate-500 group-hover:text-slate-700"
+                }
+              `}
+            />
+
+
+            {/* LABEL */}
+
+            {!collapsed && (
+              <span className="text-[13px] font-medium">
+                {item.name}
+              </span>
+            )}
+          </>
+        )}
+      </NavLink>
+    );
+  };
 
 
   // =====================================================
@@ -71,7 +169,6 @@ function AdminLayout({ children }) {
   // =====================================================
 
   return (
-
     <div className="min-h-screen bg-[#f7fbfe]">
 
 
@@ -89,13 +186,13 @@ function AdminLayout({ children }) {
           bg-white
           border-r
           border-slate-200/70
+          shadow-[4px_0_24px_rgba(15,23,42,0.03)]
           transition-all
           duration-300
-
           ${
             collapsed
-              ? "w-[76px]"
-              : "w-[228px]"
+              ? "w-[78px]"
+              : "w-[244px]"
           }
         `}
       >
@@ -105,19 +202,31 @@ function AdminLayout({ children }) {
         {/* HEADER */}
         {/* ================================================= */}
 
-        <div className="h-[72px] px-5 flex items-center justify-between border-b border-slate-100">
-
+        <div
+          className={`
+            h-[72px]
+            flex
+            items-center
+            border-b
+            border-slate-100
+            ${
+              collapsed
+                ? "justify-center px-3"
+                : "justify-between px-5"
+            }
+          `}
+        >
 
           {/* LOGO */}
 
           {!collapsed && (
-
-            <img
-              src="/logo.png"
-              alt="ShipDrop"
-              className="h-9 w-auto"
-            />
-
+            <div className="flex items-center min-w-0">
+              <img
+                src="/logo.png"
+                alt="ShipDrop"
+                className="h-9 w-auto object-contain"
+              />
+            </div>
           )}
 
 
@@ -126,39 +235,30 @@ function AdminLayout({ children }) {
           <button
             type="button"
             onClick={() =>
-              setCollapsed(
-                !collapsed
-              )
+              setCollapsed(!collapsed)
             }
-            className={`
+            className="
               w-9
               h-9
-              rounded-lg
+              rounded-xl
               flex
               items-center
               justify-center
               text-slate-500
               hover:text-[#008dd2]
               hover:bg-[#008dd2]/5
-              transition
-
-              ${
-                collapsed
-                  ? "mx-auto"
-                  : ""
-              }
-            `}
+              transition-all
+              duration-200
+            "
             title={
               collapsed
                 ? "Expand sidebar"
                 : "Collapse sidebar"
             }
           >
-
             <HiOutlineMenuAlt2
               size={20}
             />
-
           </button>
 
         </div>
@@ -168,134 +268,55 @@ function AdminLayout({ children }) {
         {/* NAVIGATION */}
         {/* ================================================= */}
 
-        <nav className="px-3 py-6">
+        <nav
+          className="
+            px-3
+            py-6
+            overflow-y-auto
+            h-[calc(100vh-72px)]
+            pb-32
+          "
+        >
 
 
+          {/* ================================================= */}
           {/* WORKSPACE */}
+          {/* ================================================= */}
 
           {!collapsed && (
-
-            <p className="px-3 mb-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">
-
+            <p
+              className="
+                px-3
+                mb-3
+                text-[10px]
+                font-semibold
+                uppercase
+                tracking-[0.16em]
+                text-slate-400
+              "
+            >
               Workspace
-
             </p>
-
           )}
 
 
+          {/* ================================================= */}
+          {/* MAIN MENU */}
+          {/* ================================================= */}
+
           <div className="space-y-1">
 
-
-            {/* ================================================= */}
-            {/* DASHBOARD */}
-            {/* ================================================= */}
-
             {menuItems.map(
-              (item) => {
-
-                const Icon =
-                  item.icon;
-
-
-                return (
-
-                  <NavLink
-                    key={
-                      item.path
-                    }
-                    to={
-                      item.path
-                    }
-                    className={({
-                      isActive,
-                    }) =>
-                      `
-                      relative
-                      flex
-                      items-center
-                      rounded-lg
-                      transition-all
-                      duration-200
-
-                      ${
-                        collapsed
-                          ? "justify-center h-11"
-                          : "h-11 px-3 gap-3"
-                      }
-
-                      ${
-                        isActive
-                          ? "bg-[#008dd2]/8 text-[#008dd2]"
-                          : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                      }
-                    `
-                    }
-                  >
-
-                    {({
-                      isActive,
-                    }) => (
-
-                      <>
-
-                        {isActive && (
-
-                          <span
-                            className="
-                              absolute
-                              left-0
-                              top-2
-                              bottom-2
-                              w-[3px]
-                              rounded-r-full
-                              bg-[#008dd2]
-                            "
-                          />
-
-                        )}
-
-
-                        <Icon
-                          size={20}
-                          className={
-                            isActive
-                              ? "text-[#008dd2]"
-                              : "text-slate-500"
-                          }
-                        />
-
-
-                        {!collapsed && (
-
-                          <span className="text-[13px] font-medium">
-
-                            {
-                              item.name
-                            }
-
-                          </span>
-
-                        )}
-
-                      </>
-
-                    )}
-
-                  </NavLink>
-
-                );
-
-              }
+              (item) =>
+                renderMenuItem(item)
             )}
 
 
             {/* ================================================= */}
-            {/* USERS PARENT */}
+            {/* USERS */}
             {/* ================================================= */}
 
-            <div>
-
+            <div className="pt-1">
 
               {/* USERS BUTTON */}
 
@@ -304,55 +325,43 @@ function AdminLayout({ children }) {
                 onClick={() => {
 
                   if (collapsed) {
-
-                    setCollapsed(
-                      false
-                    );
-
-                    setUsersOpen(
-                      true
-                    );
-
+                    setCollapsed(false);
+                    setUsersOpen(true);
                     return;
                   }
 
-                  setUsersOpen(
-                    !usersOpen
-                  );
-
+                  setUsersOpen(!usersOpen);
                 }}
+                title={
+                  collapsed
+                    ? "Users"
+                    : ""
+                }
                 className={`
+                  group
                   relative
                   w-full
                   flex
                   items-center
-                  rounded-lg
+                  rounded-xl
                   transition-all
                   duration-200
-
                   ${
                     collapsed
                       ? "justify-center h-11"
                       : "h-11 px-3 gap-3"
                   }
-
                   ${
-                    location.pathname.startsWith(
-                      "/users"
-                    )
+                    isUsersActive
                       ? "bg-[#008dd2]/8 text-[#008dd2]"
                       : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                   }
                 `}
               >
 
-
                 {/* ACTIVE INDICATOR */}
 
-                {location.pathname.startsWith(
-                  "/users"
-                ) && (
-
+                {isUsersActive && (
                   <span
                     className="
                       absolute
@@ -364,7 +373,6 @@ function AdminLayout({ children }) {
                       bg-[#008dd2]
                     "
                   />
-
                 )}
 
 
@@ -372,35 +380,39 @@ function AdminLayout({ children }) {
 
                 <HiOutlineUsers
                   size={20}
-                  className={
-                    location.pathname.startsWith(
-                      "/users"
-                    )
-                      ? "text-[#008dd2]"
-                      : "text-slate-500"
-                  }
+                  className={`
+                    flex-shrink-0
+                    ${
+                      isUsersActive
+                        ? "text-[#008dd2]"
+                        : "text-slate-500 group-hover:text-slate-700"
+                    }
+                  `}
                 />
 
 
                 {/* TEXT */}
 
                 {!collapsed && (
-
                   <>
-
-                    <span className="flex-1 text-left text-[13px] font-medium">
-
+                    <span
+                      className="
+                        flex-1
+                        text-left
+                        text-[13px]
+                        font-medium
+                      "
+                    >
                       Users
-
                     </span>
 
 
                     <HiOutlineChevronDown
                       size={16}
                       className={`
+                        text-slate-400
                         transition-transform
                         duration-200
-
                         ${
                           usersOpen
                             ? "rotate-180"
@@ -408,9 +420,7 @@ function AdminLayout({ children }) {
                         }
                       `}
                     />
-
                   </>
-
                 )}
 
               </button>
@@ -422,9 +432,15 @@ function AdminLayout({ children }) {
 
               {!collapsed &&
                 usersOpen && (
-
-                  <div className="ml-[23px] mt-1 border-l border-slate-200 pl-3">
-
+                  <div
+                    className="
+                      ml-[22px]
+                      mt-1
+                      border-l
+                      border-slate-200
+                      pl-3
+                    "
+                  >
 
                     <NavLink
                       to="/users"
@@ -434,32 +450,120 @@ function AdminLayout({ children }) {
                         flex
                         h-9
                         items-center
-                        rounded-md
+                        rounded-lg
                         px-3
                         text-[12px]
                         font-medium
-                        transition
-
+                        transition-all
+                        duration-200
                         ${
                           isActive
                             ? "bg-[#008dd2]/8 text-[#008dd2]"
                             : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
                         }
-                      `
+                        `
                       }
                     >
-
                       All Users
-
                     </NavLink>
 
                   </div>
-
                 )}
 
             </div>
 
           </div>
+
+
+          {/* ================================================= */}
+          {/* SUPPORT */}
+          {/* ================================================= */}
+
+          {!collapsed && (
+            <div className="mt-8">
+
+              <p
+                className="
+                  px-3
+                  mb-3
+                  text-[10px]
+                  font-semibold
+                  uppercase
+                  tracking-[0.16em]
+                  text-slate-400
+                "
+              >
+                Support
+              </p>
+
+
+              {/* TICKETS */}
+
+              <NavLink
+                to="/tickets"
+                className={({ isActive }) =>
+                  `
+                  group
+                  relative
+                  flex
+                  items-center
+                  h-11
+                  px-3
+                  gap-3
+                  rounded-xl
+                  transition-all
+                  duration-200
+                  ${
+                    isActive
+                      ? "bg-[#008dd2]/8 text-[#008dd2]"
+                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                  }
+                  `
+                }
+              >
+                {({ isActive }) => (
+                  <>
+
+                    {isActive && (
+                      <span
+                        className="
+                          absolute
+                          left-0
+                          top-2
+                          bottom-2
+                          w-[3px]
+                          rounded-r-full
+                          bg-[#008dd2]
+                        "
+                      />
+                    )}
+
+
+                    <HiOutlineTicket
+                      size={20}
+                      className={
+                        isActive
+                          ? "text-[#008dd2]"
+                          : "text-slate-500 group-hover:text-slate-700"
+                      }
+                    />
+
+
+                    <span
+                      className="
+                        text-[13px]
+                        font-medium
+                      "
+                    >
+                      Tickets
+                    </span>
+
+                  </>
+                )}
+              </NavLink>
+
+            </div>
+          )}
 
         </nav>
 
@@ -468,90 +572,151 @@ function AdminLayout({ children }) {
         {/* BOTTOM AREA */}
         {/* ================================================= */}
 
-        <div className="absolute bottom-0 left-0 right-0 px-3 pb-4">
+        <div
+          className="
+            absolute
+            bottom-0
+            left-0
+            right-0
+            px-3
+            pb-4
+            bg-white
+          "
+        >
+
+          {/* TOP BORDER */}
+
+          <div className="border-t border-slate-100 pt-3">
 
 
-          {/* ADMIN */}
+            {/* ================================================= */}
+            {/* ADMIN PROFILE */}
+            {/* ================================================= */}
 
-          {!collapsed && (
+            {!collapsed && (
+              <div
+                className="
+                  mb-2
+                  px-3
+                  py-3
+                  rounded-xl
+                  bg-slate-50
+                  border
+                  border-slate-100
+                "
+              >
 
-            <div className="mb-3 px-3 py-3 rounded-xl bg-slate-50 border border-slate-100">
+                <div className="flex items-center gap-3">
 
-              <div className="flex items-center gap-3">
+                  {/* AVATAR */}
+
+                  <div
+                    className="
+                      w-9
+                      h-9
+                      rounded-xl
+                      bg-[#008dd2]/10
+                      flex
+                      items-center
+                      justify-center
+                      text-[#008dd2]
+                      font-semibold
+                      text-sm
+                    "
+                  >
+                    A
+                  </div>
 
 
-                <div className="w-9 h-9 rounded-lg bg-[#008dd2]/10 flex items-center justify-center text-[#008dd2] font-semibold text-sm">
+                  {/* INFO */}
 
-                  A
+                  <div className="min-w-0">
 
-                </div>
+                    <p
+                      className="
+                        text-[13px]
+                        font-semibold
+                        text-slate-800
+                        truncate
+                      "
+                    >
+                      Admin
+                    </p>
 
+                    <p
+                      className="
+                        text-[11px]
+                        text-slate-400
+                        truncate
+                        mt-0.5
+                      "
+                    >
+                      Administrator
+                    </p>
 
-                <div className="min-w-0">
-
-                  <p className="text-[13px] font-semibold text-slate-800 truncate">
-
-                    Admin
-
-                  </p>
-
-
-                  <p className="text-[11px] text-slate-400 truncate">
-
-                    Administrator
-
-                  </p>
+                  </div>
 
                 </div>
 
               </div>
-
-            </div>
-
-          )}
-
-
-          {/* LOGOUT */}
-
-          <button
-            type="button"
-            onClick={
-              logout
-            }
-            className={`
-              w-full
-              flex
-              items-center
-              rounded-lg
-              text-slate-500
-              hover:bg-red-50
-              hover:text-red-600
-              transition
-
-              ${
-                collapsed
-                  ? "justify-center h-11"
-                  : "h-11 px-3 gap-3"
-              }
-            `}
-          >
-
-            <HiOutlineLogout
-              size={20}
-            />
-
-
-            {!collapsed && (
-
-              <span className="text-[13px] font-medium">
-
-                Logout
-
-              </span>
-
             )}
 
-          </button>
+
+            {/* ================================================= */}
+            {/* LOGOUT */}
+            {/* ================================================= */}
+
+            <button
+              type="button"
+              onClick={logout}
+              title={
+                collapsed
+                  ? "Logout"
+                  : ""
+              }
+              className={`
+                group
+                w-full
+                flex
+                items-center
+                rounded-xl
+                text-slate-500
+                hover:bg-red-50
+                hover:text-red-600
+                transition-all
+                duration-200
+                ${
+                  collapsed
+                    ? "justify-center h-11"
+                    : "h-11 px-3 gap-3"
+                }
+              `}
+            >
+
+              <HiOutlineLogout
+                size={20}
+                className="
+                  transition-transform
+                  duration-200
+                  group-hover:-translate-x-0.5
+                "
+              />
+
+
+              {!collapsed && (
+                <span
+                  className="
+                    text-[13px]
+                    font-medium
+                  "
+                >
+                  Logout
+                </span>
+              )}
+
+            </button>
+
+          </div>
 
         </div>
 
@@ -567,23 +732,18 @@ function AdminLayout({ children }) {
           min-h-screen
           transition-all
           duration-300
-
           ${
             collapsed
-              ? "ml-[76px]"
-              : "ml-[228px]"
+              ? "ml-[78px]"
+              : "ml-[244px]"
           }
         `}
       >
-
         {children}
-
       </main>
 
     </div>
-
   );
-
 }
 
 

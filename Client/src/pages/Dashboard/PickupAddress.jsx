@@ -179,7 +179,9 @@ function PickupAddress() {
         list.some(
           (warehouse) =>
             String(warehouse.id) ===
-            String(savedDefault)
+            String(savedDefault) &&
+            String(warehouse.status || "ACTIVE").toUpperCase() ===
+            "ACTIVE"
         )
       ) {
 
@@ -188,14 +190,24 @@ function PickupAddress() {
         );
 
       } else if (
-        list.length > 0
+        list.some(
+          (warehouse) =>
+            String(warehouse.status || "ACTIVE").toUpperCase() ===
+            "ACTIVE"
+        )
       ) {
 
-        // First warehouse becomes default
-        // only when no valid default exists.
+        // First ACTIVE warehouse becomes default
+        // only when no valid active default exists.
+
+        const firstActiveWarehouse = list.find(
+          (warehouse) =>
+            String(warehouse.status || "ACTIVE").toUpperCase() ===
+            "ACTIVE"
+        );
 
         const firstId =
-          String(list[0].id);
+          String(firstActiveWarehouse.id);
 
 
         setDefaultWarehouseId(
@@ -255,6 +267,18 @@ function PickupAddress() {
     warehouseId
   ) => {
 
+    const warehouse = warehouses.find(
+      (item) => String(item.id) === String(warehouseId)
+    );
+
+    if (
+      warehouse &&
+      String(warehouse.status || "ACTIVE").toUpperCase() !== "ACTIVE"
+    ) {
+      toast.error("Inactive pickup address cannot be set as default");
+      return;
+    }
+
     const id =
       String(warehouseId);
 
@@ -272,6 +296,204 @@ function PickupAddress() {
       "Default pickup address updated"
     );
 
+  };
+
+
+  // ====================================================
+  // UPDATE WAREHOUSE STATUS
+  // ====================================================
+
+  const toggleWarehouseStatus = async (warehouse) => {
+
+    const userId = getUserId();
+
+    if (!userId) {
+      toast.error("Please login again");
+      return;
+    }
+
+    const currentStatus =
+      String(warehouse.status || "ACTIVE").toUpperCase();
+
+    const nextStatus =
+      currentStatus === "ACTIVE"
+        ? "INACTIVE"
+        : "ACTIVE";
+
+    try {
+
+      const response = await api.put(
+        `/warehouses/${warehouse.id}`,
+        {
+          user_id: userId,
+          status: nextStatus,
+        }
+      );
+
+      if (!response.data?.success) {
+        throw new Error(
+          response.data?.message ||
+          "Unable to update warehouse status"
+        );
+      }
+
+      const updatedWarehouses = warehouses.map((item) =>
+        String(item.id) === String(warehouse.id)
+          ? { ...item, status: nextStatus }
+          : item
+      );
+
+      setWarehouses(updatedWarehouses);
+
+      // If the current default pickup warehouse is made inactive,
+      // automatically move the default to the first active warehouse.
+      if (
+        nextStatus === "INACTIVE" &&
+        String(defaultWarehouseId) === String(warehouse.id)
+      ) {
+
+        const nextDefault = updatedWarehouses.find(
+          (item) =>
+            String(item.id) !== String(warehouse.id) &&
+            String(item.status || "ACTIVE").toUpperCase() === "ACTIVE"
+        );
+
+        if (nextDefault) {
+          const nextId = String(nextDefault.id);
+          setDefaultWarehouseId(nextId);
+          localStorage.setItem(
+            getDefaultStorageKey(),
+            nextId
+          );
+        } else {
+          setDefaultWarehouseId("");
+          localStorage.removeItem(getDefaultStorageKey());
+        }
+
+        window.dispatchEvent(
+          new Event("warehouseDefaultChanged")
+        );
+      }
+
+      window.dispatchEvent(
+        new Event("warehousesChanged")
+      );
+
+      toast.success(
+        nextStatus === "ACTIVE"
+          ? "Pickup address activated"
+          : "Pickup address deactivated"
+      );
+
+    } catch (error) {
+
+      console.log(
+        "Warehouse status update error:",
+        error
+      );
+
+      toast.error(
+        error.response?.data?.message ||
+        error.message ||
+        "Unable to update warehouse status"
+      );
+
+    }
+  };
+
+
+  // ====================================================
+  // DELETE WAREHOUSE
+  // ====================================================
+
+  const deleteWarehouse = async (warehouse) => {
+
+    const userId = getUserId();
+
+    if (!userId) {
+      toast.error("Please login again");
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Delete pickup address "${warehouse.warehouse_name}"?`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+
+      const response = await api.delete(
+        `/warehouses/${warehouse.id}`,
+        {
+          data: {
+            user_id: userId,
+          },
+        }
+      );
+
+      if (!response.data?.success) {
+        throw new Error(
+          response.data?.message ||
+          "Unable to delete warehouse"
+        );
+      }
+
+      const wasDefault =
+        String(defaultWarehouseId) === String(warehouse.id);
+
+      const remainingWarehouses = warehouses.filter(
+        (item) => String(item.id) !== String(warehouse.id)
+      );
+
+      setWarehouses(remainingWarehouses);
+
+      if (wasDefault) {
+
+        const nextDefault = remainingWarehouses.find(
+          (item) =>
+            String(item.status || "ACTIVE").toUpperCase() === "ACTIVE"
+        );
+
+        if (nextDefault) {
+          const nextId = String(nextDefault.id);
+          setDefaultWarehouseId(nextId);
+          localStorage.setItem(
+            getDefaultStorageKey(),
+            nextId
+          );
+        } else {
+          setDefaultWarehouseId("");
+          localStorage.removeItem(getDefaultStorageKey());
+        }
+
+        window.dispatchEvent(
+          new Event("warehouseDefaultChanged")
+        );
+      }
+
+      window.dispatchEvent(
+        new Event("warehousesChanged")
+      );
+
+      toast.success("Pickup address deleted successfully");
+
+    } catch (error) {
+
+      console.log(
+        "Delete warehouse error:",
+        error
+      );
+
+      toast.error(
+        error.response?.data?.message ||
+        error.message ||
+        "Unable to delete pickup address"
+      );
+
+    }
   };
 
 
@@ -932,9 +1154,6 @@ function PickupAddress() {
               Pickup Address
             </h1>
 
-            <p className="mt-1 text-xs text-slate-500">
-              Manage your pickup warehouses and addresses
-            </p>
 
           </div>
 
@@ -1014,31 +1233,27 @@ function PickupAddress() {
 
                   <tr className="border-b border-slate-200 bg-slate-50/70">
 
-                    <th className="w-[15%] px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                    <th className="w-[16%] px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">
                       Warehouse
                     </th>
 
-                    <th className="w-[13%] px-3 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                    <th className="w-[14%] px-3 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">
                       Contact
                     </th>
 
-                    <th className="w-[25%] px-3 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                    <th className="w-[30%] px-3 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">
                       Address
                     </th>
 
-                    <th className="w-[9%] px-3 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                    <th className="w-[10%] px-3 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">
                       Pincode
                     </th>
 
-                    <th className="w-[9%] px-3 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                    <th className="w-[13%] px-3 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">
                       Status
                     </th>
 
-                    <th className="w-[11%] px-3 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                      Delhivery
-                    </th>
-
-                    <th className="w-[9%] px-3 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                    <th className="w-[10%] px-3 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">
                       Default
                     </th>
 
@@ -1151,38 +1366,57 @@ function PickupAddress() {
 
                           <td className="px-3 py-3">
 
-                            <span className="inline-flex rounded-full bg-emerald-50 px-2 py-1 text-[9px] font-bold text-emerald-600">
-                              {
-                                warehouse.status ||
-                                "ACTIVE"
-                              }
-                            </span>
+                            <div className="flex items-center gap-2">
 
-                          </td>
+                              <button
+                                type="button"
+                                role="switch"
+                                aria-checked={
+                                  String(warehouse.status || "ACTIVE").toUpperCase() ===
+                                  "ACTIVE"
+                                }
+                                title={
+                                  String(warehouse.status || "ACTIVE").toUpperCase() ===
+                                  "ACTIVE"
+                                    ? "Deactivate pickup address"
+                                    : "Activate pickup address"
+                                }
+                                onClick={() =>
+                                  toggleWarehouseStatus(warehouse)
+                                }
+                                className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#008dd2]/20 ${
+                                  String(warehouse.status || "ACTIVE").toUpperCase() ===
+                                  "ACTIVE"
+                                    ? "bg-emerald-500"
+                                    : "bg-slate-300"
+                                }`}
+                              >
 
+                                <span
+                                  className={`inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${
+                                    String(warehouse.status || "ACTIVE").toUpperCase() ===
+                                    "ACTIVE"
+                                      ? "translate-x-4"
+                                      : "translate-x-0.5"
+                                  }`}
+                                />
 
-                          {/* DELHIVERY */}
-
-                          <td className="px-3 py-3">
-
-                            <div className="flex items-center gap-1.5">
+                              </button>
 
                               <span
-                                className={`h-1.5 w-1.5 shrink-0 rounded-full ${
-                                  warehouse.delhivery_registered
-                                    ? "bg-emerald-500"
-                                    : "bg-amber-400"
+                                className={`inline-flex rounded-full px-2 py-1 text-[9px] font-bold ${
+                                  String(warehouse.status || "ACTIVE").toUpperCase() ===
+                                  "ACTIVE"
+                                    ? "bg-emerald-50 text-emerald-600"
+                                    : "bg-slate-100 text-slate-500"
                                 }`}
-                              />
-
-                              <span className="truncate text-[11px] text-slate-600">
-
+                              >
                                 {
-                                  warehouse.delhivery_registered
-                                    ? "Registered"
-                                    : "Not Registered"
+                                  String(warehouse.status || "ACTIVE").toUpperCase() ===
+                                  "ACTIVE"
+                                    ? "Active"
+                                    : "Inactive"
                                 }
-
                               </span>
 
                             </div>
@@ -1223,7 +1457,7 @@ function PickupAddress() {
 
                           <td className="px-4 py-3">
 
-                            <div className="flex justify-end">
+                            <div className="flex justify-end gap-2">
 
                               {/* EDIT */}
 
@@ -1247,11 +1481,39 @@ function PickupAddress() {
                                   strokeLinecap="round"
                                   strokeLinejoin="round"
                                 >
-
                                   <path d="M12 20h9" />
-
                                   <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z" />
+                                </svg>
 
+                              </button>
+
+                              {/* DELETE */}
+
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  deleteWarehouse(
+                                    warehouse
+                                  )
+                                }
+                                title="Delete"
+                                className="flex h-7 w-7 items-center justify-center rounded-md border border-red-100 text-red-400 transition hover:border-red-200 hover:bg-red-50 hover:text-red-500"
+                              >
+
+                                <svg
+                                  viewBox="0 0 24 24"
+                                  className="h-3.5 w-3.5"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="1.8"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                >
+                                  <path d="M3 6h18" />
+                                  <path d="M8 6V4h8v2" />
+                                  <path d="M19 6l-1 14H6L5 6" />
+                                  <path d="M10 11v5" />
+                                  <path d="M14 11v5" />
                                 </svg>
 
                               </button>
@@ -1279,7 +1541,7 @@ function PickupAddress() {
                   <tr>
 
                     <td
-                      colSpan="8"
+                      colSpan="7"
                       className="px-4 py-2.5 text-[10px] text-slate-400"
                     >
 

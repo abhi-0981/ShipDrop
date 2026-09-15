@@ -342,6 +342,8 @@ const verifyPayment = (req, res) => {
 
             transaction.amount,
 
+            transaction.id,
+
             (walletError) => {
               if (walletError) {
                 return res.status(500).json({
@@ -384,6 +386,36 @@ const verifyPayment = (req, res) => {
 
 
 // ========================================
+// GET WALLET HISTORY
+// ========================================
+
+const getWalletHistory = (req, res) => {
+  const { user_id } = req.query;
+
+  if (!user_id) {
+    return res.status(400).json({
+      message: "User ID is required",
+    });
+  }
+
+  paymentModel.getWalletTransactions(
+    user_id,
+    (err, transactions) => {
+      if (err) {
+        return res.status(500).json({
+          message: err.message,
+        });
+      }
+
+      return res.status(200).json({
+        transactions,
+      });
+    }
+  );
+};
+
+
+// ========================================
 // EXPORT
 // ========================================
 
@@ -391,4 +423,5 @@ module.exports = {
   getWalletBalance,
   createPaymentOrder,
   verifyPayment,
+  getWalletHistory,
 };

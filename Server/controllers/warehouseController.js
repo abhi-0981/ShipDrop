@@ -1,7 +1,12 @@
 const axios = require("axios");
 
+const db = require("../config/db");
+
 const warehouseModel =
   require("../models/warehouseModel");
+
+const returnAddressModel =
+  require("../models/returnAddressModel");
 
 
 // ======================================================
@@ -14,6 +19,23 @@ const DELHIVERY_API_TOKEN =
 const DELHIVERY_API_BASE_URL =
   process.env.DELHIVERY_API_BASE_URL ||
   "https://track.delhivery.com";
+
+
+// ======================================================
+// GENERATE UNIQUE WAREHOUSE NAME
+// ======================================================
+
+const generateWarehouseName = (baseName) => {
+  const cleanName =
+    String(baseName || "").trim();
+
+  const randomFourDigit =
+    Math.floor(
+      1000 + Math.random() * 9000
+    );
+
+  return `${cleanName} ${randomFourDigit}`;
+};
 
 
 // ======================================================
@@ -34,9 +56,7 @@ const sendError = (
   );
 
   return res.status(status).json({
-
     success: false,
-
     message,
 
     ...(error
@@ -46,9 +66,7 @@ const sendError = (
             String(error),
         }
       : {}),
-
   });
-
 };
 
 
@@ -146,9 +164,7 @@ const createWarehouse = async (
 
     if (
       !phone ||
-      !String(
-        phone
-      ).trim()
+      !String(phone).trim()
     ) {
 
       return sendError(
@@ -179,9 +195,7 @@ const createWarehouse = async (
     if (
       !pincode ||
       !/^\d{6}$/.test(
-        String(
-          pincode
-        ).trim()
+        String(pincode).trim()
       )
     ) {
 
@@ -196,9 +210,7 @@ const createWarehouse = async (
 
     if (
       !city ||
-      !String(
-        city
-      ).trim()
+      !String(city).trim()
     ) {
 
       return sendError(
@@ -212,9 +224,7 @@ const createWarehouse = async (
 
     if (
       !state ||
-      !String(
-        state
-      ).trim()
+      !String(state).trim()
     ) {
 
       return sendError(
@@ -224,6 +234,27 @@ const createWarehouse = async (
       );
 
     }
+
+
+    // ==================================================
+    // FINAL UNIQUE WAREHOUSE NAME
+    // ==================================================
+
+    const finalWarehouseName =
+      generateWarehouseName(
+        warehouse_name
+      );
+
+
+    console.log(
+      "Original warehouse name:",
+      warehouse_name
+    );
+
+    console.log(
+      "Generated Delhivery warehouse name:",
+      finalWarehouseName
+    );
 
 
     // ==================================================
@@ -247,14 +278,10 @@ const createWarehouse = async (
         const delhiveryPayload = {
 
           name:
-            String(
-              warehouse_name
-            ).trim(),
+            finalWarehouseName,
 
           registered_name:
-            String(
-              warehouse_name
-            ).trim(),
+            finalWarehouseName,
 
           phone:
             String(
@@ -313,6 +340,12 @@ const createWarehouse = async (
         };
 
 
+        console.log(
+          "Registering Delhivery warehouse:",
+          finalWarehouseName
+        );
+
+
         const response =
           await axios.post(
             delhiveryUrl,
@@ -330,7 +363,6 @@ const createWarehouse = async (
 
               timeout:
                 30000,
-
             }
           );
 
@@ -347,14 +379,8 @@ const createWarehouse = async (
           error.message
         );
 
-        // ------------------------------------------------
-        // IMPORTANT
-        // Local warehouse should NOT be created if
-        // Delhivery registration failed.
-        // ------------------------------------------------
 
         return sendError(
-
           res,
 
           error.response?.status >= 400 &&
@@ -365,7 +391,6 @@ const createWarehouse = async (
           "Unable to register warehouse with Delhivery",
 
           error
-
         );
 
       }
@@ -386,14 +411,13 @@ const createWarehouse = async (
     const warehouseData = {
 
       user_id:
-        Number(
-          user_id
-        ),
+        Number(user_id),
 
+      // IMPORTANT:
+      // Save the SAME generated name that was
+      // registered with Delhivery.
       warehouse_name:
-        String(
-          warehouse_name
-        ).trim(),
+        finalWarehouseName,
 
       contact_name:
         String(
@@ -487,7 +511,7 @@ const createWarehouse = async (
 
       warehouseData,
 
-      (err, result) => {
+      async (err, result) => {
 
         if (err) {
 
@@ -498,7 +522,6 @@ const createWarehouse = async (
 
 
           return sendError(
-
             res,
 
             500,
@@ -506,8 +529,130 @@ const createWarehouse = async (
             "Warehouse registered with Delhivery but could not be saved locally",
 
             err
-
           );
+
+        }
+
+
+        // ==================================================
+        // AUTO-CREATE RETURN ADDRESS
+        // ==================================================
+        //
+        // Every newly created pickup warehouse gets its own
+        // ShipDrop return address.
+        //
+        // The return-address model automatically:
+        // - makes the first address the default
+        // - keeps the existing default when another address
+        //   is created with is_default = false
+        //
+        // This is intentionally handled here, on the backend,
+        // so Pickup Address and Return Address stay in sync
+        // regardless of which frontend creates the warehouse.
+        // ==================================================
+
+        try {
+
+          await returnAddressModel.createReturnAddress({
+
+            user_id:
+              Number(user_id),
+
+            name:
+              String(
+                contact_name
+              ).trim(),
+
+            phone:
+              String(
+                phone
+              ).trim(),
+
+            email:
+              email ||
+              null,
+
+            address_line1:
+              String(
+                address_line1
+              ).trim(),
+
+            address_line2:
+              address_line2 ||
+              null,
+
+            landmark:
+              landmark ||
+              null,
+
+            pincode:
+              String(
+                pincode
+              ).trim(),
+
+            city:
+              String(
+                city
+              ).trim(),
+
+            state:
+              String(
+                state
+              ).trim(),
+
+            country:
+              country ||
+              "India",
+
+            // IMPORTANT:
+            // Do not force a newly created return address
+            // to become default. The model decides whether
+            // it is the first address for this user.
+            is_default:
+              false,
+
+          });
+
+          console.log(
+            "Return address created automatically for warehouse:",
+            result.insertId
+          );
+
+        } catch (returnAddressError) {
+
+          console.log(
+            "Automatic return address creation error:",
+            returnAddressError
+          );
+
+          // Warehouse creation itself succeeded. Do not
+          // pretend the warehouse failed just because the
+          // separate return-address sync failed.
+          return res.status(201).json({
+
+            success:
+              true,
+
+            message:
+              "Warehouse created successfully, but return address could not be created",
+
+            warehouse_id:
+              result.insertId,
+
+            warehouse_name:
+              finalWarehouseName,
+
+            delhivery:
+              delhiveryResponse,
+
+            return_address_created:
+              false,
+
+            return_address_error:
+              returnAddressError.message ||
+              String(returnAddressError),
+
+          });
 
         }
 
@@ -523,13 +668,16 @@ const createWarehouse = async (
           warehouse_id:
             result.insertId,
 
+          // Return generated name to frontend.
+          warehouse_name:
+            finalWarehouseName,
+
           delhivery:
             delhiveryResponse,
 
         });
 
       }
-
     );
 
 
@@ -564,18 +712,12 @@ const getWarehouses = (
 
   try {
 
-    // ==================================================
-    // ACCEPT USER ID FROM QUERY
-    // ==================================================
-
     const rawUserId =
       req.query.user_id;
 
 
     const userId =
-      Number(
-        rawUserId
-      );
+      Number(rawUserId);
 
 
     console.log(
@@ -601,14 +743,8 @@ const getWarehouses = (
     );
 
 
-    // ==================================================
-    // VALIDATE USER
-    // ==================================================
-
     if (
-      !Number.isInteger(
-        userId
-      ) ||
+      !Number.isInteger(userId) ||
       userId <= 0
     ) {
 
@@ -624,10 +760,6 @@ const getWarehouses = (
 
     }
 
-
-    // ==================================================
-    // DATABASE
-    // ==================================================
 
     warehouseModel.getWarehousesByUser(
 
@@ -670,14 +802,8 @@ const getWarehouses = (
         }
 
 
-        // ==================================================
-        // NORMALIZE RESULT
-        // ==================================================
-
         const warehouses =
-          Array.isArray(
-            result
-          )
+          Array.isArray(result)
             ? result
             : [];
 
@@ -687,10 +813,6 @@ const getWarehouses = (
           warehouses.length
         );
 
-
-        // ==================================================
-        // SUCCESS
-        // ==================================================
 
         return res.status(200).json({
 
@@ -915,14 +1037,13 @@ const updateWarehouse = async (
       return_pincode,
       return_state,
       return_country,
+      status,
 
     } = req.body;
 
 
     const userId =
-      Number(
-        user_id
-      );
+      Number(user_id);
 
 
     if (
@@ -966,7 +1087,107 @@ const updateWarehouse = async (
 
 
     // ==================================================
-    // GET EXISTING
+    // STATUS ONLY UPDATE
+    // ==================================================
+    //
+    // The status toggle only changes ShipDrop's local
+    // warehouse status.
+    //
+    // It does NOT send an update to Delhivery.
+    //
+    // ACTIVE:
+    // Warehouse is available for Create Order.
+    //
+    // INACTIVE:
+    // Warehouse remains in ShipDrop but should be
+    // hidden from Create Order selection.
+    // ==================================================
+
+    if (status !== undefined) {
+
+      const normalizedStatus =
+        String(
+          status
+        )
+          .trim()
+          .toUpperCase();
+
+
+      if (
+        ![
+          "ACTIVE",
+          "INACTIVE",
+        ].includes(
+          normalizedStatus
+        )
+      ) {
+
+        return res.status(400).json({
+
+          success:
+            false,
+
+          message:
+            "Status must be ACTIVE or INACTIVE",
+
+        });
+
+      }
+
+
+db.query(
+  `
+  UPDATE warehouses
+  SET status = ?
+  WHERE id = ?
+    AND user_id = ?
+  `,
+  [
+    normalizedStatus,
+    warehouseId,
+    userId,
+  ],
+  (statusError, statusResult) => {
+
+    if (statusError) {
+      console.log(
+        "Warehouse status update error:",
+        statusError
+      );
+
+      return res.status(500).json({
+        success: false,
+        message:
+          statusError.message ||
+          "Unable to update warehouse status",
+      });
+    }
+
+    if (
+      statusResult.affectedRows === 0
+    ) {
+      return res.status(404).json({
+        success: false,
+        message: "Warehouse not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message:
+        "Warehouse status updated successfully",
+      warehouse_id: warehouseId,
+      status: normalizedStatus,
+    });
+  }
+);
+
+return;
+    }
+
+
+    // ==================================================
+    // GET EXISTING WAREHOUSE
     // ==================================================
 
     warehouseModel.getWarehouseById(
@@ -1023,6 +1244,9 @@ const updateWarehouse = async (
 
         const updateData = {
 
+          // IMPORTANT:
+          // Generated Delhivery warehouse name should
+          // never change during normal edit.
           warehouse_name:
             existing.warehouse_name,
 
@@ -1109,6 +1333,8 @@ const updateWarehouse = async (
           delhivery_registered:
             true,
 
+          // Preserve current status unless this is
+          // explicitly handled by the status-only block.
           status:
             existing.status ||
             "ACTIVE",
@@ -1277,6 +1503,7 @@ const deleteWarehouse = (
       Number(
         req.params.id
       );
+
 
     const userId =
       Number(

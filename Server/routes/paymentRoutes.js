@@ -6,24 +6,44 @@ const {
   getWalletBalance,
   createPaymentOrder,
   verifyPayment,
+  getWalletHistory,
 } = require("../controllers/paymentController");
 
 
-// Get wallet balance
+// ========================================
+// GET WALLET BALANCE
+// ========================================
+
 router.get(
   "/wallet",
   getWalletBalance
 );
 
 
-// Create Razorpay payment order
+// ========================================
+// GET WALLET HISTORY
+// ========================================
+
+router.get(
+  "/wallet/history",
+  getWalletHistory
+);
+
+
+// ========================================
+// CREATE RAZORPAY PAYMENT ORDER
+// ========================================
+
 router.post(
   "/create-order",
   createPaymentOrder
 );
 
 
-// Verify Razorpay payment
+// ========================================
+// VERIFY RAZORPAY PAYMENT
+// ========================================
+
 router.post(
   "/verify",
   verifyPayment

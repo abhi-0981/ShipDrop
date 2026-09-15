@@ -13,6 +13,10 @@ const {
 
 } = require("../models/orderModel");
 
+const {
+  attachTrackingToOrders,
+} = require("../services/delhiveryTrackingService");
+
 
 // ======================================================
 // CREATE ORDER
@@ -928,10 +932,10 @@ const getAllOrdersController =
 
         user_id,
 
-        (
-          error,
-          rows
-        ) => {
+        async (
+  error,
+  rows
+) => {
 
           if (error) {
 
@@ -954,18 +958,26 @@ const getAllOrdersController =
           }
 
 
-          // ==================================================
-          // SUCCESS RESPONSE
-          // ==================================================
+         // ==================================================
+// DELHIVERY TRACKING
+// ==================================================
 
-          return res.status(200).json({
+const ordersWithTracking =
+  await attachTrackingToOrders(rows || []);
 
-            success: true,
 
-            orders:
-              rows || [],
+// ==================================================
+// SUCCESS RESPONSE
+// ==================================================
 
-          });
+return res.status(200).json({
+
+  success: true,
+
+  orders:
+    ordersWithTracking,
+
+});
 
         }
 

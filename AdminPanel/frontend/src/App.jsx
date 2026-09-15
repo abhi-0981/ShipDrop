@@ -7,7 +7,6 @@ import {
   Navigate,
 } from "react-router-dom";
 
-
 import Login from "./pages/Login";
 
 import Dashboard from "./pages/dashboard/Dashboard";
@@ -19,6 +18,8 @@ import SetRate from "./rate-card/SetRate";
 import Users from "./pages/users/Users";
 
 import UserDetails from "./pages/users/UserDetails";
+
+import AdminTickets from "./pages/ticket/AdminTickets"; 
 
 import AdminLayout from "./components/AdminLayout";
 
@@ -171,6 +172,20 @@ function App() {
           element={
             <AdminPage>
               <UserDetails />
+            </AdminPage>
+          }
+        />
+
+
+        {/* ================================================= */}
+        {/* TICKETS */}
+        {/* ================================================= */}
+
+        <Route
+          path="/tickets"
+          element={
+            <AdminPage>
+              <AdminTickets />
             </AdminPage>
           }
         />

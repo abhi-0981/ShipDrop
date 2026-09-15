@@ -1,6 +1,227 @@
-import { useState } from "react";
-import api from "../../services/api";
+import { useEffect, useState } from "react";
+import axios from "axios";
+
+const API_URL = "http://localhost:5000/api";
+
+// ======================================================
+// ICON
+// ======================================================
+
+const Icon = ({ name, size = 18 }) => {
+  const common = {
+    width: size,
+    height: size,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 1.8,
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
+  };
+
+  if (name === "calculator") {
+    return (
+      <svg {...common}>
+        <rect x="5" y="3" width="14" height="18" rx="2" />
+        <path d="M8 7h8" />
+        <path d="M8 11h.01M12 11h.01M16 11h.01" />
+        <path d="M8 15h.01M12 15h.01M16 15h.01" />
+        <path d="M8 18h.01M12 18h4" />
+      </svg>
+    );
+  }
+
+  if (name === "location") {
+    return (
+      <svg {...common}>
+        <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" />
+        <circle cx="12" cy="10" r="2.5" />
+      </svg>
+    );
+  }
+
+  if (name === "truck") {
+    return (
+      <svg {...common}>
+        <path d="M3 6h11v10H3z" />
+        <path d="M14 9h4l3 3v4h-7V9Z" />
+        <circle cx="7" cy="18" r="2" />
+        <circle cx="18" cy="18" r="2" />
+      </svg>
+    );
+  }
+
+  if (name === "refresh") {
+    return (
+      <svg {...common}>
+        <path d="M20 11a8 8 0 0 0-14.8-4L3 9" />
+        <path d="M3 4v5h5" />
+        <path d="M4 13a8 8 0 0 0 14.8 4L21 15" />
+        <path d="M21 20v-5h-5" />
+      </svg>
+    );
+  }
+
+  if (name === "arrow-right") {
+    return (
+      <svg {...common}>
+        <path d="M5 12h14" />
+        <path d="m13 6 6 6-6 6" />
+      </svg>
+    );
+  }
+
+  return null;
+};
+
+// ======================================================
+// HELPERS
+// ======================================================
+
+const formatAmount = (amount) => {
+  const value = Number(amount || 0);
+
+  return `₹${value.toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+};
+
+const getRateValue = (result) => {
+  if (!result) {
+    return null;
+  }
+
+  const candidates = [
+    result.shipping_charge,
+    result.total_charge,
+    result.total,
+    result.final_charge,
+    result.amount,
+    result.price,
+  ];
+
+  for (const value of candidates) {
+    const numeric = Number(value);
+
+    if (Number.isFinite(numeric)) {
+      return numeric;
+    }
+  }
+
+  return null;
+};
+
+const getResultZone = (result) =>
+  result?.zone ||
+  result?.final_zone ||
+  "—";
+
+const getResultDistance = (result) => {
+  const distance = Number(result?.distance_km);
+
+  if (
+    Number.isFinite(distance) &&
+    distance > 0
+  ) {
+    return `${distance.toFixed(1)} km`;
+  }
+
+  return "—";
+};
+
+// ======================================================
+// RATE CARD
+// ======================================================
+
+const RateCard = ({
+  title,
+  subtitle,
+  icon,
+  rate,
+  accent = "slate",
+}) => {
+  const value = getRateValue(rate);
+
+  const iconClass =
+    accent === "sky"
+      ? "bg-sky-50 text-sky-600"
+      : "bg-slate-100 text-slate-500";
+
+  return (
+    <div
+      className={`rounded-xl border p-1.5 transition ${
+        rate
+          ? "border-slate-200 bg-white shadow-[0_1px_4px_rgba(15,23,42,0.03)]"
+          : "border-slate-100 bg-slate-50"
+      }`}
+    >
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div
+            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${iconClass}`}
+          >
+            <Icon
+              name={icon}
+              size={17}
+            />
+          </div>
+
+          <div>
+            <p className="text-[13px] font-semibold text-slate-700">
+              {title}
+            </p>
+
+            <p className="mt-0.5 text-[10px] text-slate-400">
+              {subtitle}
+            </p>
+          </div>
+        </div>
+
+        {value !== null ? (
+          <p className="text-[20px] font-semibold tracking-tight text-slate-800">
+            {formatAmount(value)}
+          </p>
+        ) : (
+          <span className="rounded-md bg-slate-100 px-2 py-1 text-[10px] font-medium text-slate-400">
+            Not available
+          </span>
+        )}
+      </div>
+
+      {rate && (
+        <div className="mt-2.5 flex items-center gap-5 border-t border-slate-100 pt-2.5">
+          <div>
+            <span className="text-[10px] text-slate-400">
+              Zone
+            </span>
+
+            <p className="mt-0.5 text-[11px] font-semibold text-slate-600">
+              {getResultZone(rate)}
+            </p>
+          </div>
+
+          <div>
+            <span className="text-[10px] text-slate-400">
+              Distance
+            </span>
+
+            <p className="mt-0.5 text-[11px] font-semibold text-slate-600">
+              {getResultDistance(rate)}
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ======================================================
+// RATE CALCULATOR
+// ======================================================
+
 function RateCalculator() {
+  const [user, setUser] = useState(null);
 
   const [pickupPincode, setPickupPincode] =
     useState("");
@@ -11,252 +232,357 @@ function RateCalculator() {
   const [weight, setWeight] =
     useState("");
 
-  const [loading, setLoading] =
-    useState(false);
-
-  const [result, setResult] =
-    useState(null);
-
-  const [error, setError] =
+  const [productPrice, setProductPrice] =
     useState("");
 
+  const [paymentType, setPaymentType] =
+    useState("PREPAID");
 
-  // ========================================
-  // CALCULATE RATES
-  // ========================================
+  const [rateLoading, setRateLoading] =
+    useState(false);
 
-  const calculateRates = async (e) => {
+  const [rateError, setRateError] =
+    useState("");
 
-    e.preventDefault();
+  const [shippingOptions, setShippingOptions] =
+    useState(null);
 
-    setError("");
-    setResult(null);
+  // ====================================================
+  // USER
+  // ====================================================
 
-
-    // ======================================
-    // PINCODE VALIDATION
-    // ======================================
-
-    if (
-      !/^\d{6}$/.test(
-        pickupPincode.trim()
-      )
-    ) {
-
-      setError(
-        "Enter a valid 6-digit pickup pincode"
+  useEffect(() => {
+    try {
+      const savedUser = JSON.parse(
+        localStorage.getItem("user") || "null"
       );
 
-      return;
-
-    }
-
-
-    if (
-      !/^\d{6}$/.test(
-        deliveryPincode.trim()
-      )
-    ) {
-
-      setError(
-        "Enter a valid 6-digit delivery pincode"
+      if (savedUser?.id) {
+        setUser(savedUser);
+      }
+    } catch (error) {
+      console.error(
+        "Rate calculator user error:",
+        error
       );
+    }
+  }, []);
 
-      return;
+  // ====================================================
+  // CALCULATE RATE
+  // ====================================================
 
+  const handleCalculateRate = async (event) => {
+    event.preventDefault();
+
+    setRateError("");
+    setShippingOptions(null);
+
+    let currentUser = user;
+
+    try {
+      if (!currentUser?.id) {
+        currentUser = JSON.parse(
+          localStorage.getItem("user") || "null"
+        );
+      }
+    } catch {
+      currentUser = null;
     }
 
+    if (!currentUser?.id) {
+      setRateError(
+        "User session not found. Please login again."
+      );
+      return;
+    }
 
-    // ======================================
-    // WEIGHT VALIDATION
-    // ======================================
+    const pickup =
+      String(pickupPincode).trim();
+
+    const delivery =
+      String(deliveryPincode).trim();
 
     const numericWeight =
       Number(weight);
 
+    const numericProductPrice =
+      Number(productPrice || 0);
 
-    if (
-      !numericWeight ||
-      numericWeight <= 0
-    ) {
+    // -------------------------------
+    // VALIDATION
+    // -------------------------------
 
-      setError(
-        "Enter a valid package weight"
+    if (!/^\d{6}$/.test(pickup)) {
+      setRateError(
+        "Enter a valid 6-digit pickup pincode."
       );
-
       return;
-
     }
 
+    if (!/^\d{6}$/.test(delivery)) {
+      setRateError(
+        "Enter a valid 6-digit delivery pincode."
+      );
+      return;
+    }
+
+    if (
+      !Number.isFinite(numericWeight) ||
+      numericWeight <= 0
+    ) {
+      setRateError(
+        "Enter a valid weight."
+      );
+      return;
+    }
+
+    if (
+      !Number.isFinite(
+        numericProductPrice
+      ) ||
+      numericProductPrice < 0
+    ) {
+      setRateError(
+        "Enter a valid product price."
+      );
+      return;
+    }
+
+    setRateLoading(true);
 
     try {
-
-      setLoading(true);
-
-
       const response =
-        await api.post(
-          "/rate/calculate-options",
+        await axios.post(
+          `${API_URL}/rate/calculate-options`,
           {
+            user_id: currentUser.id,
+
             pickup_pincode:
-              pickupPincode.trim(),
+              pickup,
 
             delivery_pincode:
-              deliveryPincode.trim(),
+              delivery,
 
             weight:
               numericWeight,
+
+            payment_type:
+              paymentType === "COD"
+                ? "COD"
+                : "Pre-paid",
+
+            product_value:
+              numericProductPrice,
           }
         );
 
+      const data =
+        response?.data;
 
-      if (
-        !response.data ||
-        !response.data.success
-      ) {
-
+      if (!data?.success) {
         throw new Error(
-          response.data?.message ||
-          "Unable to calculate rates"
+          data?.message ||
+            "Unable to calculate shipping rate"
         );
-
       }
 
-
-      setResult(
-        response.data
-      );
-
-
-    } catch (err) {
-
+      setShippingOptions(data);
+    } catch (error) {
       console.error(
-        "Rate calculator error:",
-        err
+        "Rate calculation error:",
+        error
       );
 
-
-      setError(
-        err.response?.data?.message ||
-        err.message ||
-        "Unable to calculate shipping rates"
+      setRateError(
+        error?.response?.data?.message ||
+          error?.message ||
+          "Unable to calculate shipping rate"
       );
-
     } finally {
-
-      setLoading(false);
-
+      setRateLoading(false);
     }
-
   };
 
+  // ====================================================
+  // RESET
+  // ====================================================
+
+  const handleReset = () => {
+    setPickupPincode("");
+    setDeliveryPincode("");
+    setWeight("");
+    setProductPrice("");
+    setPaymentType("PREPAID");
+    setRateError("");
+    setShippingOptions(null);
+  };
+
+  const roadRate =
+    shippingOptions?.road || null;
+
+  const airRate =
+    shippingOptions?.air || null;
+
+  // ====================================================
+  // MAIN
+  // ====================================================
 
   return (
+    <div className="min-h-full w-full bg-[#f6f8fb] p-5 md:p-6">
 
-    <div className="min-h-screen bg-slate-50 p-6">
+      {/* ==================================================
+          HEADER
+      ================================================== */}
 
-      <div className="mx-auto max-w-5xl">
+      <div className="mb-5 flex items-center justify-between">
+        <div>
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-sky-50 text-sky-600">
+              <Icon
+                name="calculator"
+                size={18}
+              />
+            </div>
 
+            <div>
+              <h1 className="text-[21px] font-semibold tracking-tight text-slate-900">
+                Rate Calculator
+              </h1>
 
-        {/* ================================= */}
-        {/* HEADER */}
-        {/* ================================= */}
-
-        <div className="mb-6">
-
-          <h1 className="text-2xl font-bold text-slate-900">
-            Rate Calculator
-          </h1>
-
-          <p className="mt-1 text-sm text-slate-500">
-            Calculate shipping charges instantly
-          </p>
-
+              <p className="mt-0.5 text-[12px] text-slate-400">
+                Calculate your shipping rate instantly
+              </p>
+            </div>
+          </div>
         </div>
 
+        <button
+          type="button"
+          onClick={handleReset}
+          className="flex h-9 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-[11px] font-semibold text-slate-500 shadow-[0_1px_3px_rgba(15,23,42,0.03)] transition hover:border-slate-300 hover:bg-slate-50"
+        >
+          <Icon
+            name="refresh"
+            size={14}
+          />
+          Reset
+        </button>
+      </div>
 
-        {/* ================================= */}
-        {/* CALCULATOR CARD */}
-        {/* ================================= */}
+      {/* ==================================================
+          MAIN GRID
+      ================================================== */}
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="mx-auto grid max-w-6xl grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_390px]">
+
+        {/* =================================================
+            LEFT - CALCULATOR FORM
+        ================================================= */}
+
+        <div className="rounded-xl border border-slate-200 bg-white shadow-[0_1px_4px_rgba(15,23,42,0.04)]">
+
+          {/* HEADER */}
+
+          <div className="border-b border-slate-100 px-5 py-4">
+            <p className="text-[13px] font-semibold text-slate-800">
+              Shipment Details
+            </p>
+
+            <p className="mt-0.5 text-[11px] text-slate-400">
+              Enter your shipment information to calculate available rates.
+            </p>
+          </div>
+
+          {/* FORM */}
 
           <form
-            onSubmit={calculateRates}
+            onSubmit={handleCalculateRate}
+            className="p-5"
           >
 
-            <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+            {/* PINCODES */}
 
-
-              {/* PICKUP PINCODE */}
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
 
               <div>
-
-                <label className="mb-2 block text-sm font-medium text-slate-700">
+                <label className="mb-1.5 block text-[11px] font-semibold text-slate-500">
                   Pickup Pincode
                 </label>
 
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={6}
-                  value={pickupPincode}
-                  onChange={(e) =>
-                    setPickupPincode(
-                      e.target.value.replace(
-                        /\D/g,
-                        ""
-                      )
-                    )
-                  }
-                  placeholder="Enter pickup pincode"
-                  className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-[#008dd2] focus:ring-2 focus:ring-[#008dd2]/10"
-                />
+                <div className="relative">
+                  <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                    <Icon
+                      name="location"
+                      size={15}
+                    />
+                  </div>
 
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={6}
+                    value={pickupPincode}
+                    onChange={(e) =>
+                      setPickupPincode(
+                        e.target.value.replace(
+                          /\D/g,
+                          ""
+                        )
+                      )
+                    }
+                    placeholder="302001"
+                    className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50 pl-9 pr-3 text-[12px] text-slate-700 outline-none transition placeholder:text-slate-300 focus:border-sky-300 focus:bg-white focus:ring-1 focus:ring-sky-100"
+                  />
+                </div>
               </div>
 
-
-              {/* DELIVERY PINCODE */}
-
               <div>
-
-                <label className="mb-2 block text-sm font-medium text-slate-700">
+                <label className="mb-1.5 block text-[11px] font-semibold text-slate-500">
                   Delivery Pincode
                 </label>
 
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={6}
-                  value={deliveryPincode}
-                  onChange={(e) =>
-                    setDeliveryPincode(
-                      e.target.value.replace(
-                        /\D/g,
-                        ""
-                      )
-                    )
-                  }
-                  placeholder="Enter delivery pincode"
-                  className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-[#008dd2] focus:ring-2 focus:ring-[#008dd2]/10"
-                />
-
-              </div>
-
-
-              {/* WEIGHT */}
-
-              <div>
-
-                <label className="mb-2 block text-sm font-medium text-slate-700">
-                  Package Weight
-                </label>
-
-                <div className="flex">
+                <div className="relative">
+                  <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                    <Icon
+                      name="location"
+                      size={15}
+                    />
+                  </div>
 
                   <input
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={6}
+                    value={deliveryPincode}
+                    onChange={(e) =>
+                      setDeliveryPincode(
+                        e.target.value.replace(
+                          /\D/g,
+                          ""
+                        )
+                      )
+                    }
+                    placeholder="110001"
+                    className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50 pl-9 pr-3 text-[12px] text-slate-700 outline-none transition placeholder:text-slate-300 focus:border-sky-300 focus:bg-white focus:ring-1 focus:ring-sky-100"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* WEIGHT + PRICE */}
+
+            <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+
+              <div>
+                <label className="mb-1.5 block text-[11px] font-semibold text-slate-500">
+                  Weight
+                </label>
+
+                <div className="relative">
+                  <input
                     type="number"
-                    min="0.01"
+                    min="0"
                     step="0.01"
                     value={weight}
                     onChange={(e) =>
@@ -264,272 +590,204 @@ function RateCalculator() {
                         e.target.value
                       )
                     }
-                    placeholder="Enter weight"
-                    className="min-w-0 flex-1 rounded-l-xl border border-r-0 border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-[#008dd2] focus:ring-2 focus:ring-[#008dd2]/10"
+                    placeholder="1.00"
+                    className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 pr-10 text-[12px] text-slate-700 outline-none transition placeholder:text-slate-300 focus:border-sky-300 focus:bg-white focus:ring-1 focus:ring-sky-100"
                   />
 
-                  <div className="flex items-center rounded-r-xl border border-slate-300 bg-slate-50 px-4 text-sm text-slate-600">
-                    Kg
-                  </div>
-
+                  <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-medium text-slate-400">
+                    kg
+                  </span>
                 </div>
-
-                <p className="mt-1.5 text-xs text-slate-400">
-                  Minimum chargeable weight is 0.5 Kg
-                </p>
-
               </div>
 
+              <div>
+                <label className="mb-1.5 block text-[11px] font-semibold text-slate-500">
+                  Product Price
+                </label>
+
+                <div className="relative">
+                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[11px] text-slate-400">
+                    ₹
+                  </span>
+
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={productPrice}
+                    onChange={(e) =>
+                      setProductPrice(
+                        e.target.value
+                      )
+                    }
+                    placeholder="500"
+                    className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50 pl-7 pr-3 text-[12px] text-slate-700 outline-none transition placeholder:text-slate-300 focus:border-sky-300 focus:bg-white focus:ring-1 focus:ring-sky-100"
+                  />
+                </div>
+              </div>
             </div>
 
+            {/* PAYMENT MODE */}
+
+            <div className="mt-4">
+              <label className="mb-1.5 block text-[11px] font-semibold text-slate-500">
+                Payment Mode
+              </label>
+
+              <div className="grid grid-cols-2 rounded-lg border border-slate-200 bg-slate-50 p-1">
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setPaymentType(
+                      "PREPAID"
+                    )
+                  }
+                  className={`h-9 rounded-md text-[11px] font-semibold transition ${
+                    paymentType === "PREPAID"
+                      ? "bg-white text-slate-800 shadow-[0_1px_3px_rgba(15,23,42,0.10)]"
+                      : "text-slate-400 hover:text-slate-600"
+                  }`}
+                >
+                  Prepaid
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setPaymentType(
+                      "COD"
+                    )
+                  }
+                  className={`h-9 rounded-md text-[11px] font-semibold transition ${
+                    paymentType === "COD"
+                      ? "bg-white text-slate-800 shadow-[0_1px_3px_rgba(15,23,42,0.10)]"
+                      : "text-slate-400 hover:text-slate-600"
+                  }`}
+                >
+                  COD
+                </button>
+
+              </div>
+            </div>
 
             {/* ERROR */}
 
-            {error && (
-
-              <div className="mt-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-                {error}
+            {rateError && (
+              <div className="mt-4 rounded-lg border border-rose-100 bg-rose-50 px-3 py-2.5 text-[11px] font-medium text-rose-600">
+                {rateError}
               </div>
-
             )}
-
 
             {/* BUTTON */}
 
             <button
               type="submit"
-              disabled={loading}
-              className="mt-6 w-full rounded-xl bg-[#008dd2] px-5 py-3 font-medium text-white transition hover:bg-[#007fbd] disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={rateLoading}
+              className="mt-5 flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-slate-900 text-[12px] font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
             >
-
-              {loading
-                ? "Calculating Rates..."
-                : "Calculate Rates"}
-
+              {rateLoading ? (
+                <>
+                  <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                  Calculating...
+                </>
+              ) : (
+                <>
+                  <Icon
+                    name="calculator"
+                    size={14}
+                  />
+                  Calculate Shipping Rate
+                </>
+              )}
             </button>
 
           </form>
-
         </div>
 
+        {/* =================================================
+            RIGHT - RESULTS
+        ================================================= */}
 
-        {/* ================================= */}
-        {/* RESULTS */}
-        {/* ================================= */}
+        <div className="rounded-xl border border-slate-200 bg-white shadow-[0_1px_4px_rgba(15,23,42,0.04)]">
 
-        {result && (
+          <div className="border-b border-slate-100 px-5 py-4">
+            <div className="flex items-center justify-between">
 
-          <div className="mt-6">
+              <div>
+                <p className="text-[13px] font-semibold text-slate-800">
+                  Available Rates
+                </p>
 
-            <div className="mb-4">
-
-              <h2 className="text-lg font-bold text-slate-900">
-                Shipping Rates
-              </h2>
-
-              <p className="text-sm text-slate-500">
-                Available shipping options for your shipment
-              </p>
-
-            </div>
-
-
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-
-
-              {/* ================================= */}
-              {/* SHIPDROP ROAD */}
-              {/* ================================= */}
-
-              <RateCard
-                title="ShipDrop Express"
-                subtitle="By Road"
-                service="ROAD"
-                data={result.road}
-              />
-
-
-              {/* ================================= */}
-              {/* SHADOWFAX ROAD */}
-              {/* ================================= */}
-
-              <RateCard
-                title="Shadowfax"
-                subtitle="By Road"
-                service="SHADOWFAX_ROAD"
-                data={result.road}
-              />
-
-
-              {/* ================================= */}
-              {/* SHIPDROP AIR */}
-              {/* ================================= */}
-
-              <RateCard
-                title="ShipDrop Express"
-                subtitle="By Air"
-                service="AIR"
-                data={result.air}
-              />
-
-            </div>
-
-
-            {/* ================================= */}
-            {/* DETAILS */}
-            {/* ================================= */}
-
-            <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-
-              <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-
-                <Detail
-                  label="Pickup"
-                  value={
-                    pickupPincode
-                  }
-                />
-
-                <Detail
-                  label="Delivery"
-                  value={
-                    deliveryPincode
-                  }
-                />
-
-                <Detail
-                  label="Weight"
-                  value={`${weight} Kg`}
-                />
-
-                <Detail
-                  label="Zone"
-                  value={
-                    result.road?.zone ||
-                    "-"
-                  }
-                />
-
+                <p className="mt-0.5 text-[11px] text-slate-400">
+                  Your assigned shipping rates
+                </p>
               </div>
 
-            </div>
+              <span className="rounded-md bg-slate-50 px-2 py-1 text-[9px] font-semibold uppercase tracking-wide text-slate-400">
+                {paymentType === "COD"
+                  ? "COD"
+                  : "Prepaid"}
+              </span>
 
+            </div>
           </div>
 
-        )}
+          <div className="p-5">
 
-      </div>
+            {!shippingOptions ? (
+              <div className="flex min-h-[310px] flex-col items-center justify-center text-center">
 
-    </div>
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-50 text-slate-300">
+                  <Icon
+                    name="calculator"
+                    size={22}
+                  />
+                </div>
 
-  );
+                <p className="mt-4 text-[12px] font-semibold text-slate-600">
+                  No rate calculated yet
+                </p>
 
-}
+                <p className="mt-1 max-w-[230px] text-[10px] leading-5 text-slate-400">
+                  Enter your shipment details and calculate the rate to see available Road and Air options.
+                </p>
 
+              </div>
+            ) : (
+              <div className="space-y-2.5">
 
-// ==================================================
-// RATE CARD
-// ==================================================
+                <RateCard
+                  title="By Road"
+                  subtitle="Surface"
+                  icon="truck"
+                  rate={roadRate}
+                />
 
-function RateCard({
-  title,
-  subtitle,
-  data,
-}) {
+                <RateCard
+                  title="By Air"
+                  subtitle="Express"
+                  icon="truck"
+                  rate={airRate}
+                  accent="sky"
+                />
 
-  if (!data) {
-    return null;
-  }
+                
 
+              </div>
+            )}
 
-  return (
-
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-
-      <div className="flex items-start justify-between">
-
-        <div>
-
-          <h3 className="font-semibold text-slate-900">
-            {title}
-          </h3>
-
-          <p className="mt-1 text-xs text-slate-500">
-            {subtitle}
-          </p>
-
+          </div>
         </div>
-
-        <div className="rounded-lg bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600">
-          Zone {data.zone}
-        </div>
-
       </div>
 
+      {/* ==================================================
+          INFO
+      ================================================== */}
 
-      <div className="mt-5">
-
-        <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-          Shipping Charge
-        </p>
-
-        <p className="mt-1 text-2xl font-bold text-[#008dd2]">
-          ₹{Number(
-            data.shipping_charge
-          ).toFixed(2)}
-        </p>
-
-      </div>
-
-
-      <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-4 text-xs text-slate-500">
-
-        <span>
-          Distance
-        </span>
-
-        <span className="font-medium text-slate-700">
-          {data.distance_km === null ||
-          data.distance_km === undefined
-            ? "-"
-            : `${data.distance_km} Km`}
-        </span>
-
-      </div>
-
+     
     </div>
-
   );
-
 }
-
-
-// ==================================================
-// DETAIL
-// ==================================================
-
-function Detail({
-  label,
-  value,
-}) {
-
-  return (
-
-    <div className="rounded-xl bg-slate-50 p-3">
-
-      <p className="text-xs text-slate-400">
-        {label}
-      </p>
-
-      <p className="mt-1 text-sm font-semibold text-slate-800">
-        {value}
-      </p>
-
-    </div>
-
-  );
-
-}
-
 
 export default RateCalculator;

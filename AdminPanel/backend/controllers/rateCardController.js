@@ -82,7 +82,6 @@ const createRateCard = async (req, res) => {
     });
 
   } catch (error) {
-
     console.error(
       "Create rate card error:",
       error.message
@@ -101,7 +100,6 @@ const createRateCard = async (req, res) => {
 
 const updateRateCard = async (req, res) => {
   try {
-
     const { id } = req.params;
     const { name } = req.body;
 
@@ -175,7 +173,6 @@ const updateRateCard = async (req, res) => {
     });
 
   } catch (error) {
-
     console.error(
       "Update rate card error:",
       error.message
@@ -194,7 +191,6 @@ const updateRateCard = async (req, res) => {
 
 const getRateCards = async (req, res) => {
   try {
-
     const [rateCards] =
       await db.query(
         `SELECT
@@ -212,7 +208,6 @@ const getRateCards = async (req, res) => {
     });
 
   } catch (error) {
-
     console.error(
       "Get rate cards error:",
       error.message
@@ -233,7 +228,6 @@ const updateRateCardStatus = async (
   req,
   res
 ) => {
-
   try {
 
     const { id } = req.params;
@@ -243,7 +237,6 @@ const updateRateCardStatus = async (
       is_active !== true &&
       is_active !== false
     ) {
-
       return res.status(400).json({
         message:
           "is_active must be true or false",
@@ -264,7 +257,6 @@ const updateRateCardStatus = async (
     if (
       result.affectedRows === 0
     ) {
-
       return res.status(404).json({
         message:
           "Rate card not found",
@@ -321,7 +313,6 @@ const getRateCardServices = async (
     if (
       rateCards.length === 0
     ) {
-
       return res.status(404).json({
         message:
           "Rate card not found",
@@ -334,18 +325,31 @@ const getRateCardServices = async (
           id,
           rate_card_id,
           service_type,
+
           use_shipping_charge_api,
           commission_percent,
+
+          fsc_percentage,
+          minimum_cod_charge,
+          cod_charge_percentage,
+          to_pay_charge,
+          additional_charge,
+
           created_at,
           updated_at
+
          FROM admin_rate_card_services
+
          WHERE rate_card_id = ?
+
          ORDER BY
            CASE
              WHEN service_type = 'ROAD'
                THEN 1
+
              WHEN service_type = 'AIR'
                THEN 2
+
              ELSE 3
            END`,
         [id]
@@ -376,7 +380,7 @@ const getRateCardServices = async (
 
 
 // =====================================================
-// UPDATE SERVICE API SETTINGS
+// UPDATE SERVICE SETTINGS
 // =====================================================
 
 const updateServiceSettings = async (
@@ -391,10 +395,23 @@ const updateServiceSettings = async (
       serviceId,
     } = req.params;
 
+
     const {
       use_shipping_charge_api,
       commission_percent,
+
+      fsc_percentage,
+      minimum_cod_charge,
+      cod_charge_percentage,
+      to_pay_charge,
+      additional_charge,
+
     } = req.body;
+
+
+    // -----------------------------------------------
+    // VALIDATE API FLAG
+    // -----------------------------------------------
 
     if (
       use_shipping_charge_api !== true &&
@@ -405,12 +422,76 @@ const updateServiceSettings = async (
         message:
           "use_shipping_charge_api must be true or false",
       });
+
     }
 
-    const commission =
-      Number(
-        commission_percent
+
+    // -----------------------------------------------
+    // GET EXISTING SERVICE
+    // -----------------------------------------------
+
+    const [services] =
+      await db.query(
+        `SELECT
+
+          id,
+          rate_card_id,
+          service_type,
+
+          use_shipping_charge_api,
+          commission_percent,
+
+          fsc_percentage,
+          minimum_cod_charge,
+          cod_charge_percentage,
+          to_pay_charge,
+          additional_charge
+
+         FROM admin_rate_card_services
+
+         WHERE id = ?
+
+         AND rate_card_id = ?
+
+         LIMIT 1`,
+        [
+          serviceId,
+          rateCardId,
+        ]
       );
+
+
+    if (
+      services.length === 0
+    ) {
+
+      return res.status(404).json({
+        message:
+          "Service not found",
+      });
+
+    }
+
+
+    const existingService =
+      services[0];
+
+
+    // -----------------------------------------------
+    // NORMALIZE COMMISSION
+    // -----------------------------------------------
+
+    const commission =
+      commission_percent === undefined ||
+      commission_percent === null ||
+      commission_percent === ""
+        ? Number(
+            existingService.commission_percent || 0
+          )
+        : Number(
+            commission_percent
+          );
+
 
     if (
       !Number.isFinite(
@@ -422,7 +503,9 @@ const updateServiceSettings = async (
         message:
           "Commission must be a valid number",
       });
+
     }
+
 
     if (
       commission < 0 ||
@@ -433,66 +516,247 @@ const updateServiceSettings = async (
         message:
           "Commission must be between 0 and 100",
       });
+
     }
 
-    const [services] =
-      await db.query(
-        `SELECT
-          id,
-          rate_card_id,
-          service_type
-         FROM admin_rate_card_services
-         WHERE id = ?
-         AND rate_card_id = ?
-         LIMIT 1`,
-        [
-          serviceId,
-          rateCardId,
-        ]
-      );
+
+    // -----------------------------------------------
+    // NORMALIZE FSC %
+    // -----------------------------------------------
+
+    const fsc =
+      fsc_percentage === undefined ||
+      fsc_percentage === null ||
+      fsc_percentage === ""
+        ? Number(
+            existingService.fsc_percentage || 0
+          )
+        : Number(
+            fsc_percentage
+          );
+
 
     if (
-      services.length === 0
+      !Number.isFinite(fsc) ||
+      fsc < 0 ||
+      fsc > 100
     ) {
 
-      return res.status(404).json({
+      return res.status(400).json({
         message:
-          "Service not found",
+          "FSC percentage must be between 0 and 100",
       });
+
     }
+
+
+    // -----------------------------------------------
+    // NORMALIZE MINIMUM COD CHARGE
+    // -----------------------------------------------
+
+    const minimumCodCharge =
+      minimum_cod_charge === undefined ||
+      minimum_cod_charge === null ||
+      minimum_cod_charge === ""
+        ? Number(
+            existingService.minimum_cod_charge || 0
+          )
+        : Number(
+            minimum_cod_charge
+          );
+
+
+    if (
+      !Number.isFinite(
+        minimumCodCharge
+      ) ||
+      minimumCodCharge < 0
+    ) {
+
+      return res.status(400).json({
+        message:
+          "Minimum COD charge must be a valid non-negative number",
+      });
+
+    }
+
+
+    // -----------------------------------------------
+    // NORMALIZE COD CHARGE %
+    // -----------------------------------------------
+
+    const codChargePercentage =
+      cod_charge_percentage === undefined ||
+      cod_charge_percentage === null ||
+      cod_charge_percentage === ""
+        ? Number(
+            existingService.cod_charge_percentage || 0
+          )
+        : Number(
+            cod_charge_percentage
+          );
+
+
+    if (
+      !Number.isFinite(
+        codChargePercentage
+      ) ||
+      codChargePercentage < 0 ||
+      codChargePercentage > 100
+    ) {
+
+      return res.status(400).json({
+        message:
+          "COD charge percentage must be between 0 and 100",
+      });
+
+    }
+
+
+    // -----------------------------------------------
+    // NORMALIZE TO PAY CHARGE
+    // -----------------------------------------------
+
+    const toPayCharge =
+      to_pay_charge === undefined ||
+      to_pay_charge === null ||
+      to_pay_charge === ""
+        ? Number(
+            existingService.to_pay_charge || 0
+          )
+        : Number(
+            to_pay_charge
+          );
+
+
+    if (
+      !Number.isFinite(
+        toPayCharge
+      ) ||
+      toPayCharge < 0
+    ) {
+
+      return res.status(400).json({
+        message:
+          "To Pay charge must be a valid non-negative number",
+      });
+
+    }
+
+
+    // -----------------------------------------------
+    // NORMALIZE ADDITIONAL CHARGE
+    // -----------------------------------------------
+
+    const additionalCharge =
+      additional_charge === undefined ||
+      additional_charge === null ||
+      additional_charge === ""
+        ? Number(
+            existingService.additional_charge || 0
+          )
+        : Number(
+            additional_charge
+          );
+
+
+    if (
+      !Number.isFinite(
+        additionalCharge
+      ) ||
+      additionalCharge < 0
+    ) {
+
+      return res.status(400).json({
+        message:
+          "Additional charge must be a valid non-negative number",
+      });
+
+    }
+
+
+    // -----------------------------------------------
+    // UPDATE ALL SERVICE SETTINGS
+    // -----------------------------------------------
 
     await db.query(
       `UPDATE admin_rate_card_services
+
        SET
+
          use_shipping_charge_api = ?,
-         commission_percent = ?
+         commission_percent = ?,
+
+         fsc_percentage = ?,
+         minimum_cod_charge = ?,
+         cod_charge_percentage = ?,
+         to_pay_charge = ?,
+         additional_charge = ?
+
        WHERE id = ?
+
        AND rate_card_id = ?`,
       [
+
         use_shipping_charge_api,
+
         commission,
+
+        fsc,
+
+        minimumCodCharge,
+
+        codChargePercentage,
+
+        toPayCharge,
+
+        additionalCharge,
+
         serviceId,
+
         rateCardId,
+
       ]
     );
+
+
+    // -----------------------------------------------
+    // GET UPDATED SERVICE
+    // -----------------------------------------------
 
     const [updated] =
       await db.query(
         `SELECT
+
           id,
           rate_card_id,
           service_type,
+
           use_shipping_charge_api,
-          commission_percent
+          commission_percent,
+
+          fsc_percentage,
+          minimum_cod_charge,
+          cod_charge_percentage,
+          to_pay_charge,
+          additional_charge,
+
+          created_at,
+          updated_at
+
          FROM admin_rate_card_services
+
          WHERE id = ?
+
          AND rate_card_id = ?
+
          LIMIT 1`,
         [
           serviceId,
           rateCardId,
         ]
       );
+
 
     res.json({
 
@@ -535,23 +799,37 @@ const getServiceRates = async (
       serviceId,
     } = req.params;
 
+
     const [services] =
       await db.query(
         `SELECT
+
           id,
           rate_card_id,
           service_type,
+
           use_shipping_charge_api,
-          commission_percent
+          commission_percent,
+
+          fsc_percentage,
+          minimum_cod_charge,
+          cod_charge_percentage,
+          to_pay_charge,
+          additional_charge
+
          FROM admin_rate_card_services
+
          WHERE id = ?
+
          AND rate_card_id = ?
+
          LIMIT 1`,
         [
           serviceId,
           rateCardId,
         ]
       );
+
 
     if (
       services.length === 0
@@ -561,28 +839,38 @@ const getServiceRates = async (
         message:
           "Service not found",
       });
+
     }
+
 
     const [rates] =
       await db.query(
         `SELECT
+
           id,
           service_id,
+
           weight_from,
           weight_to,
+
           zone_a_rate,
           zone_b_rate,
           zone_c_rate,
           zone_d_rate,
           zone_e_rate,
           zone_f_rate,
+
           created_at,
           updated_at
+
          FROM admin_rate_card_rates
+
          WHERE service_id = ?
+
          ORDER BY weight_from ASC`,
         [serviceId]
       );
+
 
     res.json({
 
@@ -624,6 +912,7 @@ const saveServiceRate = async (
       serviceId,
     } = req.params;
 
+
     const {
       weight_from,
       weight_to,
@@ -653,6 +942,7 @@ const saveServiceRate = async (
         message:
           "Weight From and Weight To are required",
       });
+
     }
 
 
@@ -660,6 +950,7 @@ const saveServiceRate = async (
       Number(
         weight_from
       );
+
 
     const weightTo =
       Number(
@@ -680,6 +971,7 @@ const saveServiceRate = async (
         message:
           "Invalid weight values",
       });
+
     }
 
 
@@ -691,6 +983,7 @@ const saveServiceRate = async (
         message:
           "Weight From cannot be negative",
       });
+
     }
 
 
@@ -702,6 +995,7 @@ const saveServiceRate = async (
         message:
           "Weight To must be greater than Weight From",
       });
+
     }
 
 
@@ -731,6 +1025,7 @@ const saveServiceRate = async (
         message:
           "Service not found",
       });
+
     }
 
 
@@ -791,6 +1086,7 @@ const saveServiceRate = async (
       overlapParams.push(
         existingExact[0].id
       );
+
     }
 
 
@@ -814,6 +1110,7 @@ const saveServiceRate = async (
         message:
           `Weight range overlaps with existing slab ${overlapping[0].weight_from} - ${overlapping[0].weight_to} kg`,
       });
+
     }
 
 
@@ -826,25 +1123,30 @@ const saveServiceRate = async (
         zone_a_rate
       ) || 0;
 
+
     const zoneB =
       Number(
         zone_b_rate
       ) || 0;
+
 
     const zoneC =
       Number(
         zone_c_rate
       ) || 0;
 
+
     const zoneD =
       Number(
         zone_d_rate
       ) || 0;
 
+
     const zoneE =
       Number(
         zone_e_rate
       ) || 0;
+
 
     const zoneF =
       Number(
@@ -866,13 +1168,16 @@ const saveServiceRate = async (
 
       await db.query(
         `UPDATE admin_rate_card_rates
+
          SET
+
            zone_a_rate = ?,
            zone_b_rate = ?,
            zone_c_rate = ?,
            zone_d_rate = ?,
            zone_e_rate = ?,
            zone_f_rate = ?
+
          WHERE id = ?`,
         [
           zoneA,
@@ -881,6 +1186,7 @@ const saveServiceRate = async (
           zoneD,
           zoneE,
           zoneF,
+
           rateId,
         ]
       );
@@ -889,20 +1195,27 @@ const saveServiceRate = async (
       const [savedRate] =
         await db.query(
           `SELECT
+
             id,
             service_id,
+
             weight_from,
             weight_to,
+
             zone_a_rate,
             zone_b_rate,
             zone_c_rate,
             zone_d_rate,
             zone_e_rate,
             zone_f_rate,
+
             created_at,
             updated_at
+
            FROM admin_rate_card_rates
+
            WHERE id = ?
+
            LIMIT 1`,
           [rateId]
         );
@@ -917,6 +1230,7 @@ const saveServiceRate = async (
           savedRate[0],
 
       });
+
     }
 
 
@@ -927,10 +1241,13 @@ const saveServiceRate = async (
     const [result] =
       await db.query(
         `INSERT INTO admin_rate_card_rates
+
         (
           service_id,
+
           weight_from,
           weight_to,
+
           zone_a_rate,
           zone_b_rate,
           zone_c_rate,
@@ -938,8 +1255,10 @@ const saveServiceRate = async (
           zone_e_rate,
           zone_f_rate
         )
+
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
+
           serviceId,
 
           weightFrom,
@@ -951,6 +1270,7 @@ const saveServiceRate = async (
           zoneD,
           zoneE,
           zoneF,
+
         ]
       );
 
@@ -962,20 +1282,27 @@ const saveServiceRate = async (
     const [savedRate] =
       await db.query(
         `SELECT
+
           id,
           service_id,
+
           weight_from,
           weight_to,
+
           zone_a_rate,
           zone_b_rate,
           zone_c_rate,
           zone_d_rate,
           zone_e_rate,
           zone_f_rate,
+
           created_at,
           updated_at
+
          FROM admin_rate_card_rates
+
          WHERE id = ?
+
          LIMIT 1`,
         [rateId]
       );
@@ -1049,6 +1376,7 @@ const getServiceAdditions = async (
         message:
           "Service not found",
       });
+
     }
 
 
@@ -1059,20 +1387,27 @@ const getServiceAdditions = async (
     const [additions] =
       await db.query(
         `SELECT
+
           id,
           service_id,
+
           from_kg,
           step_kg,
+
           zone_a_rate,
           zone_b_rate,
           zone_c_rate,
           zone_d_rate,
           zone_e_rate,
           zone_f_rate,
+
           created_at,
           updated_at
+
          FROM admin_rate_card_additions
+
          WHERE service_id = ?
+
          ORDER BY
            from_kg ASC,
            id ASC`,
@@ -1117,7 +1452,6 @@ const saveServiceAddition = async (
 
 
     const {
-
       id,
 
       from_kg,
@@ -1159,6 +1493,7 @@ const saveServiceAddition = async (
         message:
           "Service not found",
       });
+
     }
 
 
@@ -1170,6 +1505,7 @@ const saveServiceAddition = async (
       Number(
         from_kg
       );
+
 
     const step =
       Number(
@@ -1192,6 +1528,7 @@ const saveServiceAddition = async (
         message:
           "From (kg) must be a valid non-negative number",
       });
+
     }
 
 
@@ -1210,6 +1547,7 @@ const saveServiceAddition = async (
         message:
           "Step (kg) must be greater than 0",
       });
+
     }
 
 
@@ -1248,6 +1586,7 @@ const saveServiceAddition = async (
         message:
           "Zone addition rates must be valid non-negative numbers",
       });
+
     }
 
 
@@ -1275,16 +1614,21 @@ const saveServiceAddition = async (
       const [result] =
         await db.query(
           `UPDATE admin_rate_card_additions
+
            SET
+
              from_kg = ?,
              step_kg = ?,
+
              zone_a_rate = ?,
              zone_b_rate = ?,
              zone_c_rate = ?,
              zone_d_rate = ?,
              zone_e_rate = ?,
              zone_f_rate = ?
+
            WHERE id = ?
+
            AND service_id = ?`,
           [
 
@@ -1313,6 +1657,7 @@ const saveServiceAddition = async (
           message:
             "Addition rule not found",
         });
+
       }
 
     } else {
@@ -1324,10 +1669,13 @@ const saveServiceAddition = async (
       const [result] =
         await db.query(
           `INSERT INTO admin_rate_card_additions
+
           (
             service_id,
+
             from_kg,
             step_kg,
+
             zone_a_rate,
             zone_b_rate,
             zone_c_rate,
@@ -1335,6 +1683,7 @@ const saveServiceAddition = async (
             zone_e_rate,
             zone_f_rate
           )
+
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
 
@@ -1396,6 +1745,7 @@ const saveServiceAddition = async (
         },
 
       });
+
     }
 
 
@@ -1406,21 +1756,29 @@ const saveServiceAddition = async (
     const [saved] =
       await db.query(
         `SELECT
+
           id,
           service_id,
+
           from_kg,
           step_kg,
+
           zone_a_rate,
           zone_b_rate,
           zone_c_rate,
           zone_d_rate,
           zone_e_rate,
           zone_f_rate,
+
           created_at,
           updated_at
+
          FROM admin_rate_card_additions
+
          WHERE id = ?
+
          AND service_id = ?
+
          LIMIT 1`,
         [
           additionId,
@@ -1498,6 +1856,7 @@ const deleteServiceAddition = async (
         message:
           "Service not found",
       });
+
     }
 
 
@@ -1508,7 +1867,9 @@ const deleteServiceAddition = async (
     const [result] =
       await db.query(
         `DELETE FROM admin_rate_card_additions
+
          WHERE id = ?
+
          AND service_id = ?`,
         [
           additionId,
@@ -1525,6 +1886,7 @@ const deleteServiceAddition = async (
         message:
           "Addition rule not found",
       });
+
     }
 
 
@@ -1578,6 +1940,7 @@ const deleteRateCard = async (
         message:
           "Valid rate card ID is required",
       });
+
     }
 
 
@@ -1614,6 +1977,7 @@ const deleteRateCard = async (
         message:
           "Rate card not found",
       });
+
     }
 
 
@@ -1643,11 +2007,13 @@ const deleteRateCard = async (
 
       await connection.query(
         `DELETE FROM admin_rate_card_rates
+
          WHERE service_id = ?`,
         [
           service.id,
         ]
       );
+
     }
 
 
@@ -1662,11 +2028,13 @@ const deleteRateCard = async (
 
       await connection.query(
         `DELETE FROM admin_rate_card_additions
+
          WHERE service_id = ?`,
         [
           service.id,
         ]
       );
+
     }
 
 
@@ -1676,6 +2044,7 @@ const deleteRateCard = async (
 
     await connection.query(
       `DELETE FROM admin_rate_card_services
+
        WHERE rate_card_id = ?`,
       [
         rateCardId,
@@ -1689,6 +2058,7 @@ const deleteRateCard = async (
 
     await connection.query(
       `DELETE FROM admin_rate_cards
+
        WHERE id = ?`,
       [
         rateCardId,
@@ -1751,9 +2121,13 @@ const deleteServiceRate = async (
     const [services] =
       await db.query(
         `SELECT id
+
          FROM admin_rate_card_services
+
          WHERE id = ?
+
          AND rate_card_id = ?
+
          LIMIT 1`,
         [
           serviceId,
@@ -1770,6 +2144,7 @@ const deleteServiceRate = async (
         message:
           "Service not found",
       });
+
     }
 
 
@@ -1780,7 +2155,9 @@ const deleteServiceRate = async (
     const [result] =
       await db.query(
         `DELETE FROM admin_rate_card_rates
+
          WHERE id = ?
+
          AND service_id = ?`,
         [
           rateId,
@@ -1797,6 +2174,7 @@ const deleteServiceRate = async (
         message:
           "Rate slab not found",
       });
+
     }
 
 

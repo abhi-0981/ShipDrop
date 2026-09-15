@@ -16,6 +16,19 @@ const cors = require("cors");
 
 
 // ======================================================
+// AUTO-CANCEL JOB
+// ======================================================
+
+const {
+  startAutoCancelJob,
+} = require("./jobs/autoCancelManifestedOrders");
+
+const {
+  startTrackingJob,
+} = require("./jobs/trackActiveOrders");
+
+
+// ======================================================
 // APP
 // ======================================================
 
@@ -75,6 +88,15 @@ const shipmentRoutes =
 
 const warehouseRoutes =
   require("./routes/warehouseRoutes");
+
+const returnAddressRoutes =
+  require("./routes/returnAddressRoutes");
+
+const labelSettingsRoutes =
+  require("./routes/labelSettingsRoutes");
+
+const ticketRoutes =
+  require("./routes/ticketRoutes");
 
 
 // ======================================================
@@ -175,7 +197,31 @@ app.use(
 );
 
 
+// RETURN ADDRESSES
+app.use(
+  "/api/return-addresses",
+  returnAddressRoutes
+);
+
+
+// LABEL SETTINGS
+app.use(
+  "/api/label-settings",
+  labelSettingsRoutes
+);
+
+
+// TICKETS
+app.use(
+  "/api/tickets",
+  ticketRoutes
+);
+
+
+// ======================================================
 // OLD ORDERS ROUTE
+// ======================================================
+
 app.use(
   "/orders",
   orderRoutes
@@ -255,6 +301,15 @@ app.listen(
     console.log(
       "Database and API services initialized"
     );
+
+
+    // ====================================================
+    // START AUTO-CANCEL SCHEDULER
+    // ====================================================
+
+    startAutoCancelJob();
+
+    startTrackingJob();
 
   }
 );

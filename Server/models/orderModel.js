@@ -1,11 +1,6 @@
 const db = require("../config/db");
 const crypto = require("crypto");
 
-
-// ======================================================
-// CREATE PICKUP ADDRESS
-// ======================================================
-
 const createPickupAddress = (
   user_id,
   pickup_address,
@@ -13,7 +8,6 @@ const createPickupAddress = (
   pickup_city,
   callback,
 ) => {
-
   const query = `
     INSERT INTO pickup_addresses
     (
@@ -37,26 +31,17 @@ const createPickupAddress = (
   );
 };
 
-
-// ======================================================
-// GENERATE UNIQUE 6 DIGIT ORDER ID
-// ======================================================
-
 const generateUniqueOrderId = (
   callback,
   attempts = 0,
 ) => {
-
   if (attempts >= 10) {
-
     return callback(
       new Error(
         "Unable to generate unique order ID"
       )
     );
-
   }
-
 
   const orderId = String(
     crypto.randomInt(
@@ -65,7 +50,6 @@ const generateUniqueOrderId = (
     )
   );
 
-
   const checkQuery = `
     SELECT id
     FROM orders
@@ -73,37 +57,28 @@ const generateUniqueOrderId = (
     LIMIT 1
   `;
 
-
   db.query(
     checkQuery,
     [orderId],
     (err, rows) => {
-
       if (err) {
         return callback(err);
       }
 
-
       if (rows.length > 0) {
-
         return generateUniqueOrderId(
           callback,
           attempts + 1
         );
-
       }
-
 
       return callback(
         null,
         orderId
       );
-
     }
   );
-
 };
-
 
 // ======================================================
 // CREATE ORDER
@@ -121,7 +96,6 @@ const createOrder = (
         return callback(idError);
       }
 
-
       const query = `
         INSERT INTO orders
         (
@@ -129,6 +103,19 @@ const createOrder = (
           user_id,
           pickup_address_id,
           warehouse_id,
+
+          return_address_id,
+          return_name,
+          return_phone,
+          return_email,
+          return_address_line1,
+          return_address_line2,
+          return_landmark,
+          return_pincode,
+          return_city,
+          return_state,
+          return_country,
+
           consignee_name,
           mobile,
           alternate_mobile,
@@ -147,18 +134,25 @@ const createOrder = (
           risk_type,
           status
         )
-        VALUES (
-          ?, ?, ?, ?, ?, ?,
-          ?, ?, ?, ?, ?, ?,
-          ?, ?, ?, ?, ?, ?,
-          ?, ?, ?
-        )
-      `;
+       VALUES (
+  ?, ?, ?, ?,
 
+  ?, ?, ?, ?, ?, ?,
+  ?, ?, ?, ?, ?,
+
+  ?, ?, ?, ?, ?, ?,
+  ?, ?, ?, ?, ?, ?,
+  ?, ?, ?, ?, ?
+)
+      `;
 
       db.query(
         query,
         [
+
+          // ==========================================
+          // ORDER
+          // ==========================================
 
           publicOrderId,
 
@@ -168,6 +162,49 @@ const createOrder = (
 
           orderData.warehouse_id ||
             null,
+
+
+          // ==========================================
+          // RETURN ADDRESS
+          // ==========================================
+
+          orderData.return_address_id ||
+            null,
+
+          orderData.return_name ||
+            null,
+
+          orderData.return_phone ||
+            null,
+
+          orderData.return_email ||
+            null,
+
+          orderData.return_address_line1 ||
+            null,
+
+          orderData.return_address_line2 ||
+            null,
+
+          orderData.return_landmark ||
+            null,
+
+          orderData.return_pincode ||
+            null,
+
+          orderData.return_city ||
+            null,
+
+          orderData.return_state ||
+            null,
+
+          orderData.return_country ||
+            "India",
+
+
+          // ==========================================
+          // CONSIGNEE
+          // ==========================================
 
           orderData.consignee_name,
 
@@ -221,7 +258,6 @@ const createOrder = (
             return callback(err);
           }
 
-
           return callback(
             null,
             {
@@ -233,6 +269,10 @@ const createOrder = (
 
               warehouse_id:
                 orderData.warehouse_id ||
+                null,
+
+              return_address_id:
+                orderData.return_address_id ||
                 null,
 
               message:
@@ -248,16 +288,10 @@ const createOrder = (
 
 };
 
-
-// ======================================================
-// CREATE PRODUCT
-// ======================================================
-
 const createProduct = (
   productData,
   callback,
 ) => {
-
   const query = `
     INSERT INTO order_products
     (
@@ -271,43 +305,24 @@ const createProduct = (
     VALUES (?, ?, ?, ?, ?, ?)
   `;
 
-
   db.query(
     query,
     [
-
       productData.order_id,
-
       productData.product_name,
-
-      productData.sku ||
-        null,
-
-      productData.price ||
-        0,
-
-      productData.qty ||
-        1,
-
-      productData.tax ||
-        0,
-
+      productData.sku || null,
+      productData.price || 0,
+      productData.qty || 1,
+      productData.tax || 0,
     ],
     callback,
   );
-
 };
-
-
-// ======================================================
-// CREATE PACKAGE
-// ======================================================
 
 const createPackage = (
   packageData,
   callback,
 ) => {
-
   const query = `
     INSERT INTO order_packages
     (
@@ -321,50 +336,29 @@ const createPackage = (
     VALUES (?, ?, ?, ?, ?, ?)
   `;
 
-
   db.query(
     query,
     [
-
       packageData.order_id,
-
-      packageData.length ||
-        0,
-
-      packageData.width ||
-        0,
-
-      packageData.height ||
-        0,
-
-      packageData.weight ||
-        0,
-
-      packageData.package_count ||
-        1,
-
+      packageData.length || 0,
+      packageData.width || 0,
+      packageData.height || 0,
+      packageData.weight || 0,
+      packageData.package_count || 1,
     ],
     callback,
   );
-
 };
-
-
-// ======================================================
-// RUN QUERY PROMISE
-// ======================================================
 
 const runQuery = (
   sql,
   params = [],
 ) => {
-
   return new Promise(
     (
       resolve,
       reject
     ) => {
-
       db.query(
         sql,
         params,
@@ -372,44 +366,41 @@ const runQuery = (
           error,
           result
         ) => {
-
           if (error) {
             reject(error);
           } else {
             resolve(result);
           }
-
         }
       );
-
     }
   );
-
 };
-
-
-// ======================================================
-// GET PROCESSING ORDERS
-// ======================================================
 
 const getProcessingOrders = (
   user_id,
   callback,
 ) => {
-
   const query = `
     SELECT
-
-      /* ==========================================
-         ORDER
-      ========================================== */
-
       o.id,
       o.order_id,
       o.user_id,
 
       o.pickup_address_id,
       o.warehouse_id,
+
+      o.return_address_id,
+      o.return_name,
+      o.return_phone,
+      o.return_email,
+      o.return_address_line1,
+      o.return_address_line2,
+      o.return_landmark,
+      o.return_pincode,
+      o.return_city,
+      o.return_state,
+      o.return_country,
 
       o.awb,
 
@@ -438,69 +429,26 @@ const getProcessingOrders = (
       o.status,
       o.created_at,
 
-
-      /* ==========================================
-         OLD PICKUP ADDRESS
-      ========================================== */
-
       pa.pickup_address,
       pa.pickup_pincode,
       pa.pickup_city,
 
-
-      /* ==========================================
-         WAREHOUSE
-      ========================================== */
-
       w.id AS warehouse_id_joined,
-
       w.warehouse_name,
-
-      w.contact_name
-        AS warehouse_contact_name,
-
-      w.phone
-        AS warehouse_phone,
-
-      w.email
-        AS warehouse_email,
-
-      w.gstin
-        AS warehouse_gstin,
-
-      w.address_line1
-        AS warehouse_address_line1,
-
-      w.address_line2
-        AS warehouse_address_line2,
-
-      w.floor_no
-        AS warehouse_floor_no,
-
-      w.landmark
-        AS warehouse_landmark,
-
-      w.pincode
-        AS warehouse_pincode,
-
-      w.city
-        AS warehouse_city,
-
-      w.state
-        AS warehouse_state,
-
-      w.country
-        AS warehouse_country,
-
+      w.contact_name AS warehouse_contact_name,
+      w.phone AS warehouse_phone,
+      w.email AS warehouse_email,
+      w.gstin AS warehouse_gstin,
+      w.address_line1 AS warehouse_address_line1,
+      w.address_line2 AS warehouse_address_line2,
+      w.floor_no AS warehouse_floor_no,
+      w.landmark AS warehouse_landmark,
+      w.pincode AS warehouse_pincode,
+      w.city AS warehouse_city,
+      w.state AS warehouse_state,
+      w.country AS warehouse_country,
       w.delhivery_registered,
-
-      w.status
-        AS warehouse_status,
-
-
-      /* ==========================================
-         PRODUCT
-      ========================================== */
+      w.status AS warehouse_status,
 
       op.product_name,
       op.sku,
@@ -508,89 +456,65 @@ const getProcessingOrders = (
       op.qty,
       op.tax,
 
-
-      /* ==========================================
-         PACKAGE
-      ========================================== */
-
       pkg.length,
       pkg.width,
       pkg.height,
       pkg.weight,
       pkg.package_count
 
-
     FROM orders o
 
-
     LEFT JOIN pickup_addresses pa
-      ON pa.id =
-        o.pickup_address_id
-
+      ON pa.id = o.pickup_address_id
 
     LEFT JOIN warehouses w
-      ON w.id =
-        o.warehouse_id
-      AND w.user_id =
-        o.user_id
-
+      ON w.id = o.warehouse_id
+      AND w.user_id = o.user_id
 
     LEFT JOIN order_products op
-      ON op.order_id =
-        o.id
-
+      ON op.order_id = o.id
 
     LEFT JOIN order_packages pkg
-      ON pkg.order_id =
-        o.id
-
+      ON pkg.order_id = o.id
 
     WHERE
       o.user_id = ?
+      AND UPPER(o.status) = 'PROCESSING'
 
-      AND UPPER(
-        o.status
-      ) = 'PROCESSING'
-
-
-    ORDER BY
-      o.id DESC
+    ORDER BY o.id DESC
   `;
-
 
   db.query(
     query,
-    [
-      user_id,
-    ],
+    [user_id],
     callback,
   );
-
 };
-
-
-// ======================================================
-// GET ALL ORDERS
-// ======================================================
 
 const getAllOrders = (
   user_id,
   callback,
 ) => {
-
   const query = `
     SELECT
-
-      /* ==========================================
-         ORDER
-      ========================================== */
-
       o.id,
       o.order_id,
       o.user_id,
 
       o.pickup_address_id,
       o.warehouse_id,
+
+      o.return_address_id,
+      o.return_name,
+      o.return_phone,
+      o.return_email,
+      o.return_address_line1,
+      o.return_address_line2,
+      o.return_landmark,
+      o.return_pincode,
+      o.return_city,
+      o.return_state,
+      o.return_country,
 
       o.awb,
 
@@ -619,69 +543,26 @@ const getAllOrders = (
       o.status,
       o.created_at,
 
-
-      /* ==========================================
-         PICKUP ADDRESS
-      ========================================== */
-
       pa.pickup_address,
       pa.pickup_pincode,
       pa.pickup_city,
 
-
-      /* ==========================================
-         WAREHOUSE
-      ========================================== */
-
       w.id AS warehouse_id_joined,
-
       w.warehouse_name,
-
-      w.contact_name
-        AS warehouse_contact_name,
-
-      w.phone
-        AS warehouse_phone,
-
-      w.email
-        AS warehouse_email,
-
-      w.gstin
-        AS warehouse_gstin,
-
-      w.address_line1
-        AS warehouse_address_line1,
-
-      w.address_line2
-        AS warehouse_address_line2,
-
-      w.floor_no
-        AS warehouse_floor_no,
-
-      w.landmark
-        AS warehouse_landmark,
-
-      w.pincode
-        AS warehouse_pincode,
-
-      w.city
-        AS warehouse_city,
-
-      w.state
-        AS warehouse_state,
-
-      w.country
-        AS warehouse_country,
-
+      w.contact_name AS warehouse_contact_name,
+      w.phone AS warehouse_phone,
+      w.email AS warehouse_email,
+      w.gstin AS warehouse_gstin,
+      w.address_line1 AS warehouse_address_line1,
+      w.address_line2 AS warehouse_address_line2,
+      w.floor_no AS warehouse_floor_no,
+      w.landmark AS warehouse_landmark,
+      w.pincode AS warehouse_pincode,
+      w.city AS warehouse_city,
+      w.state AS warehouse_state,
+      w.country AS warehouse_country,
       w.delhivery_registered,
-
-      w.status
-        AS warehouse_status,
-
-
-      /* ==========================================
-         PRODUCT
-      ========================================== */
+      w.status AS warehouse_status,
 
       op.product_name,
       op.sku,
@@ -689,91 +570,68 @@ const getAllOrders = (
       op.qty,
       op.tax,
 
-
-      /* ==========================================
-         PACKAGE
-      ========================================== */
-
       pkg.length,
       pkg.width,
       pkg.height,
       pkg.weight,
       pkg.package_count
 
-
     FROM orders o
 
-
     LEFT JOIN pickup_addresses pa
-      ON pa.id =
-        o.pickup_address_id
-
+      ON pa.id = o.pickup_address_id
 
     LEFT JOIN warehouses w
-      ON w.id =
-        o.warehouse_id
-      AND w.user_id =
-        o.user_id
-
+      ON w.id = o.warehouse_id
+      AND w.user_id = o.user_id
 
     LEFT JOIN order_products op
-      ON op.order_id =
-        o.id
-
+      ON op.order_id = o.id
 
     LEFT JOIN order_packages pkg
-      ON pkg.order_id =
-        o.id
+      ON pkg.order_id = o.id
 
+    WHERE o.user_id = ?
 
-    WHERE
-      o.user_id = ?
-
-
-    ORDER BY
-      o.id DESC
+    ORDER BY o.id DESC
   `;
-
 
   db.query(
     query,
-    [
-      user_id,
-    ],
+    [user_id],
     callback,
   );
-
 };
-
-
-// ======================================================
-// GET ORDER BY ID
-// ======================================================
 
 const getOrderById = (
   orderId,
   userId
 ) => {
-
   return new Promise(
     (
       resolve,
       reject
     ) => {
-
       const query = `
         SELECT
-
-          /* ========================================
-             ORDER
-          ======================================== */
-
           o.id,
           o.order_id,
           o.user_id,
 
           o.pickup_address_id,
           o.warehouse_id,
+
+          o.return_address_id,
+          o.return_name,
+          o.return_phone,
+          o.return_email,
+          o.return_address_line1,
+          o.return_address_line2,
+          o.return_landmark,
+          o.return_pincode,
+          o.return_city,
+          o.return_state,
+          o.return_country,
 
           o.awb,
 
@@ -802,69 +660,26 @@ const getOrderById = (
           o.status,
           o.created_at,
 
-
-          /* ========================================
-             OLD PICKUP ADDRESS
-          ======================================== */
-
           pa.pickup_address,
           pa.pickup_pincode,
           pa.pickup_city,
 
-
-          /* ========================================
-             WAREHOUSE
-          ======================================== */
-
           w.id AS warehouse_id_joined,
-
           w.warehouse_name,
-
-          w.contact_name
-            AS warehouse_contact_name,
-
-          w.phone
-            AS warehouse_phone,
-
-          w.email
-            AS warehouse_email,
-
-          w.gstin
-            AS warehouse_gstin,
-
-          w.address_line1
-            AS warehouse_address_line1,
-
-          w.address_line2
-            AS warehouse_address_line2,
-
-          w.floor_no
-            AS warehouse_floor_no,
-
-          w.landmark
-            AS warehouse_landmark,
-
-          w.pincode
-            AS warehouse_pincode,
-
-          w.city
-            AS warehouse_city,
-
-          w.state
-            AS warehouse_state,
-
-          w.country
-            AS warehouse_country,
-
+          w.contact_name AS warehouse_contact_name,
+          w.phone AS warehouse_phone,
+          w.email AS warehouse_email,
+          w.gstin AS warehouse_gstin,
+          w.address_line1 AS warehouse_address_line1,
+          w.address_line2 AS warehouse_address_line2,
+          w.floor_no AS warehouse_floor_no,
+          w.landmark AS warehouse_landmark,
+          w.pincode AS warehouse_pincode,
+          w.city AS warehouse_city,
+          w.state AS warehouse_state,
+          w.country AS warehouse_country,
           w.delhivery_registered,
-
-          w.status
-            AS warehouse_status,
-
-
-          /* ========================================
-             PRODUCT
-          ======================================== */
+          w.status AS warehouse_status,
 
           op.product_name,
           op.sku,
@@ -872,42 +687,26 @@ const getOrderById = (
           op.qty,
           op.tax,
 
-
-          /* ========================================
-             PACKAGE
-          ======================================== */
-
           pkg.length,
           pkg.width,
           pkg.height,
           pkg.weight,
           pkg.package_count
 
-
         FROM orders o
 
-
         LEFT JOIN pickup_addresses pa
-          ON pa.id =
-            o.pickup_address_id
-
+          ON pa.id = o.pickup_address_id
 
         LEFT JOIN warehouses w
-          ON w.id =
-            o.warehouse_id
-          AND w.user_id =
-            o.user_id
-
+          ON w.id = o.warehouse_id
+          AND w.user_id = o.user_id
 
         LEFT JOIN order_products op
-          ON op.order_id =
-            o.id
-
+          ON op.order_id = o.id
 
         LEFT JOIN order_packages pkg
-          ON pkg.order_id =
-            o.id
-
+          ON pkg.order_id = o.id
 
         WHERE
           o.id = ?
@@ -915,7 +714,6 @@ const getOrderById = (
 
         LIMIT 1
       `;
-
 
       db.query(
         query,
@@ -927,31 +725,22 @@ const getOrderById = (
           error,
           rows
         ) => {
-
           if (error) {
             return reject(error);
           }
 
-
-          if (
-            rows.length === 0
-          ) {
-
+          if (rows.length === 0) {
             return reject(
               new Error(
                 "Order not found"
               )
             );
-
           }
-
 
           const firstRow =
             rows[0];
 
-
           const order = {
-
             id:
               firstRow.id,
 
@@ -966,6 +755,39 @@ const getOrderById = (
 
             warehouse_id:
               firstRow.warehouse_id,
+
+            return_address_id:
+              firstRow.return_address_id,
+
+            return_name:
+              firstRow.return_name,
+
+            return_phone:
+              firstRow.return_phone,
+
+            return_email:
+              firstRow.return_email,
+
+            return_address_line1:
+              firstRow.return_address_line1,
+
+            return_address_line2:
+              firstRow.return_address_line2,
+
+            return_landmark:
+              firstRow.return_landmark,
+
+            return_pincode:
+              firstRow.return_pincode,
+
+            return_city:
+              firstRow.return_city,
+
+            return_state:
+              firstRow.return_state,
+
+            return_country:
+              firstRow.return_country,
 
             awb:
               firstRow.awb,
@@ -1024,9 +846,7 @@ const getOrderById = (
             created_at:
               firstRow.created_at,
 
-
             pickup: {
-
               id:
                 firstRow.pickup_address_id,
 
@@ -1038,71 +858,64 @@ const getOrderById = (
 
               city:
                 firstRow.pickup_city,
-
             },
 
+            warehouse:
+              firstRow.warehouse_id
+                ? {
+                    id:
+                      firstRow.warehouse_id_joined,
 
-            warehouse: firstRow.warehouse_id
-              ? {
+                    warehouse_name:
+                      firstRow.warehouse_name,
 
-                  id:
-                    firstRow.warehouse_id_joined,
+                    contact_name:
+                      firstRow.warehouse_contact_name,
 
-                  warehouse_name:
-                    firstRow.warehouse_name,
+                    phone:
+                      firstRow.warehouse_phone,
 
-                  contact_name:
-                    firstRow.warehouse_contact_name,
+                    email:
+                      firstRow.warehouse_email,
 
-                  phone:
-                    firstRow.warehouse_phone,
+                    gstin:
+                      firstRow.warehouse_gstin,
 
-                  email:
-                    firstRow.warehouse_email,
+                    address_line1:
+                      firstRow.warehouse_address_line1,
 
-                  gstin:
-                    firstRow.warehouse_gstin,
+                    address_line2:
+                      firstRow.warehouse_address_line2,
 
-                  address_line1:
-                    firstRow.warehouse_address_line1,
+                    floor_no:
+                      firstRow.warehouse_floor_no,
 
-                  address_line2:
-                    firstRow.warehouse_address_line2,
+                    landmark:
+                      firstRow.warehouse_landmark,
 
-                  floor_no:
-                    firstRow.warehouse_floor_no,
+                    pincode:
+                      firstRow.warehouse_pincode,
 
-                  landmark:
-                    firstRow.warehouse_landmark,
+                    city:
+                      firstRow.warehouse_city,
 
-                  pincode:
-                    firstRow.warehouse_pincode,
+                    state:
+                      firstRow.warehouse_state,
 
-                  city:
-                    firstRow.warehouse_city,
+                    country:
+                      firstRow.warehouse_country,
 
-                  state:
-                    firstRow.warehouse_state,
+                    delhivery_registered:
+                      firstRow.delhivery_registered,
 
-                  country:
-                    firstRow.warehouse_country,
-
-                  delhivery_registered:
-                    firstRow.delhivery_registered,
-
-                  status:
-                    firstRow.warehouse_status,
-
-                }
-
-              : null,
+                    status:
+                      firstRow.warehouse_status,
+                  }
+                : null,
 
             products: [],
-
             packages: [],
-
           };
-
 
           const productKeys =
             new Set();
@@ -1110,24 +923,19 @@ const getOrderById = (
           const packageKeys =
             new Set();
 
-
           rows.forEach(
             (row) => {
-
               if (
                 row.product_name &&
                 !productKeys.has(
                   `${row.product_name}-${row.sku}`
                 )
               ) {
-
                 productKeys.add(
                   `${row.product_name}-${row.sku}`
                 );
 
-
                 order.products.push({
-
                   product_name:
                     row.product_name,
 
@@ -1142,17 +950,13 @@ const getOrderById = (
 
                   tax:
                     row.tax,
-
                 });
-
               }
-
 
               if (
                 row.weight !== null &&
                 row.weight !== undefined
               ) {
-
                 const packageKey =
                   [
                     row.length,
@@ -1160,24 +964,18 @@ const getOrderById = (
                     row.height,
                     row.weight,
                     row.package_count,
-                  ].join(
-                    "-"
-                  );
-
+                  ].join("-");
 
                 if (
                   !packageKeys.has(
                     packageKey
                   )
                 ) {
-
                   packageKeys.add(
                     packageKey
                   );
 
-
                   order.packages.push({
-
                     length:
                       row.length,
 
@@ -1192,33 +990,18 @@ const getOrderById = (
 
                     package_count:
                       row.package_count,
-
                   });
-
                 }
-
               }
-
             }
           );
 
-
-          return resolve(
-            order
-          );
-
+          return resolve(order);
         }
       );
-
     }
   );
-
 };
-
-
-// ======================================================
-// UPDATE ORDER
-// ======================================================
 
 const updateOrder = (
   orderId,
@@ -1228,376 +1011,428 @@ const updateOrder = (
   products,
   packages,
 ) => {
-  return new Promise(async (resolve, reject) => {
-    let connection;
-
-    try {
-      // ==========================================
-      // GET TRANSACTION CONNECTION
-      // ==========================================
-      connection = await db.promise().getConnection();
-
-      await connection.beginTransaction();
-
-      // ==========================================
-      // TRANSACTION QUERY HELPER
-      // ==========================================
-      const txQuery = (sql, params = []) => {
-        return connection
-          .query(sql, params)
-          .then(([rows]) => rows);
-      };
-
-      // ==========================================
-      // CHECK ORDER
-      // ==========================================
-      const orderRows = await txQuery(
-        `
-          SELECT
-            id,
-            order_id,
-            pickup_address_id,
-            warehouse_id
-          FROM orders
-          WHERE
-            id = ?
-            AND user_id = ?
-            AND UPPER(status) = 'PROCESSING'
-          LIMIT 1
-        `,
-        [orderId, userId],
-      );
-
-      if (orderRows.length === 0) {
-        throw new Error("Processing order not found");
-      }
-
-      const pickupAddressId =
-        orderRows[0].pickup_address_id;
-
-      const existingWarehouseId =
-        orderRows[0].warehouse_id;
-
-      // ==========================================
-      // VALIDATE / UPDATE WAREHOUSE
-      // ==========================================
-      const requestedWarehouseId = Number(
-        orderData?.warehouse_id ||
-          existingWarehouseId ||
-          0
-      );
-
-      if (!requestedWarehouseId) {
-        throw new Error(
-          "Pickup warehouse is required"
-        );
-      }
-
-      const warehouseRows = await txQuery(
-        `
-          SELECT
-            id,
-            warehouse_name,
-            delhivery_registered,
-            status
-          FROM warehouses
-          WHERE
-            id = ?
-            AND user_id = ?
-          LIMIT 1
-        `,
-        [requestedWarehouseId, userId],
-      );
-
-      if (warehouseRows.length === 0) {
-        throw new Error(
-          "Selected pickup warehouse not found"
-        );
-      }
-
-      if (
-        String(
-          warehouseRows[0].status || ""
-        ).toUpperCase() !== "ACTIVE"
-      ) {
-        throw new Error(
-          "Selected pickup warehouse is inactive"
-        );
-      }
-
-      if (
-        Number(
-          warehouseRows[0].delhivery_registered
-        ) !== 1
-      ) {
-        throw new Error(
-          "Selected pickup warehouse is not registered with Delhivery"
-        );
-      }
-
-      // ==========================================
-      // UPDATE WAREHOUSE REFERENCE
-      // ==========================================
-      await txQuery(
-        `
-          UPDATE orders
-          SET
-            warehouse_id = ?
-          WHERE
-            id = ?
-            AND user_id = ?
-            AND UPPER(status) = 'PROCESSING'
-        `,
-        [
-          requestedWarehouseId,
-          orderId,
-          userId,
-        ],
-      );
-
-      // ==========================================
-      // UPDATE PICKUP ADDRESS
-      // ==========================================
-      await txQuery(
-        `
-          UPDATE pickup_addresses
-          SET
-            pickup_address = ?,
-            pickup_pincode = ?,
-            pickup_city = ?
-          WHERE
-            id = ?
-            AND user_id = ?
-        `,
-        [
-          pickupData?.pickup_address || "",
-          pickupData?.pickup_pincode || "",
-          pickupData?.pickup_city || null,
-          pickupAddressId,
-          userId,
-        ],
-      );
-
-      // ==========================================
-      // UPDATE ORDER
-      // ==========================================
-      await txQuery(
-        `
-          UPDATE orders
-          SET
-            consignee_name = ?,
-            mobile = ?,
-            alternate_mobile = ?,
-            email = ?,
-
-            gstin = ?,
-            company_name = ?,
-            floor_no = ?,
-            landmark = ?,
-
-            address_line1 = ?,
-            address_line2 = ?,
-
-            pincode = ?,
-            city = ?,
-            state = ?,
-            country = ?,
-
-            payment_type = ?,
-            risk_type = ?
-          WHERE
-            id = ?
-            AND user_id = ?
-            AND UPPER(status) = 'PROCESSING'
-        `,
-        [
-          orderData?.consignee_name || "",
-          orderData?.mobile || "",
-          orderData?.alternate_mobile || null,
-          orderData?.email || null,
-
-          orderData?.gstin || null,
-          orderData?.company_name || null,
-          orderData?.floor_no || null,
-          orderData?.landmark || null,
-
-          orderData?.address_line1 || "",
-          orderData?.address_line2 || null,
-
-          orderData?.pincode || "",
-          orderData?.city || "",
-          orderData?.state || "",
-          orderData?.country || "India",
-
-          orderData?.payment_type || "Prepaid",
-          orderData?.risk_type || "Owner Risk",
-
-          orderId,
-          userId,
-        ],
-      );
-
-      // ==========================================
-      // DELETE OLD PRODUCTS
-      // ==========================================
-      await txQuery(
-        `
-          DELETE FROM order_products
-          WHERE order_id = ?
-        `,
-        [orderId],
-      );
-
-      // ==========================================
-      // INSERT NEW PRODUCTS
-      // ==========================================
-      if (Array.isArray(products)) {
-        for (const product of products) {
-          await txQuery(
-            `
-              INSERT INTO order_products
-              (
-                order_id,
-                product_name,
-                sku,
-                price,
-                qty,
-                tax
-              )
-              VALUES (?, ?, ?, ?, ?, ?)
-            `,
-            [
-              orderId,
-              product?.product_name || "",
-              product?.sku || null,
-              Number(product?.price) || 0,
-              Number(product?.qty) || 1,
-              Number(product?.tax) || 0,
-            ],
-          );
-        }
-      }
-
-      // ==========================================
-      // DELETE OLD PACKAGES
-      // ==========================================
-      await txQuery(
-        `
-          DELETE FROM order_packages
-          WHERE order_id = ?
-        `,
-        [orderId],
-      );
-
-      // ==========================================
-      // INSERT NEW PACKAGES
-      // ==========================================
-      if (Array.isArray(packages)) {
-        for (const pkg of packages) {
-          await txQuery(
-            `
-              INSERT INTO order_packages
-              (
-                order_id,
-                length,
-                width,
-                height,
-                weight,
-                package_count
-              )
-              VALUES (?, ?, ?, ?, ?, ?)
-            `,
-            [
-              orderId,
-              Number(pkg?.length) || 0,
-              Number(pkg?.width) || 0,
-              Number(pkg?.height) || 0,
-              Number(pkg?.weight) || 0,
-              Number(pkg?.package_count) || 1,
-            ],
-          );
-        }
-      }
-
-      // ==========================================
-      // COMMIT
-      // ==========================================
-      await connection.commit();
-
-      resolve({
-  success: true,
-  message: "Order updated successfully",
-  order_id: orderId,
-  warehouse_id: requestedWarehouseId,
-});
-    } catch (error) {
-      // ==========================================
-      // ROLLBACK
-      // ==========================================
-      if (connection) {
-        try {
-          await connection.rollback();
-        } catch (rollbackError) {
-          console.log(
-            "Rollback error:",
-            rollbackError
-          );
-        }
-      }
-
-      reject(error);
-    } finally {
-      // ==========================================
-      // RELEASE CONNECTION
-      // ==========================================
-      if (connection) {
-        connection.release();
-      }
-    }
-  });
-};
-
-
-// ======================================================
-// DELETE PROCESSING ORDERS
-// ======================================================
-
-const deleteProcessingOrders = (
-  userId,
-  orderIds,
-) => {
-
   return new Promise(
     async (
       resolve,
       reject
     ) => {
+      let connection;
 
+      try {
+        connection =
+          await db
+            .promise()
+            .getConnection();
+
+        await connection.beginTransaction();
+
+        const txQuery = (
+          sql,
+          params = []
+        ) => {
+          return connection
+            .query(sql, params)
+            .then(([rows]) => rows);
+        };
+
+        const orderRows =
+          await txQuery(
+            `
+              SELECT
+                id,
+                order_id,
+                pickup_address_id,
+                warehouse_id
+              FROM orders
+              WHERE
+                id = ?
+                AND user_id = ?
+                AND UPPER(status) = 'PROCESSING'
+              LIMIT 1
+            `,
+            [
+              orderId,
+              userId,
+            ],
+          );
+
+        if (
+          orderRows.length === 0
+        ) {
+          throw new Error(
+            "Processing order not found"
+          );
+        }
+
+        const pickupAddressId =
+          orderRows[0]
+            .pickup_address_id;
+
+        const existingWarehouseId =
+          orderRows[0]
+            .warehouse_id;
+
+        const requestedWarehouseId =
+          Number(
+            orderData?.warehouse_id ||
+              existingWarehouseId ||
+              0
+          );
+
+        if (
+          !requestedWarehouseId
+        ) {
+          throw new Error(
+            "Pickup warehouse is required"
+          );
+        }
+
+        const warehouseRows =
+          await txQuery(
+            `
+              SELECT
+                id,
+                warehouse_name,
+                delhivery_registered,
+                status
+              FROM warehouses
+              WHERE
+                id = ?
+                AND user_id = ?
+              LIMIT 1
+            `,
+            [
+              requestedWarehouseId,
+              userId,
+            ],
+          );
+
+        if (
+          warehouseRows.length === 0
+        ) {
+          throw new Error(
+            "Selected pickup warehouse not found"
+          );
+        }
+
+        if (
+          String(
+            warehouseRows[0]
+              .status || ""
+          ).toUpperCase() !==
+          "ACTIVE"
+        ) {
+          throw new Error(
+            "Selected pickup warehouse is inactive"
+          );
+        }
+
+        if (
+          Number(
+            warehouseRows[0]
+              .delhivery_registered
+          ) !== 1
+        ) {
+          throw new Error(
+            "Selected pickup warehouse is not registered with Delhivery"
+          );
+        }
+
+        await txQuery(
+          `
+            UPDATE orders
+            SET
+              warehouse_id = ?
+            WHERE
+              id = ?
+              AND user_id = ?
+              AND UPPER(status) = 'PROCESSING'
+          `,
+          [
+            requestedWarehouseId,
+            orderId,
+            userId,
+          ],
+        );
+
+        await txQuery(
+          `
+            UPDATE pickup_addresses
+            SET
+              pickup_address = ?,
+              pickup_pincode = ?,
+              pickup_city = ?
+            WHERE
+              id = ?
+              AND user_id = ?
+          `,
+          [
+            pickupData?.pickup_address ||
+              "",
+
+            pickupData?.pickup_pincode ||
+              "",
+
+            pickupData?.pickup_city ||
+              null,
+
+            pickupAddressId,
+            userId,
+          ],
+        );
+
+        await txQuery(
+          `
+            UPDATE orders
+            SET
+              consignee_name = ?,
+              mobile = ?,
+              alternate_mobile = ?,
+              email = ?,
+
+              gstin = ?,
+              company_name = ?,
+              floor_no = ?,
+              landmark = ?,
+
+              address_line1 = ?,
+              address_line2 = ?,
+
+              pincode = ?,
+              city = ?,
+              state = ?,
+              country = ?,
+
+              payment_type = ?,
+              risk_type = ?
+            WHERE
+              id = ?
+              AND user_id = ?
+              AND UPPER(status) = 'PROCESSING'
+          `,
+          [
+            orderData?.consignee_name ||
+              "",
+
+            orderData?.mobile ||
+              "",
+
+            orderData?.alternate_mobile ||
+              null,
+
+            orderData?.email ||
+              null,
+
+            orderData?.gstin ||
+              null,
+
+            orderData?.company_name ||
+              null,
+
+            orderData?.floor_no ||
+              null,
+
+            orderData?.landmark ||
+              null,
+
+            orderData?.address_line1 ||
+              "",
+
+            orderData?.address_line2 ||
+              null,
+
+            orderData?.pincode ||
+              "",
+
+            orderData?.city ||
+              "",
+
+            orderData?.state ||
+              "",
+
+            orderData?.country ||
+              "India",
+
+            orderData?.payment_type ||
+              "Prepaid",
+
+            orderData?.risk_type ||
+              "Owner Risk",
+
+            orderId,
+            userId,
+          ],
+        );
+
+        await txQuery(
+          `
+            DELETE FROM order_products
+            WHERE order_id = ?
+          `,
+          [orderId],
+        );
+
+        if (
+          Array.isArray(products)
+        ) {
+          for (
+            const product of products
+          ) {
+            await txQuery(
+              `
+                INSERT INTO order_products
+                (
+                  order_id,
+                  product_name,
+                  sku,
+                  price,
+                  qty,
+                  tax
+                )
+                VALUES (?, ?, ?, ?, ?, ?)
+              `,
+              [
+                orderId,
+
+                product?.product_name ||
+                  "",
+
+                product?.sku ||
+                  null,
+
+                Number(
+                  product?.price
+                ) || 0,
+
+                Number(
+                  product?.qty
+                ) || 1,
+
+                Number(
+                  product?.tax
+                ) || 0,
+              ],
+            );
+          }
+        }
+
+        await txQuery(
+          `
+            DELETE FROM order_packages
+            WHERE order_id = ?
+          `,
+          [orderId],
+        );
+
+        if (
+          Array.isArray(packages)
+        ) {
+          for (
+            const pkg of packages
+          ) {
+            await txQuery(
+              `
+                INSERT INTO order_packages
+                (
+                  order_id,
+                  length,
+                  width,
+                  height,
+                  weight,
+                  package_count
+                )
+                VALUES (?, ?, ?, ?, ?, ?)
+              `,
+              [
+                orderId,
+
+                Number(
+                  pkg?.length
+                ) || 0,
+
+                Number(
+                  pkg?.width
+                ) || 0,
+
+                Number(
+                  pkg?.height
+                ) || 0,
+
+                Number(
+                  pkg?.weight
+                ) || 0,
+
+                Number(
+                  pkg?.package_count
+                ) || 1,
+              ],
+            );
+          }
+        }
+
+        await connection.commit();
+
+        resolve({
+          success: true,
+          message:
+            "Order updated successfully",
+          order_id: orderId,
+          warehouse_id:
+            requestedWarehouseId,
+        });
+
+      } catch (error) {
+        if (connection) {
+          try {
+            await connection.rollback();
+          } catch (
+            rollbackError
+          ) {
+            console.log(
+              "Rollback error:",
+              rollbackError
+            );
+          }
+        }
+
+        reject(error);
+
+      } finally {
+        if (connection) {
+          connection.release();
+        }
+      }
+    }
+  );
+};
+
+const deleteProcessingOrders = (
+  userId,
+  orderIds,
+) => {
+  return new Promise(
+    async (
+      resolve,
+      reject
+    ) => {
       if (
         !Array.isArray(orderIds) ||
         orderIds.length === 0
       ) {
-
         return reject(
           new Error(
             "No orders selected"
           )
         );
-
       }
 
-
       try {
-
         const placeholders =
           orderIds
             .map(
               () => "?"
             )
-            .join(
-              ","
-            );
-
+            .join(",");
 
         const result =
           await runQuery(
@@ -1608,8 +1443,7 @@ const deleteProcessingOrders = (
                 AND id IN (
                   ${placeholders}
                 )
-                AND UPPER(status) =
-                  'PROCESSING'
+                AND UPPER(status) = 'PROCESSING'
             `,
             [
               userId,
@@ -1617,56 +1451,27 @@ const deleteProcessingOrders = (
             ]
           );
 
-
         return resolve({
-
-          success:
-            true,
-
+          success: true,
           deleted:
             result.affectedRows,
-
         });
 
-
-      } catch (
-        error
-      ) {
-
-        return reject(
-          error
-        );
-
+      } catch (error) {
+        return reject(error);
       }
-
     }
   );
-
 };
 
-
-// ======================================================
-// EXPORT
-// ======================================================
-
 module.exports = {
-
   createPickupAddress,
-
   createOrder,
-
   createProduct,
-
   createPackage,
-
   getProcessingOrders,
-
   getAllOrders,
-
   getOrderById,
-
   updateOrder,
-
   deleteProcessingOrders,
-
 };

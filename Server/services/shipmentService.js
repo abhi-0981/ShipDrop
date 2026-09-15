@@ -707,7 +707,7 @@ const buildDelhiveryShipment = ({
         totalAmount.toFixed(2)
       ),
 
-    weight:
+       weight:
       Number(
         totalWeight
       ),
@@ -718,6 +718,35 @@ const buildDelhiveryShipment = ({
         warehouse.warehouse_name,
 
     },
+
+    return_name:
+      order.return_name || "",
+
+    return_phone:
+      order.return_phone || "",
+
+    return_add:
+      [
+        order.return_address_line1,
+        order.return_address_line2,
+        order.return_landmark,
+      ]
+        .filter(Boolean)
+        .join(", "),
+
+    return_pin:
+      order.return_pincode
+        ? Number(order.return_pincode)
+        : "",
+
+    return_city:
+      order.return_city || "",
+
+    return_state:
+      order.return_state || "",
+
+    return_country:
+      order.return_country || "India",
 
   };
 
@@ -1039,13 +1068,25 @@ const confirmShipment = async ({
     const orderRows =
       await txQuery(
         connection,
-
         `
           SELECT
             id,
             order_id,
             user_id,
             warehouse_id,
+
+            return_address_id,
+            return_name,
+            return_phone,
+            return_email,
+            return_address_line1,
+            return_address_line2,
+            return_landmark,
+            return_pincode,
+            return_city,
+            return_state,
+            return_country,
+
             status,
             awb
           FROM orders
@@ -1474,39 +1515,50 @@ const confirmShipment = async ({
 
     }
 
-    await txQuery(
-      connection,
+  await txQuery(
+  connection,
 
-      `
-        INSERT INTO wallet_transactions
-        (
-          user_id,
-          type,
-          amount,
-          razorpay_order_id,
-          razorpay_payment_id,
-          razorpay_signature,
-          status
-        )
-        VALUES
-        (
-          ?,
-          'DEBIT',
-          ?,
-          NULL,
-          NULL,
-          NULL,
-          'SUCCESS'
-        )
-      `,
+  `
+    INSERT INTO wallet_transactions
+    (
+      user_id,
+      type,
+      amount,
+      opening_balance,
+      closing_balance,
+      description,
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature,
+      status
+    )
+    VALUES
+    (
+      ?,
+      'DEBIT',
+      ?,
+      ?,
+      ?,
+      ?,
+      NULL,
+      NULL,
+      NULL,
+      'SUCCESS'
+    )
+  `,
 
-      [
-        user_id,
+  [
+    user_id,
 
-        charge
-      ]
-    );
+    charge,
 
+    currentBalance,
+
+    currentBalance - charge,
+
+    `Debited for order id ${lockedOrder.order_id}`
+  ]
+);
     const orderUpdate =
       await txQuery(
         connection,
@@ -2385,38 +2437,58 @@ const bulkConfirmShipments = async ({
 
     }
 
-    await txQuery(
-      connection,
+   const transactionOpeningBalance =
+  currentBalance;
 
-      `
-        INSERT INTO wallet_transactions
-        (
-          user_id,
-          type,
-          amount,
-          razorpay_order_id,
-          razorpay_payment_id,
-          razorpay_signature,
-          status
-        )
-        VALUES
-        (
-          ?,
-          'DEBIT',
-          ?,
-          NULL,
-          NULL,
-          NULL,
-          'SUCCESS'
-        )
-      `,
+const transactionClosingBalance =
+  currentBalance - totalCharge;
 
-      [
-        user_id,
+await txQuery(
+  connection,
 
-        totalCharge,
-      ]
-    );
+  `
+    INSERT INTO wallet_transactions
+    (
+      user_id,
+      type,
+      amount,
+      opening_balance,
+      closing_balance,
+      description,
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature,
+      status
+    )
+    VALUES
+    (
+      ?,
+      'DEBIT',
+      ?,
+      ?,
+      ?,
+      ?,
+      NULL,
+      NULL,
+      NULL,
+      'SUCCESS'
+    )
+  `,
+
+  [
+    user_id,
+
+    totalCharge,
+
+    transactionOpeningBalance,
+
+    transactionClosingBalance,
+
+    `Debited for orders ${shipmentOrders
+      .map((item) => item.order.order_id)
+      .join(", ")}`
+  ]
+);
 
     const shippedOrders = [];
 
