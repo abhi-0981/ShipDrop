@@ -3,7 +3,7 @@
 // Vercel Backend → Aiven MySQL
 // ======================================================
 
-const mysql = require("mysql2/promise");
+const mysql = require("mysql2");
 
 
 // ======================================================
