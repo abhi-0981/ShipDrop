@@ -1,14 +1,9 @@
-const mysql = require("mysql2");
-
-require("dotenv").config();
-
-// ======================================================
-// MYSQL CONNECTION POOL
-// ======================================================
+const mysql = require("mysql2/promise");
 
 const db = mysql.createPool({
   host: process.env.DB_HOST,
-  port: Number(process.env.DB_PORT),
+  port: Number(process.env.DB_PORT || 25515),
+
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
@@ -20,29 +15,29 @@ const db = mysql.createPool({
   waitForConnections: true,
   connectionLimit: 5,
   queueLimit: 0,
+
   enableKeepAlive: true,
   keepAliveInitialDelay: 0,
 });
-// ======================================================
-// DATABASE CONNECTION TEST
-// ======================================================
 
-db.getConnection((err, connection) => {
-  if (err) {
-    console.error(
-      "❌ Database connection failed:",
-      err.message
-    );
-    return;
+async function testConnection() {
+  try {
+    const connection = await db.getConnection();
+
+    console.log("✅ Aiven MySQL connected successfully");
+
+    connection.release();
+  } catch (error) {
+    console.error("❌ Database connection failed:", {
+      code: error.code,
+      errno: error.errno,
+      message: error.message,
+      address: error.address,
+      port: error.port,
+    });
   }
+}
 
-  console.log("✅ Database connected");
-
-  connection.release();
-});
-
-// ======================================================
-// EXPORT POOL DIRECTLY
-// ======================================================
+testConnection();
 
 module.exports = db;
