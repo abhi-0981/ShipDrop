@@ -3,6 +3,9 @@
 // Vercel Backend → Aiven MySQL
 // ======================================================
 
+require("dotenv").config({
+  path: require("path").join(__dirname, "../.env"),
+});
 const mysql = require("mysql2");
 
 
@@ -57,7 +60,7 @@ const dbConfig = {
   host: process.env.DB_HOST,
 
   // Aiven MySQL port
-  port: Number(process.env.PORT || 25515),
+  port: Number(process.env.DB_PORT || 25515),
 
   user: process.env.DB_USER,
 

@@ -366,33 +366,59 @@ app.use(
 
 
 // ======================================================
-// SERVER
+// CRON TRIGGER ENDPOINTS (FOR VERCEL / EXTERNAL CRON)
 // ======================================================
 
-const PORT =
-  process.env.PORT || 5000;
-
-
-app.listen(
-  PORT,
-  () => {
-
-    console.log(
-      `Server running on port ${PORT}`
-    );
-
-    console.log(
-      "Database and API services initialized"
-    );
-
-
-    // ====================================================
-    // START AUTO-CANCEL SCHEDULER
-    // ====================================================
-
-    startAutoCancelJob();
-
-    startTrackingJob();
-
+app.get("/api/cron/track-orders", async (req, res) => {
+  try {
+    const { runTrackingJob } = require("./jobs/trackActiveOrders");
+    await runTrackingJob();
+    return res.status(200).json({
+      success: true,
+      message: "Tracking job executed successfully",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
-);
+});
+
+app.get("/api/cron/auto-cancel", async (req, res) => {
+  try {
+    const { runAutoCancel } = require("./jobs/autoCancelManifestedOrders");
+    await runAutoCancel();
+    return res.status(200).json({
+      success: true,
+      message: "Auto-cancel job executed successfully",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
+
+// ======================================================
+// SERVER & EXPORT
+// ======================================================
+
+const PORT = process.env.PORT || 5000;
+
+// Only start the standalone HTTP listener & cron schedulers
+// when run directly (e.g. node server.js locally), not in Vercel Serverless
+if (require.main === module && !process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+    console.log("Database and API services initialized");
+
+    // Start background schedulers in standalone mode
+    startAutoCancelJob();
+    startTrackingJob();
+  });
+}
+
+module.exports = app;
