@@ -12,8 +12,6 @@ require("dotenv").config({
 // ======================================================
 
 const express = require("express");
-const cors = require("cors");
-
 
 // ======================================================
 // AUTO-CANCEL JOB
@@ -103,9 +101,18 @@ const ticketRoutes =
 // MIDDLEWARE
 // ======================================================
 
-app.use(
-  cors()
-);
+const cors = require("cors");
+
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "https://YOUR-FRONTEND.netlify.app"
+];
+
+app.use(cors({
+  origin: process.env.FRONTEND_URL,
+  credentials: true
+}));
 
 app.use(
   express.json({
