@@ -369,30 +369,4 @@ app.use(
 // SERVER
 // ======================================================
 
-const PORT =
-  process.env.PORT || 5000;
-
-
-app.listen(
-  PORT,
-  () => {
-
-    console.log(
-      `Server running on port ${PORT}`
-    );
-
-    console.log(
-      "Database and API services initialized"
-    );
-
-
-    // ====================================================
-    // START AUTO-CANCEL SCHEDULER
-    // ====================================================
-
-    startAutoCancelJob();
-
-    startTrackingJob();
-
-  }
-);
+module.exports =  app;
