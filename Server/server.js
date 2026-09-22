@@ -171,6 +171,36 @@ app.use(
 // HOME
 // ======================================================
 
+app.get("/api/db-test", async (req, res) => {
+  try {
+    const db = require("./config/db");
+
+    const [rows] = await db.query("SELECT 1 AS test");
+
+    return res.json({
+      success: true,
+      message: "Aiven DB connected successfully",
+      data: rows,
+    });
+
+  } catch (error) {
+
+    console.error("DB TEST ERROR:", {
+      code: error.code,
+      errno: error.errno,
+      message: error.message,
+      address: error.address,
+      port: error.port,
+    });
+
+    return res.status(500).json({
+      success: false,
+      code: error.code,
+      message: error.message,
+    });
+  }
+});
+
 app.get(
   "/",
   (req, res) => {
