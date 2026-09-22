@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import axios from "axios";
+import api from "../../services/api";
 
 const WalletHistory = () => {
   const [transactions, setTransactions] = useState([]);
@@ -40,8 +40,8 @@ const WalletHistory = () => {
       setLoading(true);
       setError("");
 
-      const response = await axios.get(
-        `http://localhost:5000/api/payments/wallet/history?user_id=${user.id}`
+      const response = await api.get(
+        `/payments/wallet/history?user_id=${user.id}`
       );
 
       setTransactions(

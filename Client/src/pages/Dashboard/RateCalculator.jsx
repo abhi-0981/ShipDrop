@@ -1,7 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
-
-const API_URL = "http://localhost:5000/api";
+import api from "../../services/api";
 
 // ======================================================
 // ICON
@@ -353,8 +351,8 @@ function RateCalculator() {
 
     try {
       const response =
-        await axios.post(
-          `${API_URL}/rate/calculate-options`,
+        await api.post(
+          "/rate/calculate-options",
           {
             user_id: currentUser.id,
 

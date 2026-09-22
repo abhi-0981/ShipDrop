@@ -102,42 +102,43 @@ const ticketRoutes =
 // ======================================================
 
 const cors = require("cors");
+
+const rawOrigins = (process.env.FRONTEND_URL || "")
+  .split(",")
+  .map((o) => o.trim().replace(/\/+$/, ""))
+  .filter(Boolean);
+
 const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:5174",
-  process.env.FRONTEND_URL,
-].filter(Boolean);
+  "https://parceldrop.netlify.app",
+  ...rawOrigins,
+].map((o) => o.replace(/\/+$/, ""));
 
-
-console.log(
-  "Allowed CORS origins:",
-  allowedOrigins
-);
-
+console.log("Allowed CORS origins:", allowedOrigins);
 
 app.use(
   cors({
     origin: function (origin, callback) {
-
-      // Allow requests without Origin
-      // e.g. Postman/server-to-server
+      // Allow requests without Origin (e.g. Postman/server-to-server)
       if (!origin) {
         return callback(null, true);
       }
 
-      if (allowedOrigins.includes(origin)) {
+      const normalizedOrigin = origin.replace(/\/+$/, "");
+
+      if (
+        allowedOrigins.includes(normalizedOrigin) ||
+        allowedOrigins.includes("*") ||
+        process.env.NODE_ENV !== "production"
+      ) {
         return callback(null, true);
       }
 
-      console.log(
-        "CORS blocked origin:",
-        origin
-      );
+      console.log("CORS blocked origin:", origin);
 
       return callback(
-        new Error(
-          `CORS blocked for origin: ${origin}`
-        )
+        new Error(`CORS blocked for origin: ${origin}`)
       );
     },
 

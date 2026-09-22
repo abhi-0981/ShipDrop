@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import axios from "axios";
+import api from "../../services/api";
 import { useNavigate } from "react-router-dom";
-
-const API_URL = "http://localhost:5000/api";
 
 // ======================================================
 // ICONS
@@ -310,10 +308,10 @@ function Dashboard() {
 
     try {
       const [ordersResponse, walletResponse] = await Promise.all([
-        axios.get(`${API_URL}/orders/all`, {
+        api.get("/orders/all", {
           params: { user_id: currentUser.id },
         }),
-        axios.get(`${API_URL}/payments/wallet?user_id=${currentUser.id}`),
+        api.get(`/payments/wallet?user_id=${currentUser.id}`),
       ]);
 
       const ordersData = ordersResponse?.data;
@@ -448,7 +446,7 @@ function Dashboard() {
     setRateLoading(true);
 
     try {
-      const response = await axios.post(`${API_URL}/rate/calculate-options`, {
+      const response = await api.post("/rate/calculate-options", {
         user_id: user.id,
         pickup_pincode: pickup,
         delivery_pincode: delivery,

@@ -1,9 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import axios from "axios";
+import api from "../../services/api";
 
 import delhiveryLogo from "../../assets/images/delhivery-logo.png";
-
-const API_URL = "http://localhost:5000/api";
 
 const DEFAULT_SETTINGS = {
   orderValue: true,
@@ -261,8 +259,8 @@ function LabelSettings() {
         throw new Error("User ID not found. Please login again.");
       }
 
-      const response = await axios.get(
-        `${API_URL}/label-settings`,
+      const response = await api.get(
+        "/label-settings",
         {
           params: {
             user_id: userId,
@@ -498,8 +496,8 @@ setSettings({
         custom_logo: customLogo?.dataUrl || null,
       };
 
-      const response = await axios.put(
-        `${API_URL}/label-settings`,
+      const response = await api.put(
+        "/label-settings",
         payload
       );
 
