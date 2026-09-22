@@ -1,9 +1,5 @@
 import { useState } from "react";
-import {
-  NavLink,
-  useNavigate,
-  useLocation,
-} from "react-router-dom";
+import { NavLink, useNavigate, useLocation } from "react-router-dom";
 
 import {
   HiOutlineViewGrid,
@@ -13,21 +9,18 @@ import {
   HiOutlineUsers,
   HiOutlineChevronDown,
   HiOutlineTicket,
+  HiOutlineClipboardList
 } from "react-icons/hi";
-
 
 function AdminLayout({ children }) {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [collapsed, setCollapsed] =
-    useState(false);
+  const [collapsed, setCollapsed] = useState(false);
 
-  const [usersOpen, setUsersOpen] =
-    useState(
-      location.pathname.startsWith("/users")
-    );
-
+  const [usersOpen, setUsersOpen] = useState(
+    location.pathname.startsWith("/users"),
+  );
 
   // =====================================================
   // LOGOUT
@@ -40,7 +33,6 @@ function AdminLayout({ children }) {
     navigate("/login");
   };
 
-
   // =====================================================
   // ACTIVE MENU
   // =====================================================
@@ -49,13 +41,9 @@ function AdminLayout({ children }) {
     return location.pathname === path;
   };
 
+  const isUsersActive = location.pathname.startsWith("/users");
 
-  const isUsersActive =
-    location.pathname.startsWith("/users");
-
-  const isTicketsActive =
-    location.pathname.startsWith("/tickets");
-
+  const isTicketsActive = location.pathname.startsWith("/tickets");
 
   // =====================================================
   // NORMAL MENU ITEMS
@@ -66,6 +54,17 @@ function AdminLayout({ children }) {
       name: "Dashboard",
       path: "/dashboard",
       icon: HiOutlineViewGrid,
+    },
+
+    {
+      name: "All Orders",
+      path: "/orders",
+      icon: HiOutlineClipboardList,
+    },
+    {
+      name: "Weight Checking",
+      path: "/weight-checking",
+      icon: HiOutlineClipboardList,
     },
     {
       name: "Rate Card",
@@ -78,7 +77,6 @@ function AdminLayout({ children }) {
       icon: HiOutlineTicket,
     },
   ];
-
 
   // =====================================================
   // MENU ITEM COMPONENT
@@ -101,11 +99,7 @@ function AdminLayout({ children }) {
           rounded-xl
           transition-all
           duration-200
-          ${
-            collapsed
-              ? "h-11 justify-center"
-              : "h-11 px-3 gap-3"
-          }
+          ${collapsed ? "h-11 justify-center" : "h-11 px-3 gap-3"}
           ${
             isActive
               ? "bg-[#008dd2]/8 text-[#008dd2]"
@@ -132,7 +126,6 @@ function AdminLayout({ children }) {
               />
             )}
 
-
             {/* ICON */}
 
             <Icon
@@ -149,13 +142,10 @@ function AdminLayout({ children }) {
               `}
             />
 
-
             {/* LABEL */}
 
             {!collapsed && (
-              <span className="text-[13px] font-medium">
-                {item.name}
-              </span>
+              <span className="text-[13px] font-medium">{item.name}</span>
             )}
           </>
         )}
@@ -163,15 +153,12 @@ function AdminLayout({ children }) {
     );
   };
 
-
   // =====================================================
   // LAYOUT
   // =====================================================
 
   return (
     <div className="min-h-screen bg-[#f7fbfe]">
-
-
       {/* ================================================= */}
       {/* SIDEBAR */}
       {/* ================================================= */}
@@ -189,15 +176,9 @@ function AdminLayout({ children }) {
           shadow-[4px_0_24px_rgba(15,23,42,0.03)]
           transition-all
           duration-300
-          ${
-            collapsed
-              ? "w-[78px]"
-              : "w-[244px]"
-          }
+          ${collapsed ? "w-[78px]" : "w-[244px]"}
         `}
       >
-
-
         {/* ================================================= */}
         {/* HEADER */}
         {/* ================================================= */}
@@ -209,14 +190,9 @@ function AdminLayout({ children }) {
             items-center
             border-b
             border-slate-100
-            ${
-              collapsed
-                ? "justify-center px-3"
-                : "justify-between px-5"
-            }
+            ${collapsed ? "justify-center px-3" : "justify-between px-5"}
           `}
         >
-
           {/* LOGO */}
 
           {!collapsed && (
@@ -229,14 +205,11 @@ function AdminLayout({ children }) {
             </div>
           )}
 
-
           {/* COLLAPSE BUTTON */}
 
           <button
             type="button"
-            onClick={() =>
-              setCollapsed(!collapsed)
-            }
+            onClick={() => setCollapsed(!collapsed)}
             className="
               w-9
               h-9
@@ -250,19 +223,11 @@ function AdminLayout({ children }) {
               transition-all
               duration-200
             "
-            title={
-              collapsed
-                ? "Expand sidebar"
-                : "Collapse sidebar"
-            }
+            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
-            <HiOutlineMenuAlt2
-              size={20}
-            />
+            <HiOutlineMenuAlt2 size={20} />
           </button>
-
         </div>
-
 
         {/* ================================================= */}
         {/* NAVIGATION */}
@@ -277,8 +242,6 @@ function AdminLayout({ children }) {
             pb-32
           "
         >
-
-
           {/* ================================================= */}
           {/* WORKSPACE */}
           {/* ================================================= */}
@@ -299,31 +262,23 @@ function AdminLayout({ children }) {
             </p>
           )}
 
-
           {/* ================================================= */}
           {/* MAIN MENU */}
           {/* ================================================= */}
 
           <div className="space-y-1">
-
-            {menuItems.map(
-              (item) =>
-                renderMenuItem(item)
-            )}
-
+            {menuItems.map((item) => renderMenuItem(item))}
 
             {/* ================================================= */}
             {/* USERS */}
             {/* ================================================= */}
 
             <div className="pt-1">
-
               {/* USERS BUTTON */}
 
               <button
                 type="button"
                 onClick={() => {
-
                   if (collapsed) {
                     setCollapsed(false);
                     setUsersOpen(true);
@@ -332,11 +287,7 @@ function AdminLayout({ children }) {
 
                   setUsersOpen(!usersOpen);
                 }}
-                title={
-                  collapsed
-                    ? "Users"
-                    : ""
-                }
+                title={collapsed ? "Users" : ""}
                 className={`
                   group
                   relative
@@ -346,11 +297,7 @@ function AdminLayout({ children }) {
                   rounded-xl
                   transition-all
                   duration-200
-                  ${
-                    collapsed
-                      ? "justify-center h-11"
-                      : "h-11 px-3 gap-3"
-                  }
+                  ${collapsed ? "justify-center h-11" : "h-11 px-3 gap-3"}
                   ${
                     isUsersActive
                       ? "bg-[#008dd2]/8 text-[#008dd2]"
@@ -358,7 +305,6 @@ function AdminLayout({ children }) {
                   }
                 `}
               >
-
                 {/* ACTIVE INDICATOR */}
 
                 {isUsersActive && (
@@ -375,7 +321,6 @@ function AdminLayout({ children }) {
                   />
                 )}
 
-
                 {/* ICON */}
 
                 <HiOutlineUsers
@@ -389,7 +334,6 @@ function AdminLayout({ children }) {
                     }
                   `}
                 />
-
 
                 {/* TEXT */}
 
@@ -406,46 +350,37 @@ function AdminLayout({ children }) {
                       Users
                     </span>
 
-
                     <HiOutlineChevronDown
                       size={16}
                       className={`
                         text-slate-400
                         transition-transform
                         duration-200
-                        ${
-                          usersOpen
-                            ? "rotate-180"
-                            : ""
-                        }
+                        ${usersOpen ? "rotate-180" : ""}
                       `}
                     />
                   </>
                 )}
-
               </button>
-
 
               {/* ================================================= */}
               {/* USERS SUBMENU */}
               {/* ================================================= */}
 
-              {!collapsed &&
-                usersOpen && (
-                  <div
-                    className="
+              {!collapsed && usersOpen && (
+                <div
+                  className="
                       ml-[22px]
                       mt-1
                       border-l
                       border-slate-200
                       pl-3
                     "
-                  >
-
-                    <NavLink
-                      to="/users"
-                      className={({ isActive }) =>
-                        `
+                >
+                  <NavLink
+                    to="/users"
+                    className={({ isActive }) =>
+                      `
                         relative
                         flex
                         h-9
@@ -462,18 +397,14 @@ function AdminLayout({ children }) {
                             : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
                         }
                         `
-                      }
-                    >
-                      All Users
-                    </NavLink>
-
-                  </div>
-                )}
-
+                    }
+                  >
+                    All Users
+                  </NavLink>
+                </div>
+              )}
             </div>
-
           </div>
-
 
           {/* ================================================= */}
           {/* SUPPORT */}
@@ -481,7 +412,6 @@ function AdminLayout({ children }) {
 
           {!collapsed && (
             <div className="mt-8">
-
               <p
                 className="
                   px-3
@@ -495,7 +425,6 @@ function AdminLayout({ children }) {
               >
                 Support
               </p>
-
 
               {/* TICKETS */}
 
@@ -523,7 +452,6 @@ function AdminLayout({ children }) {
               >
                 {({ isActive }) => (
                   <>
-
                     {isActive && (
                       <span
                         className="
@@ -538,7 +466,6 @@ function AdminLayout({ children }) {
                       />
                     )}
 
-
                     <HiOutlineTicket
                       size={20}
                       className={
@@ -548,7 +475,6 @@ function AdminLayout({ children }) {
                       }
                     />
 
-
                     <span
                       className="
                         text-[13px]
@@ -557,16 +483,12 @@ function AdminLayout({ children }) {
                     >
                       Tickets
                     </span>
-
                   </>
                 )}
               </NavLink>
-
             </div>
           )}
-
         </nav>
-
 
         {/* ================================================= */}
         {/* BOTTOM AREA */}
@@ -583,12 +505,9 @@ function AdminLayout({ children }) {
             bg-white
           "
         >
-
           {/* TOP BORDER */}
 
           <div className="border-t border-slate-100 pt-3">
-
-
             {/* ================================================= */}
             {/* ADMIN PROFILE */}
             {/* ================================================= */}
@@ -605,9 +524,7 @@ function AdminLayout({ children }) {
                   border-slate-100
                 "
               >
-
                 <div className="flex items-center gap-3">
-
                   {/* AVATAR */}
 
                   <div
@@ -627,11 +544,9 @@ function AdminLayout({ children }) {
                     A
                   </div>
 
-
                   {/* INFO */}
 
                   <div className="min-w-0">
-
                     <p
                       className="
                         text-[13px]
@@ -653,14 +568,10 @@ function AdminLayout({ children }) {
                     >
                       Administrator
                     </p>
-
                   </div>
-
                 </div>
-
               </div>
             )}
-
 
             {/* ================================================= */}
             {/* LOGOUT */}
@@ -669,11 +580,7 @@ function AdminLayout({ children }) {
             <button
               type="button"
               onClick={logout}
-              title={
-                collapsed
-                  ? "Logout"
-                  : ""
-              }
+              title={collapsed ? "Logout" : ""}
               className={`
                 group
                 w-full
@@ -685,14 +592,9 @@ function AdminLayout({ children }) {
                 hover:text-red-600
                 transition-all
                 duration-200
-                ${
-                  collapsed
-                    ? "justify-center h-11"
-                    : "h-11 px-3 gap-3"
-                }
+                ${collapsed ? "justify-center h-11" : "h-11 px-3 gap-3"}
               `}
             >
-
               <HiOutlineLogout
                 size={20}
                 className="
@@ -701,7 +603,6 @@ function AdminLayout({ children }) {
                   group-hover:-translate-x-0.5
                 "
               />
-
 
               {!collapsed && (
                 <span
@@ -713,15 +614,10 @@ function AdminLayout({ children }) {
                   Logout
                 </span>
               )}
-
             </button>
-
           </div>
-
         </div>
-
       </aside>
-
 
       {/* ================================================= */}
       {/* MAIN CONTENT */}
@@ -732,19 +628,13 @@ function AdminLayout({ children }) {
           min-h-screen
           transition-all
           duration-300
-          ${
-            collapsed
-              ? "ml-[78px]"
-              : "ml-[244px]"
-          }
+          ${collapsed ? "ml-[78px]" : "ml-[244px]"}
         `}
       >
         {children}
       </main>
-
     </div>
   );
 }
-
 
 export default AdminLayout;

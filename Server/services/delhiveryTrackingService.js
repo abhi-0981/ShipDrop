@@ -393,47 +393,82 @@ const getTrackingForWaybills = async (
         };
 
         // --------------------------------------------------
-        // SAVE LATEST DELHIVERY TRACKING STATUS TO DATABASE
-        // --------------------------------------------------
-        // orders.status = ShipDrop internal order status
-        // tracking_status = Delhivery tracking status
-        // --------------------------------------------------
+// SAVE LATEST DELHIVERY TRACKING STATUS TO DATABASE
+// --------------------------------------------------
+// orders.status = ShipDrop internal order status
+// tracking_status = Delhivery tracking status
+// --------------------------------------------------
 
-        try {
-          const trackingData =
-            trackingMap[awb];
+try {
+  const trackingData = trackingMap[awb];
 
-          await db.promise().query(
-            `
-              UPDATE orders
-              SET
-                tracking_status = ?,
-                tracking_data = ?,
-                tracking_updated_at = NOW()
-              WHERE awb = ?
-            `,
-            [
-              trackingData.tracking_status ||
-                null,
+  // ------------------------------------------------
+  // MAP DELHIVERY STATUS -> SHIPDROP ORDER STATUS
+  // ------------------------------------------------
+  const orderStatusMap = {
+    DELIVERED: "Delivered",
+    CANCELLED: "Cancelled",
+    CANCELED: "Cancelled",
+    "RTO DELIVERED": "RTO Delivered",
+    "RTO IN TRANSIT": "RTO In Transit",
+    "OUT FOR DELIVERY": "Out for Delivery",
+    "IN TRANSIT": "In Transit",
+    "NOT PICKED": "Not Picked",
+    PENDING: "Pending",
+    MANIFESTED: "Manifested",
+  };
 
-              JSON.stringify(
-                trackingData
-              ),
+  const trackingStatus =
+    trackingData?.tracking_status || null;
 
-              awb,
-            ]
-          );
+  const newOrderStatus =
+    trackingStatus &&
+    orderStatusMap[trackingStatus]
+      ? orderStatusMap[trackingStatus]
+      : null;
 
-          console.log(
-            `💾 TRACKING SAVED | AWB: ${awb} | Status: ${trackingData.tracking_status}`
-          );
-        } catch (dbError) {
-          console.error(
-            `❌ TRACKING DB SAVE ERROR | AWB: ${awb}:`,
-            dbError?.message ||
-              dbError
-          );
-        }
+  // ------------------------------------------------
+  // SAVE TRACKING + INTERNAL ORDER STATUS
+  // ------------------------------------------------
+  await db.promise().query(
+    `
+      UPDATE orders
+      SET
+        tracking_status = ?,
+        tracking_data = ?,
+        tracking_updated_at = NOW(),
+        status = CASE
+          WHEN UPPER(TRIM(COALESCE(status, ''))) IN (
+            'CANCELLED',
+            'CANCELED'
+          )
+            THEN status
+          WHEN ? IS NOT NULL
+            THEN ?
+          ELSE status
+        END
+      WHERE awb = ?
+    `,
+    [
+      trackingStatus,
+      JSON.stringify(trackingData),
+
+      newOrderStatus,
+      newOrderStatus,
+
+      awb,
+    ]
+  );
+
+  console.log(
+    `💾 TRACKING SAVED | AWB: ${awb} | Tracking Status: ${trackingStatus} | Order Status: ${newOrderStatus || "UNCHANGED"}`
+  );
+} catch (dbError) {
+  console.error(
+    `❌ TRACKING DB SAVE ERROR | AWB: ${awb}:`,
+    dbError?.message || dbError
+  );
+}
       }
     } catch (error) {
       console.error(

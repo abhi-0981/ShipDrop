@@ -66,6 +66,15 @@ const Icon = ({ name, size = 16 }) => {
     );
   }
 
+  if (name === "copy") {
+    return (
+      <svg {...common}>
+        <rect x="9" y="9" width="10" height="10" rx="2" />
+        <path d="M15 9V7a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2" />
+      </svg>
+    );
+  }
+
   return null;
 };
 
@@ -336,6 +345,96 @@ function ProcessingOrders() {
         "error"
       );
       setEditingOrder(false);
+    }
+  };
+
+  // ========================================
+  // DUPLICATE ORDER
+  // Creates a fresh Processing order using the
+  // complete data of the selected order.
+  // Original order remains unchanged.
+  // ========================================
+  const handleDuplicate = async (order) => {
+    const orderId = getId(order);
+
+    let user = {};
+    try {
+      const storedUser = localStorage.getItem("user");
+      user = storedUser ? JSON.parse(storedUser) : {};
+    } catch (error) {
+      console.log("User parse error:", error);
+    }
+
+    const userId = user.id || user.user_id || user.userId;
+
+    if (!orderId || !userId) {
+      showToast("Unable to duplicate this order.", "error");
+      return;
+    }
+
+    try {
+      const response = await api.get(`/orders/${orderId}?user_id=${userId}`);
+      const result = response?.data;
+
+      if (!result?.success || !result?.order) {
+        throw new Error(result?.message || "Unable to load order details");
+      }
+
+      const source = result.order;
+      const warehouseId = Number(source.warehouse_id || order.warehouse_id);
+
+      if (!warehouseId) {
+        throw new Error("Pickup warehouse is missing");
+      }
+
+      const payload = {
+        user_id: Number(userId),
+        pickup_address: source.pickup_address || order.pickup_address || null,
+        pickup_pincode: source.pickup_pincode || order.pickup_pincode || null,
+        pickup_city: source.pickup_city || order.pickup_city || null,
+        warehouse_id: warehouseId,
+        pickup_address_id: source.pickup_address_id || order.pickup_address_id || null,
+        orderData: {
+          consignee_name: source.consignee_name,
+          mobile: source.mobile,
+          alternate_mobile: source.alternate_mobile || null,
+          email: source.email || null,
+          gstin: source.gstin || null,
+          company_name: source.company_name || null,
+          floor_no: source.floor_no || null,
+          landmark: source.landmark || null,
+          address_line1: source.address_line1,
+          address_line2: source.address_line2 || null,
+          pincode: source.pincode,
+          city: source.city,
+          state: source.state,
+          country: source.country || "India",
+          payment_type: source.payment_type || "Prepaid",
+          risk_type: source.risk_type || "Owner Risk",
+          warehouse_id: warehouseId,
+        },
+        products: Array.isArray(source.products) ? source.products : [],
+        packages: Array.isArray(source.packages) ? source.packages : [],
+      };
+
+      const createResponse = await api.post("/orders/create", payload);
+      const createResult = createResponse?.data;
+
+      if (!createResult?.success || !createResult?.order_id) {
+        throw new Error(createResult?.message || "Unable to duplicate order");
+      }
+
+      showToast(
+        `Order duplicated successfully. New order #${createResult.order_id} is in Processing.`,
+        "success"
+      );
+      await fetchOrders(false);
+    } catch (error) {
+      console.error("Duplicate order error:", error);
+      showToast(
+        error?.response?.data?.message || error?.message || "Unable to duplicate order",
+        "error"
+      );
     }
   };
 
@@ -959,6 +1058,15 @@ function ProcessingOrders() {
 
                     <button
                       type="button"
+                      onClick={() => handleDuplicate(order)}
+                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-violet-200 text-violet-600 hover:bg-violet-50 active:scale-90 transition"
+                      title="Duplicate Order"
+                    >
+                      <Icon name="copy" size={13} />
+                    </button>
+
+                    <button
+                      type="button"
                       onClick={() => handleDelete([id])}
                       className="flex h-8 w-8 items-center justify-center rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 active:scale-90 transition"
                       title="Delete Order"
@@ -1112,6 +1220,15 @@ function ProcessingOrders() {
                             title="Edit Order"
                           >
                             <Icon name="edit" size={14} />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleDuplicate(order)}
+                            className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-50 text-violet-600 hover:bg-violet-600 hover:text-white transition active:scale-95"
+                            title="Duplicate Order"
+                          >
+                            <Icon name="copy" size={14} />
                           </button>
 
                           <button

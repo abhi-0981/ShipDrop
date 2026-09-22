@@ -9,9 +9,10 @@ const warehouseMarkerIcon = L.icon({
   iconUrl: new URL("leaflet/dist/images/marker-icon.png", import.meta.url).href,
   iconRetinaUrl: new URL(
     "leaflet/dist/images/marker-icon-2x.png",
-    import.meta.url
+    import.meta.url,
   ).href,
-  shadowUrl: new URL("leaflet/dist/images/marker-shadow.png", import.meta.url).href,
+  shadowUrl: new URL("leaflet/dist/images/marker-shadow.png", import.meta.url)
+    .href,
   iconSize: [25, 41],
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
@@ -83,8 +84,18 @@ function CreateOrder() {
 
   const [loading, setLoading] = useState(false);
   const [pincodeLoading, setPincodeLoading] = useState(false);
-  const [rateLoading, setRateLoading] = useState(false);
 
+  // Previous customer autocomplete
+ // Previous customer autocomplete
+const [previousCustomers, setPreviousCustomers] = useState([]);
+const [showPreviousCustomers, setShowPreviousCustomers] = useState(false);
+const [previousCustomersLoading, setPreviousCustomersLoading] = useState(false);
+const previousCustomerDropdownRef = useRef(null);
+
+// Prevent autocomplete from reopening after selecting a previous customer
+const skipPreviousCustomerSearchRef = useRef(false);
+
+const [rateLoading, setRateLoading] = useState(false);
   const [shippingRate, setShippingRate] = useState(null);
   const [shippingOptions, setShippingOptions] = useState(null);
   const [selectedShippingType, setSelectedShippingType] = useState(null);
@@ -124,11 +135,12 @@ function CreateOrder() {
   const warehouseDropdownRef = useRef(null);
 
   const [warehouseMapPosition, setWarehouseMapPosition] = useState(
-    DEFAULT_WAREHOUSE_MAP_POSITION
+    DEFAULT_WAREHOUSE_MAP_POSITION,
   );
   const [warehouseMapMarker, setWarehouseMapMarker] = useState(null);
   const [warehouseLocationSearch, setWarehouseLocationSearch] = useState("");
-  const [warehouseLocationLoading, setWarehouseLocationLoading] = useState(false);
+  const [warehouseLocationLoading, setWarehouseLocationLoading] =
+    useState(false);
 
   const inputClass =
     "h-10.5 sm:h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-[13px] sm:text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-[#008dd2] focus:ring-2 focus:ring-[#008dd2]/10";
@@ -136,7 +148,8 @@ function CreateOrder() {
   const readonlyClass =
     "h-10.5 sm:h-11 w-full rounded-xl border border-slate-200 bg-slate-50/80 px-3.5 text-[13px] sm:text-sm font-medium text-slate-500 outline-none cursor-not-allowed select-none";
 
-  const labelClass = "block text-[11px] sm:text-xs font-bold text-slate-600 mb-1.5";
+  const labelClass =
+    "block text-[11px] sm:text-xs font-bold text-slate-600 mb-1.5";
 
   // ========================================
   // LOAD EDIT ORDER DATA FROM SESSION
@@ -186,7 +199,7 @@ function CreateOrder() {
             price: item.price || "",
             qty: item.qty || item.quantity || 1,
             tax: item.tax || 0,
-          }))
+          })),
         );
       }
 
@@ -198,7 +211,7 @@ function CreateOrder() {
             height: item.height || "",
             weight: item.weight || "",
             count: item.package_count || item.count || 1,
-          }))
+          })),
         );
       }
     } catch (error) {
@@ -217,7 +230,7 @@ function CreateOrder() {
       if (!order?.warehouse_id) return;
 
       const matchingWarehouse = warehouses.find(
-        (w) => Number(w.id) === Number(order.warehouse_id)
+        (w) => Number(w.id) === Number(order.warehouse_id),
       );
 
       if (matchingWarehouse) {
@@ -245,7 +258,7 @@ function CreateOrder() {
 
   const validateRequiredFields = () => {
     const currentPickupAddress = String(
-      formData.pickup_address || warehouseSearch || ""
+      formData.pickup_address || warehouseSearch || "",
     )
       .trim()
       .toLowerCase();
@@ -272,11 +285,11 @@ function CreateOrder() {
         warehouseSearch ||
         (effectiveWarehouse
           ? getWarehouseDisplayAddress(effectiveWarehouse)
-          : "")
+          : ""),
     ).trim();
 
     const effectivePickupPincode = String(
-      formData.pickup_pincode || effectiveWarehouse?.pincode || ""
+      formData.pickup_pincode || effectiveWarehouse?.pincode || "",
     ).trim();
 
     if (!effectiveWarehouse?.id) {
@@ -402,7 +415,7 @@ function CreateOrder() {
           value === true ||
           value === 1 ||
           String(value).trim().toLowerCase() === "true" ||
-          String(value).trim().toLowerCase() === "default"
+          String(value).trim().toLowerCase() === "default",
       );
     });
 
@@ -483,7 +496,9 @@ function CreateOrder() {
         ? response.data.warehouses
         : [];
 
-      const activeList = list.filter((item) => String(item.status || "ACTIVE").toUpperCase() === "ACTIVE");
+      const activeList = list.filter(
+        (item) => String(item.status || "ACTIVE").toUpperCase() === "ACTIVE",
+      );
       setWarehouses(activeList);
 
       const apiDefaultId =
@@ -495,14 +510,17 @@ function CreateOrder() {
         ? activeList.find((w) => String(w.id) === String(apiDefaultId))
         : null;
 
-      if (apiDefaultWarehouse && !sessionStorage.getItem("editingProcessingOrder")) {
+      if (
+        apiDefaultWarehouse &&
+        !sessionStorage.getItem("editingProcessingOrder")
+      ) {
         applyWarehouseToPickup(apiDefaultWarehouse);
       } else {
         applyDefaultWarehouseIfAvailable(activeList);
       }
     } catch (error) {
       toast.error(
-        error.response?.data?.message || "Unable to load pickup warehouses"
+        error.response?.data?.message || "Unable to load pickup warehouses",
       );
     } finally {
       setWarehousesLoading(false);
@@ -510,42 +528,34 @@ function CreateOrder() {
   };
 
   const loadDefaultReturnAddress = async () => {
-  const userId = getUserId();
+    const userId = getUserId();
 
-  if (!userId) return;
+    if (!userId) return;
 
-  try {
-    const response = await api.get(
-      "/return-addresses/default",
-      {
+    try {
+      const response = await api.get("/return-addresses/default", {
         params: {
           user_id: userId,
         },
+      });
+
+      const address =
+        response.data?.return_address || response.data?.address || null;
+
+      setDefaultReturnAddress(address);
+      return address;
+    } catch (error) {
+      if (error.response?.status === 404) {
+        setDefaultReturnAddress(null);
+        return null;
       }
-    );
 
-    const address =
-      response.data?.return_address ||
-      response.data?.address ||
-      null;
+      console.log("Default return address load error:", error);
 
-    setDefaultReturnAddress(address);
-    return address;
-  } catch (error) {
-    if (error.response?.status === 404) {
       setDefaultReturnAddress(null);
       return null;
     }
-
-    console.log(
-      "Default return address load error:",
-      error
-    );
-
-    setDefaultReturnAddress(null);
-    return null;
-  }
-};
+  };
 
   useEffect(() => {
     const handleOutsideWarehouseClick = (event) => {
@@ -578,7 +588,10 @@ function CreateOrder() {
     window.addEventListener("storage", refreshDefaultWarehouse);
 
     return () => {
-      window.removeEventListener("warehouseDefaultChanged", refreshDefaultWarehouse);
+      window.removeEventListener(
+        "warehouseDefaultChanged",
+        refreshDefaultWarehouse,
+      );
       window.removeEventListener("storage", refreshDefaultWarehouse);
     };
   }, []);
@@ -605,9 +618,9 @@ function CreateOrder() {
     try {
       const response = await fetch(
         `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(
-          latitude
+          latitude,
         )}&lon=${encodeURIComponent(longitude)}&addressdetails=1`,
-        { headers: { Accept: "application/json" } }
+        { headers: { Accept: "application/json" } },
       );
 
       if (!response.ok) throw new Error("Unable to find this location");
@@ -646,7 +659,7 @@ function CreateOrder() {
 
       setWarehouseLocationSearch(
         data?.display_name ||
-          [detectedAddress, city, state, postcode].filter(Boolean).join(", ")
+          [detectedAddress, city, state, postcode].filter(Boolean).join(", "),
       );
       return true;
     } catch {
@@ -675,9 +688,9 @@ function CreateOrder() {
     try {
       const response = await fetch(
         `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=in&addressdetails=1&q=${encodeURIComponent(
-          query
+          query,
         )}`,
-        { headers: { Accept: "application/json" } }
+        { headers: { Accept: "application/json" } },
       );
 
       if (!response.ok) throw new Error("Unable to search location");
@@ -697,11 +710,7 @@ function CreateOrder() {
       setWarehouseMapMarker([latitude, longitude]);
 
       const address = result.address || {};
-      const city =
-        address.city ||
-        address.town ||
-        address.village ||
-        "";
+      const city = address.city || address.town || address.village || "";
       const state = address.state || "";
       const postcode = String(address.postcode || "")
         .replace(/\D/g, "")
@@ -745,7 +754,7 @@ function CreateOrder() {
       async (position) => {
         await handleWarehouseMapLocation(
           position.coords.latitude,
-          position.coords.longitude
+          position.coords.longitude,
         );
         setWarehouseLocationLoading(false);
       },
@@ -753,7 +762,7 @@ function CreateOrder() {
         setWarehouseLocationLoading(false);
         toast.error("Unable to detect your location");
       },
-      { enableHighAccuracy: true, timeout: 10000 }
+      { enableHighAccuracy: true, timeout: 10000 },
     );
   };
 
@@ -785,7 +794,7 @@ function CreateOrder() {
     setWarehousePincodeLoading(true);
     try {
       const response = await fetch(
-        `https://api.postalpincode.in/pincode/${cleanValue}`
+        `https://api.postalpincode.in/pincode/${cleanValue}`,
       );
       if (!response.ok) throw new Error("Unable to lookup pincode");
 
@@ -815,11 +824,7 @@ function CreateOrder() {
         },
       });
 
-      return (
-        response.data?.return_address ||
-        response.data?.address ||
-        null
-      );
+      return response.data?.return_address || response.data?.address || null;
     } catch (error) {
       if (error.response?.status === 404) {
         return null;
@@ -827,7 +832,7 @@ function CreateOrder() {
 
       throw new Error(
         error.response?.data?.message ||
-          "Unable to load default return address"
+          "Unable to load default return address",
       );
     }
   };
@@ -878,19 +883,17 @@ function CreateOrder() {
       // the pickup address as the temporary Delhivery return address.
       // The warehouse backend will automatically create the ShipDrop
       // Return Address after the warehouse is saved.
-      const defaultReturnAddress =
-        await getDefaultReturnAddress(userId);
+      const defaultReturnAddress = await getDefaultReturnAddress(userId);
 
-      const delhiveryReturnAddress =
-        defaultReturnAddress || {
-          address_line1: warehouseForm.address_line1.trim(),
-          address_line2: warehouseForm.address_line2.trim() || null,
-          landmark: warehouseForm.landmark.trim() || null,
-          city: warehouseForm.city.trim(),
-          state: warehouseForm.state.trim(),
-          pincode: warehouseForm.pincode.trim(),
-          country: warehouseForm.country || "India",
-        };
+      const delhiveryReturnAddress = defaultReturnAddress || {
+        address_line1: warehouseForm.address_line1.trim(),
+        address_line2: warehouseForm.address_line2.trim() || null,
+        landmark: warehouseForm.landmark.trim() || null,
+        city: warehouseForm.city.trim(),
+        state: warehouseForm.state.trim(),
+        pincode: warehouseForm.pincode.trim(),
+        country: warehouseForm.country || "India",
+      };
 
       const returnAddressLine = [
         delhiveryReturnAddress.address_line1,
@@ -915,8 +918,7 @@ function CreateOrder() {
         // Delhivery warehouse-registration flow. The source of truth for
         // return addresses is now /return-addresses.
         return_address: returnAddressLine,
-        return_city:
-          delhiveryReturnAddress.city || warehouseForm.city.trim(),
+        return_city: delhiveryReturnAddress.city || warehouseForm.city.trim(),
         return_pincode:
           delhiveryReturnAddress.pincode || warehouseForm.pincode.trim(),
         return_state:
@@ -926,9 +928,7 @@ function CreateOrder() {
       });
 
       if (!response.data?.success) {
-        throw new Error(
-          response.data?.message || "Failed to save warehouse"
-        );
+        throw new Error(response.data?.message || "Failed to save warehouse");
       }
 
       toast.success("Warehouse added successfully");
@@ -940,7 +940,7 @@ function CreateOrder() {
       toast.error(
         error.response?.data?.message ||
           error.message ||
-          "Unable to save warehouse"
+          "Unable to save warehouse",
       );
     } finally {
       setWarehouseSaving(false);
@@ -970,6 +970,122 @@ function CreateOrder() {
     }
   };
 
+  // ========================================
+  // PREVIOUS CUSTOMER AUTOCOMPLETE
+  // ========================================
+ useEffect(() => {
+  if (isEditMode) {
+    setShowPreviousCustomers(false);
+    setPreviousCustomers([]);
+    return;
+  }
+
+  // Previous customer select karne ke baad
+  // autofilled name ko dobara search nahi karna
+  if (skipPreviousCustomerSearchRef.current) {
+    skipPreviousCustomerSearchRef.current = false;
+    setPreviousCustomers([]);
+    setShowPreviousCustomers(false);
+    setPreviousCustomersLoading(false);
+    return;
+  }
+
+  const search = String(formData.consignee_name || "").trim();
+
+    if (search.length < 2) {
+      setPreviousCustomers([]);
+      setShowPreviousCustomers(false);
+      setPreviousCustomersLoading(false);
+      return;
+    }
+
+    const userId = getUserId();
+    if (!userId) return;
+
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      setPreviousCustomersLoading(true);
+      try {
+        const response = await api.get("/orders/customers/search", {
+          params: { user_id: userId, search },
+        });
+
+        if (cancelled) return;
+
+        const customers = Array.isArray(response.data?.customers)
+          ? response.data.customers
+          : [];
+
+        setPreviousCustomers(customers);
+        setShowPreviousCustomers(customers.length > 0);
+      } catch (error) {
+        if (!cancelled) {
+          setPreviousCustomers([]);
+          setShowPreviousCustomers(false);
+          console.log("Previous customer search error:", error);
+        }
+      } finally {
+        if (!cancelled) setPreviousCustomersLoading(false);
+      }
+    }, 300);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [formData.consignee_name, isEditMode]);
+
+  useEffect(() => {
+    const handleOutsidePreviousCustomerClick = (event) => {
+      if (
+        previousCustomerDropdownRef.current &&
+        !previousCustomerDropdownRef.current.contains(event.target)
+      ) {
+        setShowPreviousCustomers(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutsidePreviousCustomerClick);
+    return () => {
+      document.removeEventListener(
+        "mousedown",
+        handleOutsidePreviousCustomerClick,
+        
+      );
+    };
+  }, []);
+
+ const selectPreviousCustomer = (customer) => {
+  if (!customer) return;
+
+  // Selection ke baad autocomplete ko dobara open hone se roko
+  skipPreviousCustomerSearchRef.current = true;
+
+  setFormData((prev) => ({
+      ...prev,
+      consignee_name: customer.consignee_name || "",
+      mobile: customer.mobile || "",
+      alternate_mobile: customer.alternate_mobile || "",
+      email: customer.email || "",
+      gstin: customer.gstin || "",
+      company_name: customer.company_name || "",
+      floor_no: customer.floor_no || "",
+      landmark: customer.landmark || "",
+      address_line1: customer.address_line1 || "",
+      address_line2: customer.address_line2 || "",
+      pincode: customer.pincode || "",
+      city: customer.city || "",
+      state: customer.state || "",
+      country: customer.country || "India",
+      payment_type: customer.payment_type || "Prepaid",
+      risk_type: customer.risk_type || "Owner Risk",
+    }));
+
+    setPreviousCustomers([]);
+    setShowPreviousCustomers(false);
+    resetShippingRate();
+  };
+
   const handlePincodeChange = async (e) => {
     const value = e.target.value.replace(/\D/g, "").slice(0, 6);
     setFormData((prev) => ({
@@ -986,7 +1102,7 @@ function CreateOrder() {
     setPincodeLoading(true);
     try {
       const response = await fetch(
-        `https://api.postalpincode.in/pincode/${value}`
+        `https://api.postalpincode.in/pincode/${value}`,
       );
       if (!response.ok) throw new Error("Pincode lookup failed");
 
@@ -1066,7 +1182,7 @@ function CreateOrder() {
 
   const totalInvoiceValue = products.reduce(
     (sum, product) => sum + getProductValues(product).total,
-    0
+    0,
   );
 
   const getVolumetricWeight = (item) => {
@@ -1110,6 +1226,8 @@ function CreateOrder() {
       : {};
 
     setFormData({ ...initialFormData, ...preservedPickup });
+    setPreviousCustomers([]);
+    setShowPreviousCustomers(false);
     setProducts([{ ...initialProduct }]);
     setPackages([{ ...initialPackage }]);
     resetShippingRate();
@@ -1135,63 +1253,52 @@ function CreateOrder() {
       package_count: Number(item.count) || 1,
     }));
 
-  const returnAddress = returnAddressOverride || defaultReturnAddress;
+    const returnAddress = returnAddressOverride || defaultReturnAddress;
 
-  const orderData = {
-  warehouse_id: selectedWarehouse?.id || null,
+    const orderData = {
+      warehouse_id: selectedWarehouse?.id || null,
 
-  // Default Return Address
-  return_address_id:
-    returnAddress?.id || null,
+      // Default Return Address
+      return_address_id: returnAddress?.id || null,
 
-  return_name:
-    returnAddress?.name || null,
+      return_name: returnAddress?.name || null,
 
-  return_phone:
-    returnAddress?.phone || null,
+      return_phone: returnAddress?.phone || null,
 
-  return_email:
-    returnAddress?.email || null,
+      return_email: returnAddress?.email || null,
 
-  return_address_line1:
-    returnAddress?.address_line1 || null,
+      return_address_line1: returnAddress?.address_line1 || null,
 
-  return_address_line2:
-    returnAddress?.address_line2 || null,
+      return_address_line2: returnAddress?.address_line2 || null,
 
-  return_landmark:
-    returnAddress?.landmark || null,
+      return_landmark: returnAddress?.landmark || null,
 
-  return_pincode:
-    returnAddress?.pincode || null,
+      return_pincode: returnAddress?.pincode || null,
 
-  return_city:
-    returnAddress?.city || null,
+      return_city: returnAddress?.city || null,
 
-  return_state:
-    returnAddress?.state || null,
+      return_state: returnAddress?.state || null,
 
-  return_country:
-    returnAddress?.country || "India",
+      return_country: returnAddress?.country || "India",
 
-  // Delivery Address
-  consignee_name: formData.consignee_name,
-  mobile: formData.mobile,
-  alternate_mobile: formData.alternate_mobile || null,
-  email: formData.email || null,
-  gstin: formData.gstin || null,
-  company_name: formData.company_name || null,
-  floor_no: formData.floor_no || null,
-  landmark: formData.landmark || null,
-  address_line1: formData.address_line1,
-  address_line2: formData.address_line2 || null,
-  pincode: formData.pincode,
-  city: formData.city,
-  state: formData.state,
-  country: formData.country || "India",
-  payment_type: formData.payment_type,
-  risk_type: formData.risk_type,
-};
+      // Delivery Address
+      consignee_name: formData.consignee_name,
+      mobile: formData.mobile,
+      alternate_mobile: formData.alternate_mobile || null,
+      email: formData.email || null,
+      gstin: formData.gstin || null,
+      company_name: formData.company_name || null,
+      floor_no: formData.floor_no || null,
+      landmark: formData.landmark || null,
+      address_line1: formData.address_line1,
+      address_line2: formData.address_line2 || null,
+      pincode: formData.pincode,
+      city: formData.city,
+      state: formData.state,
+      country: formData.country || "India",
+      payment_type: formData.payment_type,
+      risk_type: formData.risk_type,
+    };
 
     return { productData, packageData, orderData };
   };
@@ -1241,7 +1348,9 @@ function CreateOrder() {
     } catch (error) {
       console.log("Update order error:", error);
       toast.error(
-        error.response?.data?.message || error.message || "Unable to update order"
+        error.response?.data?.message ||
+          error.message ||
+          "Unable to update order",
       );
     } finally {
       setLoading(false);
@@ -1272,7 +1381,10 @@ function CreateOrder() {
       });
 
       const result = response.data;
-      if (!result?.success || (!result.road && !result.air && !result.shadowfax)) {
+      if (
+        !result?.success ||
+        (!result.road && !result.air && !result.shadowfax)
+      ) {
         throw new Error(result?.message || "No shipping options available");
       }
 
@@ -1330,7 +1442,9 @@ function CreateOrder() {
     try {
       const freshReturnAddress = await loadDefaultReturnAddress();
       if (!freshReturnAddress?.id) {
-        throw new Error("Default return address is required. Please add a return address first.");
+        throw new Error(
+          "Default return address is required. Please add a return address first.",
+        );
       }
 
       const { productData, packageData, orderData } =
@@ -1372,11 +1486,16 @@ function CreateOrder() {
     try {
       const freshReturnAddress = await loadDefaultReturnAddress();
       if (!freshReturnAddress?.id) {
-        throw new Error("Default return address is required. Please add a return address first.");
+        throw new Error(
+          "Default return address is required. Please add a return address first.",
+        );
       }
 
-      const { productData, packageData, orderData: baseOrderData } =
-        buildOrderData(freshReturnAddress);
+      const {
+        productData,
+        packageData,
+        orderData: baseOrderData,
+      } = buildOrderData(freshReturnAddress);
 
       let orderId = null;
 
@@ -1449,7 +1568,9 @@ function CreateOrder() {
         <div className="mb-4 sm:mb-6 flex items-center justify-between gap-3">
           <div>
             <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
-              {isEditMode ? `Edit Order #${editingOrderId}` : "Create New Order"}
+              {isEditMode
+                ? `Edit Order #${editingOrderId}`
+                : "Create New Order"}
             </h1>
             <p className="mt-0.5 text-xs sm:text-sm text-slate-400">
               {isEditMode
@@ -1569,15 +1690,63 @@ function CreateOrder() {
             </div>
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <div>
+              <div ref={previousCustomerDropdownRef} className="relative">
                 <label className={labelClass}>Customer Name *</label>
-                <input
-                  name="consignee_name"
-                  value={formData.consignee_name}
-                  onChange={handleChange}
-                  placeholder="Receiver's name"
-                  className={inputClass}
-                />
+                <div className="relative">
+                  <input
+                    name="consignee_name"
+                    value={formData.consignee_name}
+                    onChange={(e) => {
+                      handleChange(e);
+                      setShowPreviousCustomers(true);
+                    }}
+                    onFocus={() => {
+                      if (previousCustomers.length > 0) {
+                        setShowPreviousCustomers(true);
+                      }
+                    }}
+                    placeholder="Receiver's name"
+                    className={inputClass}
+                    autoComplete="off"
+                  />
+
+                  {previousCustomersLoading && (
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-[#008dd2]">
+                      Searching...
+                    </span>
+                  )}
+                </div>
+
+                {showPreviousCustomers && previousCustomers.length > 0 && (
+                  <div className="absolute left-0 right-0 top-[calc(100%+5px)] z-50 max-h-64 overflow-y-auto rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl">
+                    <div className="px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                      Previous Customers
+                    </div>
+
+                    {previousCustomers.map((customer) => (
+                      <button
+                        key={`${customer.id}-${customer.mobile || ""}`}
+                        type="button"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => selectPreviousCustomer(customer)}
+                        className="flex w-full items-start justify-between gap-3 rounded-lg px-2.5 py-2.5 text-left transition hover:bg-sky-50"
+                      >
+                        <span className="min-w-0">
+                          <span className="block truncate text-xs font-bold text-slate-800">
+                            {customer.consignee_name}
+                          </span>
+                          <span className="mt-0.5 block truncate text-[11px] text-slate-500">
+                            {customer.mobile || "No mobile"}
+                            {customer.city ? ` • ${customer.city}` : ""}
+                          </span>
+                        </span>
+                        <span className="shrink-0 text-[10px] font-semibold text-[#008dd2]">
+                          Use
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div>
@@ -1739,7 +1908,11 @@ function CreateOrder() {
                         <input
                           value={product.product}
                           onChange={(e) =>
-                            handleProductChange(index, "product", e.target.value)
+                            handleProductChange(
+                              index,
+                              "product",
+                              e.target.value,
+                            )
                           }
                           placeholder="Item description"
                           className={inputClass}
@@ -1920,7 +2093,9 @@ function CreateOrder() {
             <div className="flex flex-wrap items-center justify-end gap-3 text-[11px] sm:text-xs text-slate-500 pt-1">
               <span>
                 Deadweight:{" "}
-                <b className="text-slate-800">{getTotalWeight().toFixed(2)} Kg</b>
+                <b className="text-slate-800">
+                  {getTotalWeight().toFixed(2)} Kg
+                </b>
               </span>
               <span>•</span>
               <span>
@@ -1936,7 +2111,9 @@ function CreateOrder() {
           <div className="pt-2">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-slate-600">Payment:</span>
+                <span className="text-xs font-bold text-slate-600">
+                  Payment:
+                </span>
                 <div className="inline-flex rounded-xl border border-slate-200 bg-slate-50 p-1">
                   <button
                     type="button"
@@ -1988,8 +2165,8 @@ function CreateOrder() {
                       ? "Updating..."
                       : "Saving..."
                     : isEditMode
-                    ? "Update Order"
-                    : "Save & Next"}
+                      ? "Update Order"
+                      : "Save & Next"}
                 </button>
               </div>
             </div>

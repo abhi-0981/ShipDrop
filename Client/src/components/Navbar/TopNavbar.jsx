@@ -4,6 +4,14 @@ import { useNavigate } from "react-router-dom";
 import { FiMenu } from "react-icons/fi";
 import api from "../../services/api";
 
+const ImportIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M12 3v12" />
+    <path d="m7 10 5 5 5-5" />
+    <path d="M5 21h14" />
+  </svg>
+);
+
 const WalletIcon = () => (
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <path d="M20 7V6a2 2 0 0 0-2-2H5a3 3 0 0 0 0 6h15v8a2 2 0 0 1-2 2H5a3 3 0 0 1-3-3V7" />
@@ -89,6 +97,23 @@ function TopNavbar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed })
   const profileRef = useRef(null);
   const [amount, setAmount] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // ======================================================
+  // IMPORT ORDER STATE
+  // ======================================================
+
+  const [showImportOrder, setShowImportOrder] = useState(false);
+  const [importWarehouses, setImportWarehouses] = useState([]);
+  const [importReturnAddresses, setImportReturnAddresses] = useState([]);
+  const [selectedImportWarehouseId, setSelectedImportWarehouseId] = useState("");
+  const [selectedImportReturnAddressId, setSelectedImportReturnAddressId] = useState("");
+  const [importFile, setImportFile] = useState(null);
+  const [importLoading, setImportLoading] = useState(false);
+  const [importLoadingAddresses, setImportLoadingAddresses] = useState(false);
+  const [importErrors, setImportErrors] = useState([]);
+  const [importMessage, setImportMessage] = useState("");
+  const [importImportedCount, setImportImportedCount] = useState(0);
+  const importFileRef = useRef(null);
 
   const [user, setUser] = useState(() => {
     return JSON.parse(localStorage.getItem("user") || "null");
@@ -267,6 +292,418 @@ function TopNavbar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed })
     }
   };
 
+  // ======================================================
+  // IMPORT ORDER HELPERS
+  // ======================================================
+
+  const getImportUserId = () => {
+    try {
+      const savedUser = JSON.parse(localStorage.getItem("user") || "null");
+      return savedUser?.id || user?.id || null;
+    } catch {
+      return user?.id || null;
+    }
+  };
+
+  const getStoredDefaultImportWarehouse = (userId, list) => {
+    if (!userId || !Array.isArray(list) || list.length === 0) {
+      return null;
+    }
+
+    const explicitDefault = list.find((warehouse) => {
+      const values = [
+        warehouse.is_default,
+        warehouse.isDefault,
+        warehouse.default,
+        warehouse.is_default_pickup,
+        warehouse.isDefaultPickup,
+        warehouse.default_pickup,
+        warehouse.defaultPickup,
+        warehouse.is_primary,
+        warehouse.isPrimary,
+      ];
+
+      return values.some(
+        (value) =>
+          value === true ||
+          value === 1 ||
+          String(value).trim().toLowerCase() === "true" ||
+          String(value).trim().toLowerCase() === "default"
+      );
+    });
+
+    if (explicitDefault) return explicitDefault;
+
+    const possibleKeys = [
+      `shipdrop_default_warehouse_${userId}`,
+      "shipdrop_default_warehouse",
+      `default_warehouse_${userId}`,
+      "default_warehouse",
+      `defaultWarehouseId_${userId}`,
+      "defaultWarehouseId",
+    ];
+
+    for (const key of possibleKeys) {
+      try {
+        const raw = localStorage.getItem(key);
+        if (!raw) continue;
+
+        let stored = raw;
+        try {
+          stored = JSON.parse(raw);
+        } catch {
+          // Keep raw value.
+        }
+
+        const storedId =
+          typeof stored === "object" && stored !== null
+            ? stored.id ?? stored.warehouse_id ?? stored.warehouseId
+            : stored;
+
+        const match = list.find(
+          (warehouse) => String(warehouse.id) === String(storedId)
+        );
+
+        if (match) return match;
+      } catch {
+        // Ignore invalid localStorage values.
+      }
+    }
+
+    return null;
+  };
+
+  const loadImportAddresses = async () => {
+    const userId = getImportUserId();
+
+    if (!userId) {
+      toast.error("Please login again");
+      return;
+    }
+
+    setImportLoadingAddresses(true);
+    setImportErrors([]);
+    setImportMessage("");
+
+    try {
+      // Load each source independently. A problem with one endpoint should
+      // not prevent the other dropdown from loading.
+      const [warehouseResult, returnResult, defaultReturnResult] =
+        await Promise.allSettled([
+          api.get("/warehouses", {
+            params: { user_id: userId },
+          }),
+          api.get("/return-addresses", {
+            params: { user_id: userId },
+          }),
+          api.get("/return-addresses/default", {
+            params: { user_id: userId },
+          }),
+        ]);
+
+      // ----------------------------------------------
+      // PICKUP / WAREHOUSE
+      // ----------------------------------------------
+      if (warehouseResult.status === "fulfilled") {
+        const warehouseResponse = warehouseResult.value;
+        const warehouseList = Array.isArray(
+          warehouseResponse.data?.warehouses
+        )
+          ? warehouseResponse.data.warehouses.filter(
+              (item) =>
+                String(item.status || "ACTIVE").toUpperCase() === "ACTIVE"
+            )
+          : [];
+
+        setImportWarehouses(warehouseList);
+
+        // The warehouse API currently returns the warehouse list only.
+        // Therefore use the same default-warehouse storage logic already
+        // used by Create Order.
+        const defaultWarehouse =
+          getStoredDefaultImportWarehouse(userId, warehouseList);
+
+        if (defaultWarehouse?.id) {
+          setSelectedImportWarehouseId(String(defaultWarehouse.id));
+        } else if (warehouseList.length === 1) {
+          setSelectedImportWarehouseId(String(warehouseList[0].id));
+        } else {
+          setSelectedImportWarehouseId("");
+        }
+      } else {
+        console.error(
+          "Import pickup address loading error:",
+          warehouseResult.reason
+        );
+        setImportWarehouses([]);
+        setSelectedImportWarehouseId("");
+        toast.error(
+          warehouseResult.reason?.response?.data?.message ||
+            "Unable to load pickup addresses"
+        );
+      }
+
+      // ----------------------------------------------
+      // RETURN ADDRESSES
+      // ----------------------------------------------
+      let returnList = [];
+
+      if (returnResult.status === "fulfilled") {
+        const response = returnResult.value;
+        returnList = Array.isArray(response.data?.addresses)
+          ? response.data.addresses
+          : [];
+      } else {
+        console.error(
+          "Import return address loading error:",
+          returnResult.reason
+        );
+        toast.error(
+          returnResult.reason?.response?.data?.message ||
+            "Unable to load return addresses"
+        );
+      }
+
+      let defaultReturn = null;
+
+      if (defaultReturnResult.status === "fulfilled") {
+        const response = defaultReturnResult.value;
+        defaultReturn =
+          response.data?.return_address ||
+          response.data?.address ||
+          null;
+      } else if (defaultReturnResult.reason?.response?.status !== 404) {
+        console.error(
+          "Default return address loading error:",
+          defaultReturnResult.reason
+        );
+      }
+
+      if (
+        defaultReturn?.id &&
+        !returnList.some(
+          (item) => String(item.id) === String(defaultReturn.id)
+        )
+      ) {
+        returnList = [defaultReturn, ...returnList];
+      }
+
+      setImportReturnAddresses(returnList);
+
+      if (defaultReturn?.id) {
+        setSelectedImportReturnAddressId(String(defaultReturn.id));
+      } else if (returnList.length === 1) {
+        setSelectedImportReturnAddressId(String(returnList[0].id));
+      } else {
+        setSelectedImportReturnAddressId("");
+      }
+    } catch (error) {
+      console.error("Import address loading error:", error);
+      toast.error(
+        error.response?.data?.message ||
+          "Unable to load import addresses"
+      );
+    } finally {
+      setImportLoadingAddresses(false);
+    }
+  };
+
+  const openImportOrder = () => {
+    setShowProfile(false);
+    setImportFile(null);
+    setImportErrors([]);
+    setImportMessage("");
+    setImportImportedCount(0);
+    setSelectedImportWarehouseId("");
+    setSelectedImportReturnAddressId("");
+    setShowImportOrder(true);
+    loadImportAddresses();
+  };
+
+  const closeImportOrder = () => {
+    if (importLoading) return;
+
+    setShowImportOrder(false);
+    setImportFile(null);
+    setImportErrors([]);
+    setImportMessage("");
+    setImportImportedCount(0);
+    setSelectedImportWarehouseId("");
+    setSelectedImportReturnAddressId("");
+
+    if (importFileRef.current) {
+      importFileRef.current.value = "";
+    }
+  };
+
+  const handleImportFileChange = (event) => {
+    const file = event.target.files?.[0] || null;
+
+    setImportErrors([]);
+    setImportMessage("");
+
+    if (!file) {
+      setImportFile(null);
+      return;
+    }
+
+    const name = String(file.name || "").toLowerCase();
+
+    if (!name.endsWith(".xlsx") && !name.endsWith(".xls")) {
+      toast.error("Please select an Excel file (.xlsx or .xls)");
+      event.target.value = "";
+      setImportFile(null);
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Excel file must be smaller than 10 MB");
+      event.target.value = "";
+      setImportFile(null);
+      return;
+    }
+
+    setImportFile(file);
+  };
+
+  const handleImportOrders = async () => {
+    const userId = getImportUserId();
+
+    if (!userId) {
+      toast.error("Please login again");
+      return;
+    }
+
+    if (!selectedImportWarehouseId) {
+      toast.error("Please select a pickup address");
+      return;
+    }
+
+    if (!selectedImportReturnAddressId) {
+      toast.error("Please select a return address");
+      return;
+    }
+
+    if (!importFile) {
+      toast.error("Please select an Excel file");
+      return;
+    }
+
+    setImportLoading(true);
+    setImportErrors([]);
+    setImportMessage("");
+    setImportImportedCount(0);
+
+    try {
+      const formData = new FormData();
+
+      formData.append("user_id", String(userId));
+      formData.append(
+        "warehouse_id",
+        String(selectedImportWarehouseId)
+      );
+      formData.append(
+        "return_address_id",
+        String(selectedImportReturnAddressId)
+      );
+      formData.append("file", importFile);
+
+      const response = await api.post(
+        "/orders/import",
+        formData
+      );
+
+      const importedCount = Number(
+        response.data?.total_imported || 0
+      );
+
+      setImportImportedCount(importedCount);
+      setImportMessage(
+        response.data?.message ||
+          `${importedCount} orders imported successfully.`
+      );
+
+      setImportFile(null);
+
+      if (importFileRef.current) {
+        importFileRef.current.value = "";
+      }
+
+      // Notify every order screen immediately after import.
+      // Keep both event names for backward compatibility with
+      // older ProcessingOrders.jsx versions.
+      window.dispatchEvent(
+        new CustomEvent("shipdrop:orders-updated")
+      );
+
+      window.dispatchEvent(
+        new CustomEvent("processingOrderCreated")
+      );
+
+      toast.success(
+        `${importedCount} orders moved to Processing`
+      );
+    } catch (error) {
+      const responseData = error.response?.data;
+
+     const rawErrors = responseData?.errors;
+
+let normalizedErrors = [];
+
+if (Array.isArray(rawErrors)) {
+  normalizedErrors = rawErrors.map((item) => {
+    // Row-wise validation error
+    if (
+      item &&
+      typeof item === "object" &&
+      item.row !== undefined
+    ) {
+      return {
+        row: item.row,
+        errors: Array.isArray(item.errors)
+          ? item.errors
+          : [String(item.errors || "Invalid row")],
+      };
+    }
+
+    // Header / column-level validation error
+    return {
+      row: "Excel Header",
+      errors: [String(item)],
+    };
+  });
+}
+
+setImportErrors(normalizedErrors);
+
+setImportMessage(
+  responseData?.message ||
+    "Excel import failed. Please fix the errors and try again."
+);
+
+if (!normalizedErrors.length) {
+  toast.error(
+    responseData?.message ||
+      "Excel import failed"
+  );
+}
+
+      setImportMessage(
+        responseData?.message ||
+          "Excel import failed. Please fix the errors and try again."
+      );
+
+      if (!backendErrors.length) {
+        toast.error(
+          responseData?.message ||
+            "Excel import failed"
+        );
+      }
+    } finally {
+      setImportLoading(false);
+    }
+  };
+
   const handleFullscreen = () => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen();
@@ -329,6 +766,17 @@ function TopNavbar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed })
         {/* RIGHT SECTION: WALLET PILL + ACTIONS + PROFILE */}
         {/* ======================================================== */}
         <div className="flex items-center gap-1 sm:gap-2.5 shrink-0">
+          {/* IMPORT ORDER */}
+          <button
+            type="button"
+            onClick={openImportOrder}
+            className="hidden sm:flex h-9 items-center gap-1.5 rounded-full bg-[#008dd2] px-3 text-[11px] font-bold text-white shadow-sm transition hover:bg-[#007ab6] active:scale-95 shrink-0"
+            title="Import Order"
+          >
+            <ImportIcon />
+            <span>Import Order</span>
+          </button>
+
           {/* COMPACT TOUCH-FRIENDLY WALLET PILL */}
           <div className="flex items-center rounded-full bg-violet-50/90 px-2 sm:px-2.5 py-1 border border-violet-100/90 shrink-0">
             <span className="text-violet-600 shrink-0">
@@ -469,6 +917,298 @@ function TopNavbar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed })
           </div>
         </div>
       </header>
+
+      {/* IMPORT ORDER MODAL */}
+      {showImportOrder && (
+        <div
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/55 px-3 py-4 backdrop-blur-[2px]"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              closeImportOrder();
+            }
+          }}
+        >
+          <div className="flex max-h-[86vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+            {/* HEADER */}
+            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4 sm:px-6">
+              <div>
+                <h2 className="text-base font-bold text-slate-800 sm:text-lg">
+                  Import Orders
+                </h2>
+                <p className="mt-0.5 text-[11px] text-slate-400 sm:text-xs">
+                  Upload your Excel file to create multiple orders in Processing
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={closeImportOrder}
+                disabled={importLoading}
+                className="flex h-8 w-8 items-center justify-center rounded-full text-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+                aria-label="Close"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* BODY */}
+            <div className="overflow-y-auto px-5 py-4 sm:px-6">
+              {/* ADDRESS SELECTION */}
+              <div className="flex flex-col gap-4">
+                <div>
+                  <label className="mb-1.5 block text-xs font-semibold text-slate-700">
+                    Pickup Address <span className="text-red-500">*</span>
+                  </label>
+
+                  <select
+                    value={selectedImportWarehouseId}
+                    onChange={(event) =>
+                      setSelectedImportWarehouseId(event.target.value)
+                    }
+                    disabled={importLoadingAddresses || importLoading}
+                    className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 outline-none transition focus:border-[#008dd2] disabled:bg-slate-50"
+                  >
+                    <option value="">
+                      {importLoadingAddresses
+                        ? "Loading pickup addresses..."
+                        : "Select pickup address"}
+                    </option>
+
+                    {importWarehouses.map((warehouse) => (
+                      <option
+                        key={warehouse.id}
+                        value={warehouse.id}
+                      >
+                        {warehouse.warehouse_name || "Warehouse"} —{" "}
+                        {warehouse.address_line1 || ""}{" "}
+                        {warehouse.city || ""}{" "}
+                        {warehouse.pincode || ""}
+                      </option>
+                    ))}
+                  </select>
+
+                  {selectedImportWarehouseId && (
+                    <p className="mt-1.5 text-[10px] text-slate-400">
+                      Default pickup address is selected automatically.
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-xs font-semibold text-slate-700">
+                    Return Address <span className="text-red-500">*</span>
+                  </label>
+
+                  <select
+                    value={selectedImportReturnAddressId}
+                    onChange={(event) =>
+                      setSelectedImportReturnAddressId(event.target.value)
+                    }
+                    disabled={importLoadingAddresses || importLoading}
+                    className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 outline-none transition focus:border-[#008dd2] disabled:bg-slate-50"
+                  >
+                    <option value="">
+                      {importLoadingAddresses
+                        ? "Loading return addresses..."
+                        : "Select return address"}
+                    </option>
+
+                    {importReturnAddresses.map((address) => (
+                      <option
+                        key={address.id}
+                        value={address.id}
+                      >
+                        {address.name || "Return Address"} —{" "}
+                        {address.address_line1 || ""}{" "}
+                        {address.city || ""}{" "}
+                        {address.pincode || ""}
+                      </option>
+                    ))}
+                  </select>
+
+                  {selectedImportReturnAddressId && (
+                    <p className="mt-1.5 text-[10px] text-slate-400">
+                      Default return address is selected automatically.
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* EXCEL UPLOAD */}
+              <div className="mt-4">
+                <label className="mb-1.5 block text-xs font-semibold text-slate-700">
+                  Excel File <span className="text-red-500">*</span>
+                </label>
+
+                <input
+                  ref={importFileRef}
+                  type="file"
+                  accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+                  onChange={handleImportFileChange}
+                  disabled={importLoading}
+                  className="hidden"
+                />
+
+                <button
+                  type="button"
+                  onClick={() => importFileRef.current?.click()}
+                  disabled={importLoading}
+                  className="flex min-h-[86px] w-full flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/60 px-4 text-center transition hover:border-[#008dd2] hover:bg-sky-50/30 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <div className="mb-1.5 flex h-8 w-8 items-center justify-center rounded-lg bg-sky-100 text-[#008dd2]">
+                    <ImportIcon />
+                  </div>
+
+                  {importFile ? (
+                    <>
+                      <p className="max-w-full truncate text-xs font-bold text-slate-700">
+                        {importFile.name}
+                      </p>
+                      <p className="mt-1 text-[10px] text-slate-400">
+                        {(importFile.size / 1024).toFixed(1)} KB
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-xs font-bold text-slate-700">
+                        Click to select Excel file
+                      </p>
+                      <p className="mt-1 text-[10px] text-slate-400">
+                        .xlsx / .xls — maximum 10 MB
+                      </p>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* ERROR BOX */}
+              {importMessage && (
+                <div
+                  className={`mt-5 rounded-xl border p-4 ${
+                    importErrors.length
+                      ? "border-rose-200 bg-rose-50"
+                      : "border-emerald-200 bg-emerald-50"
+                  }`}
+                >
+                  <p
+                    className={`text-xs font-bold ${
+                      importErrors.length
+                        ? "text-rose-700"
+                        : "text-emerald-700"
+                    }`}
+                  >
+                    {importMessage}
+                  </p>
+                </div>
+              )}
+
+              {importErrors.length > 0 && (
+                <div className="mt-3 max-h-64 overflow-y-auto rounded-xl border border-rose-200 bg-white">
+                  <div className="sticky top-0 border-b border-rose-100 bg-rose-50 px-4 py-2.5">
+                    <p className="text-xs font-bold text-rose-700">
+                      Excel Errors — fix all rows before importing
+                    </p>
+                  </div>
+
+                  <div className="divide-y divide-slate-100">
+                    {importErrors.map((item, index) => (
+                      <div
+                        key={`${item.row}-${index}`}
+                        className="px-4 py-3"
+                      >
+                        <p className="text-[11px] font-bold text-slate-800">
+                          Row {item.row}
+                        </p>
+
+                        <ul className="mt-1 space-y-1">
+                          {(Array.isArray(item.errors)
+                            ? item.errors
+                            : [String(item.errors || "Invalid row")]
+                          ).map((errorText, errorIndex) => (
+                            <li
+                              key={`${item.row}-${errorIndex}`}
+                              className="text-[10px] leading-4 text-rose-600"
+                            >
+                              • {errorText}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* SUCCESS */}
+              {importImportedCount > 0 && !importErrors.length && (
+                <div className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+                  <p className="text-xs font-bold text-emerald-700">
+                    {importImportedCount} orders are now in Processing.
+                  </p>
+                  <p className="mt-1 text-[10px] text-emerald-600">
+                    No Delhivery manifest or wallet deduction is performed by
+                    this import.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* FOOTER */}
+            <div className="flex flex-col-reverse gap-2 border-t border-slate-100 bg-slate-50/70 px-5 py-4 sm:flex-row sm:items-center sm:justify-end sm:px-6">
+              {importImportedCount > 0 && !importErrors.length ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={closeImportOrder}
+                    className="h-10 rounded-xl border border-slate-200 bg-white px-5 text-xs font-bold text-slate-600 transition hover:bg-slate-100"
+                  >
+                    Close
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      closeImportOrder();
+                      navigate("/orders/processing");
+                    }}
+                    className="h-10 rounded-xl bg-[#008dd2] px-5 text-xs font-bold text-white transition hover:bg-[#007ab6]"
+                  >
+                    View Processing Orders
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={closeImportOrder}
+                    disabled={importLoading}
+                    className="h-10 rounded-xl border border-slate-200 bg-white px-5 text-xs font-bold text-slate-600 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleImportOrders}
+                    disabled={
+                      importLoading ||
+                      importLoadingAddresses ||
+                      !selectedImportWarehouseId ||
+                      !selectedImportReturnAddressId ||
+                      !importFile
+                    }
+                    className="h-10 rounded-xl bg-[#008dd2] px-6 text-xs font-bold text-white shadow-sm transition hover:bg-[#007ab6] disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {importLoading
+                      ? "Importing Orders..."
+                      : "Import Orders"}
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* RECHARGE MODAL */}
       {showRecharge && (

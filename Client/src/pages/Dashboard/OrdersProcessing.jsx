@@ -228,17 +228,19 @@ function ProcessingOrders() {
   // ORDER UPDATED EVENT
   // ====================================================
 
-  useEffect(() => {
-    const handleOrderUpdated = () => {
-      fetchOrders(false);
-    };
+ useEffect(() => {
+  const handleOrderUpdated = () => {
+    fetchOrders(false);
+  };
 
-    window.addEventListener("processingOrderUpdated", handleOrderUpdated);
+  window.addEventListener("processingOrderUpdated", handleOrderUpdated);
+  window.addEventListener("shipdrop:orders-updated", handleOrderUpdated);
 
-    return () => {
-      window.removeEventListener("processingOrderUpdated", handleOrderUpdated);
-    };
-  }, []);
+  return () => {
+    window.removeEventListener("processingOrderUpdated", handleOrderUpdated);
+    window.removeEventListener("shipdrop:orders-updated", handleOrderUpdated);
+  };
+}, []);
 
   // ====================================================
   // HELPERS

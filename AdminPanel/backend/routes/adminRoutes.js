@@ -7,6 +7,10 @@ const {
 } = require("../controllers/userController");
 
 const {
+  getAdminOrders,
+} = require("../controllers/orderAdminController");
+
+const {
   getTicketsController,
   getTicketController,
   updateTicketStatusController,
@@ -39,5 +43,8 @@ router.post(
   "/tickets/:id/reply",
   replyToTicketController
 );
+
+/* ORDERS */
+router.get("/orders", getAdminOrders);
 
 module.exports = router;

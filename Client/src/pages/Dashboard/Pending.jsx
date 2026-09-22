@@ -3,118 +3,28 @@ import React, {
   useMemo,
   useState,
 } from "react";
-import { toast } from "react-hot-toast";
+
+import {
+  HiOutlineSearch,
+  HiOutlineEye,
+  HiOutlineClipboardCopy,
+  HiOutlineRefresh,
+  HiOutlineChevronDown,
+  HiOutlineFilter,
+} from "react-icons/hi";
+
+import toast from "react-hot-toast";
+
 import api from "../../services/api";
 
-// ======================================================
-// COLORS
-// ======================================================
-
-const PRIMARY = "#008dd2";
-const PURPLE = "#7052ff";
-
-// ======================================================
-// ICON
-// ======================================================
-
-const Icon = ({
-  name,
-  size = 17,
-  strokeWidth = 1.8,
-}) => {
-  const common = {
-    width: size,
-    height: size,
-    viewBox: "0 0 24 24",
-    fill: "none",
-    stroke: "currentColor",
-    strokeWidth,
-    strokeLinecap: "round",
-    strokeLinejoin: "round",
-  };
-
-  switch (name) {
-    case "box":
-      return (
-        <svg {...common}>
-          <path d="M21 8.5 12 4 3 8.5v7L12 20l9-4.5v-7Z" />
-          <path d="M3 8.5 12 13l9-4.5" />
-          <path d="M12 13v7" />
-        </svg>
-      );
-
-    case "search":
-      return (
-        <svg {...common}>
-          <circle cx="11" cy="11" r="6.5" />
-          <path d="m16 16 4 4" />
-        </svg>
-      );
-
-    case "refresh":
-      return (
-        <svg {...common}>
-          <path d="M20 11a8 8 0 0 0-14.9-4" />
-          <path d="M4 4v4h4" />
-          <path d="M4 13a8 8 0 0 0 14.9 4" />
-          <path d="M20 20v-4h-4" />
-        </svg>
-      );
-
-    case "printer":
-      return (
-        <svg {...common}>
-          <path d="M6 9V3h12v6" />
-          <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
-          <path d="M6 14h12v7H6z" />
-          <path d="M17 12h1" />
-        </svg>
-      );
-
-    case "download":
-      return (
-        <svg {...common}>
-          <path d="M12 3v12" />
-          <path d="m7 10 5 5 5-5" />
-          <path d="M5 21h14" />
-        </svg>
-      );
-
-    case "eye":
-      return (
-        <svg {...common}>
-          <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
-          <circle cx="12" cy="12" r="2.5" />
-        </svg>
-      );
-
-    case "check":
-      return (
-        <svg {...common}>
-          <path d="m5 12 4 4L19 6" />
-        </svg>
-      );
-
-    case "x":
-      return (
-        <svg {...common}>
-          <path d="M6 6l12 12" />
-          <path d="M18 6 6 18" />
-        </svg>
-      );
-
-    default:
-      return null;
-  }
-};
-
-// ======================================================
-// USER ID
-// ======================================================
+/* =========================================================
+   USER ID
+========================================================= */
 
 const getUserId = () => {
   try {
-    const storedUser = localStorage.getItem("user");
+    const storedUser =
+      localStorage.getItem("user");
 
     if (!storedUser) {
       return null;
@@ -123,396 +33,1138 @@ const getUserId = () => {
     const user = JSON.parse(storedUser);
 
     return (
-      user?.id ||
-      user?.user_id ||
-      user?.userId ||
+      user?.id ??
+      user?.user_id ??
+      user?.userId ??
       null
     );
   } catch (error) {
-    console.error("Unable to read logged-in user:", error);
+    console.error(
+      "Unable to read user:",
+      error
+    );
+
     return null;
   }
 };
 
-// ======================================================
-// BASIC HELPERS
-// ======================================================
+/* =========================================================
+   STATUS HELPERS
+========================================================= */
 
-const safeString = (value) => {
-  if (value === null || value === undefined) {
-    return "";
+const normalizeStatus = (status) => {
+  const value = String(status || "")
+    .trim()
+    .toUpperCase()
+    .replace(/_/g, " ");
+
+  if (value === "NDR") {
+    return "NDR";
+  }
+
+  if (value === "PENDING") {
+    return "Pending";
+  }
+
+  if (value === "PROCESSING") {
+    return "Processing";
+  }
+
+  if (value === "MANIFESTED") {
+    return "Manifested";
+  }
+
+  if (value === "NOT PICKED") {
+    return "Not Picked";
+  }
+
+  if (value === "IN TRANSIT") {
+    return "In Transit";
+  }
+
+  if (value === "OUT FOR DELIVERY") {
+    return "Out For Delivery";
+  }
+
+  if (value === "DELIVERED") {
+    return "Delivered";
+  }
+
+  if (value === "RTO IN TRANSIT") {
+    return "RTO In Transit";
+  }
+
+  if (value === "RTO DELIVERED") {
+    return "RTO Delivered";
+  }
+
+  if (value === "RETURNED") {
+    return "Returned";
+  }
+
+  if (
+    value === "CANCELLED" ||
+    value === "CANCELED"
+  ) {
+    return "Cancelled";
+  }
+
+  return status
+    ? String(status)
+    : "Unknown";
+};
+
+/* =========================================================
+   GET ACTUAL ORDER STATUS
+========================================================= */
+
+const getOrderStatus = (order) => {
+  const trackingStatus = String(
+    order?.tracking_status || ""
+  )
+    .trim()
+    .toUpperCase()
+    .replace(/_/g, " ");
+
+  /*
+    NDR must have priority over normal order status.
+  */
+
+  if (trackingStatus === "NDR") {
+    return "NDR";
+  }
+
+  const status =
+    order?.status ??
+    order?.order_status ??
+    order?.tracking_status ??
+    "";
+
+  return normalizeStatus(status);
+};
+
+/* =========================================================
+   NDR / PENDING CHECK
+========================================================= */
+
+const isNdrOrPending = (order) => {
+  const trackingStatus = String(
+    order?.tracking_status || ""
+  )
+    .trim()
+    .toUpperCase()
+    .replace(/_/g, " ");
+
+  const orderStatus = String(
+    order?.status ||
+      order?.order_status ||
+      ""
+  )
+    .trim()
+    .toUpperCase()
+    .replace(/_/g, " ");
+
+  return (
+    trackingStatus === "NDR" ||
+    orderStatus === "NDR" ||
+    trackingStatus === "PENDING" ||
+    orderStatus === "PENDING"
+  );
+};
+
+/* =========================================================
+   DATE
+========================================================= */
+
+const formatDate = (date) => {
+  if (!date) {
+    return "-";
+  }
+
+  const parsed = new Date(date);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return String(date);
+  }
+
+  return parsed.toLocaleString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+/* =========================================================
+   VALUE
+========================================================= */
+
+const valueOrDash = (value) => {
+  if (
+    value === undefined ||
+    value === null ||
+    String(value).trim() === ""
+  ) {
+    return "-";
   }
 
   return String(value);
 };
 
-// ======================================================
-// CUSTOMER
-// ======================================================
+/* =========================================================
+   ADDRESS
+========================================================= */
+
+const buildAddress = (...parts) => {
+  return (
+    parts
+      .filter(
+        (part) =>
+          part !== undefined &&
+          part !== null &&
+          String(part).trim() !== ""
+      )
+      .map((part) =>
+        String(part).trim()
+      )
+      .join(", ") || "-"
+  );
+};
+
+/* =========================================================
+   CHARGE
+========================================================= */
+
+const getCharge = (order) => {
+  const candidates = [
+    order?.charge,
+    order?.shipping_charge,
+    order?.shippingCharge,
+    order?.final_rate,
+    order?.finalRate,
+    order?.manifest_shipping_charge,
+    order?.manifestShippingCharge,
+  ];
+
+  for (const value of candidates) {
+    if (
+      value !== undefined &&
+      value !== null &&
+      value !== "" &&
+      Number.isFinite(Number(value))
+    ) {
+      return Number(value);
+    }
+  }
+
+  return null;
+};
+
+/* =========================================================
+   SERVICE
+========================================================= */
+
+const getServiceType = (order) => {
+  const raw = String(
+    order?.service_type ||
+      order?.serviceType ||
+      order?.service ||
+      order?.shipping_mode ||
+      ""
+  )
+    .trim()
+    .toUpperCase();
+
+  if (raw.includes("AIR")) {
+    return "BY AIR";
+  }
+
+  if (raw.includes("ROAD")) {
+    return "BY ROAD";
+  }
+
+  return raw || "-";
+};
+
+/* =========================================================
+   PAYMENT
+========================================================= */
+
+const getPaymentType = (order) => {
+  return String(
+    order?.payment_type ||
+      order?.paymentType ||
+      order?.payment ||
+      "-"
+  )
+    .trim()
+    .toUpperCase();
+};
+
+/* =========================================================
+   CUSTOMER
+========================================================= */
 
 const getCustomerName = (order) => {
   return (
-    order?.consignee_name ||
     order?.customer_name ||
     order?.customer ||
-    order?.name ||
-    "—"
+    order?.customer_company ||
+    order?.consignee_name ||
+    "-"
   );
 };
 
-const getMobile = (order) => {
-  return (
-    order?.mobile ||
-    order?.phone ||
-    order?.phone_no ||
-    order?.consignee_phone ||
-    ""
-  );
-};
-
-// ======================================================
-// ORDER / AWB
-// ======================================================
+/* =========================================================
+   AWB
+========================================================= */
 
 const getAWB = (order) => {
   return (
     order?.awb ||
     order?.waybill ||
-    order?.awb_number ||
-    "—"
+    order?.AWB ||
+    "-"
   );
 };
+
+/* =========================================================
+   ORDER ID
+========================================================= */
 
 const getOrderId = (order) => {
   return (
     order?.order_id ||
     order?.id ||
-    "—"
+    "-"
   );
 };
 
-// ======================================================
-// SHIPMENT
-// ======================================================
+/* =========================================================
+   STATUS BADGE
+========================================================= */
 
-const getShipmentName = (order) => {
-  return (
-    order?.shipment ||
-    order?.product_name ||
-    order?.service_name ||
-    order?.product ||
-    "Shipment"
-  );
-};
+const StatusBadge = ({
+  status,
+}) => {
+  const styles = {
+    NDR:
+      "bg-rose-50 text-rose-600 border-rose-100",
 
-const getServiceType = (order) => {
-  return safeString(
-    order?.service_type ||
-      order?.service ||
-      order?.mode ||
-      "ROAD"
-  )
-    .trim()
-    .toUpperCase();
-};
+    Pending:
+      "bg-amber-50 text-amber-600 border-amber-100",
 
-// ======================================================
-// PAYMENT
-// ======================================================
+    Processing:
+      "bg-blue-50 text-blue-600 border-blue-100",
 
-const getPaymentType = (order) => {
-  return safeString(
-    order?.payment_type ||
-      order?.payment ||
-      order?.payment_mode ||
-      "PREPAID"
-  )
-    .trim()
-    .toUpperCase();
-};
+    Manifested:
+      "bg-amber-50 text-amber-600 border-amber-200",
 
-const getAmount = (order) => {
-  const amount = Number(
-    order?.total_amount ??
-      order?.total ??
-      order?.amount ??
-      order?.shipping_charges ??
-      0
-  );
+    "Not Picked":
+      "bg-orange-50 text-orange-600 border-orange-100",
 
-  return Number.isFinite(amount) ? amount : 0;
-};
+    "In Transit":
+      "bg-indigo-50 text-indigo-600 border-indigo-100",
 
-// ======================================================
-// ROUTE
-// ======================================================
+    "Out For Delivery":
+      "bg-purple-50 text-purple-600 border-purple-100",
 
-const getPickupCity = (order) => {
-  return (
-    order?.pickup_city ||
-    order?.warehouse_city ||
-    order?.from_city ||
-    order?.pickup_location ||
-    "—"
-  );
-};
+    Delivered:
+      "bg-emerald-50 text-emerald-600 border-emerald-100",
 
-const getPickupPincode = (order) => {
-  return (
-    order?.pickup_pincode ||
-    order?.warehouse_pincode ||
-    order?.from_pincode ||
-    ""
-  );
-};
+    "RTO In Transit":
+      "bg-red-50 text-red-500 border-red-100",
 
-const getDeliveryCity = (order) => {
-  return (
-    order?.city ||
-    order?.delivery_city ||
-    order?.to_city ||
-    order?.destination_city ||
-    "—"
-  );
-};
+    "RTO Delivered":
+      "bg-red-50 text-red-600 border-red-100",
 
-const getDeliveryPincode = (order) => {
-  return (
-    order?.pincode ||
-    order?.delivery_pincode ||
-    order?.to_pincode ||
-    ""
-  );
-};
+    Returned:
+      "bg-orange-50 text-orange-600 border-orange-100",
 
-// ======================================================
-// WEIGHT
-// ======================================================
-
-const getWeight = (order) => {
-  const directWeight = Number(
-    order?.total_weight ??
-      order?.weight ??
-      order?.shipment_weight
-  );
-
-  if (
-    Number.isFinite(directWeight) &&
-    directWeight >= 0
-  ) {
-    return directWeight;
-  }
-
-  if (Array.isArray(order?.packages)) {
-    return order.packages.reduce(
-      (total, pkg) => {
-        const weight =
-          Number(pkg?.weight) || 0;
-
-        const count =
-          Number(
-            pkg?.package_count ??
-              pkg?.count ??
-              1
-          ) || 1;
-
-        return total + weight * count;
-      },
-      0
-    );
-  }
-
-  return 0;
-};
-
-const getVolumetricWeight = (order) => {
-  const value = Number(
-    order?.volumetric_weight ??
-      order?.vol_weight ??
-      order?.volumetricWeight ??
-      0
-  );
-
-  return Number.isFinite(value) ? value : 0;
-};
-
-const getPackageCount = (order) => {
-  if (Array.isArray(order?.packages)) {
-    return order.packages.reduce(
-      (total, pkg) => {
-        return (
-          total +
-          (
-            Number(
-              pkg?.package_count ??
-                pkg?.count ??
-                1
-            ) || 1
-          )
-        );
-      },
-      0
-    );
-  }
-
-  return (
-    Number(
-      order?.package_count ??
-        order?.packages_count ??
-        order?.boxes ??
-        1
-    ) || 1
-  );
-};
-
-// ======================================================
-// DATE
-// ======================================================
-
-const getCreatedAt = (order) => {
-  return (
-    order?.created_at ||
-    order?.order_created_at ||
-    order?.createdAt ||
-    order?.manifested_at ||
-    null
-  );
-};
-
-const formatDate = (value) => {
-  if (!value) {
-    return "—";
-  }
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return "—";
-  }
-
-  return date.toLocaleDateString(
-    "en-IN",
-    {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    }
-  );
-};
-
-const formatTime = (value) => {
-  if (!value) {
-    return "";
-  }
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return "";
-  }
-
-  return date.toLocaleTimeString(
-    "en-IN",
-    {
-      hour: "2-digit",
-      minute: "2-digit",
-    }
-  );
-};
-
-// ======================================================
-// STATUS
-// ======================================================
-
-const getStatus = (order) => {
-  return safeString(
-    order?.tracking_status ||
-      order?.status ||
-      order?.order_status ||
-      "PROCESSING"
-  )
-    .trim()
-    .toUpperCase();
-};
-
-const getStatusLabel = (status) => {
-  switch (status) {
-    case "PROCESSING":
-      return "Processing";
-
-    case "MANIFESTED":
-      return "Manifested";
-
-    case "IN TRANSIT":
-    case "IN_TRANSIT":
-      return "In Transit";
-
-    case "DELIVERED":
-      return "Delivered";
-
-    case "CANCELLED":
-    case "CANCELED":
-      return "Cancelled";
-
-    case "PENDING":
-      return "Pending";
-
-    default:
-      return (
-        status
-          ?.toLowerCase()
-          ?.replace(/\b\w/g, (char) =>
-            char.toUpperCase()
-          ) || "Processing"
-      );
-  }
-};
-
-// ======================================================
-// STATUS BADGE
-// ======================================================
-
-const StatusBadge = ({ status }) => {
-  let className =
-    "bg-[#edf8ff] text-[#008dd2]";
-
-  if (
-    status === "CANCELLED" ||
-    status === "CANCELED"
-  ) {
-    className =
-      "bg-red-50 text-red-600";
-  } else if (
-    status === "DELIVERED"
-  ) {
-    className =
-      "bg-emerald-50 text-emerald-600";
-  } else if (
-    status === "IN TRANSIT" ||
-    status === "IN_TRANSIT"
-  ) {
-    className =
-      "bg-violet-50 text-violet-600";
-  } else if (
-    status === "PENDING"
-  ) {
-    className =
-      "bg-amber-50 text-amber-600";
-  }
+    Cancelled:
+      "bg-red-50 text-red-600 border-red-100",
+  };
 
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-semibold ${className}`}
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-medium ${
+        styles[status] ||
+        "bg-slate-50 text-slate-600 border-slate-200"
+      }`}
     >
-      <span className="h-1 w-1 rounded-full bg-current" />
-      {getStatusLabel(status)}
+      <span className="h-1.5 w-1.5 rounded-full bg-current" />
+
+      {status || "Unknown"}
     </span>
   );
 };
 
-// ======================================================
-// MAIN COMPONENT
-// ======================================================
+/* =========================================================
+   DETAIL ROW
+========================================================= */
+
+const DetailRow = ({
+  label,
+  value,
+  strong = false,
+}) => {
+  return (
+    <div className="flex items-start justify-between gap-4 border-b border-slate-100 py-2 last:border-b-0">
+      <span className="shrink-0 text-[11px] font-medium text-slate-400">
+        {label}
+      </span>
+
+      <span
+        className={`min-w-0 text-right text-[11px] ${
+          strong
+            ? "font-semibold text-slate-700"
+            : "font-medium text-slate-600"
+        }`}
+      >
+        {valueOrDash(value)}
+      </span>
+    </div>
+  );
+};
+
+/* =========================================================
+   DETAIL CARD
+========================================================= */
+
+const DetailCard = ({
+  title,
+  children,
+}) => {
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-4">
+      <h3 className="mb-3 text-[12px] font-semibold text-slate-800">
+        {title}
+      </h3>
+
+      {children}
+    </div>
+  );
+};
+
+/* =========================================================
+   ORDER DETAILS MODAL
+========================================================= */
+
+const OrderDetailsModal = ({
+  order,
+  onClose,
+}) => {
+  if (!order) {
+    return null;
+  }
+
+  const status =
+    getOrderStatus(order);
+
+  const charge =
+    getCharge(order);
+
+  const service =
+    getServiceType(order);
+
+  const buyerAddress =
+    buildAddress(
+      order?.address_line1,
+      order?.address_line2,
+      order?.floor_no
+        ? `Floor ${order.floor_no}`
+        : null,
+      order?.landmark
+        ? `Landmark: ${order.landmark}`
+        : null,
+      order?.city,
+      order?.state,
+      order?.pincode,
+      order?.country
+    );
+
+  const pickupAddress =
+    buildAddress(
+      order?.pickup_address,
+      order?.pickup_address_line1,
+      order?.pickup_address_line2,
+      order?.pickup_city,
+      order?.pickup_state,
+      order?.pickup_pincode
+    );
+
+  const warehouseAddress =
+    buildAddress(
+      order?.warehouse_address_line1,
+      order?.warehouse_address_line2,
+      order?.warehouse_city,
+      order?.warehouse_state,
+      order?.warehouse_pincode,
+      order?.warehouse_country
+    );
+
+  const rtoAddress =
+    buildAddress(
+      order?.return_address_line1,
+      order?.return_address_line2,
+      order?.return_floor_no
+        ? `Floor ${order.return_floor_no}`
+        : null,
+      order?.return_landmark
+        ? `Landmark: ${order.return_landmark}`
+        : null,
+      order?.return_city,
+      order?.return_state,
+      order?.return_pincode,
+      order?.return_country
+    );
+
+  const product =
+    order?.product_name ||
+    order?.products?.[0]?.product_name ||
+    "-";
+
+  const sku =
+    order?.sku ||
+    order?.products?.[0]?.sku ||
+    "-";
+
+  const quantity =
+    order?.qty ??
+    order?.quantity ??
+    order?.products?.[0]?.qty ??
+    order?.products?.[0]?.quantity;
+
+  const weight =
+    order?.weight ??
+    order?.total_weight ??
+    order?.packages?.[0]?.weight;
+
+  const packageCount =
+    order?.package_count ??
+    order?.packages?.[0]?.package_count ??
+    order?.packages?.[0]?.count;
+
+  const length =
+    order?.length ??
+    order?.packages?.[0]?.length;
+
+  const width =
+    order?.width ??
+    order?.packages?.[0]?.width;
+
+  const height =
+    order?.height ??
+    order?.packages?.[0]?.height;
+
+  const productPrice =
+    order?.price ??
+    order?.products?.[0]?.price;
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/55 p-3"
+      onMouseDown={(event) => {
+        if (
+          event.target ===
+          event.currentTarget
+        ) {
+          onClose();
+        }
+      }}
+    >
+      <div className="flex max-h-[90vh] w-full max-w-[980px] flex-col overflow-hidden rounded-[14px] border border-slate-200 bg-white shadow-[0_20px_60px_rgba(15,23,42,0.20)]">
+
+        {/* HEADER */}
+
+        <div className="flex shrink-0 items-center justify-between border-b border-slate-200 bg-white px-4 py-3">
+          <div className="flex min-w-0 items-center gap-2">
+
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-[12px] font-bold text-slate-600">
+              #
+            </div>
+
+            <div className="min-w-0">
+
+              <div className="flex items-center gap-2">
+
+                <h2 className="truncate text-[15px] font-semibold text-slate-800">
+                  {getOrderId(order)}
+                </h2>
+
+                <StatusBadge
+                  status={status}
+                />
+
+              </div>
+
+              <p className="mt-0.5 text-[10px] text-slate-400">
+                AWB {valueOrDash(getAWB(order))}
+              </p>
+
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[18px] leading-none text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+          >
+            ×
+          </button>
+
+        </div>
+
+        {/* CONTENT */}
+
+        <div className="min-h-0 flex-1 overflow-y-auto bg-[#f7f9fc] p-3">
+
+          {/* SHIPMENT + CUSTOMER */}
+
+          <div className="mb-3 grid gap-3 lg:grid-cols-2">
+
+            <DetailCard title="Shipment">
+
+              <div className="grid grid-cols-2 gap-x-5">
+
+                <DetailRow
+                  label="Order ID"
+                  value={getOrderId(order)}
+                  strong
+                />
+
+                <DetailRow
+                  label="AWB"
+                  value={getAWB(order)}
+                  strong
+                />
+
+                <DetailRow
+                  label="Pickup ID"
+                  value={
+                    order?.pickup_address_id
+                  }
+                />
+
+                <DetailRow
+                  label="Manifest ID"
+                  value={
+                    order?.manifest_id
+                  }
+                />
+
+                <DetailRow
+                  label="Service"
+                  value={service}
+                  strong
+                />
+
+                <DetailRow
+                  label="Status"
+                  value={status}
+                  strong
+                />
+
+              </div>
+
+            </DetailCard>
+
+            <DetailCard title="Customer & Payment">
+
+              <div className="grid grid-cols-2 gap-x-5">
+
+                <DetailRow
+                  label="Customer"
+                  value={getCustomerName(order)}
+                  strong
+                />
+
+                <DetailRow
+                  label="UID"
+                  value={order?.user_id}
+                />
+
+                <DetailRow
+                  label="Mobile"
+                  value={
+                    order?.mobile ||
+                    order?.phone
+                  }
+                />
+
+                <DetailRow
+                  label="Email"
+                  value={order?.email}
+                />
+
+                <DetailRow
+                  label="Payment"
+                  value={
+                    order?.payment_type ||
+                    order?.payment
+                  }
+                />
+
+                <DetailRow
+                  label="Shipping Charge"
+                  value={
+                    charge !== null
+                      ? `₹${charge.toFixed(2)}`
+                      : "-"
+                  }
+                  strong
+                />
+
+                <DetailRow
+                  label="Order Value"
+                  value={
+                    order?.order_value ??
+                    order?.total_amount ??
+                    order?.total_value
+                  }
+                />
+
+                <DetailRow
+                  label="COD Amount"
+                  value={
+                    order?.cod_amount ??
+                    order?.cod_value ??
+                    order?.codAmount
+                  }
+                />
+
+              </div>
+
+            </DetailCard>
+
+          </div>
+
+          {/* ADDRESSES */}
+
+          <div className="mb-3 grid gap-3 lg:grid-cols-2">
+
+            {/* BUYER */}
+
+            <div className="rounded-xl border border-slate-200 bg-white p-3.5">
+
+              <div className="mb-3 flex items-center justify-between">
+
+                <div>
+                  <h3 className="text-[12px] font-semibold text-slate-800">
+                    Buyer / Consignee
+                  </h3>
+
+                  <p className="mt-0.5 text-[9px] text-slate-400">
+                    Delivery customer
+                  </p>
+                </div>
+
+                <span className="rounded-md bg-blue-50 px-2 py-1 text-[9px] font-semibold text-blue-600">
+                  DELIVERY
+                </span>
+
+              </div>
+
+              <div className="grid grid-cols-2 gap-x-4">
+
+                <DetailRow
+                  label="Name"
+                  value={
+                    order?.consignee_name ||
+                    order?.customer_name
+                  }
+                  strong
+                />
+
+                <DetailRow
+                  label="Phone"
+                  value={
+                    order?.mobile ||
+                    order?.phone
+                  }
+                />
+
+                <DetailRow
+                  label="Alt Phone"
+                  value={
+                    order?.alternate_mobile
+                  }
+                />
+
+                <DetailRow
+                  label="Email"
+                  value={order?.email}
+                />
+
+              </div>
+
+              <div className="mt-2.5 rounded-lg border border-blue-100 bg-blue-50/50 px-3 py-2.5">
+
+                <div className="mb-1 text-[9px] font-semibold uppercase tracking-wide text-blue-500">
+                  Address
+                </div>
+
+                <div className="text-[10px] font-medium leading-[1.6] text-slate-700">
+                  {buyerAddress}
+                </div>
+
+              </div>
+
+            </div>
+
+            {/* PICKUP */}
+
+            <div className="rounded-xl border border-slate-200 bg-white p-3.5">
+
+              <div className="mb-3 flex items-center justify-between">
+
+                <div>
+                  <h3 className="text-[12px] font-semibold text-slate-800">
+                    Pickup Address
+                  </h3>
+
+                  <p className="mt-0.5 text-[9px] text-slate-400">
+                    Shipment origin
+                  </p>
+                </div>
+
+                <span className="rounded-md bg-emerald-50 px-2 py-1 text-[9px] font-semibold text-emerald-600">
+                  PICKUP
+                </span>
+
+              </div>
+
+              <div className="grid grid-cols-2 gap-x-4">
+
+                <DetailRow
+                  label="Name"
+                  value={
+                    order?.pickup_contact_name ||
+                    order?.warehouse_contact_name ||
+                    order?.contact_name
+                  }
+                  strong
+                />
+
+                <DetailRow
+                  label="Phone"
+                  value={
+                    order?.pickup_phone ||
+                    order?.warehouse_phone ||
+                    order?.phone
+                  }
+                />
+
+              </div>
+
+              <div className="mt-2.5 rounded-lg border border-emerald-100 bg-emerald-50/50 px-3 py-2.5">
+
+                <div className="mb-1 text-[9px] font-semibold uppercase tracking-wide text-emerald-600">
+                  Address
+                </div>
+
+                <div className="text-[10px] font-medium leading-[1.6] text-slate-700">
+                  {pickupAddress}
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+          {/* ROUTE + PACKAGE */}
+
+          <div className="mb-3 grid gap-3 lg:grid-cols-2">
+
+            <DetailCard title="Route">
+
+              <div className="grid grid-cols-2 gap-x-5">
+
+                <DetailRow
+                  label="Pickup"
+                  value={buildAddress(
+                    order?.pickup_city,
+                    order?.pickup_state,
+                    order?.pickup_pincode
+                  )}
+                />
+
+                <DetailRow
+                  label="Delivery"
+                  value={buildAddress(
+                    order?.city,
+                    order?.state,
+                    order?.pincode
+                  )}
+                />
+
+                <DetailRow
+                  label="Distance"
+                  value={
+                    order?.distance_km !==
+                      undefined &&
+                    order?.distance_km !==
+                      null
+                      ? `${order.distance_km} km`
+                      : order?.distance
+                        ? `${order.distance} km`
+                        : "-"
+                  }
+                />
+
+                <DetailRow
+                  label="Zone"
+                  value={order?.zone}
+                />
+
+              </div>
+
+            </DetailCard>
+
+            <DetailCard title="Package & Product">
+
+              <div className="grid grid-cols-2 gap-x-5">
+
+                <DetailRow
+                  label="Weight"
+                  value={
+                    weight !==
+                      undefined &&
+                    weight !== null
+                      ? `${weight} kg`
+                      : "-"
+                  }
+                />
+
+                <DetailRow
+                  label="Boxes"
+                  value={packageCount}
+                />
+
+                <DetailRow
+                  label="Dimensions"
+                  value={
+                    length !== undefined &&
+                    width !== undefined &&
+                    height !== undefined
+                      ? `${length} × ${width} × ${height}`
+                      : "-"
+                  }
+                />
+
+                <DetailRow
+                  label="Product"
+                  value={product}
+                  strong
+                />
+
+                <DetailRow
+                  label="SKU"
+                  value={sku}
+                />
+
+                <DetailRow
+                  label="Quantity"
+                  value={quantity}
+                />
+
+                <DetailRow
+                  label="Product Price"
+                  value={
+                    productPrice !==
+                      undefined &&
+                    productPrice !==
+                      null
+                      ? `₹${Number(
+                          productPrice
+                        ).toFixed(2)}`
+                      : "-"
+                  }
+                />
+
+              </div>
+
+            </DetailCard>
+
+          </div>
+
+          {/* WAREHOUSE + RTO */}
+
+          <div className="mb-3 grid gap-3 lg:grid-cols-2">
+
+            <DetailCard title="Warehouse">
+
+              <div className="grid grid-cols-2 gap-x-5">
+
+                <DetailRow
+                  label="Name"
+                  value={
+                    order?.warehouse_name ||
+                    order?.warehouse?.warehouse_name
+                  }
+                  strong
+                />
+
+                <DetailRow
+                  label="Contact"
+                  value={
+                    order?.warehouse_contact_name ||
+                    order?.warehouse?.contact_name
+                  }
+                />
+
+                <DetailRow
+                  label="Phone"
+                  value={
+                    order?.warehouse_phone ||
+                    order?.warehouse?.phone
+                  }
+                />
+
+              </div>
+
+              <div className="mt-2.5 rounded-lg border border-slate-100 bg-slate-50 px-3 py-2.5">
+
+                <div className="mb-1 text-[9px] font-semibold uppercase tracking-wide text-slate-400">
+                  Address
+                </div>
+
+                <div className="text-[10px] font-medium leading-[1.6] text-slate-600">
+                  {warehouseAddress}
+                </div>
+
+              </div>
+
+            </DetailCard>
+
+            <DetailCard title="RTO Address">
+
+              <div className="grid grid-cols-2 gap-x-5">
+
+                <DetailRow
+                  label="Name"
+                  value={order?.return_name}
+                />
+
+                <DetailRow
+                  label="Phone"
+                  value={order?.return_phone}
+                />
+
+                <DetailRow
+                  label="Email"
+                  value={order?.return_email}
+                />
+
+              </div>
+
+              <div className="mt-2.5 rounded-lg border border-orange-100 bg-orange-50/50 px-3 py-2.5">
+
+                <div className="mb-1 text-[9px] font-semibold uppercase tracking-wide text-orange-500">
+                  Return Address
+                </div>
+
+                <div className="text-[10px] font-medium leading-[1.6] text-slate-600">
+                  {rtoAddress}
+                </div>
+
+              </div>
+
+            </DetailCard>
+
+          </div>
+
+          {/* META */}
+
+          <DetailCard title="Shipment Meta">
+
+            <div className="grid grid-cols-2 gap-x-5 lg:grid-cols-4">
+
+              <DetailRow
+                label="Order ID"
+                value={getOrderId(order)}
+                strong
+              />
+
+              <DetailRow
+                label="Status"
+                value={status}
+              />
+
+              <DetailRow
+                label="Tracking Status"
+                value={
+                  order?.tracking_status
+                }
+              />
+
+              <DetailRow
+                label="Created"
+                value={
+                  order?.created_at
+                    ? formatDate(
+                        order.created_at
+                      )
+                    : "-"
+                }
+              />
+
+              <DetailRow
+                label="Manifested"
+                value={
+                  order?.manifest_created_at
+                    ? formatDate(
+                        order.manifest_created_at
+                      )
+                    : "-"
+                }
+              />
+
+              <DetailRow
+                label="Tracking Updated"
+                value={
+                  order?.tracking_updated_at
+                    ? formatDate(
+                        order.tracking_updated_at
+                      )
+                    : "-"
+                }
+              />
+
+            </div>
+
+          </DetailCard>
+
+        </div>
+
+        {/* FOOTER */}
+
+        <div className="flex shrink-0 items-center justify-between border-t border-slate-200 bg-white px-4 py-2.5">
+
+          <div className="text-[9px] text-slate-400">
+            Order details
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg bg-[#ff5a2f] px-4 py-1.5 text-[10px] font-semibold text-white transition hover:bg-[#ed4d24]"
+          >
+            Close
+          </button>
+
+        </div>
+
+      </div>
+    </div>
+  );
+};
+
+/* =========================================================
+   MAIN COMPONENT
+========================================================= */
 
 function Pending() {
   const [orders, setOrders] =
@@ -520,6 +1172,9 @@ function Pending() {
 
   const [loading, setLoading] =
     useState(true);
+
+  const [error, setError] =
+    useState("");
 
   const [search, setSearch] =
     useState("");
@@ -539,15 +1194,18 @@ function Pending() {
   const [viewingOrder, setViewingOrder] =
     useState(null);
 
-  // ====================================================
-  // FETCH ALL ORDERS
-  // ====================================================
+  /* =======================================================
+     FETCH USER ORDERS
+  ======================================================= */
 
-  const fetchAllOrders = async () => {
-    const userId = getUserId();
+  const fetchOrders = async () => {
+    const userId =
+      getUserId();
 
     if (!userId) {
+      setOrders([]);
       setLoading(false);
+      setError("User ID is required");
 
       toast.error(
         "User ID is required"
@@ -558,1826 +1216,1126 @@ function Pending() {
 
     try {
       setLoading(true);
+      setError("");
 
-      const response = await api.get(
-        "/orders/all",
-        {
-          params: {
-            user_id: userId,
-          },
-        }
-      );
+      /*
+        IMPORTANT:
+        User Panel API only.
+        No adminToken.
+        No localhost:5001.
+      */
 
-      const data = response?.data;
+      const response =
+        await api.get(
+          "/orders/all",
+          {
+            params: {
+              user_id: userId,
+            },
+          }
+        );
+
+      const data =
+        response?.data;
 
       if (!data?.success) {
         throw new Error(
           data?.message ||
-            "Unable to fetch all orders"
+            "Unable to fetch orders"
         );
       }
 
-      const list = Array.isArray(
-        data?.orders
-      )
-        ? data.orders
-        : [];
+      const list =
+        Array.isArray(
+          data?.orders
+        )
+          ? data.orders
+          : [];
 
-      setOrders(list);
+      /*
+        Keep only NDR/PENDING here.
+        This means even if /orders/all
+        returns every order, this page
+        will only show NDR + Pending.
+      */
+
+      const filteredList =
+        list.filter(
+          isNdrOrPending
+        );
+
+      /*
+        Remove duplicate rows
+        caused by joins.
+      */
+
+      const uniqueOrders =
+        Array.from(
+          new Map(
+            filteredList.map(
+              (order) => [
+                String(
+                  order?.id ??
+                    order?.order_id
+                ),
+                order,
+              ]
+            )
+          ).values()
+        );
+
+      setOrders(
+        uniqueOrders
+      );
+
       setSelectedIds([]);
-    } catch (error) {
+
+    } catch (err) {
       console.error(
-        "Get pending orders error:",
-        error
+        "Get NDR/Pending orders error:",
+        err
       );
 
       setOrders([]);
 
-      toast.error(
-        error?.response?.data?.message ||
-          error?.message ||
-          "Unable to load pending orders"
-      );
+      const message =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Unable to load orders";
+
+      setError(message);
+
+      toast.error(message);
+
     } finally {
       setLoading(false);
     }
   };
 
-  // ====================================================
-  // INITIAL LOAD
-  // ====================================================
+  /* =======================================================
+     INITIAL LOAD
+  ======================================================= */
 
   useEffect(() => {
-    fetchAllOrders();
+    fetchOrders();
   }, []);
 
-  // ====================================================
-  // FILTERED ORDERS
-  // ====================================================
+  /* =======================================================
+     FILTERED ORDERS
+  ======================================================= */
 
-  const filteredOrders = useMemo(() => {
-    const query = search
-      .trim()
-      .toLowerCase();
+  const filteredOrders =
+    useMemo(() => {
+      const query =
+        search
+          .trim()
+          .toLowerCase();
 
-    return orders.filter((order) => {
-      const status =
-        getStatus(order);
+      return orders.filter(
+        (order) => {
+          const status =
+            getOrderStatus(
+              order
+            );
 
-      const service =
-        getServiceType(order);
+          const service =
+            getServiceType(
+              order
+            );
 
-      const payment =
-        getPaymentType(order);
+          const payment =
+            getPaymentType(
+              order
+            );
 
-      const searchable = [
-        getCustomerName(order),
-        getMobile(order),
-        getAWB(order),
-        getOrderId(order),
-        getShipmentName(order),
-        getPickupCity(order),
-        getDeliveryCity(order),
-        status,
-        service,
-        payment,
-      ]
-        .join(" ")
-        .toLowerCase();
+          const searchable = [
+            getOrderId(
+              order
+            ),
+            order?.id,
+            getAWB(
+              order
+            ),
+            getCustomerName(
+              order
+            ),
+            order?.user_id,
+            order?.pickup_address_id,
+            order?.pickup_city,
+            order?.city,
+            order?.state,
+            order?.pincode,
+            status,
+            service,
+            payment,
+          ]
+            .filter(
+              (value) =>
+                value !==
+                  undefined &&
+                value !== null
+            )
+            .join(" ")
+            .toLowerCase();
 
-      const searchMatch =
-        !query ||
-        searchable.includes(query);
+          const matchesSearch =
+            !query ||
+            searchable.includes(
+              query
+            );
 
-      const statusMatch =
-        status === "PENDING";
+          const matchesStatus =
+            statusFilter ===
+              "ALL" ||
+            status ===
+              statusFilter;
 
-      const serviceMatch =
-        serviceFilter === "ALL" ||
-        service === serviceFilter;
+          const matchesService =
+            serviceFilter ===
+              "ALL" ||
+            service ===
+              serviceFilter;
 
-      const paymentMatch =
-        paymentFilter === "ALL" ||
-        payment === paymentFilter;
+          const matchesPayment =
+            paymentFilter ===
+              "ALL" ||
+            payment ===
+              paymentFilter;
 
-      return (
-        searchMatch &&
-        statusMatch &&
-        serviceMatch &&
-        paymentMatch
+          return (
+            matchesSearch &&
+            matchesStatus &&
+            matchesService &&
+            matchesPayment
+          );
+        }
       );
-    });
-  }, [
-    orders,
-    search,
-    statusFilter,
-    serviceFilter,
-    paymentFilter,
-  ]);
+    }, [
+      orders,
+      search,
+      statusFilter,
+      serviceFilter,
+      paymentFilter,
+    ]);
 
-  // ====================================================
-  // ORDER KEY
-  // ====================================================
+  /* =======================================================
+     COUNTS
+  ======================================================= */
 
-  const getOrderKey = (order) =>
-    String(
-      order?.id ??
-        order?.order_id
+  const ndrCount =
+    useMemo(
+      () =>
+        orders.filter(
+          (order) =>
+            getOrderStatus(
+              order
+            ) === "NDR"
+        ).length,
+      [orders]
     );
 
-  // ====================================================
-  // SELECTED ORDERS
-  // ====================================================
+  const pendingCount =
+    useMemo(
+      () =>
+        orders.filter(
+          (order) =>
+            getOrderStatus(
+              order
+            ) === "Pending"
+        ).length,
+      [orders]
+    );
 
-  const selectedOrders = useMemo(
-    () =>
-      orders.filter((order) =>
+  /* =======================================================
+     SERVICES
+  ======================================================= */
+
+  const services =
+    useMemo(() => {
+      return [
+        ...new Set(
+          orders
+            .map(
+              getServiceType
+            )
+            .filter(
+              (value) =>
+                value &&
+                value !== "-"
+            )
+        ),
+      ];
+    }, [orders]);
+
+  /* =======================================================
+     PAYMENT TYPES
+  ======================================================= */
+
+ const payments =
+  useMemo(() => {
+    const dynamicPayments = orders
+      .map(getPaymentType)
+      .filter(
+        (value) =>
+          value &&
+          value !== "-"
+      );
+
+    return [
+      "PREPAID",
+      "COD",
+      ...dynamicPayments.filter(
+        (value) =>
+          value !== "PREPAID" &&
+          value !== "COD"
+      ),
+    ];
+  }, [orders]);
+
+  /* =======================================================
+     SELECTED
+  ======================================================= */
+
+  const getOrderKey =
+    (order) =>
+      String(
+        order?.id ??
+          order?.order_id
+      );
+
+  const allVisibleSelected =
+    filteredOrders.length >
+      0 &&
+    filteredOrders.every(
+      (order) =>
         selectedIds.includes(
           getOrderKey(order)
         )
-      ),
-    [
-      orders,
-      selectedIds,
-    ]
-  );
-
-  const allVisibleSelected =
-    filteredOrders.length > 0 &&
-    filteredOrders.every((order) =>
-      selectedIds.includes(
-        getOrderKey(order)
-      )
     );
 
-  // ====================================================
-  // SELECT ALL
-  // ====================================================
+  const selectedOrders =
+    useMemo(
+      () =>
+        orders.filter(
+          (order) =>
+            selectedIds.includes(
+              getOrderKey(order)
+            )
+        ),
+      [
+        orders,
+        selectedIds,
+      ]
+    );
 
-  const handleSelectAll = () => {
-    if (allVisibleSelected) {
+  /* =======================================================
+     SELECT ALL
+  ======================================================= */
+
+  const handleSelectAll =
+    () => {
+      if (
+        allVisibleSelected
+      ) {
+        const visibleIds =
+          filteredOrders.map(
+            getOrderKey
+          );
+
+        setSelectedIds(
+          (previous) =>
+            previous.filter(
+              (id) =>
+                !visibleIds.includes(
+                  id
+                )
+            )
+        );
+
+        return;
+      }
+
       const visibleIds =
         filteredOrders.map(
           getOrderKey
         );
 
-      setSelectedIds((previous) =>
-        previous.filter(
-          (id) =>
-            !visibleIds.includes(id)
-        )
+      setSelectedIds(
+        (previous) => [
+          ...new Set([
+            ...previous,
+            ...visibleIds,
+          ]),
+        ]
       );
-
-      return;
-    }
-
-    setSelectedIds((previous) => [
-      ...new Set([
-        ...previous,
-        ...filteredOrders.map(
-          getOrderKey
-        ),
-      ]),
-    ]);
-  };
-
-  // ====================================================
-  // SELECT SINGLE
-  // ====================================================
-
-  const handleSelect = (order) => {
-    const id = getOrderKey(order);
-
-    setSelectedIds((previous) => {
-      if (previous.includes(id)) {
-        return previous.filter(
-          (item) => item !== id
-        );
-      }
-
-      return [
-        ...previous,
-        id,
-      ];
-    });
-  };
-
-  // ====================================================
-  // VIEW
-  // ====================================================
-
-  const handleView = (order) => {
-    setViewingOrder(order);
-  };
-
-  // ====================================================
-  // LABEL HTML
-  // ====================================================
-
-  const buildLabel = (order) => {
-    const service =
-      getServiceType(order);
-
-    const address = [
-      order?.address_line1,
-      order?.address_line2,
-      order?.city,
-      order?.state,
-    ]
-      .filter(Boolean)
-      .join(", ");
-
-    return `
-      <div
-        style="
-          width:420px;
-          margin:0 auto 24px;
-          padding:24px;
-          border:1px solid #dbe3ef;
-          border-radius:12px;
-          font-family:Arial,sans-serif;
-          color:#172033;
-          page-break-after:always;
-        "
-      >
-
-        <div
-          style="
-            display:flex;
-            justify-content:space-between;
-            align-items:center;
-            border-bottom:1px solid #e8edf4;
-            padding-bottom:14px;
-            margin-bottom:18px;
-          "
-        >
-          <div>
-            <div
-              style="
-                font-size:20px;
-                font-weight:700;
-                color:${PRIMARY};
-              "
-            >
-              ShipDrop
-            </div>
-
-            <div
-              style="
-                font-size:11px;
-                color:#718096;
-                margin-top:4px;
-              "
-            >
-              Shipping Label
-            </div>
-          </div>
-
-          <div
-            style="
-              font-size:12px;
-              font-weight:700;
-            "
-          >
-            AWB ${getAWB(order)}
-          </div>
-        </div>
-
-        <div
-          style="
-            font-size:10px;
-            color:#718096;
-            margin-bottom:5px;
-          "
-        >
-          CONSIGNEE
-        </div>
-
-        <div
-          style="
-            font-size:16px;
-            font-weight:700;
-          "
-        >
-          ${getCustomerName(order)}
-        </div>
-
-        <div
-          style="
-            font-size:12px;
-            margin-top:5px;
-            margin-bottom:16px;
-          "
-        >
-          ${getMobile(order)}
-        </div>
-
-        <div
-          style="
-            background:#f7f9fc;
-            border-radius:8px;
-            padding:12px;
-            margin-bottom:16px;
-          "
-        >
-          <div
-            style="
-              font-size:10px;
-              color:#718096;
-              margin-bottom:5px;
-            "
-          >
-            DELIVERY ADDRESS
-          </div>
-
-          <div
-            style="
-              font-size:12px;
-              line-height:1.5;
-            "
-          >
-            ${address || "—"}
-            <br />
-            ${getDeliveryPincode(order)}
-          </div>
-        </div>
-
-        <div
-          style="
-            display:grid;
-            grid-template-columns:1fr 1fr;
-            gap:10px;
-          "
-        >
-
-          <div
-            style="
-              border:1px solid #e4eaf2;
-              border-radius:8px;
-              padding:10px;
-            "
-          >
-            <div
-              style="
-                font-size:10px;
-                color:#718096;
-              "
-            >
-              SERVICE
-            </div>
-
-            <div
-              style="
-                font-size:12px;
-                font-weight:700;
-                margin-top:4px;
-              "
-            >
-              ${service === "AIR"
-                ? "By Air"
-                : "By Road"}
-            </div>
-          </div>
-
-          <div
-            style="
-              border:1px solid #e4eaf2;
-              border-radius:8px;
-              padding:10px;
-            "
-          >
-            <div
-              style="
-                font-size:10px;
-                color:#718096;
-              "
-            >
-              WEIGHT
-            </div>
-
-            <div
-              style="
-                font-size:12px;
-                font-weight:700;
-                margin-top:4px;
-              "
-            >
-              ${getWeight(order).toFixed(2)} Kg
-            </div>
-          </div>
-
-        </div>
-
-        <div
-          style="
-            margin-top:18px;
-            padding-top:12px;
-            border-top:1px dashed #cbd5e1;
-            font-size:10px;
-            color:#718096;
-            text-align:center;
-          "
-        >
-          ShipDrop • Handle with care
-        </div>
-
-      </div>
-    `;
-  };
-
-  // ====================================================
-  // PRINT LABELS
-  // ====================================================
-
-  const handlePrintLabels = () => {
-    if (selectedOrders.length === 0) {
-      toast.error(
-        "Please select at least one order"
-      );
-      return;
-    }
-
-    const printWindow = window.open(
-      "",
-      "_blank",
-      "width=900,height=700"
-    );
-
-    if (!printWindow) {
-      toast.error(
-        "Please allow pop-ups to print labels"
-      );
-      return;
-    }
-
-    const html = selectedOrders
-      .map(buildLabel)
-      .join("");
-
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>
-            ShipDrop Shipping Labels
-          </title>
-        </head>
-
-        <body
-          style="
-            margin:30px;
-            background:#fff;
-          "
-        >
-          ${html}
-        </body>
-      </html>
-    `);
-
-    printWindow.document.close();
-    printWindow.focus();
-
-    setTimeout(() => {
-      printWindow.print();
-    }, 300);
-  };
-
-  // ====================================================
-  // EXPORT CSV
-  // ====================================================
-
-  const handleExport = () => {
-    if (orders.length === 0) {
-      toast.error(
-        "No orders to export"
-      );
-      return;
-    }
-
-    const exportOrders =
-      selectedOrders.length > 0
-        ? selectedOrders
-        : orders;
-
-    const headers = [
-      "AWB",
-      "Order ID",
-      "Customer",
-      "Mobile",
-      "Shipment",
-      "Service Type",
-      "From",
-      "To",
-      "Payment",
-      "Weight (Kg)",
-      "Status",
-      "Created",
-    ];
-
-    const rows = exportOrders.map(
-      (order) => [
-        getAWB(order),
-        getOrderId(order),
-        getCustomerName(order),
-        getMobile(order),
-        getShipmentName(order),
-        getServiceType(order),
-        getPickupCity(order),
-        getDeliveryCity(order),
-        getPaymentType(order),
-        getWeight(order).toFixed(2),
-        getStatus(order),
-        getCreatedAt(order) || "",
-      ]
-    );
-
-    const escapeCsv = (value) => {
-      const text = String(
-        value ?? ""
-      );
-
-      if (
-        text.includes(",") ||
-        text.includes('"') ||
-        text.includes("\n")
-      ) {
-        return `"${text.replace(
-          /"/g,
-          '""'
-        )}"`;
-      }
-
-      return text;
     };
 
-    const csv = [
-      headers.map(escapeCsv).join(","),
-      ...rows.map((row) =>
-        row.map(escapeCsv).join(",")
-      ),
-    ].join("\n");
+  /* =======================================================
+     SELECT ONE
+  ======================================================= */
 
-    const blob = new Blob(
-      [csv],
-      {
-        type:
-          "text/csv;charset=utf-8;",
-      }
-    );
+  const handleSelect =
+    (order) => {
+      const id =
+        getOrderKey(order);
 
-    const url =
-      URL.createObjectURL(blob);
+      setSelectedIds(
+        (previous) =>
+          previous.includes(id)
+            ? previous.filter(
+                (item) =>
+                  item !== id
+              )
+            : [
+                ...previous,
+                id,
+              ]
+      );
+    };
 
-    const link =
-      document.createElement("a");
+  /* =======================================================
+     COPY
+  ======================================================= */
 
-    link.href = url;
+  const copyText = async (
+    text,
+    label
+  ) => {
+    if (
+      !text ||
+      text === "-"
+    ) {
+      toast.error(
+        `${label} not available`
+      );
 
-    link.download =
-      `shipdrop-all-orders-${new Date()
-        .toISOString()
-        .slice(0, 10)}.csv`;
+      return;
+    }
 
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    try {
+      await navigator.clipboard.writeText(
+        String(text)
+      );
 
-    URL.revokeObjectURL(url);
-
-    toast.success(
-      `${exportOrders.length} ${
-        exportOrders.length === 1
-          ? "order"
-          : "orders"
-      } exported`
-    );
+      toast.success(
+        `${label} copied`
+      );
+    } catch {
+      toast.error(
+        "Unable to copy"
+      );
+    }
   };
 
-  // ====================================================
-  // COUNTS
-  // ====================================================
+  /* =======================================================
+     RESET
+  ======================================================= */
 
-  const totalOrders =
-  orders.filter(
-    (order) =>
-      getStatus(order) === "PENDING"
-  ).length;
-  const processingCount =
-    orders.filter(
-      (order) =>
-        getStatus(order) ===
-        "PROCESSING"
-    ).length;
-
-  const manifestedCount =
-    orders.filter(
-      (order) =>
-        getStatus(order) ===
-        "MANIFESTED"
-    ).length;
-
-  const pendingCount =
-    orders.filter(
-      (order) =>
-        getStatus(order) ===
-        "PENDING"
-    ).length;
-
-  const deliveredCount =
-    orders.filter(
-      (order) =>
-        getStatus(order) ===
-        "DELIVERED"
-    ).length;
-
-  const cancelledCount =
-    orders.filter((order) => {
-      const status =
-        getStatus(order);
-
-      return (
-        status === "CANCELLED" ||
-        status === "CANCELED"
+  const resetFilters =
+    () => {
+      setSearch("");
+      setStatusFilter(
+        "ALL"
       );
-    }).length;
+      setServiceFilter(
+        "ALL"
+      );
+      setPaymentFilter(
+        "ALL"
+      );
+      setSelectedIds([]);
+    };
 
-  // ====================================================
-  // LOADING
-  // ====================================================
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#f5f8fc] px-4 py-5">
-        <div className="mx-auto max-w-[1450px]">
-
-          <div className="mb-3 h-[92px] animate-pulse rounded-xl border border-slate-200 bg-white" />
-
-          <div className="mb-3 h-[62px] animate-pulse rounded-xl border border-slate-200 bg-white" />
-
-          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-            <div className="h-12 animate-pulse bg-slate-50" />
-
-            {[1, 2, 3, 4].map(
-              (item) => (
-                <div
-                  key={item}
-                  className="h-[86px] animate-pulse border-t border-slate-100"
-                />
-              )
-            )}
-          </div>
-
-        </div>
-      </div>
-    );
-  }
-
-  // ====================================================
-  // RENDER
-  // ====================================================
+  /* =======================================================
+     RENDER
+  ======================================================= */
 
   return (
-    <div className="min-h-screen bg-[#f5f8fc] px-4 py-5">
+    <div className="min-h-full bg-[#f8fafc] p-5">
 
-      <div className="mx-auto max-w-[1450px]">
+      {/* =================================================
+          HEADER
+      ================================================= */}
 
-        {/* ==================================================
-            TOP HEADER
-        ================================================== */}
+      <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
 
-        <div className="mb-3 rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-[0_1px_2px_rgba(15,23,42,0.02)]">
+        <div>
 
-          <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
 
-            <div className="flex items-center gap-3">
+            <h1 className="text-[21px] font-semibold tracking-[-0.02em] text-slate-800">
+              NDR & Pending
+            </h1>
 
-              <div
-                className="flex h-10 w-10 items-center justify-center rounded-lg"
-                style={{
-                  background:
-                    "#edf8ff",
-                  color:
-                    PRIMARY,
-                }}
-              >
-                <Icon
-                  name="box"
-                  size={20}
-                />
-              </div>
-
-              <div>
-
-                <h1 className="text-[17px] font-semibold tracking-[-0.2px] text-slate-900">
-                  Pending
-                </h1>
-
-                <p className="mt-0.5 text-[12px] text-slate-400">
-                  {`${filteredOrders.length} ${filteredOrders.length === 1 ? "shipment" : "shipments"}`}
-                </p>
-
-              </div>
-
-            </div>
-
-            {/* TOP BUTTONS */}
-
-            <div className="flex items-center gap-2">
-
-              <button
-                type="button"
-                onClick={
-                  handlePrintLabels
-                }
-                disabled={
-                  selectedOrders.length ===
-                  0
-                }
-                className="inline-flex h-9 items-center gap-1.5 rounded-md bg-[#8fcce8] px-3.5 text-[12px] font-medium text-white transition hover:bg-[#7fc2e1] disabled:cursor-not-allowed disabled:opacity-55"
-              >
-                <Icon
-                  name="printer"
-                  size={15}
-                />
-
-                Print Shipping Label
-              </button>
-
-              <button
-                type="button"
-                onClick={
-                  handleExport
-                }
-                disabled={
-                  orders.length === 0
-                }
-                className="inline-flex h-9 items-center gap-1.5 rounded-md bg-[#10b981] px-3.5 text-[12px] font-medium text-white transition hover:bg-[#059669] disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <Icon
-                  name="download"
-                  size={15}
-                />
-
-                Export
-              </button>
-
-            </div>
+            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
+              {orders.length}
+            </span>
 
           </div>
 
+          <p className="mt-1 text-[12px] text-slate-500">
+            Manage NDR and Pending orders
+          </p>
+
         </div>
 
-        {/* ==================================================
-            FILTER BAR
-        ================================================== */}
+        <div className="flex items-center gap-2">
 
-        <div className="mb-3 rounded-xl border border-slate-200 bg-white p-3 shadow-[0_1px_2px_rgba(15,23,42,0.02)]">
-
-          <div className="flex flex-wrap items-center gap-2">
-
-            {/* SEARCH */}
-
-            <div className="relative min-w-[280px] flex-1">
-
-              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-                <Icon
-                  name="search"
-                  size={15}
-                />
-              </span>
-
-              <input
-                type="text"
-                value={search}
-                onChange={(e) =>
-                  setSearch(
-                    e.target.value
-                  )
-                }
-                placeholder="Search customer, AWB, Order ID or mobile..."
-                className="h-10 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-[12px] text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#008dd2] focus:ring-2 focus:ring-[#008dd2]/5"
-              />
-
+          {selectedOrders.length >
+            0 && (
+            <div className="rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-[12px] font-medium text-blue-600">
+              {selectedOrders.length} selected
             </div>
+          )}
 
-            {/* STATUS */}
+          <button
+            type="button"
+            onClick={fetchOrders}
+            disabled={loading}
+            className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-[12px] font-medium text-slate-600 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <HiOutlineRefresh
+              className={
+                loading
+                  ? "animate-spin"
+                  : ""
+              }
+            />
 
-            {false && (
-              <select
-                value={statusFilter}
-                onChange={(e) =>
-                  setStatusFilter(e.target.value)
-                }
-                className="h-10 min-w-[135px] rounded-lg border border-slate-200 bg-white px-3 text-[12px] text-slate-600 outline-none focus:border-[#008dd2]"
-              >
+            Refresh
+          </button>
+
+          <button
+            type="button"
+            onClick={
+              resetFilters
+            }
+            className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-[12px] font-medium text-slate-600 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
+          >
+            Reset
+          </button>
+
+        </div>
+
+      </div>
+
+      {/* =================================================
+          SEARCH + FILTERS
+      ================================================= */}
+
+      <div className="mb-4 rounded-xl border border-slate-200 bg-white p-3 shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
+
+        <div className="flex flex-col gap-2 lg:flex-row">
+
+          {/* SEARCH */}
+
+          <div className="relative min-w-0 flex-1">
+
+            <HiOutlineSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-[16px] text-slate-400" />
+
+            <input
+              value={search}
+              onChange={(event) =>
+                setSearch(
+                  event.target.value
+                )
+              }
+              placeholder="Search Order ID, AWB, Customer, UID or Pickup ID..."
+              className="h-10 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-[12px] text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#008dd2] focus:ring-2 focus:ring-[#008dd2]/10"
+            />
+
+          </div>
+
+          {/* STATUS */}
+
+          <div className="relative">
+
+            <select
+              value={statusFilter}
+              onChange={(event) =>
+                setStatusFilter(
+                  event.target.value
+                )
+              }
+              className="h-10 min-w-[145px] appearance-none rounded-lg border border-slate-200 bg-white pl-3 pr-8 text-[12px] font-medium text-slate-600 outline-none focus:border-[#008dd2]"
+            >
               <option value="ALL">
                 All Status
               </option>
 
-            
-
-              <option value="MANIFESTED">
-                Manifested
+              <option value="NDR">
+                NDR
               </option>
 
-              <option value="PENDING">
+              <option value="Pending">
                 Pending
-              </option>
-
-              <option value="IN TRANSIT">
-                In Transit
-              </option>
-
-              <option value="DELIVERED">
-                Delivered
-              </option>
-
-              <option value="CANCELLED">
-                Cancelled
-              </option>
-              </select>
-            )}
-
-            {/* SERVICE */}
-
-            <select
-              value={serviceFilter}
-              onChange={(e) =>
-                setServiceFilter(
-                  e.target.value
-                )
-              }
-              className="h-10 min-w-[135px] rounded-lg border border-slate-200 bg-white px-3 text-[12px] text-slate-600 outline-none focus:border-[#008dd2]"
-            >
-              <option value="ALL">
-                All Services
-              </option>
-
-              <option value="ROAD">
-                Road
-              </option>
-
-              <option value="AIR">
-                Air
               </option>
             </select>
 
-            {/* PAYMENT */}
+            <HiOutlineChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[14px] text-slate-400" />
+
+          </div>
+
+
+       
+
+          {/* PAYMENT */}
+
+          <div className="relative">
 
             <select
               value={paymentFilter}
-              onChange={(e) =>
+              onChange={(event) =>
                 setPaymentFilter(
-                  e.target.value
+                  event.target.value
                 )
               }
-              className="h-10 min-w-[135px] rounded-lg border border-slate-200 bg-white px-3 text-[12px] text-slate-600 outline-none focus:border-[#008dd2]"
+              className="h-10 min-w-[135px] appearance-none rounded-lg border border-slate-200 bg-white pl-3 pr-8 text-[12px] font-medium text-slate-600 outline-none focus:border-[#008dd2]"
             >
               <option value="ALL">
                 All Payment
               </option>
 
-              <option value="PREPAID">
-                Prepaid
-              </option>
-
-              <option value="COD">
-                COD
-              </option>
+              {payments.map(
+                (payment) => (
+                  <option
+                    key={payment}
+                    value={payment}
+                  >
+                    {payment}
+                  </option>
+                )
+              )}
             </select>
 
-            {/* REFRESH */}
-
-            <button
-              type="button"
-              onClick={
-                fetchAllOrders
-              }
-              title="Refresh"
-              className="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-slate-700"
-            >
-              <Icon
-                name="refresh"
-                size={15}
-              />
-            </button>
+            <HiOutlineChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[14px] text-slate-400" />
 
           </div>
 
-        </div>
+          <div className="flex h-10 items-center gap-1.5 rounded-lg border border-slate-200 px-3 text-[11px] font-medium text-slate-400">
 
-        {/* ==================================================
-            SMALL SUMMARY
-        ================================================== */}
+            <HiOutlineFilter />
 
-        
-        {/* ==================================================
-            TABLE
-        ================================================== */}
-
-        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
-
-          <div className="max-h-[calc(100vh-180px)] overflow-auto">
-
-            <table className="w-full min-w-[1120px] border-collapse">
-
-              {/* TABLE HEADER */}
-
-              <thead className="sticky top-0 z-20 bg-white">
-
-                <tr className="border-b border-slate-200 bg-white">
-
-                  <th className="sticky top-0 z-20 w-[52px] bg-white px-4 py-3.5 text-left">
-
-                    <button
-                      type="button"
-                      onClick={
-                        handleSelectAll
-                      }
-                      className={`flex h-[17px] w-[17px] items-center justify-center rounded-[4px] border transition ${
-                        allVisibleSelected
-                          ? "border-[#008dd2] bg-[#008dd2] text-white"
-                          : "border-slate-300 bg-white text-transparent"
-                      }`}
-                    >
-                      <Icon
-                        name="check"
-                        size={11}
-                      />
-                    </button>
-
-                  </th>
-
-                  <th className="sticky top-0 z-20 w-[190px] bg-white px-3 py-3.5 text-left text-[12px] font-medium text-slate-700">
-                    Customer
-                  </th>
-
-                  <th className="sticky top-0 z-20 w-[175px] bg-white px-3 py-3.5 text-left text-[12px] font-medium text-slate-700">
-                    Shipment
-                  </th>
-
-                  <th className="sticky top-0 z-20 w-[165px] bg-white px-3 py-3.5 text-left text-[12px] font-medium text-slate-700">
-                    Route
-                  </th>
-
-                  <th className="sticky top-0 z-20 w-[145px] bg-white px-3 py-3.5 text-left text-[12px] font-medium text-slate-700">
-                    Payment
-                  </th>
-
-                  <th className="sticky top-0 z-20 w-[125px] bg-white px-3 py-3.5 text-left text-[12px] font-medium text-slate-700">
-                    Weight
-                  </th>
-
-                  <th className="sticky top-0 z-20 w-[155px] bg-white px-3 py-3.5 text-left text-[12px] font-medium text-slate-700">
-                    Created
-                  </th>
-
-                  <th className="sticky top-0 z-20 w-[105px] bg-white px-3 py-3.5 text-left text-[12px] font-medium text-slate-700">
-                    Actions
-                  </th>
-
-                </tr>
-
-              </thead>
-
-              {/* TABLE BODY */}
-
-              <tbody>
-
-                {filteredOrders.length === 0 ? (
-
-                  <tr>
-
-                    <td
-                      colSpan="8"
-                      className="h-[300px] px-6 text-center"
-                    >
-
-                      <div className="flex flex-col items-center justify-center">
-
-                        <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-50 text-slate-300">
-                          <Icon
-                            name="box"
-                            size={21}
-                          />
-                        </div>
-
-                        <div className="text-sm font-medium text-slate-700">
-                          {orders.length > 0
-                            ? "No matching orders"
-                            : "No orders found"}
-                        </div>
-
-                        <div className="mt-1 text-xs text-slate-400">
-                          {orders.length > 0
-                            ? "Try changing your search or filters."
-                            : "Orders will appear here after they are created."}
-                        </div>
-
-                      </div>
-
-                    </td>
-
-                  </tr>
-
-                ) : (
-
-                  filteredOrders.map(
-                    (order) => {
-
-                      const id =
-                        getOrderKey(order);
-
-                      const selected =
-                        selectedIds.includes(
-                          id
-                        );
-
-                      const service =
-                        getServiceType(order);
-
-                      const payment =
-                        getPaymentType(order);
-
-                      const weight =
-                        getWeight(order);
-
-                      const status =
-                        getStatus(order);
-
-                      const awb =
-                        getAWB(order);
-
-                      return (
-
-                        <tr
-                          key={id}
-                          className={`border-b border-slate-100 transition last:border-b-0 ${
-                            selected
-                              ? "bg-[#f8fcff]"
-                              : "bg-white"
-                          } hover:bg-slate-50`}
-                        >
-
-                          {/* CHECKBOX */}
-
-                          <td className="px-4 py-3">
-
-                            <button
-                              type="button"
-                              onClick={() =>
-                                handleSelect(
-                                  order
-                                )
-                              }
-                              className={`flex h-[17px] w-[17px] items-center justify-center rounded-[4px] border transition ${
-                                selected
-                                  ? "border-[#008dd2] bg-[#008dd2] text-white"
-                                  : "border-slate-300 bg-white text-transparent"
-                              }`}
-                            >
-                              <Icon
-                                name="check"
-                                size={11}
-                              />
-                            </button>
-
-                          </td>
-
-                          {/* ==================================
-                              CUSTOMER
-                          ================================== */}
-
-                          <td className="px-3 py-3">
-
-                            <div className="min-w-0">
-
-                              <p className="truncate text-[13px] font-semibold text-slate-800">
-                                {getCustomerName(
-                                  order
-                                )}
-                              </p>
-
-                              {getMobile(
-                                order
-                              ) && (
-                                <p className="mt-0.5 text-[11px] text-slate-400">
-                                  {getMobile(
-                                    order
-                                  )}
-                                </p>
-                              )}
-
-                              <div className="mt-1.5">
-
-                                <StatusBadge
-                                  status={status}
-                                />
-
-                              </div>
-
-                            </div>
-
-                          </td>
-
-                          {/* ==================================
-                              SHIPMENT
-                          ================================== */}
-
-                          <td className="px-3 py-3">
-
-                            <div className="min-w-0">
-
-                             {status !== "PROCESSING" && (
-  <>
-    <p className="truncate text-[13px] font-semibold text-slate-800">
-      {awb}
-    </p>
-
-    <p className="mt-0.5 text-[10px] text-slate-400">
-      Pickup ID:{" "}
-      {order?.pickup_id ||
-        order?.pickupId ||
-        ""}
-    </p>
-  </>
-)}
-
-                              <p className="mt-0.5 text-[10px] text-slate-400">
-                                {getShipmentName(
-                                  order
-                                )}{" "}
-                                -{" "}
-                                {service ===
-                                "AIR"
-                                  ? "Air"
-                                  : "Road"}
-                              </p>
-
-                            </div>
-
-                          </td>
-
-                          {/* ==================================
-                              ROUTE
-                          ================================== */}
-
-                          <td className="px-3 py-3">
-
-                            <div>
-
-                              <p className="text-[12px] font-medium text-slate-700">
-
-                                {getPickupCity(
-                                  order
-                                )}
-
-                                {getPickupPincode(
-                                  order
-                                ) && (
-                                  <span className="text-[10px] text-slate-400">
-                                    {" "}
-                                    (
-                                    {getPickupPincode(
-                                      order
-                                    )}
-                                    )
-                                  </span>
-                                )}
-
-                              </p>
-
-                              <p className="my-0.5 text-[10px] text-slate-300">
-                                ↓
-                              </p>
-
-                              <p className="text-[12px] font-medium text-slate-700">
-
-                                {getDeliveryCity(
-                                  order
-                                )}
-
-                                {getDeliveryPincode(
-                                  order
-                                ) && (
-                                  <span className="text-[10px] text-slate-400">
-                                    {" "}
-                                    (
-                                    {getDeliveryPincode(
-                                      order
-                                    )}
-                                    )
-                                  </span>
-                                )}
-
-                              </p>
-
-                              <p className="mt-1 text-[9px] text-slate-400">
-
-                                {getPickupPincode(
-                                  order
-                                ) ||
-                                "—"}{" "}
-                                →{" "}
-                                {getDeliveryPincode(
-                                  order
-                                ) ||
-                                  "—"}
-
-                              </p>
-
-                            </div>
-
-                          </td>
-
-                          {/* ==================================
-                              PAYMENT
-                          ================================== */}
-
-                          <td className="px-3 py-3">
-
-                            <div>
-
-                              <p
-                                className={`text-[12px] font-semibold ${
-                                  payment ===
-                                  "COD"
-                                    ? "text-amber-600"
-                                    : "text-[#008dd2]"
-                                }`}
-                              >
-                                {payment}
-                              </p>
-
-                              <p className="mt-0.5 text-[10px] text-slate-400">
-                                {payment ===
-                                "COD"
-                                  ? "Cash on Delivery"
-                                  : "Prepaid"}
-                              </p>
-
-                              <p className="text-[10px] text-slate-400">
-                                Total: ₹
-                                {getAmount(
-                                  order
-                                ).toFixed(2)}
-                              </p>
-
-                            </div>
-
-                          </td>
-
-                          {/* ==================================
-                              WEIGHT
-                          ================================== */}
-
-                          <td className="px-3 py-3">
-
-                            <div>
-
-                              <p className="text-[12px] font-semibold text-slate-700">
-                                Box:{" "}
-                                {getPackageCount(
-                                  order
-                                )}
-                              </p>
-
-                              <p className="mt-0.5 text-[10px] text-slate-400">
-                                Wt:{" "}
-                                {weight.toFixed(
-                                  2
-                                )}{" "}
-                                kg
-                              </p>
-
-                              <p className="text-[10px] text-slate-400">
-                                Vol:{" "}
-                                {getVolumetricWeight(
-                                  order
-                                ).toFixed(
-                                  2
-                                )}{" "}
-                                kg
-                              </p>
-
-                            </div>
-
-                          </td>
-
-                          {/* ==================================
-                              CREATED
-                          ================================== */}
-
-                          <td className="px-3 py-3">
-
-                            <p className="text-[12px] font-medium text-slate-700">
-                              #
-                              {getOrderId(
-                                order
-                              )}
-                            </p>
-
-                            <p className="mt-0.5 text-[10px] text-slate-400">
-
-                              {status ===
-                              "MANIFESTED"
-                                ? "Manifested: "
-                                : "Created: "}
-
-                              {formatDate(
-                                getCreatedAt(
-                                  order
-                                )
-                              )}
-
-                            </p>
-
-                            <p className="text-[10px] text-slate-400">
-                              {formatTime(
-                                getCreatedAt(
-                                  order
-                                )
-                              )}
-                            </p>
-
-                          </td>
-
-                          {/* ==================================
-                              ACTIONS
-                          ================================== */}
-
-                          <td className="px-3 py-3">
-
-                            <div className="flex items-center gap-1.5">
-
-                              {/* PRINT */}
-
-                              <button
-                                type="button"
-                                onClick={() => {
-
-                                  const printWindow =
-                                    window.open(
-                                      "",
-                                      "_blank",
-                                      "width=900,height=700"
-                                    );
-
-                                  if (
-                                    !printWindow
-                                  ) {
-                                    toast.error(
-                                      "Please allow pop-ups to print labels"
-                                    );
-                                    return;
-                                  }
-
-                                  printWindow.document.write(`
-                                    <!DOCTYPE html>
-                                    <html>
-                                      <head>
-                                        <title>
-                                          ShipDrop Shipping Label
-                                        </title>
-                                      </head>
-
-                                      <body
-                                        style="
-                                          margin:30px;
-                                          background:#fff;
-                                        "
-                                      >
-                                        ${buildLabel(
-                                          order
-                                        )}
-                                      </body>
-                                    </html>
-                                  `);
-
-                                  printWindow.document.close();
-                                  printWindow.focus();
-
-                                  setTimeout(
-                                    () =>
-                                      printWindow.print(),
-                                    300
-                                  );
-
-                                }}
-                                title="Print Shipping Label"
-                                className="flex h-8 w-8 items-center justify-center rounded-md border border-[#b9dff0] bg-white text-[#008dd2] transition hover:bg-[#edf8ff]"
-                              >
-                                <Icon
-                                  name="printer"
-                                  size={15}
-                                />
-                              </button>
-
-                              {/* VIEW */}
-
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  handleView(
-                                    order
-                                  )
-                                }
-                                title="View Order"
-                                className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-500 transition hover:border-[#008dd2] hover:bg-[#edf8ff] hover:text-[#008dd2]"
-                              >
-                                <Icon
-                                  name="eye"
-                                  size={15}
-                                />
-                              </button>
-
-                            </div>
-
-                          </td>
-
-                        </tr>
-
-                      );
-                    }
-                  )
-
-                )}
-
-              </tbody>
-
-            </table>
+            {filteredOrders.length}
+            {" "}
+            results
 
           </div>
-
-          {/* ==================================================
-              FOOTER
-          ================================================== */}
-
-          {orders.length > 0 && (
-
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-[#fafbfc] px-5 py-3">
-
-              <p className="text-[11px] text-slate-400">
-
-                Showing{" "}
-
-                <span className="font-semibold text-slate-600">
-                  {filteredOrders.length}
-                </span>{" "}
-
-                of{" "}
-
-                <span className="font-semibold text-slate-600">
-                  {totalOrders}
-                </span>{" "}
-
-                orders
-
-              </p>
-
-              <p className="text-[11px] text-slate-400">
-
-                {selectedIds.length > 0
-                  ? `${selectedIds.length} selected`
-                  : "Select orders to perform actions"}
-
-              </p>
-
-            </div>
-
-          )}
 
         </div>
 
       </div>
 
-      {/* ====================================================
-          VIEW ORDER MODAL
-      ==================================================== */}
+      {/* =================================================
+          STATUS SUMMARY
+      ================================================= */}
 
-      {viewingOrder && (
+      <div className="mb-4 flex items-center gap-2">
 
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/30 p-4 backdrop-blur-[2px]"
+        <button
+          type="button"
           onClick={() =>
-            setViewingOrder(null)
+            setStatusFilter(
+              "ALL"
+            )
           }
+          className={`flex h-9 items-center gap-2 rounded-lg border px-3 text-[11px] font-semibold transition ${
+            statusFilter ===
+            "ALL"
+              ? "border-blue-200 bg-blue-50 text-[#008dd2]"
+              : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50"
+          }`}
         >
+          All Orders
 
-          <div
-            className="w-full max-w-[620px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
-            onClick={(e) =>
-              e.stopPropagation()
-            }
-          >
+          <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px]">
+            {orders.length}
+          </span>
 
-            {/* HEADER */}
+        </button>
 
-            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+        <button
+          type="button"
+          onClick={() =>
+            setStatusFilter(
+              "NDR"
+            )
+          }
+          className={`flex h-9 items-center gap-2 rounded-lg border px-3 text-[11px] font-semibold transition ${
+            statusFilter ===
+            "NDR"
+              ? "border-rose-200 bg-rose-50 text-rose-600"
+              : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50"
+          }`}
+        >
+          NDR
 
-              <div>
+          <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px]">
+            {ndrCount}
+          </span>
 
-                <h2 className="text-[16px] font-semibold text-slate-900">
-                  Order Details
-                </h2>
+        </button>
 
-                <p className="mt-0.5 text-[11px] text-slate-400">
-                  Order #
-                  {getOrderId(
-                    viewingOrder
-                  )}
-                </p>
+        <button
+          type="button"
+          onClick={() =>
+            setStatusFilter(
+              "Pending"
+            )
+          }
+          className={`flex h-9 items-center gap-2 rounded-lg border px-3 text-[11px] font-semibold transition ${
+            statusFilter ===
+            "Pending"
+              ? "border-amber-200 bg-amber-50 text-amber-600"
+              : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50"
+          }`}
+        >
+          Pending
 
-              </div>
+          <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px]">
+            {pendingCount}
+          </span>
 
-              <button
-                type="button"
-                onClick={() =>
-                  setViewingOrder(
-                    null
-                  )
-                }
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
-              >
-                <Icon
-                  name="x"
-                  size={17}
-                />
-              </button>
+        </button>
 
+      </div>
+
+      {/* =================================================
+          ERROR
+      ================================================= */}
+
+      {error && (
+        <div className="mb-4 flex items-center justify-between rounded-xl border border-red-100 bg-red-50 px-4 py-3">
+
+          <div>
+
+            <div className="text-[12px] font-semibold text-red-600">
+              Unable to load orders
             </div>
 
-            {/* BODY */}
-
-            <div className="max-h-[70vh] overflow-y-auto p-5">
-
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-
-                <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
-
-                  <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
-                    Customer
-                  </p>
-
-                  <p className="mt-1 text-[13px] font-semibold text-slate-800">
-                    {getCustomerName(
-                      viewingOrder
-                    )}
-                  </p>
-
-                  <p className="mt-0.5 text-[11px] text-slate-500">
-                    {getMobile(
-                      viewingOrder
-                    )}
-                  </p>
-
-                </div>
-
-                <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
-
-                  <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
-                    AWB
-                  </p>
-
-                  <p className="mt-1 text-[13px] font-semibold text-slate-800">
-                    {getAWB(
-                      viewingOrder
-                    )}
-                  </p>
-
-                </div>
-
-                <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
-
-                  <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
-                    Shipment
-                  </p>
-
-                  <p className="mt-1 text-[13px] font-semibold text-slate-800">
-                    {getShipmentName(
-                      viewingOrder
-                    )}
-                  </p>
-
-                  <p className="mt-0.5 text-[11px] text-slate-500">
-                    {getServiceType(
-                      viewingOrder
-                    ) === "AIR"
-                      ? "By Air"
-                      : "By Road"}
-                  </p>
-
-                </div>
-
-                <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
-
-                  <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
-                    Payment
-                  </p>
-
-                  <p className="mt-1 text-[13px] font-semibold text-slate-800">
-                    {getPaymentType(
-                      viewingOrder
-                    )}
-                  </p>
-
-                  <p className="mt-0.5 text-[11px] text-slate-500">
-                    ₹
-                    {getAmount(
-                      viewingOrder
-                    ).toFixed(2)}
-                  </p>
-
-                </div>
-
-              </div>
-
-              {/* ADDRESS */}
-
-              <div className="mt-3 rounded-xl border border-slate-200 bg-white p-4">
-
-                <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
-                  Delivery Address
-                </p>
-
-                <p className="mt-1 text-[13px] font-medium leading-6 text-slate-700">
-
-                  {[
-                    viewingOrder?.address_line1,
-                    viewingOrder?.address_line2,
-                    viewingOrder?.city,
-                    viewingOrder?.state,
-                  ]
-                    .filter(Boolean)
-                    .join(", ") ||
-                    "—"}
-
-                  {viewingOrder?.pincode
-                    ? ` - ${viewingOrder.pincode}`
-                    : ""}
-
-                </p>
-
-              </div>
-
-              {/* ROUTE */}
-
-              <div className="mt-3 rounded-xl border border-slate-200 bg-white p-4">
-
-                <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
-                  Route
-                </p>
-
-                <div className="mt-2 flex items-center gap-3">
-
-                  <div className="rounded-lg bg-[#edf8ff] px-3 py-2 text-[12px] font-semibold text-[#008dd2]">
-                    {getPickupCity(
-                      viewingOrder
-                    )}
-                  </div>
-
-                  <span className="text-slate-300">
-                    →
-                  </span>
-
-                  <div className="rounded-lg bg-[#f0ecff] px-3 py-2 text-[12px] font-semibold text-[#7052ff]">
-                    {getDeliveryCity(
-                      viewingOrder
-                    )}
-                  </div>
-
-                </div>
-
-              </div>
-
-              {/* WEIGHT / STATUS */}
-
-              <div className="mt-3 grid grid-cols-2 gap-3">
-
-                <div className="rounded-xl border border-slate-200 p-3">
-
-                  <p className="text-[10px] uppercase tracking-wide text-slate-400">
-                    Weight
-                  </p>
-
-                  <p className="mt-1 text-[15px] font-semibold text-slate-800">
-                    {getWeight(
-                      viewingOrder
-                    ).toFixed(2)}{" "}
-                    Kg
-                  </p>
-
-                </div>
-
-                <div className="rounded-xl border border-slate-200 p-3">
-
-                  <p className="text-[10px] uppercase tracking-wide text-slate-400">
-                    Status
-                  </p>
-
-                  <div className="mt-1">
-                    <StatusBadge
-                      status={getStatus(
-                        viewingOrder
-                      )}
-                    />
-                  </div>
-
-                </div>
-
-              </div>
-
-            </div>
-
-            {/* FOOTER */}
-
-            <div className="flex items-center justify-end gap-2 border-t border-slate-100 bg-[#fafbfc] px-5 py-3">
-
-              <button
-                type="button"
-                onClick={() =>
-                  setViewingOrder(
-                    null
-                  )
-                }
-                className="h-9 rounded-lg border border-slate-200 bg-white px-4 text-[12px] font-medium text-slate-600 hover:bg-slate-50"
-              >
-                Close
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-
-                  const order =
-                    viewingOrder;
-
-                  setViewingOrder(
-                    null
-                  );
-
-                  const printWindow =
-                    window.open(
-                      "",
-                      "_blank",
-                      "width=900,height=700"
-                    );
-
-                  if (!printWindow) {
-                    toast.error(
-                      "Please allow pop-ups to print labels"
-                    );
-                    return;
-                  }
-
-                  printWindow.document.write(`
-                    <!DOCTYPE html>
-                    <html>
-                      <head>
-                        <title>
-                          ShipDrop Shipping Label
-                        </title>
-                      </head>
-
-                      <body
-                        style="
-                          margin:30px;
-                          background:#fff;
-                        "
-                      >
-                        ${buildLabel(
-                          order
-                        )}
-                      </body>
-                    </html>
-                  `);
-
-                  printWindow.document.close();
-                  printWindow.focus();
-
-                  setTimeout(
-                    () =>
-                      printWindow.print(),
-                    300
-                  );
-
-                }}
-                className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[#008dd2] px-4 text-[12px] font-medium text-white hover:bg-[#007dbb]"
-              >
-                <Icon
-                  name="printer"
-                  size={14}
-                />
-
-                Print Label
-              </button>
-
+            <div className="mt-0.5 text-[11px] text-red-500">
+              {error}
             </div>
 
           </div>
 
+          <button
+            type="button"
+            onClick={
+              fetchOrders
+            }
+            className="rounded-lg border border-red-100 bg-white px-3 py-1.5 text-[11px] font-semibold text-red-600 hover:bg-red-50"
+          >
+            Retry
+          </button>
+
+        </div>
+      )}
+
+      {/* =================================================
+          TABLE
+      ================================================= */}
+
+      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
+
+        <div className="overflow-x-auto">
+
+          <table className="w-full min-w-[950px] border-collapse">
+
+            <thead>
+
+              <tr className="border-b border-slate-200 bg-[#fbfcfe]">
+
+                <th className="w-[48px] px-3 py-3 text-left">
+
+                  <input
+                    type="checkbox"
+                    checked={
+                      allVisibleSelected
+                    }
+                    onChange={
+                      handleSelectAll
+                    }
+                    disabled={
+                      filteredOrders.length ===
+                      0
+                    }
+                    className="h-3.5 w-3.5 cursor-pointer rounded border-slate-300 accent-[#008dd2]"
+                  />
+
+                </th>
+
+                <th className="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                  Order
+                </th>
+
+                <th className="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                  Customer
+                </th>
+
+                <th className="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                  AWB
+                </th>
+
+                <th className="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                  Charge
+                </th>
+
+                <th className="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                  Route
+                </th>
+
+                <th className="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                  Status
+                </th>
+
+                <th className="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                  Date
+                </th>
+
+                <th className="w-[60px] px-3 py-3 text-center text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                  Action
+                </th>
+
+              </tr>
+
+            </thead>
+
+            <tbody>
+
+              {loading ? (
+                <tr>
+
+                  <td
+                    colSpan="9"
+                    className="px-6 py-16 text-center"
+                  >
+
+                    <div className="mx-auto h-7 w-7 animate-spin rounded-full border-2 border-slate-200 border-t-[#008dd2]" />
+
+                    <div className="mt-3 text-[12px] font-medium text-slate-500">
+                      Loading orders...
+                    </div>
+
+                  </td>
+
+                </tr>
+              ) : filteredOrders.length ===
+                0 ? (
+                <tr>
+
+                  <td
+                    colSpan="9"
+                    className="px-6 py-16 text-center"
+                  >
+
+                    <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-slate-50 text-slate-400">
+                      <HiOutlineSearch className="text-[21px]" />
+                    </div>
+
+                    <div className="mt-3 text-[13px] font-semibold text-slate-700">
+                      No orders found
+                    </div>
+
+                    <div className="mt-1 text-[11px] text-slate-400">
+                      Try changing your search or filters.
+                    </div>
+
+                    {(search ||
+                      statusFilter !==
+                        "ALL" ||
+                      serviceFilter !==
+                        "ALL" ||
+                      paymentFilter !==
+                        "ALL") && (
+                      <button
+                        type="button"
+                        onClick={
+                          resetFilters
+                        }
+                        className="mt-3 text-[11px] font-semibold text-[#008dd2] hover:underline"
+                      >
+                        Clear all filters
+                      </button>
+                    )}
+
+                  </td>
+
+                </tr>
+              ) : (
+                filteredOrders.map(
+                  (order) => {
+                    const orderKey =
+                      getOrderKey(
+                        order
+                      );
+
+                    const status =
+                      getOrderStatus(
+                        order
+                      );
+
+                    const charge =
+                      getCharge(
+                        order
+                      );
+
+                    const service =
+                      getServiceType(
+                        order
+                      );
+
+                    const payment =
+                      getPaymentType(
+                        order
+                      );
+
+                    const pickup =
+                      buildAddress(
+                        order?.pickup_city,
+                        order?.pickup_state,
+                        order?.pickup_pincode
+                      );
+
+                    const delivery =
+                      buildAddress(
+                        order?.city,
+                        order?.state,
+                        order?.pincode
+                      );
+
+                    return (
+                      <tr
+                        key={
+                          orderKey
+                        }
+                        className="border-b border-slate-100 transition last:border-b-0 hover:bg-slate-50/60"
+                      >
+
+                        {/* CHECKBOX */}
+
+                        <td className="px-3 py-3">
+
+                          <input
+                            type="checkbox"
+                            checked={selectedIds.includes(
+                              orderKey
+                            )}
+                            onChange={() =>
+                              handleSelect(
+                                order
+                              )
+                            }
+                            className="h-3.5 w-3.5 cursor-pointer rounded border-slate-300 accent-[#008dd2]"
+                          />
+
+                        </td>
+
+                        {/* ORDER */}
+
+                        <td className="px-3 py-3">
+
+                          <div className="flex flex-col">
+
+                            <span className="text-[11px] font-semibold text-slate-700">
+                              {getOrderId(
+                                order
+                              )}
+                            </span>
+
+                            <span className="mt-0.5 text-[9px] text-slate-400">
+                              UID:{" "}
+                              {valueOrDash(
+                                order?.user_id
+                              )}
+                            </span>
+
+                          </div>
+
+                        </td>
+
+                        {/* CUSTOMER */}
+
+                        <td className="px-3 py-3">
+
+                          <div className="max-w-[155px]">
+
+                            <div className="truncate text-[11px] font-medium text-slate-700">
+                              {getCustomerName(
+                                order
+                              )}
+                            </div>
+
+                            <div className="mt-0.5 truncate text-[9px] text-slate-400">
+                              {valueOrDash(
+                                order?.mobile ||
+                                  order?.phone
+                              )}
+                            </div>
+
+                          </div>
+
+                        </td>
+
+                        {/* AWB */}
+
+                        <td className="px-3 py-3">
+
+                          <div className="flex items-center gap-1">
+
+                            <span className="text-[10px] font-medium text-slate-600">
+                              {valueOrDash(
+                                getAWB(
+                                  order
+                                )
+                              )}
+                            </span>
+
+                            {getAWB(
+                              order
+                            ) !== "-" && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  copyText(
+                                    getAWB(
+                                      order
+                                    ),
+                                    "AWB"
+                                  )
+                                }
+                                className="rounded p-1 text-slate-400 transition hover:bg-slate-100 hover:text-[#008dd2]"
+                                title="Copy AWB"
+                              >
+                                <HiOutlineClipboardCopy className="text-[12px]" />
+                              </button>
+                            )}
+
+                          </div>
+
+                        </td>
+
+                        {/* CHARGE */}
+
+                        <td className="px-3 py-3">
+
+                          <div className="text-[11px] font-semibold text-slate-700">
+                            {charge !==
+                            null
+                              ? `₹${charge.toFixed(
+                                  2
+                                )}`
+                              : "-"}
+                          </div>
+
+                          <div className="mt-0.5 text-[9px] text-slate-400">
+                            {service}
+                          </div>
+
+                        </td>
+
+                        {/* ROUTE */}
+
+                        <td className="px-3 py-3">
+
+                          <div className="max-w-[185px]">
+
+                            <div className="truncate text-[10px] font-medium text-slate-600">
+                              {pickup}
+                            </div>
+
+                            <div className="my-0.5 text-[8px] text-slate-300">
+                              ↓
+                            </div>
+
+                            <div className="truncate text-[10px] font-medium text-slate-600">
+                              {delivery}
+                            </div>
+
+                          </div>
+
+                        </td>
+
+                        {/* STATUS */}
+
+                        <td className="px-3 py-3">
+
+                          <div className="flex flex-col items-start gap-1">
+
+                            <StatusBadge
+                              status={
+                                status
+                              }
+                            />
+
+                            <span className="text-[8px] text-slate-400">
+                              {payment}
+                            </span>
+
+                          </div>
+
+                        </td>
+
+                        {/* DATE */}
+
+                        <td className="px-3 py-3">
+
+                          <span className="text-[10px] font-medium text-slate-500">
+                            {formatDate(
+                              order?.created_at
+                            )}
+                          </span>
+
+                        </td>
+
+                        {/* ACTION */}
+
+                        <td className="px-3 py-3 text-center">
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setViewingOrder(
+                                order
+                              )
+                            }
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:border-[#008dd2]/30 hover:bg-blue-50 hover:text-[#008dd2]"
+                            title="View order details"
+                          >
+                            <HiOutlineEye className="text-[14px]" />
+                          </button>
+
+                        </td>
+
+                      </tr>
+                    );
+                  }
+                )
+              )}
+
+            </tbody>
+
+          </table>
+
         </div>
 
+      </div>
+
+      {/* =================================================
+          MODAL
+      ================================================= */}
+
+      {viewingOrder && (
+        <OrderDetailsModal
+          order={
+            viewingOrder
+          }
+          onClose={() =>
+            setViewingOrder(
+              null
+            )
+          }
+        />
       )}
 
     </div>

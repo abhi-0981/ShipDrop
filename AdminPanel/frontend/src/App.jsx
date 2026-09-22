@@ -23,6 +23,10 @@ import AdminTickets from "./pages/ticket/AdminTickets";
 
 import AdminLayout from "./components/AdminLayout";
 
+import AllOrders from "./pages/orders/AllOrders";
+
+import WeightChecking from "./pages/weightcheck/WeightChecking";
+
 
 // =====================================================
 // PROTECTED ROUTE
@@ -134,6 +138,8 @@ function App() {
           }
         />
 
+        
+
 
         {/* ================================================= */}
         {/* SET RATE */}
@@ -190,6 +196,24 @@ function App() {
           }
         />
 
+
+          <Route
+  path="/orders"
+  element={
+    <AdminPage>
+      <AllOrders />
+    </AdminPage>
+  }
+/>
+
+<Route
+  path="/weight-checking"
+  element={
+    <AdminPage>
+      <WeightChecking />
+    </AdminPage>
+  }
+/>
 
         {/* ================================================= */}
         {/* DEFAULT */}

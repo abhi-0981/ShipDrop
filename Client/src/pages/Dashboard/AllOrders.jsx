@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 import api from "../../services/api";
 
@@ -60,6 +60,20 @@ const Icon = ({ name, size = 17, strokeWidth = 1.8 }) => {
           <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
           <path d="M6 14h12v7H6z" />
           <path d="M17 12h1" />
+        </svg>
+      );
+
+          case "copy":
+      return (
+        <svg {...common}>
+          <rect
+            x="9"
+            y="9"
+            width="10"
+            height="10"
+            rx="2"
+          />
+          <path d="M15 9V7a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2" />
         </svg>
       );
 
@@ -184,23 +198,71 @@ const getShipmentName = (order) => {
 };
 
 const getServiceType = (order) => {
-  return safeString(
-    order?.service_type || order?.service || order?.mode || "ROAD",
-  )
+  const value =
+    order?.manifest_service_type ||
+    order?.service_type ||
+    order?.service ||
+    order?.mode ||
+    order?.shipping_mode ||
+    "";
+
+  const normalized = safeString(value)
     .trim()
-    .toUpperCase();
+    .toUpperCase()
+    .replace(/[-_]/g, " ")
+    .replace(/\s+/g, " ");
+
+  // AIR / EXPRESS
+  if (
+    normalized === "AIR" ||
+    normalized === "EXPRESS" ||
+    normalized.includes("AIR")
+  ) {
+    return "AIR";
+  }
+
+  // ROAD / SURFACE
+  if (
+    normalized === "ROAD" ||
+    normalized === "SURFACE" ||
+    normalized.includes("ROAD") ||
+    normalized.includes("SURFACE")
+  ) {
+    return "ROAD";
+  }
+
+  return "";
 };
 
-// ======================================================
-// PAYMENT
-// ======================================================
-
 const getPaymentType = (order) => {
-  return safeString(
-    order?.payment_type || order?.payment || order?.payment_mode || "PREPAID",
-  )
+  const value =
+    order?.payment_type ||
+    order?.payment_method ||
+    order?.payment ||
+    order?.payment_mode ||
+    "";
+
+  const normalized = safeString(value)
     .trim()
-    .toUpperCase();
+    .toUpperCase()
+    .replace(/[-_]/g, " ")
+    .replace(/\s+/g, " ");
+
+  if (
+    normalized === "COD" ||
+    normalized === "CASH ON DELIVERY"
+  ) {
+    return "COD";
+  }
+
+  if (
+    normalized === "PREPAID" ||
+    normalized === "PRE PAID"
+  ) {
+    return "PREPAID";
+  }
+
+  return normalized;
 };
 
 const getAmount = (order) => {
@@ -364,7 +426,9 @@ const getStatus = (order) => {
       "PROCESSING",
   )
     .trim()
-    .toUpperCase();
+    .toUpperCase()
+    .replace(/[-_]+/g, " ")
+    .replace(/\s+/g, " ");
 };
 const getStatusLabel = (status) => {
   switch (status) {
@@ -517,7 +581,23 @@ function AllOrders() {
 
       const list = Array.isArray(data?.orders) ? data.orders : [];
 
-      setOrders(list);
+// Remove duplicate rows created by SQL JOINs.
+// One order can have multiple product/package rows,
+// but All Orders should display the order only once.
+const uniqueOrders = Array.from(
+  new Map(
+    list.map((order) => {
+      const key =
+        order?.id ??
+        order?.order_id;
+
+      return [String(key), order];
+    }),
+  ).values(),
+);
+
+setOrders(uniqueOrders);
+setSelectedIds([]);
       setSelectedIds([]);
     } catch (error) {
       console.error("Get all orders error:", error);
@@ -543,51 +623,81 @@ function AllOrders() {
   }, []);
 
   // ====================================================
+  // ALL ORDERS PAGE MUST EXCLUDE PROCESSING ORDERS
+  // Processing orders are handled in the Processing Orders page.
+  // ====================================================
+
+  const isProcessingOrder = (order) => {
+    const normalizeStatus = (value) =>
+      safeString(value)
+        .trim()
+        .toUpperCase()
+        .replace(/[-_]+/g, " ")
+        .replace(/\\s+/g, " ");
+
+    const orderStatus = normalizeStatus(order?.status);
+    const trackingStatus = normalizeStatus(order?.tracking_status);
+
+    return (
+      orderStatus === "PROCESSING" ||
+      trackingStatus === "PROCESSING"
+    );
+  };
+
+  // Orders that are allowed to appear on All Orders page.
+  // Processing orders are intentionally excluded.
+  const nonProcessingOrders = orders.filter(
+    (order) => !isProcessingOrder(order),
+  );
+
+  // ====================================================
   // FILTERED ORDERS
   // ====================================================
 
-  const filteredOrders = useMemo(() => {
+  const filteredOrders = nonProcessingOrders.filter((order) => {
     const query = search.trim().toLowerCase();
 
-    return orders.filter((order) => {
-      const status = getStatus(order);
+    const status = getStatus(order);
+    const service = getServiceType(order);
+    const payment = getPaymentType(order);
 
-      const service = getServiceType(order);
+    const searchable = [
+      getCustomerName(order),
+      getMobile(order),
+      getAWB(order),
+      getOrderId(order),
+      getShipmentName(order),
+      getPickupCity(order),
+      getDeliveryCity(order),
+      status,
+      service,
+      payment,
+    ]
+      .join(" ")
+      .toLowerCase();
 
-      const payment = getPaymentType(order);
+    const searchMatch =
+      !query || searchable.includes(query);
 
-      const searchable = [
-        getCustomerName(order),
-        getMobile(order),
-        getAWB(order),
-        getOrderId(order),
-        getShipmentName(order),
-        getPickupCity(order),
-        getDeliveryCity(order),
-        status,
-        service,
-        payment,
-      ]
-        .join(" ")
-        .toLowerCase();
+    const statusMatch =
+      statusFilter === "ALL" ||
+      status === statusFilter;
 
-      const searchMatch = !query || searchable.includes(query);
+    const serviceMatch =
+      serviceFilter === "ALL" ||
+      service === serviceFilter;
 
-      const statusMatch = statusFilter === "ALL" || status === statusFilter;
+    const paymentMatch =
+      paymentFilter === "ALL" ||
+      payment === paymentFilter;
 
-      const serviceMatch = serviceFilter === "ALL" || service === serviceFilter;
-
-      const paymentMatch = paymentFilter === "ALL" || payment === paymentFilter;
-
-      return (
-        status !== "PROCESSING" &&
-        searchMatch &&
-        statusMatch &&
-        serviceMatch &&
-        paymentMatch
-      );
-    });
-  }, [orders, search, statusFilter, serviceFilter, paymentFilter]);
+    return (
+      searchMatch &&
+      statusMatch &&
+      serviceMatch &&
+      paymentMatch
+    );
+  });
 
   // ====================================================
   // ORDER KEY
@@ -599,9 +709,8 @@ function AllOrders() {
   // SELECTED ORDERS
   // ====================================================
 
-  const selectedOrders = useMemo(
-    () => orders.filter((order) => selectedIds.includes(getOrderKey(order))),
-    [orders, selectedIds],
+  const selectedOrders = nonProcessingOrders.filter((order) =>
+    selectedIds.includes(getOrderKey(order)),
   );
 
   const allVisibleSelected =
@@ -921,7 +1030,10 @@ function AllOrders() {
       return;
     }
 
-    const exportOrders = selectedOrders.length > 0 ? selectedOrders : orders;
+    const exportOrders =
+      selectedOrders.length > 0
+        ? selectedOrders
+        : nonProcessingOrders;
 
     const headers = [
       "AWB",
@@ -995,15 +1107,280 @@ function AllOrders() {
     );
   };
 
+
+    // ====================================================
+  // DUPLICATE ORDER
+  // ====================================================
+
+  const handleDuplicate = async (order) => {
+    const orderId = order?.id;
+    const userId = getUserId();
+
+    if (!orderId || !userId) {
+      toast.error(
+        "Unable to duplicate this order"
+      );
+      return;
+    }
+
+    try {
+      // ================================================
+      // GET ORIGINAL ORDER DETAILS
+      // ================================================
+
+      const response = await api.get(
+        `/orders/${orderId}`,
+        {
+          params: {
+            user_id: userId,
+          },
+        }
+      );
+
+      const result = response?.data;
+
+      if (
+        !result?.success ||
+        !result?.order
+      ) {
+        throw new Error(
+          result?.message ||
+            "Unable to load order details"
+        );
+      }
+
+      const source = result.order;
+
+      // ================================================
+      // WAREHOUSE
+      // ================================================
+
+      const warehouseId = Number(
+        source?.warehouse_id ||
+          source?.warehouse?.id ||
+          order?.warehouse_id ||
+          0
+      );
+
+      if (!warehouseId) {
+        throw new Error(
+          "Pickup warehouse is missing"
+        );
+      }
+
+      // ================================================
+      // CREATE NEW PROCESSING ORDER
+      // ================================================
+
+      const payload = {
+        user_id: Number(userId),
+
+        pickup_address:
+          source?.pickup_address ||
+          null,
+
+        pickup_pincode:
+          source?.pickup_pincode ||
+          null,
+
+        pickup_city:
+          source?.pickup_city ||
+          null,
+
+        warehouse_id:
+          warehouseId,
+
+        pickup_address_id:
+          source?.pickup_address_id ||
+          null,
+
+        orderData: {
+          consignee_name:
+            source?.consignee_name ||
+            "",
+
+          mobile:
+            source?.mobile ||
+            "",
+
+          alternate_mobile:
+            source?.alternate_mobile ||
+            null,
+
+          email:
+            source?.email ||
+            null,
+
+          gstin:
+            source?.gstin ||
+            null,
+
+          company_name:
+            source?.company_name ||
+            null,
+
+          floor_no:
+            source?.floor_no ||
+            null,
+
+          landmark:
+            source?.landmark ||
+            null,
+
+          address_line1:
+            source?.address_line1 ||
+            "",
+
+          address_line2:
+            source?.address_line2 ||
+            null,
+
+          pincode:
+            source?.pincode ||
+            "",
+
+          city:
+            source?.city ||
+            "",
+
+          state:
+            source?.state ||
+            "",
+
+          country:
+            source?.country ||
+            "India",
+
+          payment_type:
+            source?.payment_type ||
+            "Prepaid",
+
+          risk_type:
+            source?.risk_type ||
+            "Owner Risk",
+
+          warehouse_id:
+            warehouseId,
+        },
+
+        products:
+          Array.isArray(source?.products)
+            ? source.products.map(
+                (product) => ({
+                  product_name:
+                    product?.product_name ||
+                    "",
+
+                  sku:
+                    product?.sku ||
+                    null,
+
+                  price:
+                    Number(
+                      product?.price
+                    ) || 0,
+
+                  qty:
+                    Number(
+                      product?.qty
+                    ) || 1,
+
+                  tax:
+                    Number(
+                      product?.tax
+                    ) || 0,
+                })
+              )
+            : [],
+
+        packages:
+          Array.isArray(source?.packages)
+            ? source.packages.map(
+                (pkg) => ({
+                  length:
+                    Number(
+                      pkg?.length
+                    ) || 0,
+
+                  width:
+                    Number(
+                      pkg?.width
+                    ) || 0,
+
+                  height:
+                    Number(
+                      pkg?.height
+                    ) || 0,
+
+                  weight:
+                    Number(
+                      pkg?.weight
+                    ) || 0,
+
+                  package_count:
+                    Number(
+                      pkg?.package_count
+                    ) || 1,
+                })
+              )
+            : [],
+      };
+
+      // ================================================
+      // CREATE NEW ORDER
+      // ================================================
+
+      const createResponse =
+        await api.post(
+          "/orders/create",
+          payload
+        );
+
+      const createResult =
+        createResponse?.data;
+
+      if (
+        !createResult?.success ||
+        !createResult?.order_id
+      ) {
+        throw new Error(
+          createResult?.message ||
+            "Unable to duplicate order"
+        );
+      }
+
+      // ================================================
+      // SUCCESS
+      // ================================================
+
+      toast.success(
+        `Order duplicated successfully. New order #${createResult.order_id} is in Processing.`
+      );
+
+      // Refresh All Orders
+      await fetchAllOrders();
+
+    } catch (error) {
+      console.error(
+        "Duplicate order error:",
+        error
+      );
+
+      toast.error(
+        error?.response?.data?.message ||
+          error?.message ||
+          "Unable to duplicate order"
+      );
+    }
+  };
+
+
+
   // ====================================================
   // COUNTS
   // ====================================================
 
-  const totalOrders = orders.length;
-
-  const processingCount = orders.filter(
-    (order) => getStatus(order) === "PROCESSING",
-  ).length;
+  const totalOrders = nonProcessingOrders.length;
 
   const manifestedCount = orders.filter(
     (order) => getStatus(order) === "MANIFESTED",
@@ -1102,7 +1479,7 @@ function AllOrders() {
               <button
                 type="button"
                 onClick={handleExport}
-                disabled={orders.length === 0}
+                disabled={nonProcessingOrders.length === 0}
                 className="inline-flex h-9 items-center gap-1.5 rounded-md bg-[#10b981] px-3.5 text-[12px] font-medium text-white transition hover:bg-[#059669] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Icon name="download" size={15} />
@@ -1145,11 +1522,21 @@ function AllOrders() {
 
               <option value="MANIFESTED">Manifested</option>
 
+              <option value="NOT PICKED">Not Picked</option>
+
               <option value="PENDING">Pending</option>
 
               <option value="IN TRANSIT">In Transit</option>
 
+              <option value="OUT FOR DELIVERY">Out For Delivery</option>
+
               <option value="DELIVERED">Delivered</option>
+
+              <option value="RTO IN TRANSIT">RTO In Transit</option>
+
+              <option value="RTO DELIVERED">RTO Delivered</option>
+
+              <option value="RETURNED">Returned</option>
 
               <option value="CANCELLED">Cancelled</option>
             </select>
@@ -1266,15 +1653,15 @@ function AllOrders() {
                         </div>
 
                         <div className="text-sm font-medium text-slate-700">
-                          {orders.length > 0
+                          {nonProcessingOrders.length > 0
                             ? "No matching orders"
                             : "No orders found"}
                         </div>
 
                         <div className="mt-1 text-xs text-slate-400">
-                          {orders.length > 0
+                          {nonProcessingOrders.length > 0
                             ? "Try changing your search or filters."
-                            : "Orders will appear here after they are created."}
+                            : "Orders will appear here after they are manifested."}
                         </div>
                       </div>
                     </td>
@@ -1427,9 +1814,12 @@ function AllOrders() {
                                 : "Prepaid"}
                             </p>
 
-                            <p className="text-[10px] text-slate-400">
-                              Total: ₹{getAmount(order).toFixed(2)}
-                            </p>
+                          <p className="text-[10px] text-slate-400">
+  Charge: ₹
+  {Number(
+    order?.shipping_charge || 0
+  ).toFixed(2)}
+</p>
                           </div>
                         </td>
 
@@ -1530,6 +1920,22 @@ function AllOrders() {
                               <Icon name="printer" size={15} />
                             </button>
 
+                            {/* DUPLICATE */}
+
+<button
+  type="button"
+  onClick={() =>
+    handleDuplicate(order)
+  }
+  title="Duplicate Order"
+  className="flex h-8 w-8 items-center justify-center rounded-md border border-violet-200 bg-white text-violet-500 transition hover:border-violet-300 hover:bg-violet-50"
+>
+  <Icon
+    name="copy"
+    size={15}
+  />
+</button>
+
                             {/* VIEW */}
 
                             <button
@@ -1554,30 +1960,7 @@ function AllOrders() {
               FOOTER
           ================================================== */}
 
-          {orders.length > 0 && (
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-[#fafbfc] px-5 py-3">
-              <p className="text-[11px] text-slate-400">
-                Showing{" "}
-                <span className="font-semibold text-slate-600">
-                  {filteredOrders.length}
-                </span>{" "}
-                of{" "}
-                <span className="font-semibold text-slate-600">
-                  {
-                    orders.filter((order) => getStatus(order) !== "PROCESSING")
-                      .length
-                  }
-                </span>{" "}
-                orders
-              </p>
-
-              <p className="text-[11px] text-slate-400">
-                {selectedIds.length > 0
-                  ? `${selectedIds.length} selected`
-                  : "Select orders to perform actions"}
-              </p>
-            </div>
-          )}
+         
         </div>
       </div>
 

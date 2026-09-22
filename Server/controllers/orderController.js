@@ -3,14 +3,12 @@ const {
   createOrder,
   createProduct,
   createPackage,
-
   getProcessingOrders,
   getAllOrders,
-
   getOrderById,
   updateOrder,
   deleteProcessingOrders,
-
+  searchPreviousCustomers,
 } = require("../models/orderModel");
 
 const {
@@ -1471,6 +1469,59 @@ const deleteOrdersController =
 
   };
 
+  // ======================================================
+// SEARCH PREVIOUS CUSTOMERS
+// ======================================================
+
+const searchPreviousCustomersController = async (req, res) => {
+  try {
+    const userId = Number(
+      req.query.user_id || req.body?.user_id,
+    );
+
+    const search = String(
+      req.query.search || "",
+    ).trim();
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "User ID is required",
+      });
+    }
+
+    // Don't search for very short input.
+    if (search.length < 2) {
+      return res.json({
+        success: true,
+        customers: [],
+      });
+    }
+
+    const customers = await searchPreviousCustomers(
+      userId,
+      search,
+    );
+
+    return res.json({
+      success: true,
+      customers: Array.isArray(customers)
+        ? customers
+        : [],
+    });
+  } catch (error) {
+    console.error(
+      "Search previous customers error:",
+      error,
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to search previous customers",
+    });
+  }
+};
+
 
 // ======================================================
 // EXPORT
@@ -1495,5 +1546,8 @@ module.exports = {
 
   deleteOrders:
     deleteOrdersController,
+
+  searchPreviousCustomers:
+    searchPreviousCustomersController,
 
 };

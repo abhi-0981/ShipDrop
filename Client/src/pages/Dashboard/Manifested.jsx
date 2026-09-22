@@ -115,6 +115,14 @@ const Icon = ({ name, size = 15 }) => {
       </svg>
     );
 
+  if (name === "copy")
+    return (
+      <svg {...common}>
+        <rect x="9" y="9" width="10" height="10" rx="2" />
+        <path d="M15 9V7a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2" />
+      </svg>
+    );
+
   if (name === "alert")
     return (
       <svg {...common}>
@@ -872,6 +880,212 @@ function Manifested() {
   };
 
   /* ==========================================================
+     DUPLICATE ORDER
+     Creates a fresh PROCESSING order from the manifested
+     shipment. Original manifested shipment remains unchanged.
+     ========================================================== */
+
+  const handleDuplicate = async (order) => {
+    const userId = getUserId();
+
+    if (!userId) {
+      toast.error("User session not found");
+      return;
+    }
+
+    const orderId = Number(
+      order?.order_id ||
+        order?.id ||
+        order?.orderId ||
+        0,
+    );
+
+    if (!orderId) {
+      toast.error("Unable to identify this order");
+      return;
+    }
+
+    try {
+      setActionLoading(true);
+
+      // Get complete original order details.
+      const response = await api.get(
+        `/orders/${orderId}?user_id=${userId}`,
+      );
+
+      const result = response?.data;
+
+      if (!result?.success || !result?.order) {
+        throw new Error(
+          result?.message ||
+            "Unable to load order details",
+        );
+      }
+
+      const source = result.order;
+
+      const warehouseId = Number(
+        source?.warehouse_id ||
+          order?.warehouse_id ||
+          0,
+      );
+
+      if (!warehouseId) {
+        throw new Error("Pickup warehouse is missing");
+      }
+
+      const payload = {
+        user_id: Number(userId),
+
+        pickup_address:
+          source?.pickup_address ||
+          order?.pickup_address ||
+          null,
+
+        pickup_pincode:
+          source?.pickup_pincode ||
+          order?.pickup_pincode ||
+          null,
+
+        pickup_city:
+          source?.pickup_city ||
+          order?.pickup_city ||
+          null,
+
+        warehouse_id: warehouseId,
+
+        pickup_address_id:
+          source?.pickup_address_id ||
+          order?.pickup_address_id ||
+          null,
+
+        orderData: {
+          consignee_name:
+            source?.consignee_name ||
+            source?.customer_name ||
+            "",
+
+          mobile:
+            source?.mobile ||
+            source?.phone ||
+            "",
+
+          alternate_mobile:
+            source?.alternate_mobile ||
+            null,
+
+          email:
+            source?.email ||
+            null,
+
+          gstin:
+            source?.gstin ||
+            null,
+
+          company_name:
+            source?.company_name ||
+            null,
+
+          floor_no:
+            source?.floor_no ||
+            null,
+
+          landmark:
+            source?.landmark ||
+            null,
+
+          address_line1:
+            source?.address_line1 ||
+            source?.delivery_address ||
+            "",
+
+          address_line2:
+            source?.address_line2 ||
+            null,
+
+          pincode:
+            source?.pincode ||
+            source?.delivery_pincode ||
+            "",
+
+          city:
+            source?.city ||
+            source?.delivery_city ||
+            "",
+
+          state:
+            source?.state ||
+            source?.delivery_state ||
+            "",
+
+          country:
+            source?.country ||
+            "India",
+
+          payment_type:
+            source?.payment_type ||
+            "Prepaid",
+
+          risk_type:
+            source?.risk_type ||
+            "Owner Risk",
+
+          warehouse_id: warehouseId,
+        },
+
+        products: Array.isArray(source?.products)
+          ? source.products
+          : [],
+
+        packages: Array.isArray(source?.packages)
+          ? source.packages
+          : [],
+      };
+
+      const createResponse = await api.post(
+        "/orders/create",
+        payload,
+      );
+
+      const createResult = createResponse?.data;
+
+      if (
+        !createResult?.success ||
+        !createResult?.order_id
+      ) {
+        throw new Error(
+          createResult?.message ||
+            "Unable to duplicate order",
+        );
+      }
+
+      toast.success(
+        `Order duplicated successfully. New order #${createResult.order_id} is in Processing.`,
+        { duration: 4500 },
+      );
+
+      await fetchManifestedOrders();
+
+      window.dispatchEvent(
+        new Event("orderStatusUpdated"),
+      );
+    } catch (error) {
+      console.error(
+        "Duplicate manifested order error:",
+        error,
+      );
+
+      toast.error(
+        error?.response?.data?.message ||
+          error?.message ||
+          "Unable to duplicate order",
+      );
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  /* ==========================================================
      EXPORT
      ========================================================== */
 
@@ -1438,6 +1652,22 @@ function Manifested() {
                               }}
                             >
                               <Icon name="download" size={14} />
+                            </button>
+
+                            {/* DUPLICATE */}
+
+                            <button
+                              type="button"
+                              onClick={() => handleDuplicate(order)}
+                              disabled={actionLoading}
+                              title="Duplicate Order"
+                              className="flex h-8 w-8 items-center justify-center rounded-md border bg-white transition hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-50"
+                              style={{
+                                borderColor: "#c4b5fd",
+                                color: "#7c3aed",
+                              }}
+                            >
+                              <Icon name="copy" size={14} />
                             </button>
 
                             {/* VIEW */}

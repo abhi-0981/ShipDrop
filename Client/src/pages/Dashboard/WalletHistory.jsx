@@ -108,6 +108,27 @@ const WalletHistory = () => {
       };
     }
 
+    if (description.toLowerCase().includes("weight adjustment")) {
+      const orderId =
+        description.match(/order\s*#?\s*([a-z0-9-]+)/i)?.[1] ||
+        description.match(/order id\s*[-:#]?\s*(.+)$/i)?.[1] ||
+        "";
+
+      return {
+        title: "Weight Adjustment",
+        subtitle: orderId
+          ? `Order #${orderId}`
+          : type === "DEBIT"
+            ? "Corrected shipping charge"
+            : "Amount adjusted to wallet",
+        icon: type === "DEBIT" ? "debit" : "refund",
+        iconClass:
+          type === "DEBIT"
+            ? "bg-red-50 text-red-600"
+            : "bg-emerald-50 text-emerald-600",
+      };
+    }
+
     if (type === "DEBIT") {
       const orderId =
         description.match(/order id\s*[-:#]?\s*(.+)$/i)?.[1] || "";
@@ -549,8 +570,12 @@ const WalletHistory = () => {
                 </div>
 
                 <div className="flex items-center justify-between border-t border-slate-50 pt-1.5 text-[10px] text-slate-400">
-                  <span className="truncate max-w-[200px]">{desc.subtitle}</span>
-                  <span>{formatDate(transaction.created_at)}</span>
+                  <span className="min-w-0 max-w-[62%] break-words leading-4">
+                    {desc.subtitle}
+                  </span>
+                  <span className="shrink-0 text-right leading-4">
+                    {formatDate(transaction.created_at)}
+                  </span>
                 </div>
               </div>
             );
@@ -564,13 +589,13 @@ const WalletHistory = () => {
       <div className="hidden sm:block w-full overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
         <table className="w-full table-fixed border-collapse">
           <colgroup>
-            <col className="w-[8%]" />
+            <col className="w-[7%]" />
+            <col className="w-[13%]" />
+            <col className="w-[10%]" />
             <col className="w-[14%]" />
-            <col className="w-[11%]" />
-            <col className="w-[15%]" />
-            <col className="w-[15%]" />
-            <col className="w-[22%]" />
-            <col className="w-[15%]" />
+            <col className="w-[14%]" />
+            <col className="w-[28%]" />
+            <col className="w-[14%]" />
           </colgroup>
 
           <thead className="border-b border-slate-100 bg-slate-50/70">
@@ -692,7 +717,7 @@ const WalletHistory = () => {
                         : "—"}
                     </td>
 
-                    <td className="overflow-hidden px-4 py-3.5">
+                    <td className="px-4 py-3.5">
                       <div className="flex items-center gap-2.5">
                         <div
                           className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${description.iconClass}`}
@@ -700,18 +725,20 @@ const WalletHistory = () => {
                           <DescriptionIcon type={description.icon} />
                         </div>
                         <div className="min-w-0">
-                          <p className="truncate font-bold text-slate-800">
+                          <p className="whitespace-normal break-words font-bold leading-4 text-slate-800">
                             {description.title}
                           </p>
-                          <p className="truncate text-[11px] text-slate-400">
+                          <p className="mt-0.5 whitespace-normal break-words text-[11px] leading-4 text-slate-400">
                             {description.subtitle}
                           </p>
                         </div>
                       </div>
                     </td>
 
-                    <td className="overflow-hidden px-4 py-3.5 text-slate-400 text-[11px]">
-                      {formatDate(transaction.created_at)}
+                    <td className="px-4 py-3.5 align-top text-slate-400 text-[11px] leading-4">
+                      <span className="whitespace-normal">
+                        {formatDate(transaction.created_at)}
+                      </span>
                     </td>
                   </tr>
                 );

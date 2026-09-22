@@ -13,6 +13,7 @@ require("dotenv").config();
 const rateCardRoutes = require("./routes/rateCardRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const userRoutes = require("./routes/userRoutes");
+const weightCheckingRoutes = require("./routes/weightCheckingRoutes");  
 
 // =====================================================
 // APP
@@ -214,6 +215,15 @@ app.use(
 app.use(
   "/api/admin",
   userRoutes
+);
+
+// =====================================================
+// WEIGHT CHECKING ROUTES
+// =====================================================
+
+app.use(
+  "/api/admin/weight-checking",
+  weightCheckingRoutes
 );
 
 // =====================================================

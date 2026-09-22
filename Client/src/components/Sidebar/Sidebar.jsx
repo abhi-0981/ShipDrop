@@ -101,18 +101,38 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
         const userId = user?.id || user?.user_id || user?.userId;
         if (!userId) return;
 
-        const response = await api.get("/orders/all", {
-          params: { user_id: userId },
-        });
+        /*
+         * /orders/all = order table status.
+         * /manifests = actual confirmed manifest list.
+         *
+         * Manifested count MUST come from /manifests because
+         * an order can have status=Manifested while its manifest
+         * has already been cancelled/missing.
+         */
+        const [ordersResponse, manifestsResponse] =
+          await Promise.all([
+            api.get("/orders/all", {
+              params: { user_id: userId },
+            }),
+            api.get("/manifests", {
+              params: { user_id: userId },
+            }),
+          ]);
 
-        const orders = Array.isArray(response?.data?.orders)
-          ? response.data.orders
+        const orders = Array.isArray(ordersResponse?.data?.orders)
+          ? ordersResponse.data.orders
+          : [];
+
+        const manifests = Array.isArray(
+          manifestsResponse?.data?.manifests
+        )
+          ? manifestsResponse.data.manifests
           : [];
 
         const counts = {
           ALL: 0,
           PROCESSING: 0,
-          MANIFESTED: 0,
+          MANIFESTED: manifests.length,
           "NOT PICKED": 0,
           "IN TRANSIT": 0,
           "OUT FOR DELIVERY": 0,
@@ -124,10 +144,31 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
           PENDING: 0,
         };
 
+        const seenOrderIds = new Set();
+
         orders.forEach((order) => {
-          const status = String(
-            order?.tracking_status ||
-              order?.status ||
+          const orderId =
+            order?.id ??
+            order?.order_id ??
+            order?.orderId;
+
+          const key =
+            orderId !== undefined && orderId !== null
+              ? String(orderId)
+              : `row-${seenOrderIds.size}`;
+
+          if (seenOrderIds.has(key)) return;
+          seenOrderIds.add(key);
+
+          const trackingStatus = String(
+            order?.tracking_status || ""
+          )
+            .trim()
+            .toUpperCase()
+            .replace(/_/g, " ");
+
+          const orderStatus = String(
+            order?.status ||
               order?.order_status ||
               "PROCESSING"
           )
@@ -135,15 +176,29 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
             .toUpperCase()
             .replace(/_/g, " ");
 
-          if (status === "PROCESSING") {
+          // Processing orders belong ONLY to Processing Orders.
+          // They must NOT be included in the All Orders count.
+          if (orderStatus === "PROCESSING") {
             counts.PROCESSING += 1;
             return;
           }
 
+          // All Orders = every non-Processing order.
           counts.ALL += 1;
 
-          if (Object.prototype.hasOwnProperty.call(counts, status)) {
-            counts[status] += 1;
+          // Manifested is already counted from /manifests.
+          if (orderStatus === "MANIFESTED") return;
+
+          // NDR is a tracking state and has no separate sidebar bucket.
+          if (trackingStatus === "NDR") return;
+
+          if (
+            Object.prototype.hasOwnProperty.call(
+              counts,
+              orderStatus
+            )
+          ) {
+            counts[orderStatus] += 1;
           }
         });
 
@@ -156,12 +211,41 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
     fetchStatusCounts();
 
     const handleUpdate = () => fetchStatusCounts();
-    window.addEventListener("processingOrderCreated", handleUpdate);
-    window.addEventListener("orderStatusUpdated", handleUpdate);
+
+    const updateEvents = [
+      "shipdrop:orders-updated",
+      "processingOrderCreated",
+      "processingOrderUpdated",
+      "orderStatusUpdated",
+      "orderUpdated",
+      "orderDeleted",
+      "ordersDeleted",
+    ];
+
+    updateEvents.forEach((eventName) => {
+      window.addEventListener(eventName, handleUpdate);
+    });
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        fetchStatusCounts();
+      }
+    };
+
+    document.addEventListener(
+      "visibilitychange",
+      handleVisibilityChange
+    );
 
     return () => {
-      window.removeEventListener("processingOrderCreated", handleUpdate);
-      window.removeEventListener("orderStatusUpdated", handleUpdate);
+      updateEvents.forEach((eventName) => {
+        window.removeEventListener(eventName, handleUpdate);
+      });
+
+      document.removeEventListener(
+        "visibilitychange",
+        handleVisibilityChange
+      );
     };
   }, []);
 
@@ -268,7 +352,7 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
             {showOrders && (
               <div className="mt-1 ml-5 space-y-1 border-l-2 border-slate-100 pl-3">
                 {[
-                  { name: "Processing Orders", path: "/orders/processing", count: statusCounts.PROCESSING },
+                  { name: "Processing Orders", path: "/processing-orders", count: statusCounts.PROCESSING },
                   { name: "All Orders", path: "/all-orders", count: statusCounts.ALL },
                   { name: "Manifested", path: "/manifested", count: statusCounts.MANIFESTED },
                   { name: "Not Picked", path: "/not-picked", count: statusCounts["NOT PICKED"] },

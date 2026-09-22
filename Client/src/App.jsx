@@ -80,15 +80,10 @@ function App() {
           element={<Cancelled />}
         />
 
-        <Route
-          path="/orders/ndr-pending"
-          element={
-            <AllOrders
-              statusScope={["NDR", "PENDING"]}
-              pageTitle="NDR & Pending"
-            />
-          }
-        />
+ <Route
+  path="/orders/ndr-pending"
+  element={<Pending />}
+/>
 
         <Route
           path="/orders/ofd"
