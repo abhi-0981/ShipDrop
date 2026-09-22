@@ -1,4 +1,4 @@
-import phone from "../../assets/images/app-download.png";
+import phone from "../../assets/images/App-download.png";
 import googleStore from "../../assets/images/google-store.png";
 import appStore from "../../assets/images/app-store.png";
 
