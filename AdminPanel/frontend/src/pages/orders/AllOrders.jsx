@@ -8,6 +8,7 @@ import {
   HiOutlineFilter,
 } from "react-icons/hi";
 import toast from "react-hot-toast";
+import { API_BASE_URL } from "../../config/api";
 
 /* =========================================================
    STATUS CONFIG
@@ -972,7 +973,7 @@ const AllOrders = () => {
         localStorage.getItem("adminToken");
 
       const response = await fetch(
-        "http://localhost:5001/api/admin/orders",
+        `${API_BASE_URL}/admin/orders`,
         {
           method: "GET",
           headers: {

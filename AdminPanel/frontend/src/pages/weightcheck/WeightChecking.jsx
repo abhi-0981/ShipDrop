@@ -5,6 +5,7 @@ import {
   HiOutlineUpload,
 } from "react-icons/hi";
 import toast from "react-hot-toast";
+import { API_BASE_URL } from "../../config/api";
 
 /* =========================================================
    HELPERS
@@ -293,7 +294,7 @@ const WeightChecking = () => {
         localStorage.getItem("adminToken");
 
       const response = await fetch(
-        "http://localhost:5001/api/admin/weight-checking",
+        `${API_BASE_URL}/admin/weight-checking`,
         {
           method: "GET",
 
@@ -561,7 +562,7 @@ const WeightChecking = () => {
 
         const response =
           await fetch(
-            "http://localhost:5001/api/admin/weight-checking/import",
+            `${API_BASE_URL}/admin/weight-checking/import`,
             {
               method: "POST",
 
@@ -799,7 +800,7 @@ const WeightChecking = () => {
         localStorage.getItem("adminToken");
 
       const response = await fetch(
-        "http://localhost:5001/api/admin/weight-checking/settle-selected",
+        `${API_BASE_URL}/admin/weight-checking/settle-selected`,
         {
           method: "PATCH",
 
@@ -927,7 +928,7 @@ const WeightChecking = () => {
         localStorage.getItem("adminToken");
 
       const response = await fetch(
-        "http://localhost:5001/api/admin/weight-checking/reset-imported",
+        `${API_BASE_URL}/admin/weight-checking/reset-imported`,
         {
           method: "PATCH",
 
