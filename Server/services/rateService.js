@@ -677,10 +677,12 @@ const calculateDelhiveryRate = async ({
   serviceType,
   paymentType = "Pre-paid",
 }) => {
-  const token =
+  const rawToken =
     process.env.DELHIVERY_API_TOKEN ||
     process.env.DELHIVERY_AUTH_TOKEN ||
     process.env.DELHIVERY_TOKEN;
+
+  const token = rawToken ? String(rawToken).trim().replace(/^["']|["']$/g, "") : null;
 
   if (!token) {
     throw new Error("Delhivery API token is not configured");
@@ -710,8 +712,10 @@ const calculateDelhiveryRate = async ({
   // API BASE URL
   // ====================================================
 
-  const baseUrl =
+  const rawBaseUrl =
     process.env.DELHIVERY_API_BASE_URL || "https://track.delhivery.com";
+
+  const baseUrl = String(rawBaseUrl).trim().replace(/^["']|["']$/g, "").replace(/\/+$/, "");
 
   const url = new URL("/api/kinko/v1/invoice/charges/.json", baseUrl);
 
@@ -808,10 +812,15 @@ const calculateDelhiveryRate = async ({
   // VALIDATE
   // ====================================================
 
-  if (!Number.isFinite(apiAmount) || apiAmount < 0) {
-    throw new Error(
-      "Delhivery API did not return a valid total shipping charge",
-    );
+  if (!Number.isFinite(apiAmount) || apiAmount <= 0) {
+    const errorMsg =
+      data?.error ||
+      data?.message ||
+      (Array.isArray(data) && data[0]?.remarks ? data[0]?.remarks.join(", ") : null) ||
+      (Array.isArray(data) && data[0]?.status && data[0]?.status !== "SUCCESS" && data[0]?.status !== "Delivered" ? `Delhivery status: ${data[0]?.status}` : null) ||
+      "Delhivery API did not return a valid total shipping charge";
+
+    throw new Error(errorMsg);
   }
 
   return {

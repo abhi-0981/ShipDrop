@@ -52,63 +52,42 @@ if (missingEnv.length > 0) {
 }
 
 
-// ======================================================
-// DATABASE CONFIGURATION
-// ======================================================
+const isRemote =
+  process.env.DB_HOST &&
+  process.env.DB_HOST !== "localhost" &&
+  process.env.DB_HOST !== "127.0.0.1";
 
 const dbConfig = {
   host: process.env.DB_HOST,
 
-  // Aiven MySQL port
-  port: Number(process.env.DB_PORT || 25515),
+  port: Number(process.env.DB_PORT || (isRemote ? 25515 : 3306)),
 
   user: process.env.DB_USER,
 
   password: process.env.DB_PASSWORD,
 
   database: process.env.DB_NAME,
-
-  // ====================================================
-  // AIVEN SSL
-  // ====================================================
-
-  ssl: {
-    rejectUnauthorized: false,
-  },
-
-  // ====================================================
-  // CONNECTION POOL
-  // ====================================================
-
-  waitForConnections: true,
-
-  // Keep this conservative on Vercel/serverless
-  connectionLimit: Number(
-    process.env.DB_CONNECTION_LIMIT || 5
-  ),
-
-  queueLimit: 0,
-
-  // ====================================================
-  // CONNECTION KEEP ALIVE
-  // ====================================================
-
-  enableKeepAlive: true,
-
-  keepAliveInitialDelay: 0,
-
-  // ====================================================
-  // TIMEOUTS
-  // ====================================================
-
-  connectTimeout: 15000,
-
-  // ====================================================
-  // CHARSET
-  // ====================================================
-
-  charset: "utf8mb4",
 };
+
+// Enable SSL for remote cloud databases (e.g. Aiven) unless explicitly disabled
+if (
+  process.env.DB_SSL === "true" ||
+  (isRemote && process.env.DB_SSL !== "false")
+) {
+  dbConfig.ssl = {
+    rejectUnauthorized: false,
+  };
+}
+
+Object.assign(dbConfig, {
+  waitForConnections: true,
+  connectionLimit: Number(process.env.DB_CONNECTION_LIMIT || 5),
+  queueLimit: 0,
+  enableKeepAlive: true,
+  keepAliveInitialDelay: 0,
+  connectTimeout: 15000,
+  charset: "utf8mb4",
+});
 
 
 // ======================================================
