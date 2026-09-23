@@ -1,10 +1,11 @@
 const express = require("express");
 const cors = require("cors");
-const mysql = require("mysql2/promise");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
 require("dotenv").config();
+
+const db = require("./config/db");
 
 // =====================================================
 // ROUTES
@@ -21,38 +22,91 @@ const weightCheckingRoutes = require("./routes/weightCheckingRoutes");
 
 const app = express();
 
-const PORT = 5001;
+const PORT = process.env.PORT || 5001;
 
 // =====================================================
-// MIDDLEWARE
+// CORS CONFIGURATION
 // =====================================================
 
-app.use(
-  cors({
-    origin: "http://localhost:5174",
-  })
-);
+const explicitAllowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "http://localhost:3000",
+  "http://127.0.0.1:5173",
+  "http://127.0.0.1:5174",
+  "https://admin.parceldrop.in",
+  "http://admin.parceldrop.in",
+  "https://parceldrop.in",
+  ...(process.env.FRONTEND_URL
+    ? process.env.FRONTEND_URL.split(",").map((s) => s.trim())
+    : []),
+  ...(process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(",").map((s) => s.trim())
+    : []),
+]
+  .filter(Boolean)
+  .map((o) => o.replace(/\/+$/, ""));
+
+const isAllowedOrigin = (origin) => {
+  if (!origin) return true; // allow non-browser requests
+  const normalized = origin.replace(/\/+$/, "");
+  if (explicitAllowedOrigins.includes(normalized)) return true;
+  try {
+    const parsed = new URL(normalized);
+    if (
+      parsed.hostname.endsWith(".netlify.app") ||
+      parsed.hostname.endsWith(".vercel.app") ||
+      parsed.hostname.endsWith(".parceldrop.in") ||
+      parsed.hostname === "localhost" ||
+      parsed.hostname === "127.0.0.1"
+    ) {
+      return true;
+    }
+  } catch (e) {
+    // invalid URL format
+  }
+  return false;
+};
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (isAllowedOrigin(origin)) {
+      return callback(null, true);
+    }
+    console.warn("CORS origin not in strict list, allowing:", origin);
+    return callback(null, true);
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "X-Requested-With",
+    "Accept",
+  ],
+};
+
+app.use(cors(corsOptions));
 
 app.use(express.json());
 
 // =====================================================
-// DATABASE
-// =====================================================
-
-const db = mysql.createPool({
-  host: "localhost",
-  user: "root",
-  password: process.env.DB_PASSWORD,
-  database: "shipdrop",
-});
-
-// =====================================================
-// ADMIN BACKEND TEST
+// HEALTH CHECKS
 // =====================================================
 
 app.get("/", (req, res) => {
   res.json({
+    status: "ok",
     message: "ShipDrop Admin Backend is running",
+    timestamp: new Date().toISOString(),
+  });
+});
+
+app.get("/api", (req, res) => {
+  res.json({
+    status: "ok",
+    message: "ShipDrop Admin API is ready",
+    timestamp: new Date().toISOString(),
   });
 });
 
@@ -67,6 +121,7 @@ app.get("/api/db-test", async (req, res) => {
     );
 
     res.json({
+      status: "ok",
       message: "Database connected successfully",
       result,
     });
@@ -77,7 +132,9 @@ app.get("/api/db-test", async (req, res) => {
     );
 
     res.status(500).json({
+      status: "error",
       message: "Database connection failed",
+      error: error.message,
     });
   }
 });
@@ -151,13 +208,16 @@ app.post("/api/admin/login", async (req, res) => {
     // CREATE JWT
     // -----------------------------------------------
 
+    const jwtSecret =
+      process.env.JWT_SECRET || "shipdrop_admin_jwt_secret_key_default";
+
     const token = jwt.sign(
       {
         id: admin.id,
         username: admin.username,
         role: "admin",
       },
-      process.env.JWT_SECRET,
+      jwtSecret,
       {
         expiresIn: "8h",
       }
@@ -169,9 +229,7 @@ app.post("/api/admin/login", async (req, res) => {
 
     res.json({
       message: "Login successful",
-
       token,
-
       admin: {
         id: admin.id,
         username: admin.username,
@@ -181,11 +239,11 @@ app.post("/api/admin/login", async (req, res) => {
   } catch (error) {
     console.error(
       "Login error:",
-      error.message
+      error
     );
 
     res.status(500).json({
-      message: "Something went wrong",
+      message: error.message || "Something went wrong",
     });
   }
 });
@@ -252,11 +310,15 @@ app.use((error, req, res, next) => {
 });
 
 // =====================================================
-// START SERVER
+// START SERVER (Local Development) & EXPORT (Vercel)
 // =====================================================
 
-app.listen(PORT, () => {
-  console.log(
-    `ShipDrop Admin Backend running on port ${PORT}`
-  );
-});
+if (require.main === module && !process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(
+      `ShipDrop Admin Backend running on port ${PORT}`
+    );
+  });
+}
+
+module.exports = app;

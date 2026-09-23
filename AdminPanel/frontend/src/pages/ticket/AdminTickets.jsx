@@ -22,7 +22,9 @@ import {
   HiOutlineCalendar,
 } from "react-icons/hi";
 
-const API_BASE_URL = "http://localhost:5001/api/admin";
+import { API_BASE_URL } from "../../config/api";
+
+const ADMIN_API_URL = `${API_BASE_URL}/admin`;
 
 /* =========================================================
    OPTIONS
@@ -173,7 +175,7 @@ const apiRequest = async (endpoint, options = {}) => {
   }
 
   const response = await fetch(
-    `${API_BASE_URL}${endpoint}`,
+    `${ADMIN_API_URL}${endpoint}`,
     {
       ...options,
       headers: {

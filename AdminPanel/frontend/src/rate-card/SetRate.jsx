@@ -20,8 +20,7 @@ import toast from "react-hot-toast";
 import * as XLSX from "xlsx";
 
 
-const API_BASE_URL =
-  "http://localhost:5001/api";
+import { API_BASE_URL } from "../config/api";
 
 
 // =====================================================

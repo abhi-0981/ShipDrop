@@ -1,16 +1,4 @@
-const mysql = require("mysql2/promise");
-require("dotenv").config();
-
-/* =========================================================
-   DATABASE
-========================================================= */
-
-const db = mysql.createPool({
-  host: "localhost",
-  user: "root",
-  password: process.env.DB_PASSWORD,
-  database: "shipdrop",
-});
+const db = require("../config/db");
 
 /* =========================================================
    GET ALL ORDERS - ADMIN
