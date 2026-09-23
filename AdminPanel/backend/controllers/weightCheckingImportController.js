@@ -1,18 +1,13 @@
 const path = require("path");
 const XLSX = require("xlsx");
 
-require("dotenv").config({
-  path: path.resolve(
-    __dirname,
-    "../../../Server/.env"
-  ),
-});
+require("dotenv").config();
 
 const db = require("../config/db");
 
 const {
   calculateShippingRate,
-} = require("../../../Server/services/rateService");
+} = require("../services/rateService");
 
 
 // ======================================================

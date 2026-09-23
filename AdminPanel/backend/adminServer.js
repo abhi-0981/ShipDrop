@@ -1,6 +1,11 @@
 const express = require("express");
 const cors = require("cors");
-const bcrypt = require("bcrypt");
+let bcrypt;
+try {
+  bcrypt = require("bcryptjs");
+} catch (e) {
+  bcrypt = require("bcrypt");
+}
 const jwt = require("jsonwebtoken");
 
 require("dotenv").config();
@@ -65,7 +70,7 @@ const isAllowedOrigin = (origin) => {
   } catch (e) {
     // invalid URL format
   }
-  return false;
+  return true;
 };
 
 const corsOptions = {
@@ -73,17 +78,20 @@ const corsOptions = {
     if (isAllowedOrigin(origin)) {
       return callback(null, true);
     }
-    console.warn("CORS origin not in strict list, allowing:", origin);
     return callback(null, true);
   },
   credentials: true,
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"],
   allowedHeaders: [
     "Content-Type",
     "Authorization",
     "X-Requested-With",
     "Accept",
+    "Origin",
+    "Access-Control-Request-Method",
+    "Access-Control-Request-Headers",
   ],
+  optionsSuccessStatus: 200,
 };
 
 app.use(cors(corsOptions));
