@@ -141,9 +141,9 @@ const getStatus = (order) =>
 const getOrderId = (order) =>
   String(
     order?.order_id ??
-      order?.display_order_id ??
-      order?.id ??
-      "—"
+    order?.display_order_id ??
+    order?.id ??
+    "—"
   );
 
 const getAWB = (order) => String(order?.awb || "").trim();
@@ -151,8 +151,8 @@ const getAWB = (order) => String(order?.awb || "").trim();
 const getCustomer = (order) =>
   String(
     order?.consignee_name ||
-      order?.customer_name ||
-      "—"
+    order?.customer_name ||
+    "—"
   );
 
 const getPayment = (order) => {
@@ -210,13 +210,11 @@ const StatCard = ({
       type="button"
       onClick={onClick}
       disabled={!onClick}
-      className={`w-full text-left rounded-2xl border border-slate-200/80 bg-white p-3.5 sm:p-4 shadow-[0_1px_4px_rgba(15,23,42,0.03)] transition-all duration-200 active:scale-[0.98] ${
-        isWide ? "col-span-2 sm:col-span-1" : ""
-      } ${
-        onClick
+      className={`w-full text-left rounded-2xl border border-slate-200/80 bg-white p-3.5 sm:p-4 shadow-[0_1px_4px_rgba(15,23,42,0.03)] transition-all duration-200 active:scale-[0.98] ${isWide ? "col-span-2 sm:col-span-1" : ""
+        } ${onClick
           ? "cursor-pointer hover:border-slate-300 hover:shadow-[0_4px_12px_rgba(15,23,42,0.06)]"
           : "cursor-default"
-      }`}
+        }`}
     >
       <div className="flex items-start justify-between">
         <div className="min-w-0 flex-1 pr-2">
@@ -333,8 +331,8 @@ function Dashboard() {
       console.error("Dashboard loading error:", error);
       setDashboardError(
         error?.response?.data?.message ||
-          error?.message ||
-          "Unable to load dashboard"
+        error?.message ||
+        "Unable to load dashboard"
       );
     } finally {
       setPageLoading(false);
@@ -451,7 +449,7 @@ function Dashboard() {
         pickup_pincode: pickup,
         delivery_pincode: delivery,
         weight: numericWeight,
-        payment_type: paymentType === "COD" ? "COD" : "Pre-paid",
+        payment_type: paymentType === "COD" ? "COD" : "PREPAID",
         product_value: numericProductPrice,
       });
 
@@ -468,8 +466,8 @@ function Dashboard() {
       console.error("Rate calculation error:", error);
       setRateError(
         error?.response?.data?.message ||
-          error?.message ||
-          "Unable to calculate shipping rate"
+        error?.message ||
+        "Unable to calculate shipping rate"
       );
     } finally {
       setRateLoading(false);
@@ -756,11 +754,10 @@ function Dashboard() {
                             {getCustomer(order)}
                           </span>
                           <span
-                            className={`rounded px-1.5 py-0.5 text-[10px] font-semibold border ${
-                              getPayment(order) === "COD"
+                            className={`rounded px-1.5 py-0.5 text-[10px] font-semibold border ${getPayment(order) === "COD"
                                 ? "border-violet-100 bg-violet-50 text-violet-600"
                                 : "border-slate-200 bg-slate-50 text-slate-500"
-                            }`}
+                              }`}
                           >
                             {getPayment(order)}
                           </span>
@@ -821,11 +818,10 @@ function Dashboard() {
                             </td>
                             <td className="px-4 py-3">
                               <span
-                                className={`inline-flex rounded-md border px-2 py-0.5 text-[10px] font-semibold ${
-                                  getPayment(order) === "COD"
+                                className={`inline-flex rounded-md border px-2 py-0.5 text-[10px] font-semibold ${getPayment(order) === "COD"
                                     ? "border-violet-100 bg-violet-50 text-violet-600"
                                     : "border-slate-200 bg-slate-50 text-slate-500"
-                                }`}
+                                  }`}
                               >
                                 {getPayment(order)}
                               </span>
@@ -972,22 +968,20 @@ function Dashboard() {
                 <button
                   type="button"
                   onClick={() => setPaymentType("PREPAID")}
-                  className={`h-8 rounded-lg text-[11px] font-bold transition ${
-                    paymentType === "PREPAID"
+                  className={`h-8 rounded-lg text-[11px] font-bold transition ${paymentType === "PREPAID"
                       ? "bg-white text-slate-800 shadow-xs"
                       : "text-slate-400 hover:text-slate-600"
-                  }`}
+                    }`}
                 >
                   Prepaid
                 </button>
                 <button
                   type="button"
                   onClick={() => setPaymentType("COD")}
-                  className={`h-8 rounded-lg text-[11px] font-bold transition ${
-                    paymentType === "COD"
+                  className={`h-8 rounded-lg text-[11px] font-bold transition ${paymentType === "COD"
                       ? "bg-white text-slate-800 shadow-xs"
                       : "text-slate-400 hover:text-slate-600"
-                  }`}
+                    }`}
                 >
                   COD
                 </button>
@@ -1032,11 +1026,10 @@ function Dashboard() {
                 <div className="space-y-2">
                   {/* ROAD */}
                   <div
-                    className={`rounded-xl border p-3 ${
-                      roadRate
+                    className={`rounded-xl border p-3 ${roadRate
                         ? "border-slate-200 bg-white"
                         : "border-slate-100 bg-slate-50"
-                    }`}
+                      }`}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-2.5">
@@ -1082,11 +1075,10 @@ function Dashboard() {
 
                   {/* AIR */}
                   <div
-                    className={`rounded-xl border p-3 ${
-                      airRate
+                    className={`rounded-xl border p-3 ${airRate
                         ? "border-slate-200 bg-white"
                         : "border-slate-100 bg-slate-50"
-                    }`}
+                      }`}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-2.5">

@@ -79,8 +79,8 @@ const calculateRateForWeight = async ({
   const shippingCharge =
     Number(
       result?.shipping_charge ??
-        result?.final_rate ??
-        0
+      result?.final_rate ??
+      0
     );
 
   if (
@@ -124,7 +124,7 @@ const calculateRateForWeight = async ({
     finalRate:
       Number(
         result?.final_rate ||
-          shippingCharge
+        shippingCharge
       ),
   };
 };
@@ -170,7 +170,7 @@ const importWeightFile =
 
       const worksheet =
         workbook.Sheets[
-          sheetName
+        sheetName
         ];
 
       const rows =
@@ -318,7 +318,7 @@ const importWeightFile =
           const actualWeight =
             roundWeight(
               actualWeightGrams /
-                1000
+              1000
             );
 
 
@@ -479,7 +479,7 @@ const importWeightFile =
           const weightDifference =
             roundWeight(
               actualWeight -
-                declaredWeight
+              declaredWeight
             );
 
 
@@ -512,7 +512,7 @@ const importWeightFile =
             roundMoney(
               Number(
                 order.shipping_charge ||
-                  0
+                0
               )
             );
 
@@ -544,7 +544,7 @@ const importWeightFile =
           let serviceType =
             String(
               order.service_type ||
-                "ROAD"
+              "ROAD"
             )
               .trim()
               .toUpperCase();
@@ -562,13 +562,13 @@ const importWeightFile =
 
           const paymentType =
             order.payment_type ||
-            "Pre-paid";
+            "PREPAID";
 
 
           const productValue =
             Number(
               order.product_value ||
-                0
+              0
             );
 
 
@@ -629,7 +629,7 @@ const importWeightFile =
               );
 
           } catch (
-            rateError
+          rateError
           ) {
             errors.push({
               row:
@@ -673,7 +673,7 @@ const importWeightFile =
           const extraCharge =
             roundMoney(
               recalculatedShippingCharge -
-                originalCharge
+              originalCharge
             );
 
 
@@ -713,7 +713,7 @@ const importWeightFile =
             const existingStatus =
               String(
                 existingRecord.status ||
-                  ""
+                ""
               )
                 .trim()
                 .toUpperCase();
@@ -734,10 +734,10 @@ const importWeightFile =
 
                 reason:
                   existingStatus ===
-                  "SETTLED"
+                    "SETTLED"
                     ? "This weight checking is already settled"
                     : existingStatus ===
-                        "WAIVED"
+                      "WAIVED"
                       ? "This weight checking has already been waived"
                       : `Weight checking already exists with status ${existingRecord.status}`,
               });
@@ -809,12 +809,12 @@ const importWeightFile =
                 actualRate.serviceType,
 
                 actualRate.zone ||
-                  order.zone ||
-                  null,
+                order.zone ||
+                null,
 
                 actualRate.distanceKm ??
-                  order.distance_km ??
-                  null,
+                order.distance_km ??
+                null,
 
                 existingRecord.id,
               ]
@@ -937,12 +937,12 @@ const importWeightFile =
                 actualRate.serviceType,
 
                 actualRate.zone ||
-                  order.zone ||
-                  null,
+                order.zone ||
+                null,
 
                 actualRate.distanceKm ??
-                  order.distance_km ??
-                  null,
+                order.distance_km ??
+                null,
 
                 "COURIER_IMPORT",
               ]

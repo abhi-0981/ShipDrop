@@ -57,7 +57,7 @@ const normalizePaymentType = (
 
   const value =
     String(
-      paymentType || "Pre-paid"
+      paymentType || "PREPAID"
     )
       .trim()
       .toLowerCase()

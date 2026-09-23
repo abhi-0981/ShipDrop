@@ -148,11 +148,10 @@ const RateCard = ({
 
   return (
     <div
-      className={`rounded-xl border p-1.5 transition ${
-        rate
+      className={`rounded-xl border p-1.5 transition ${rate
           ? "border-slate-200 bg-white shadow-[0_1px_4px_rgba(15,23,42,0.03)]"
           : "border-slate-100 bg-slate-50"
-      }`}
+        }`}
     >
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-3">
@@ -368,7 +367,7 @@ function RateCalculator() {
             payment_type:
               paymentType === "COD"
                 ? "COD"
-                : "Pre-paid",
+                : "PREPAID",
 
             product_value:
               numericProductPrice,
@@ -381,7 +380,7 @@ function RateCalculator() {
       if (!data?.success) {
         throw new Error(
           data?.message ||
-            "Unable to calculate shipping rate"
+          "Unable to calculate shipping rate"
         );
       }
 
@@ -394,8 +393,8 @@ function RateCalculator() {
 
       setRateError(
         error?.response?.data?.message ||
-          error?.message ||
-          "Unable to calculate shipping rate"
+        error?.message ||
+        "Unable to calculate shipping rate"
       );
     } finally {
       setRateLoading(false);
@@ -641,11 +640,10 @@ function RateCalculator() {
                       "PREPAID"
                     )
                   }
-                  className={`h-9 rounded-md text-[11px] font-semibold transition ${
-                    paymentType === "PREPAID"
+                  className={`h-9 rounded-md text-[11px] font-semibold transition ${paymentType === "PREPAID"
                       ? "bg-white text-slate-800 shadow-[0_1px_3px_rgba(15,23,42,0.10)]"
                       : "text-slate-400 hover:text-slate-600"
-                  }`}
+                    }`}
                 >
                   Prepaid
                 </button>
@@ -657,11 +655,10 @@ function RateCalculator() {
                       "COD"
                     )
                   }
-                  className={`h-9 rounded-md text-[11px] font-semibold transition ${
-                    paymentType === "COD"
+                  className={`h-9 rounded-md text-[11px] font-semibold transition ${paymentType === "COD"
                       ? "bg-white text-slate-800 shadow-[0_1px_3px_rgba(15,23,42,0.10)]"
                       : "text-slate-400 hover:text-slate-600"
-                  }`}
+                    }`}
                 >
                   COD
                 </button>
@@ -770,7 +767,7 @@ function RateCalculator() {
                   accent="sky"
                 />
 
-                
+
 
               </div>
             )}
@@ -783,7 +780,7 @@ function RateCalculator() {
           INFO
       ================================================== */}
 
-     
+
     </div>
   );
 }
