@@ -449,7 +449,7 @@ function Dashboard() {
         pickup_pincode: pickup,
         delivery_pincode: delivery,
         weight: numericWeight,
-        payment_type: paymentType === "COD" ? "COD" : "PREPAID",
+        payment_type: paymentType === "COD" ? "COD" : "Pre-paid",
         product_value: numericProductPrice,
       });
 
@@ -755,8 +755,8 @@ function Dashboard() {
                           </span>
                           <span
                             className={`rounded px-1.5 py-0.5 text-[10px] font-semibold border ${getPayment(order) === "COD"
-                                ? "border-violet-100 bg-violet-50 text-violet-600"
-                                : "border-slate-200 bg-slate-50 text-slate-500"
+                              ? "border-violet-100 bg-violet-50 text-violet-600"
+                              : "border-slate-200 bg-slate-50 text-slate-500"
                               }`}
                           >
                             {getPayment(order)}
@@ -819,8 +819,8 @@ function Dashboard() {
                             <td className="px-4 py-3">
                               <span
                                 className={`inline-flex rounded-md border px-2 py-0.5 text-[10px] font-semibold ${getPayment(order) === "COD"
-                                    ? "border-violet-100 bg-violet-50 text-violet-600"
-                                    : "border-slate-200 bg-slate-50 text-slate-500"
+                                  ? "border-violet-100 bg-violet-50 text-violet-600"
+                                  : "border-slate-200 bg-slate-50 text-slate-500"
                                   }`}
                               >
                                 {getPayment(order)}
@@ -969,8 +969,8 @@ function Dashboard() {
                   type="button"
                   onClick={() => setPaymentType("PREPAID")}
                   className={`h-8 rounded-lg text-[11px] font-bold transition ${paymentType === "PREPAID"
-                      ? "bg-white text-slate-800 shadow-xs"
-                      : "text-slate-400 hover:text-slate-600"
+                    ? "bg-white text-slate-800 shadow-xs"
+                    : "text-slate-400 hover:text-slate-600"
                     }`}
                 >
                   Prepaid
@@ -979,8 +979,8 @@ function Dashboard() {
                   type="button"
                   onClick={() => setPaymentType("COD")}
                   className={`h-8 rounded-lg text-[11px] font-bold transition ${paymentType === "COD"
-                      ? "bg-white text-slate-800 shadow-xs"
-                      : "text-slate-400 hover:text-slate-600"
+                    ? "bg-white text-slate-800 shadow-xs"
+                    : "text-slate-400 hover:text-slate-600"
                     }`}
                 >
                   COD
@@ -1027,8 +1027,8 @@ function Dashboard() {
                   {/* ROAD */}
                   <div
                     className={`rounded-xl border p-3 ${roadRate
-                        ? "border-slate-200 bg-white"
-                        : "border-slate-100 bg-slate-50"
+                      ? "border-slate-200 bg-white"
+                      : "border-slate-100 bg-slate-50"
                       }`}
                   >
                     <div className="flex items-start justify-between">
@@ -1076,8 +1076,8 @@ function Dashboard() {
                   {/* AIR */}
                   <div
                     className={`rounded-xl border p-3 ${airRate
-                        ? "border-slate-200 bg-white"
-                        : "border-slate-100 bg-slate-50"
+                      ? "border-slate-200 bg-white"
+                      : "border-slate-100 bg-slate-50"
                       }`}
                   >
                     <div className="flex items-start justify-between">

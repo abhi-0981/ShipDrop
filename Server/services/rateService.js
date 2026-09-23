@@ -28,7 +28,7 @@ const normalizeServiceType = (serviceType) => {
 // ======================================================
 
 const normalizePaymentType = (paymentType) => {
-  const value = String(paymentType || "PREPAID")
+  const value = String(paymentType || "Pre-paid")
     .trim()
     .toLowerCase()
     .replace(/[\s_-]+/g, "");
@@ -429,7 +429,7 @@ const getZoneRate = (rateData, zone) => {
 const calculateOwnPricing = ({
   baseRate,
   rateCardService,
-  paymentType = "PREPAID",
+  paymentType = "Pre-paid",
   productValue = 0,
 
   additionAmount = 0,
@@ -675,7 +675,7 @@ const calculateDelhiveryRate = async ({
   deliveryPincode,
   weight,
   serviceType,
-  paymentType = "PREPAID",
+  paymentType = "Pre-paid",
 }) => {
   const rawToken =
     process.env.DELHIVERY_API_TOKEN ||
@@ -980,7 +980,7 @@ const calculateShippingRate = async (
   delivery_pincode,
   weight,
   serviceType = "ROAD",
-  paymentType = "PREPAID",
+  paymentType = "Pre-paid",
   productValue = 0,
 ) => {
   // ====================================================
@@ -1197,7 +1197,7 @@ const calculateShippingOptions = async (
   pickup_pincode,
   delivery_pincode,
   weight,
-  paymentType = "PREPAID",
+  paymentType = "Pre-paid",
   productValue = 0,
 ) => {
   if (!userId) {

@@ -149,8 +149,8 @@ const RateCard = ({
   return (
     <div
       className={`rounded-xl border p-1.5 transition ${rate
-          ? "border-slate-200 bg-white shadow-[0_1px_4px_rgba(15,23,42,0.03)]"
-          : "border-slate-100 bg-slate-50"
+        ? "border-slate-200 bg-white shadow-[0_1px_4px_rgba(15,23,42,0.03)]"
+        : "border-slate-100 bg-slate-50"
         }`}
     >
       <div className="flex items-start justify-between gap-4">
@@ -367,7 +367,7 @@ function RateCalculator() {
             payment_type:
               paymentType === "COD"
                 ? "COD"
-                : "PREPAID",
+                : "Pre-paid",
 
             product_value:
               numericProductPrice,
@@ -641,8 +641,8 @@ function RateCalculator() {
                     )
                   }
                   className={`h-9 rounded-md text-[11px] font-semibold transition ${paymentType === "PREPAID"
-                      ? "bg-white text-slate-800 shadow-[0_1px_3px_rgba(15,23,42,0.10)]"
-                      : "text-slate-400 hover:text-slate-600"
+                    ? "bg-white text-slate-800 shadow-[0_1px_3px_rgba(15,23,42,0.10)]"
+                    : "text-slate-400 hover:text-slate-600"
                     }`}
                 >
                   Prepaid
@@ -656,8 +656,8 @@ function RateCalculator() {
                     )
                   }
                   className={`h-9 rounded-md text-[11px] font-semibold transition ${paymentType === "COD"
-                      ? "bg-white text-slate-800 shadow-[0_1px_3px_rgba(15,23,42,0.10)]"
-                      : "text-slate-400 hover:text-slate-600"
+                    ? "bg-white text-slate-800 shadow-[0_1px_3px_rgba(15,23,42,0.10)]"
+                    : "text-slate-400 hover:text-slate-600"
                     }`}
                 >
                   COD

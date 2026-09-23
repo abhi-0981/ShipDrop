@@ -562,7 +562,7 @@ const importWeightFile =
 
           const paymentType =
             order.payment_type ||
-            "PREPAID";
+            "Pre-paid";
 
 
           const productValue =
