@@ -485,7 +485,19 @@ const calculateDelhiveryRate = async ({
   url.searchParams.set("o_pin", String(pickupPincode));
   url.searchParams.set("d_pin", String(deliveryPincode));
   url.searchParams.set("ss", "Delivered");
-  url.searchParams.set("pt", paymentType);
+
+  // Delhivery API requires exact string values: "Pre-paid" or "COD"
+  const normalizedPt = String(paymentType || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]+/g, "");
+
+  const delhiveryPt =
+    normalizedPt === "cod" || normalizedPt === "cashondelivery"
+      ? "COD"
+      : "Pre-paid";
+
+  url.searchParams.set("pt", delhiveryPt);
 
   let response;
   try {
