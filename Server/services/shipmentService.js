@@ -5,10 +5,6 @@ const {
   calculateShippingRate,
 } = require("./rateService");
 
-const {
-  createDelhiveryPickupRequest,
-} = require("./delhiveryPickupService");
-
 const query = (
   sql,
   params = []
@@ -114,496 +110,6 @@ const DELHIVERY_API_TOKEN =
 const DELHIVERY_API_BASE_URL =
   process.env.DELHIVERY_API_BASE_URL ||
   "https://track.delhivery.com";
-
-
-
-// ======================================================
-// DELHIVERY PICKUP TIME HELPER
-// ======================================================
-
-const getNextPickupSlot = () => {
-
-  const now = new Date();
-
-  const parts =
-    new Intl.DateTimeFormat(
-      "en-GB",
-      {
-        timeZone: "Asia/Kolkata",
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-        hour12: false,
-      }
-    ).formatToParts(now);
-
-  const values = {};
-
-  for (const part of parts) {
-
-    if (
-      part.type !== "literal"
-    ) {
-      values[part.type] =
-        part.value;
-    }
-  }
-
-  let hour =
-    Number(values.hour);
-
-  const minute =
-    Number(values.minute);
-
-  let year =
-    Number(values.year);
-
-  let month =
-    Number(values.month);
-
-  let day =
-    Number(values.day);
-
-  // --------------------------------------------------
-  // Next hour pickup
-  // Example:
-  // 16:06 -> 17:00
-  // 16:50 -> 17:00
-  // --------------------------------------------------
-
-  hour += 1;
-
-  // --------------------------------------------------
-  // If current time is near midnight,
-  // schedule next day at 10:00 AM
-  // --------------------------------------------------
-
-  if (hour >= 24) {
-
-    hour = 10;
-
-    const nextDay =
-      new Date(
-        Date.UTC(
-          year,
-          month - 1,
-          day
-        )
-      );
-
-    nextDay.setUTCDate(
-      nextDay.getUTCDate() + 1
-    );
-
-    year =
-      nextDay.getUTCFullYear();
-
-    month =
-      nextDay.getUTCMonth() + 1;
-
-    day =
-      nextDay.getUTCDate();
-  }
-
-  const pickup_date =
-    `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-
-  const pickup_time =
-    `${String(hour).padStart(2, "0")}:00:00`;
-
-  return {
-    pickup_date,
-    pickup_time,
-  };
-};
-
-// ======================================================
-// DELHIVERY PICKUP HELPERS
-// ======================================================
-
-
-
-
-const getTotalPackageCount = (
-  packages = []
-) => {
-  return packages.reduce(
-    (
-      total,
-      packageData
-    ) => {
-
-      const count =
-        Number(
-          packageData.package_count
-        ) || 1;
-
-      return total + count;
-
-    },
-    0
-  );
-};
-
-
-const ensurePickupRequest = async ({
-  user_id,
-  warehouse_id,
-  warehouse_name,
-  expected_package_count,
-}) => {
-
- const {
-  pickup_date,
-  pickup_time,
-} = getNextPickupSlot();
-
-
-console.log("");
-console.log("================================================");
-console.log("🔎 PICKUP SLOT DEBUG");
-console.log("================================================");
-
-console.log(
-  "Server UTC Time:",
-  new Date().toISOString()
-);
-
-console.log(
-  "Server India Time:",
-  new Intl.DateTimeFormat("en-GB", {
-    timeZone: "Asia/Kolkata",
-    dateStyle: "full",
-    timeStyle: "long",
-    hour12: false,
-  }).format(new Date())
-);
-
-console.log(
-  "Calculated Pickup Date:",
-  pickup_date
-);
-
-console.log(
-  "Calculated Pickup Time:",
-  pickup_time
-);
-
-console.log("================================================");
-
-  const pickup_location =
-    String(
-      warehouse_name || ""
-    ).trim();
-
-  if (!user_id) {
-    throw new Error(
-      "User ID is required for pickup request"
-    );
-  }
-
-  if (!warehouse_id) {
-    throw new Error(
-      "Warehouse ID is required for pickup request"
-    );
-  }
-
-  if (!pickup_location) {
-    throw new Error(
-      "Warehouse name is required for pickup request"
-    );
-  }
-
-  const packageCount =
-    Number(
-      expected_package_count
-    ) || 0;
-
-  if (packageCount <= 0) {
-    throw new Error(
-      "Expected package count must be greater than 0"
-    );
-  }
-
-  console.log(
-    "================================================"
-  );
-
-  console.log(
-    "CHECKING DELHIVERY PICKUP REQUEST"
-  );
-
-  console.log(
-    "User ID:",
-    user_id
-  );
-
-  console.log(
-    "Warehouse ID:",
-    warehouse_id
-  );
-
-  console.log(
-    "Pickup Location:",
-    pickup_location
-  );
-
-  console.log(
-    "Pickup Date:",
-    pickup_date
-  );
-
-  console.log(
-    "Pickup Time:",
-    pickup_time
-  );
-
-  console.log(
-    "Expected Package Count:",
-    packageCount
-  );
-
-  console.log(
-    "================================================"
-  );
-
-
-  // ----------------------------------------------------
-  // CHECK EXISTING PICKUP REQUEST
-  // ----------------------------------------------------
-
-  const existingRows =
-    await query(
-      `
-        SELECT
-          id,
-          user_id,
-          warehouse_id,
-          pickup_id,
-          pickup_date,
-          pickup_time,
-          pickup_location,
-          expected_package_count,
-          status
-        FROM pickup_requests
-        WHERE
-          user_id = ?
-          AND warehouse_id = ?
-          AND pickup_date = ?
-        ORDER BY id DESC
-        LIMIT 1
-      `,
-      [
-        user_id,
-        warehouse_id,
-        pickup_date,
-      ]
-    );
-
-
-  if (
-    existingRows.length > 0
-  ) {
-
-    const existingPickup =
-      existingRows[0];
-
-    console.log(
-      "✅ EXISTING PICKUP REQUEST FOUND"
-    );
-
-    console.log(
-      "Pickup ID:",
-      existingPickup.pickup_id
-    );
-
-    return {
-      success: true,
-
-      reused: true,
-
-      pickup_id:
-        existingPickup.pickup_id,
-
-      pickup_request_id:
-        existingPickup.id,
-
-      pickup_date:
-        existingPickup.pickup_date,
-
-      pickup_time:
-        existingPickup.pickup_time,
-
-      pickup_location:
-        existingPickup.pickup_location,
-
-      expected_package_count:
-        existingPickup.expected_package_count,
-
-      status:
-        existingPickup.status,
-
-    };
-  }
-
-
-  // ----------------------------------------------------
-  // CREATE NEW PICKUP REQUEST
-  // ----------------------------------------------------
-
-  console.log(
-    "🆕 NO EXISTING PICKUP REQUEST FOUND"
-  );
-
-  console.log(
-    "Creating new Delhivery pickup request..."
-  );
-
-
-  const delhiveryPickup =
-    await createDelhiveryPickupRequest({
-      pickup_time,
-
-      pickup_date,
-
-      pickup_location,
-
-      expected_package_count:
-        packageCount,
-    });
-
-
-  const pickupId =
-    String(
-      delhiveryPickup.pickup_id ||
-      ""
-    ).trim();
-
-
-    const actualPickupDate =
-  delhiveryPickup.pickup_date ||
-  pickup_date;
-
-const actualPickupTime =
-  delhiveryPickup.pickup_time ||
-  pickup_time;
-
-
-  if (!pickupId) {
-    throw new Error(
-      "Delhivery pickup request created but pickup_id was not returned"
-    );
-  }
-
-
-  // ----------------------------------------------------
-  // SAVE PICKUP REQUEST IN DATABASE
-  // ----------------------------------------------------
-
-  const insertResult =
-  await query(
-    `
-      INSERT INTO pickup_requests
-      (
-        user_id,
-        warehouse_id,
-        pickup_id,
-        pickup_date,
-        pickup_time,
-        pickup_location,
-        expected_package_count,
-        status
-      )
-      VALUES
-      (
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        'CREATED'
-      )
-    `,
-    [
-      user_id,
-
-      warehouse_id,
-
-      pickupId,
-
-      actualPickupDate,
-
-      actualPickupTime,
-
-      pickup_location,
-
-      packageCount,
-    ]
-  );
-
-
-  console.log(
-    "================================================"
-  );
-
-  console.log(
-    "✅ DELHIVERY PICKUP REQUEST CREATED"
-  );
-
-  console.log(
-    "Pickup ID:",
-    pickupId
-  );
-
-  console.log(
-    "DB Pickup Request ID:",
-    insertResult.insertId
-  );
-
-  console.log(
-    "================================================"
-  );
-
-
-  return {
-
-    success: true,
-
-    reused: false,
-
-    pickup_id:
-      pickupId,
-
-    pickup_request_id:
-      insertResult.insertId,
-
-    pickup_date:
-  actualPickupDate,
-
-pickup_time:
-  actualPickupTime,
-
-    pickup_location,
-
-    expected_package_count:
-      packageCount,
-
-    status:
-      "CREATED",
-
-    delhivery_response:
-      delhiveryPickup.response,
-
-  };
-};
-
-
-
 
 const createDelhiveryShipment = async (
   shipments
@@ -1204,10 +710,12 @@ const buildDelhiveryShipment = ({
      weight: Math.ceil(
   Number(totalWeight) * 1000
 ),
-   pickup_location:
-  String(
-    warehouse.warehouse_name || ""
-  ).trim(),
+    pickup_location: {
+
+      name:
+        warehouse.warehouse_name,
+
+    },
 
     return_name:
       order.return_name || "",
@@ -2152,129 +1660,17 @@ const confirmShipment = async ({
         0
       );
 
-   await commitTransaction(
-  connection
-);
-
-
-
-
-// ======================================================
-// DELHIVERY PICKUP REQUEST
-// ======================================================
-
-let pickupRequest = null;
-
-try {
-
-  const expectedPackageCount =
-    getTotalPackageCount(
-      packages
+    await commitTransaction(
+      connection
     );
 
+    console.log(
+      "=============================================="
+    );
 
-  pickupRequest =
-    await ensurePickupRequest({
-
-      user_id,
-
-      warehouse_id:
-        warehouse.id,
-
-      warehouse_name:
-        warehouse.warehouse_name,
-
-      expected_package_count:
-        expectedPackageCount,
-
-    });
-
-
-  console.log(
-    "✅ PICKUP REQUEST READY"
-  );
-
-  console.log(
-    "Pickup ID:",
-    pickupRequest.pickup_id
-  );
-
-
-} catch (pickupError) {
-
-  console.error(
-    "❌ PICKUP REQUEST FAILED"
-  );
-
-  console.error(
-    pickupError.message
-  );
-
-
-  // IMPORTANT:
-  // Shipment DB transaction is already committed.
-  // Do NOT rollback shipment here.
-
-  pickupRequest = {
-
-    success: false,
-
-    pickup_id:
-      null,
-
-    pickup_request_id:
-      null,
-
-    error:
-      pickupError.message,
-
-  };
-
-}
-
-
-console.log(
-  "=============================================="
-);
-
-console.log(
-  "✅ SHIPMENT MANIFESTED SUCCESSFULLY"
-);
-
-console.log(
-  "DB ID:",
-  lockedOrder.id
-);
-
-console.log(
-  "Order ID:",
-  lockedOrder.order_id
-);
-
-console.log(
-  "AWB:",
-  awb
-);
-
-console.log(
-  "Manifest ID:",
-  manifest_id
-);
-
-console.log(
-  "Pickup ID:",
-  pickupRequest?.pickup_id ||
-  "NOT CREATED"
-);
-
-console.log(
-  "Remaining Wallet:",
-  remainingBalance
-);
-
-console.log(
-  "=============================================="
-);
+    console.log(
+      "✅ SHIPMENT MANIFESTED SUCCESSFULLY"
+    );
 
     console.log(
       "DB ID:",
@@ -2307,71 +1703,51 @@ console.log(
 
     return {
 
-  success:
-    true,
+      success:
+        true,
 
-  message:
-    "Shipment manifested successfully",
+      message:
+        "Shipment manifested successfully",
 
-  id:
-    lockedOrder.id,
+      id:
+        lockedOrder.id,
 
-  order_id:
-    lockedOrder.order_id,
+      order_id:
+        lockedOrder.order_id,
 
-  awb:
-    String(
-      awb
-    ).trim(),
+      awb:
+        String(
+          awb
+        ).trim(),
 
-  manifest_id,
+      manifest_id,
 
-  shipping_charge:
-    charge,
+      shipping_charge:
+        charge,
 
-  zone,
+      zone,
 
-  distance_km:
-    Number(
-      distance_km
-    ) || 0,
+      distance_km:
+        Number(
+          distance_km
+        ) || 0,
 
-  service_type:
-    normalizedServiceType,
+      service_type:
+        normalizedServiceType,
 
-  warehouse_id:
-    warehouse.id,
+      warehouse_id:
+        warehouse.id,
 
-  warehouse_name:
-    warehouse.warehouse_name,
+      warehouse_name:
+        warehouse.warehouse_name,
 
-  wallet_balance:
-    remainingBalance,
+      wallet_balance:
+        remainingBalance,
 
-  // ----------------------------------------------
-  // PICKUP REQUEST
-  // ----------------------------------------------
+      delhivery_response:
+        delhiveryResponse,
 
-  pickup_id:
-    pickupRequest?.pickup_id ||
-    null,
-
-  pickup_request_id:
-    pickupRequest?.pickup_request_id ||
-    null,
-
-  pickup_request:
-    pickupRequest,
-
-  // ----------------------------------------------
-  // DELHIVERY RESPONSE
-  // ----------------------------------------------
-
-  delhivery_response:
-    delhiveryResponse,
-
-};
-  
+    };
 
   } catch (error) {
 
@@ -3265,298 +2641,44 @@ await txQuery(
         0
       );
 
-await commitTransaction(
-  connection
-);
-
-console.log("");
-console.log("================================================");
-console.log("🔥 BULK PICKUP CODE REACHED");
-console.log("🔥 Shipment Results:", shipmentResults.length);
-console.log("🔥 User ID:", user_id);
-console.log("================================================");
-console.log("");
-
-
-// ======================================================
-// DELHIVERY PICKUP REQUESTS FOR BULK MANIFEST
-// ======================================================
-
-const pickupRequests = [];
-
-
-// ------------------------------------------------------
-// GROUP ORDERS BY WAREHOUSE
-// ------------------------------------------------------
-
-const warehousePickupGroups =
-  new Map();
-
-
-for (
-  const shipment
-  of shipmentResults
-) {
-
-  const warehouseId =
-    Number(
-      shipment.warehouse.id
+    await commitTransaction(
+      connection
     );
 
-  if (!warehouseId) {
-    continue;
-  }
-
-
-  if (
-    !warehousePickupGroups.has(
-      warehouseId
-    )
-  ) {
-
-    warehousePickupGroups.set(
-      warehouseId,
-      {
-        warehouse_id:
-          warehouseId,
-
-        warehouse_name:
-          shipment.warehouse
-            .warehouse_name,
-
-        expected_package_count:
-          0,
-
-        order_ids:
-          [],
-      }
-    );
-
-  }
-
-
-  const group =
-    warehousePickupGroups.get(
-      warehouseId
-    );
-
-
-  const packageCount =
-    getTotalPackageCount(
-      shipment.packages
-    );
-
-
-  group.expected_package_count +=
-    packageCount;
-
-
-  group.order_ids.push(
-    shipment.order.order_id
-  );
-
-}
-
-
-// ------------------------------------------------------
-// CREATE / REUSE PICKUP REQUEST
-// FOR EACH WAREHOUSE
-// ------------------------------------------------------
-
-for (
-  const group
-  of warehousePickupGroups.values()
-) {
-
-  try {
-
-    const pickupRequest =
-      await ensurePickupRequest({
-
-        user_id,
-
-        warehouse_id:
-          group.warehouse_id,
-
-        warehouse_name:
-          group.warehouse_name,
-
-        expected_package_count:
-          group.expected_package_count,
-
-      });
-
-
-    pickupRequests.push({
+    return {
 
       success:
         true,
 
-      warehouse_id:
-        group.warehouse_id,
+      message:
+        "Selected orders manifested successfully",
 
-      warehouse_name:
-        group.warehouse_name,
+      shipped_orders:
+        shippedOrders.map(
+          (item) =>
+            item.order_id
+        ),
 
-      order_ids:
-        group.order_ids,
+      total_orders:
+        shippedOrders.length,
 
-      expected_package_count:
-        group.expected_package_count,
+      total_charge:
+        Number(
+          totalCharge.toFixed(2)
+        ),
 
-      pickup_id:
-        pickupRequest.pickup_id,
+      wallet_balance:
+        Number(
+          remainingBalance.toFixed(2)
+        ),
 
-      pickup_request_id:
-        pickupRequest.pickup_request_id,
+      orders:
+        shippedOrders,
 
-      pickup_date:
-        pickupRequest.pickup_date ||
-        null,
+      delhivery_response:
+        delhiveryResponse,
 
-      pickup_time:
-        pickupRequest.pickup_time ||
-        null,
-
-      reused:
-        pickupRequest.reused ||
-        false,
-
-      status:
-        pickupRequest.status ||
-        "CREATED",
-
-    });
-
-
-    console.log(
-      "=============================================="
-    );
-
-    console.log(
-      "✅ BULK PICKUP REQUEST READY"
-    );
-
-    console.log(
-      "Warehouse:",
-      group.warehouse_name
-    );
-
-    console.log(
-      "Warehouse ID:",
-      group.warehouse_id
-    );
-
-    console.log(
-      "Package Count:",
-      group.expected_package_count
-    );
-
-    console.log(
-      "Pickup ID:",
-      pickupRequest.pickup_id
-    );
-
-    console.log(
-      "=============================================="
-    );
-
-
-  } catch (pickupError) {
-
-    console.error(
-      "❌ BULK PICKUP REQUEST FAILED"
-    );
-
-    console.error(
-      "Warehouse:",
-      group.warehouse_name
-    );
-
-    console.error(
-      "Error:",
-      pickupError.message
-    );
-
-
-    pickupRequests.push({
-
-      success:
-        false,
-
-      warehouse_id:
-        group.warehouse_id,
-
-      warehouse_name:
-        group.warehouse_name,
-
-      order_ids:
-        group.order_ids,
-
-      expected_package_count:
-        group.expected_package_count,
-
-      pickup_id:
-        null,
-
-      pickup_request_id:
-        null,
-
-      error:
-        pickupError.message,
-
-    });
-
-  }
-
-}
-
-
-return {
-
-  success:
-    true,
-
-  message:
-    "Selected orders manifested successfully",
-
-  shipped_orders:
-    shippedOrders.map(
-      (item) =>
-        item.order_id
-    ),
-
-  total_orders:
-    shippedOrders.length,
-
-  total_charge:
-    Number(
-      totalCharge.toFixed(2)
-    ),
-
-  wallet_balance:
-    Number(
-      remainingBalance.toFixed(2)
-    ),
-
-  orders:
-    shippedOrders,
-
-  // ----------------------------------------------
-  // PICKUP REQUESTS
-  // ----------------------------------------------
-
-  pickup_requests:
-    pickupRequests,
-
-  // ----------------------------------------------
-  // DELHIVERY RESPONSE
-  // ----------------------------------------------
-
-  delhivery_response:
-    delhiveryResponse,
-
-};
+    };
 
   } catch (error) {
 
