@@ -1375,8 +1375,8 @@ const [rateLoading, setRateLoading] = useState(false);
         user_id: user.id,
         pickup_pincode: formData.pickup_pincode,
         delivery_pincode: formData.pincode,
-        weight: chargeableWeight,
-        payment_type: formData.payment_type,
+        weight: Math.round(chargeableWeight * 1000),       
+         payment_type: formData.payment_type,
         product_value: totalInvoiceValue,
       });
 
