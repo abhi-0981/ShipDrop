@@ -5,6 +5,10 @@ const {
   calculateShippingRate,
 } = require("./rateService");
 
+const {
+  createDelhiveryPickupRequest,
+} = require("./delhiveryPickupService");
+
 const query = (
   sql,
   params = []
@@ -110,6 +114,365 @@ const DELHIVERY_API_TOKEN =
 const DELHIVERY_API_BASE_URL =
   process.env.DELHIVERY_API_BASE_URL ||
   "https://track.delhivery.com";
+
+
+
+  const DELHIVERY_PICKUP_TIME =
+  process.env.DELHIVERY_PICKUP_TIME ||
+  "11:00:00";
+
+
+// ======================================================
+// DELHIVERY PICKUP HELPERS
+// ======================================================
+
+const getIndiaDate = () => {
+  return new Intl.DateTimeFormat(
+    "en-CA",
+    {
+      timeZone: "Asia/Kolkata",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }
+  ).format(new Date());
+};
+
+
+const getTotalPackageCount = (
+  packages = []
+) => {
+  return packages.reduce(
+    (
+      total,
+      packageData
+    ) => {
+
+      const count =
+        Number(
+          packageData.package_count
+        ) || 1;
+
+      return total + count;
+
+    },
+    0
+  );
+};
+
+
+const ensurePickupRequest = async ({
+  user_id,
+  warehouse_id,
+  warehouse_name,
+  expected_package_count,
+}) => {
+
+  const pickup_date =
+    getIndiaDate();
+
+  const pickup_time =
+    DELHIVERY_PICKUP_TIME;
+
+  const pickup_location =
+    String(
+      warehouse_name || ""
+    ).trim();
+
+  if (!user_id) {
+    throw new Error(
+      "User ID is required for pickup request"
+    );
+  }
+
+  if (!warehouse_id) {
+    throw new Error(
+      "Warehouse ID is required for pickup request"
+    );
+  }
+
+  if (!pickup_location) {
+    throw new Error(
+      "Warehouse name is required for pickup request"
+    );
+  }
+
+  const packageCount =
+    Number(
+      expected_package_count
+    ) || 0;
+
+  if (packageCount <= 0) {
+    throw new Error(
+      "Expected package count must be greater than 0"
+    );
+  }
+
+  console.log(
+    "================================================"
+  );
+
+  console.log(
+    "CHECKING DELHIVERY PICKUP REQUEST"
+  );
+
+  console.log(
+    "User ID:",
+    user_id
+  );
+
+  console.log(
+    "Warehouse ID:",
+    warehouse_id
+  );
+
+  console.log(
+    "Pickup Location:",
+    pickup_location
+  );
+
+  console.log(
+    "Pickup Date:",
+    pickup_date
+  );
+
+  console.log(
+    "Pickup Time:",
+    pickup_time
+  );
+
+  console.log(
+    "Expected Package Count:",
+    packageCount
+  );
+
+  console.log(
+    "================================================"
+  );
+
+
+  // ----------------------------------------------------
+  // CHECK EXISTING PICKUP REQUEST
+  // ----------------------------------------------------
+
+  const existingRows =
+    await query(
+      `
+        SELECT
+          id,
+          user_id,
+          warehouse_id,
+          pickup_id,
+          pickup_date,
+          pickup_time,
+          pickup_location,
+          expected_package_count,
+          status
+        FROM pickup_requests
+        WHERE
+          user_id = ?
+          AND warehouse_id = ?
+          AND pickup_date = ?
+        ORDER BY id DESC
+        LIMIT 1
+      `,
+      [
+        user_id,
+        warehouse_id,
+        pickup_date,
+      ]
+    );
+
+
+  if (
+    existingRows.length > 0
+  ) {
+
+    const existingPickup =
+      existingRows[0];
+
+    console.log(
+      "✅ EXISTING PICKUP REQUEST FOUND"
+    );
+
+    console.log(
+      "Pickup ID:",
+      existingPickup.pickup_id
+    );
+
+    return {
+      success: true,
+
+      reused: true,
+
+      pickup_id:
+        existingPickup.pickup_id,
+
+      pickup_request_id:
+        existingPickup.id,
+
+      pickup_date:
+        existingPickup.pickup_date,
+
+      pickup_time:
+        existingPickup.pickup_time,
+
+      pickup_location:
+        existingPickup.pickup_location,
+
+      expected_package_count:
+        existingPickup.expected_package_count,
+
+      status:
+        existingPickup.status,
+
+    };
+  }
+
+
+  // ----------------------------------------------------
+  // CREATE NEW PICKUP REQUEST
+  // ----------------------------------------------------
+
+  console.log(
+    "🆕 NO EXISTING PICKUP REQUEST FOUND"
+  );
+
+  console.log(
+    "Creating new Delhivery pickup request..."
+  );
+
+
+  const delhiveryPickup =
+    await createDelhiveryPickupRequest({
+      pickup_time,
+
+      pickup_date,
+
+      pickup_location,
+
+      expected_package_count:
+        packageCount,
+    });
+
+
+  const pickupId =
+    String(
+      delhiveryPickup.pickup_id ||
+      ""
+    ).trim();
+
+
+  if (!pickupId) {
+    throw new Error(
+      "Delhivery pickup request created but pickup_id was not returned"
+    );
+  }
+
+
+  // ----------------------------------------------------
+  // SAVE PICKUP REQUEST IN DATABASE
+  // ----------------------------------------------------
+
+  const insertResult =
+    await query(
+      `
+        INSERT INTO pickup_requests
+        (
+          user_id,
+          warehouse_id,
+          pickup_id,
+          pickup_date,
+          pickup_time,
+          pickup_location,
+          expected_package_count,
+          status
+        )
+        VALUES
+        (
+          ?,
+          ?,
+          ?,
+          ?,
+          ?,
+          ?,
+          ?,
+          'CREATED'
+        )
+      `,
+      [
+        user_id,
+
+        warehouse_id,
+
+        pickupId,
+
+        pickup_date,
+
+        pickup_time,
+
+        pickup_location,
+
+        packageCount,
+      ]
+    );
+
+
+  console.log(
+    "================================================"
+  );
+
+  console.log(
+    "✅ DELHIVERY PICKUP REQUEST CREATED"
+  );
+
+  console.log(
+    "Pickup ID:",
+    pickupId
+  );
+
+  console.log(
+    "DB Pickup Request ID:",
+    insertResult.insertId
+  );
+
+  console.log(
+    "================================================"
+  );
+
+
+  return {
+
+    success: true,
+
+    reused: false,
+
+    pickup_id:
+      pickupId,
+
+    pickup_request_id:
+      insertResult.insertId,
+
+    pickup_date,
+
+    pickup_time,
+
+    pickup_location,
+
+    expected_package_count:
+      packageCount,
+
+    status:
+      "CREATED",
+
+    delhivery_response:
+      delhiveryPickup.response,
+
+  };
+};
+
+
+
 
 const createDelhiveryShipment = async (
   shipments
@@ -1660,17 +2023,127 @@ const confirmShipment = async ({
         0
       );
 
-    await commitTransaction(
-      connection
+   await commitTransaction(
+  connection
+);
+
+
+// ======================================================
+// DELHIVERY PICKUP REQUEST
+// ======================================================
+
+let pickupRequest = null;
+
+try {
+
+  const expectedPackageCount =
+    getTotalPackageCount(
+      packages
     );
 
-    console.log(
-      "=============================================="
-    );
 
-    console.log(
-      "✅ SHIPMENT MANIFESTED SUCCESSFULLY"
-    );
+  pickupRequest =
+    await ensurePickupRequest({
+
+      user_id,
+
+      warehouse_id:
+        warehouse.id,
+
+      warehouse_name:
+        warehouse.warehouse_name,
+
+      expected_package_count:
+        expectedPackageCount,
+
+    });
+
+
+  console.log(
+    "✅ PICKUP REQUEST READY"
+  );
+
+  console.log(
+    "Pickup ID:",
+    pickupRequest.pickup_id
+  );
+
+
+} catch (pickupError) {
+
+  console.error(
+    "❌ PICKUP REQUEST FAILED"
+  );
+
+  console.error(
+    pickupError.message
+  );
+
+
+  // IMPORTANT:
+  // Shipment DB transaction is already committed.
+  // Do NOT rollback shipment here.
+
+  pickupRequest = {
+
+    success: false,
+
+    pickup_id:
+      null,
+
+    pickup_request_id:
+      null,
+
+    error:
+      pickupError.message,
+
+  };
+
+}
+
+
+console.log(
+  "=============================================="
+);
+
+console.log(
+  "✅ SHIPMENT MANIFESTED SUCCESSFULLY"
+);
+
+console.log(
+  "DB ID:",
+  lockedOrder.id
+);
+
+console.log(
+  "Order ID:",
+  lockedOrder.order_id
+);
+
+console.log(
+  "AWB:",
+  awb
+);
+
+console.log(
+  "Manifest ID:",
+  manifest_id
+);
+
+console.log(
+  "Pickup ID:",
+  pickupRequest?.pickup_id ||
+  "NOT CREATED"
+);
+
+console.log(
+  "Remaining Wallet:",
+  remainingBalance
+);
+
+console.log(
+  "=============================================="
+);
 
     console.log(
       "DB ID:",
@@ -1703,51 +2176,71 @@ const confirmShipment = async ({
 
     return {
 
-      success:
-        true,
+  success:
+    true,
 
-      message:
-        "Shipment manifested successfully",
+  message:
+    "Shipment manifested successfully",
 
-      id:
-        lockedOrder.id,
+  id:
+    lockedOrder.id,
 
-      order_id:
-        lockedOrder.order_id,
+  order_id:
+    lockedOrder.order_id,
 
-      awb:
-        String(
-          awb
-        ).trim(),
+  awb:
+    String(
+      awb
+    ).trim(),
 
-      manifest_id,
+  manifest_id,
 
-      shipping_charge:
-        charge,
+  shipping_charge:
+    charge,
 
-      zone,
+  zone,
 
-      distance_km:
-        Number(
-          distance_km
-        ) || 0,
+  distance_km:
+    Number(
+      distance_km
+    ) || 0,
 
-      service_type:
-        normalizedServiceType,
+  service_type:
+    normalizedServiceType,
 
-      warehouse_id:
-        warehouse.id,
+  warehouse_id:
+    warehouse.id,
 
-      warehouse_name:
-        warehouse.warehouse_name,
+  warehouse_name:
+    warehouse.warehouse_name,
 
-      wallet_balance:
-        remainingBalance,
+  wallet_balance:
+    remainingBalance,
 
-      delhivery_response:
-        delhiveryResponse,
+  // ----------------------------------------------
+  // PICKUP REQUEST
+  // ----------------------------------------------
 
-    };
+  pickup_id:
+    pickupRequest?.pickup_id ||
+    null,
+
+  pickup_request_id:
+    pickupRequest?.pickup_request_id ||
+    null,
+
+  pickup_request:
+    pickupRequest,
+
+  // ----------------------------------------------
+  // DELHIVERY RESPONSE
+  // ----------------------------------------------
+
+  delhivery_response:
+    delhiveryResponse,
+
+};
+  
 
   } catch (error) {
 
@@ -2641,44 +3134,290 @@ await txQuery(
         0
       );
 
-    await commitTransaction(
-      connection
+await commitTransaction(
+  connection
+);
+
+
+// ======================================================
+// DELHIVERY PICKUP REQUESTS FOR BULK MANIFEST
+// ======================================================
+
+const pickupRequests = [];
+
+
+// ------------------------------------------------------
+// GROUP ORDERS BY WAREHOUSE
+// ------------------------------------------------------
+
+const warehousePickupGroups =
+  new Map();
+
+
+for (
+  const shipment
+  of shipmentResults
+) {
+
+  const warehouseId =
+    Number(
+      shipment.warehouse.id
     );
 
-    return {
+  if (!warehouseId) {
+    continue;
+  }
+
+
+  if (
+    !warehousePickupGroups.has(
+      warehouseId
+    )
+  ) {
+
+    warehousePickupGroups.set(
+      warehouseId,
+      {
+        warehouse_id:
+          warehouseId,
+
+        warehouse_name:
+          shipment.warehouse
+            .warehouse_name,
+
+        expected_package_count:
+          0,
+
+        order_ids:
+          [],
+      }
+    );
+
+  }
+
+
+  const group =
+    warehousePickupGroups.get(
+      warehouseId
+    );
+
+
+  const packageCount =
+    getTotalPackageCount(
+      shipment.packages
+    );
+
+
+  group.expected_package_count +=
+    packageCount;
+
+
+  group.order_ids.push(
+    shipment.order.order_id
+  );
+
+}
+
+
+// ------------------------------------------------------
+// CREATE / REUSE PICKUP REQUEST
+// FOR EACH WAREHOUSE
+// ------------------------------------------------------
+
+for (
+  const group
+  of warehousePickupGroups.values()
+) {
+
+  try {
+
+    const pickupRequest =
+      await ensurePickupRequest({
+
+        user_id,
+
+        warehouse_id:
+          group.warehouse_id,
+
+        warehouse_name:
+          group.warehouse_name,
+
+        expected_package_count:
+          group.expected_package_count,
+
+      });
+
+
+    pickupRequests.push({
 
       success:
         true,
 
-      message:
-        "Selected orders manifested successfully",
+      warehouse_id:
+        group.warehouse_id,
 
-      shipped_orders:
-        shippedOrders.map(
-          (item) =>
-            item.order_id
-        ),
+      warehouse_name:
+        group.warehouse_name,
 
-      total_orders:
-        shippedOrders.length,
+      order_ids:
+        group.order_ids,
 
-      total_charge:
-        Number(
-          totalCharge.toFixed(2)
-        ),
+      expected_package_count:
+        group.expected_package_count,
 
-      wallet_balance:
-        Number(
-          remainingBalance.toFixed(2)
-        ),
+      pickup_id:
+        pickupRequest.pickup_id,
 
-      orders:
-        shippedOrders,
+      pickup_request_id:
+        pickupRequest.pickup_request_id,
 
-      delhivery_response:
-        delhiveryResponse,
+      pickup_date:
+        pickupRequest.pickup_date ||
+        null,
 
-    };
+      pickup_time:
+        pickupRequest.pickup_time ||
+        null,
+
+      reused:
+        pickupRequest.reused ||
+        false,
+
+      status:
+        pickupRequest.status ||
+        "CREATED",
+
+    });
+
+
+    console.log(
+      "=============================================="
+    );
+
+    console.log(
+      "✅ BULK PICKUP REQUEST READY"
+    );
+
+    console.log(
+      "Warehouse:",
+      group.warehouse_name
+    );
+
+    console.log(
+      "Warehouse ID:",
+      group.warehouse_id
+    );
+
+    console.log(
+      "Package Count:",
+      group.expected_package_count
+    );
+
+    console.log(
+      "Pickup ID:",
+      pickupRequest.pickup_id
+    );
+
+    console.log(
+      "=============================================="
+    );
+
+
+  } catch (pickupError) {
+
+    console.error(
+      "❌ BULK PICKUP REQUEST FAILED"
+    );
+
+    console.error(
+      "Warehouse:",
+      group.warehouse_name
+    );
+
+    console.error(
+      "Error:",
+      pickupError.message
+    );
+
+
+    pickupRequests.push({
+
+      success:
+        false,
+
+      warehouse_id:
+        group.warehouse_id,
+
+      warehouse_name:
+        group.warehouse_name,
+
+      order_ids:
+        group.order_ids,
+
+      expected_package_count:
+        group.expected_package_count,
+
+      pickup_id:
+        null,
+
+      pickup_request_id:
+        null,
+
+      error:
+        pickupError.message,
+
+    });
+
+  }
+
+}
+
+
+return {
+
+  success:
+    true,
+
+  message:
+    "Selected orders manifested successfully",
+
+  shipped_orders:
+    shippedOrders.map(
+      (item) =>
+        item.order_id
+    ),
+
+  total_orders:
+    shippedOrders.length,
+
+  total_charge:
+    Number(
+      totalCharge.toFixed(2)
+    ),
+
+  wallet_balance:
+    Number(
+      remainingBalance.toFixed(2)
+    ),
+
+  orders:
+    shippedOrders,
+
+  // ----------------------------------------------
+  // PICKUP REQUESTS
+  // ----------------------------------------------
+
+  pickup_requests:
+    pickupRequests,
+
+  // ----------------------------------------------
+  // DELHIVERY RESPONSE
+  // ----------------------------------------------
+
+  delhivery_response:
+    delhiveryResponse,
+
+};
 
   } catch (error) {
 
