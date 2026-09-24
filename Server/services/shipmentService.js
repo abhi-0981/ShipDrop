@@ -2027,6 +2027,14 @@ const confirmShipment = async ({
   connection
 );
 
+console.log("");
+console.log("================================================");
+console.log("🔥 BULK PICKUP CODE REACHED");
+console.log("🔥 Shipment Results:", shipmentResults.length);
+console.log("🔥 User ID:", user_id);
+console.log("================================================");
+console.log("");
+
 
 // ======================================================
 // DELHIVERY PICKUP REQUEST
@@ -3137,6 +3145,14 @@ await txQuery(
 await commitTransaction(
   connection
 );
+
+console.log("");
+console.log("================================================");
+console.log("🔥 BULK PICKUP CODE REACHED");
+console.log("🔥 Shipment Results:", shipmentResults.length);
+console.log("🔥 User ID:", user_id);
+console.log("================================================");
+console.log("");
 
 
 // ======================================================
