@@ -7,6 +7,9 @@ const DELHIVERY_API_BASE_URL =
   process.env.DELHIVERY_API_BASE_URL ||
   "https://track.delhivery.com";
 
+/**
+ * Create Pickup Request on Delhivery
+ */
 const createDelhiveryPickupRequest = async ({
   pickup_time,
   pickup_date,
@@ -42,85 +45,81 @@ const createDelhiveryPickupRequest = async ({
     );
   }
 
+  const packageCount =
+    Number(expected_package_count);
+
   if (
-    !Number.isInteger(
-      Number(expected_package_count)
-    ) ||
-    Number(expected_package_count) <= 0
+    !Number.isInteger(packageCount) ||
+    packageCount <= 0
   ) {
     throw new Error(
       "Expected package count must be greater than 0"
     );
   }
 
-
   // =====================================================
-  // DELHIVERY PICKUP API URL
+  // DELHIVERY URL
   // =====================================================
 
   const url =
-    `${DELHIVERY_API_BASE_URL}` +
-    "/fm/request/new/";
-
+    `${DELHIVERY_API_BASE_URL}/fm/request/new/`;
 
   // =====================================================
   // REQUEST PAYLOAD
   // =====================================================
 
   const payload = {
-
     pickup_time,
-
     pickup_date,
-
     pickup_location,
-
     expected_package_count:
-      Number(expected_package_count),
-
+      packageCount,
   };
 
-
   // =====================================================
-  // PICKUP REQUEST LOG
+  // REQUEST LOG
   // =====================================================
 
-  console.error(
+  console.log("");
+
+  console.log(
     "================================================"
   );
 
-  console.error(
+  console.log(
     "🚚 DELHIVERY PICKUP REQUEST"
   );
 
-  console.error(
+  console.log(
+    "================================================"
+  );
+
+  console.log(
     "URL:",
     url
   );
 
-  console.error(
+  console.log(
     "Pickup Time:",
     pickup_time
   );
 
-  console.error(
+  console.log(
     "Pickup Date:",
     pickup_date
   );
 
-  console.error(
+  console.log(
     "Pickup Location:",
     pickup_location
   );
 
-  console.error(
+  console.log(
     "Expected Package Count:",
-    Number(
-      expected_package_count
-    )
+    packageCount
   );
 
-  console.error(
+  console.log(
     "Payload:",
     JSON.stringify(
       payload,
@@ -129,13 +128,12 @@ const createDelhiveryPickupRequest = async ({
     )
   );
 
-  console.error(
+  console.log(
     "================================================"
   );
 
-
   // =====================================================
-  // CALL DELHIVERY
+  // CALL DELHIVERY API
   // =====================================================
 
   try {
@@ -143,12 +141,9 @@ const createDelhiveryPickupRequest = async ({
     const response =
       await axios.post(
         url,
-
         payload,
-
         {
           headers: {
-
             Authorization:
               `Token ${DELHIVERY_API_TOKEN}`,
 
@@ -157,33 +152,36 @@ const createDelhiveryPickupRequest = async ({
 
             Accept:
               "application/json",
-
           },
 
-          timeout:
-            30000,
+          timeout: 30000,
         }
       );
 
-
     // ===================================================
-    // SUCCESS RESPONSE
+    // DELHIVERY RESPONSE LOG
     // ===================================================
 
-    console.error(
+    console.log("");
+
+    console.log(
       "================================================"
     );
 
-    console.error(
+    console.log(
       "✅ DELHIVERY PICKUP API RESPONSE"
     );
 
-    console.error(
+    console.log(
+      "================================================"
+    );
+
+    console.log(
       "HTTP STATUS:",
       response.status
     );
 
-    console.error(
+    console.log(
       "RESPONSE:",
       JSON.stringify(
         response.data,
@@ -192,27 +190,22 @@ const createDelhiveryPickupRequest = async ({
       )
     );
 
-    console.error(
+    console.log(
       "================================================"
     );
 
+    // ===================================================
+    // RESPONSE DATA
+    // ===================================================
 
     const data =
       response.data;
 
-
-    // ===================================================
-    // EMPTY RESPONSE CHECK
-    // ===================================================
-
     if (!data) {
-
       throw new Error(
         "Empty response received from Delhivery Pickup API"
       );
-
     }
-
 
     // ===================================================
     // PICKUP ID
@@ -220,19 +213,17 @@ const createDelhiveryPickupRequest = async ({
 
     const pickupId =
       String(
-        data.pickup_id ||
-        ""
+        data.pickup_id ?? ""
       ).trim();
-
 
     if (!pickupId) {
 
       console.error(
-        "⚠️ DELHIVERY RESPONSE DID NOT CONTAIN pickup_id"
+        "⚠️ pickup_id NOT FOUND"
       );
 
       console.error(
-        "FULL RESPONSE:",
+        "FULL DELHIVERY RESPONSE:",
         JSON.stringify(
           data,
           null,
@@ -243,51 +234,118 @@ const createDelhiveryPickupRequest = async ({
       throw new Error(
         "Delhivery Pickup API succeeded but pickup_id was not returned"
       );
-
     }
 
+    // ===================================================
+    // ACTUAL DELHIVERY VALUES
+    // ===================================================
+
+    const actualPickupDate =
+      data.pickup_date ||
+      pickup_date;
+
+    const actualPickupTime =
+      data.pickup_time ||
+      pickup_time;
+
+    const actualPickupLocation =
+      data.pickup_location_name ||
+      pickup_location;
+
+    const actualPackageCount =
+      Number(
+        data.expected_package_count ??
+        packageCount
+      );
 
     // ===================================================
-    // SUCCESS
+    // SUCCESS LOG
     // ===================================================
 
-    console.error(
+    console.log("");
+
+    console.log(
       "================================================"
     );
 
-    console.error(
-      "✅ DELHIVERY PICKUP ID GENERATED"
+    console.log(
+      "✅ DELHIVERY PICKUP CREATED"
     );
 
-    console.error(
+    console.log(
+      "================================================"
+    );
+
+    console.log(
       "Pickup ID:",
       pickupId
     );
 
-    console.error(
+    console.log(
+      "Pickup Location:",
+      actualPickupLocation
+    );
+
+    console.log(
+      "Pickup Date:",
+      actualPickupDate
+    );
+
+    console.log(
+      "Pickup Time:",
+      actualPickupTime
+    );
+
+    console.log(
+      "Expected Packages:",
+      actualPackageCount
+    );
+
+    console.log(
       "================================================"
     );
 
+    // ===================================================
+    // RETURN DATA
+    // ===================================================
 
     return {
-
-      success:
-        true,
+      success: true,
 
       pickup_id:
         pickupId,
 
+      pickup_date:
+        actualPickupDate,
+
+      pickup_time:
+        actualPickupTime,
+
+      pickup_location_name:
+        actualPickupLocation,
+
+      expected_package_count:
+        actualPackageCount,
+
+      client_name:
+        data.client_name ||
+        null,
+
+      incoming_center_name:
+        data.incoming_center_name ||
+        null,
+
       response:
         data,
-
     };
 
   } catch (error) {
 
+    // ===================================================
+    // ERROR LOG
+    // ===================================================
 
-    // ===================================================
-    // DETAILED ERROR
-    // ===================================================
+    console.error("");
 
     console.error(
       "================================================"
@@ -295,6 +353,10 @@ const createDelhiveryPickupRequest = async ({
 
     console.error(
       "❌ DELHIVERY PICKUP API ERROR"
+    );
+
+    console.error(
+      "================================================"
     );
 
     console.error(
@@ -313,7 +375,6 @@ const createDelhiveryPickupRequest = async ({
       error.message
     );
 
-
     console.error(
       "DELHIVERY RESPONSE:",
       JSON.stringify(
@@ -324,7 +385,6 @@ const createDelhiveryPickupRequest = async ({
       )
     );
 
-
     console.error(
       "REQUEST PAYLOAD:",
       JSON.stringify(
@@ -334,34 +394,13 @@ const createDelhiveryPickupRequest = async ({
       )
     );
 
-
-    // Axios error details
-
-    if (
-      error.response
-    ) {
-
-      console.error(
-        "RESPONSE HEADERS:",
-        JSON.stringify(
-          error.response.headers ||
-          {},
-          null,
-          2
-        )
-      );
-
-    }
-
-
     console.error(
       "================================================"
     );
 
-
-    // =================================================
-    // RETURN ACTUAL DELHIVERY ERROR
-    // =================================================
+    // ===================================================
+    // DELHIVERY API ERROR
+    // ===================================================
 
     if (
       error.response?.data
@@ -369,7 +408,6 @@ const createDelhiveryPickupRequest = async ({
 
       const apiData =
         error.response.data;
-
 
       if (
         typeof apiData ===
@@ -379,35 +417,30 @@ const createDelhiveryPickupRequest = async ({
         throw new Error(
           apiData
         );
-
       }
-
 
       throw new Error(
         JSON.stringify(
           apiData
         )
       );
-
     }
 
-
-    // =================================================
+    // ===================================================
     // NORMAL ERROR
-    // =================================================
+    // ===================================================
 
     throw new Error(
       error.message ||
       "Unable to create Delhivery Pickup Request"
     );
-
   }
-
 };
 
+// =======================================================
+// EXPORT
+// =======================================================
 
 module.exports = {
-
   createDelhiveryPickupRequest,
-
 };

@@ -117,26 +117,114 @@ const DELHIVERY_API_BASE_URL =
 
 
 
-  const DELHIVERY_PICKUP_TIME =
-  process.env.DELHIVERY_PICKUP_TIME ||
-  "11:00:00";
+// ======================================================
+// DELHIVERY PICKUP TIME HELPER
+// ======================================================
 
+const getNextPickupSlot = () => {
+
+  const now = new Date();
+
+  const parts =
+    new Intl.DateTimeFormat(
+      "en-GB",
+      {
+        timeZone: "Asia/Kolkata",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false,
+      }
+    ).formatToParts(now);
+
+  const values = {};
+
+  for (const part of parts) {
+
+    if (
+      part.type !== "literal"
+    ) {
+      values[part.type] =
+        part.value;
+    }
+  }
+
+  let hour =
+    Number(values.hour);
+
+  const minute =
+    Number(values.minute);
+
+  let year =
+    Number(values.year);
+
+  let month =
+    Number(values.month);
+
+  let day =
+    Number(values.day);
+
+  // --------------------------------------------------
+  // Next hour pickup
+  // Example:
+  // 16:06 -> 17:00
+  // 16:50 -> 17:00
+  // --------------------------------------------------
+
+  hour += 1;
+
+  // --------------------------------------------------
+  // If current time is near midnight,
+  // schedule next day at 10:00 AM
+  // --------------------------------------------------
+
+  if (hour >= 24) {
+
+    hour = 10;
+
+    const nextDay =
+      new Date(
+        Date.UTC(
+          year,
+          month - 1,
+          day
+        )
+      );
+
+    nextDay.setUTCDate(
+      nextDay.getUTCDate() + 1
+    );
+
+    year =
+      nextDay.getUTCFullYear();
+
+    month =
+      nextDay.getUTCMonth() + 1;
+
+    day =
+      nextDay.getUTCDate();
+  }
+
+  const pickup_date =
+    `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+
+  const pickup_time =
+    `${String(hour).padStart(2, "0")}:00:00`;
+
+  return {
+    pickup_date,
+    pickup_time,
+  };
+};
 
 // ======================================================
 // DELHIVERY PICKUP HELPERS
 // ======================================================
 
-const getIndiaDate = () => {
-  return new Intl.DateTimeFormat(
-    "en-CA",
-    {
-      timeZone: "Asia/Kolkata",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    }
-  ).format(new Date());
-};
+
 
 
 const getTotalPackageCount = (
@@ -168,11 +256,10 @@ const ensurePickupRequest = async ({
   expected_package_count,
 }) => {
 
-  const pickup_date =
-    getIndiaDate();
-
-  const pickup_time =
-    DELHIVERY_PICKUP_TIME;
+ const {
+  pickup_date,
+  pickup_time,
+} = getNextPickupSlot();
 
   const pickup_location =
     String(
@@ -363,6 +450,15 @@ const ensurePickupRequest = async ({
     ).trim();
 
 
+    const actualPickupDate =
+  delhiveryPickup.pickup_date ||
+  pickup_date;
+
+const actualPickupTime =
+  delhiveryPickup.pickup_time ||
+  pickup_time;
+
+
   if (!pickupId) {
     throw new Error(
       "Delhivery pickup request created but pickup_id was not returned"
@@ -375,47 +471,47 @@ const ensurePickupRequest = async ({
   // ----------------------------------------------------
 
   const insertResult =
-    await query(
-      `
-        INSERT INTO pickup_requests
-        (
-          user_id,
-          warehouse_id,
-          pickup_id,
-          pickup_date,
-          pickup_time,
-          pickup_location,
-          expected_package_count,
-          status
-        )
-        VALUES
-        (
-          ?,
-          ?,
-          ?,
-          ?,
-          ?,
-          ?,
-          ?,
-          'CREATED'
-        )
-      `,
-      [
+  await query(
+    `
+      INSERT INTO pickup_requests
+      (
         user_id,
-
         warehouse_id,
-
-        pickupId,
-
+        pickup_id,
         pickup_date,
-
         pickup_time,
-
         pickup_location,
+        expected_package_count,
+        status
+      )
+      VALUES
+      (
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        'CREATED'
+      )
+    `,
+    [
+      user_id,
 
-        packageCount,
-      ]
-    );
+      warehouse_id,
+
+      pickupId,
+
+      actualPickupDate,
+
+      actualPickupTime,
+
+      pickup_location,
+
+      packageCount,
+    ]
+  );
 
 
   console.log(
@@ -453,9 +549,11 @@ const ensurePickupRequest = async ({
     pickup_request_id:
       insertResult.insertId,
 
-    pickup_date,
+    pickup_date:
+  actualPickupDate,
 
-    pickup_time,
+pickup_time:
+  actualPickupTime,
 
     pickup_location,
 
@@ -2027,13 +2125,7 @@ const confirmShipment = async ({
   connection
 );
 
-console.log("");
-console.log("================================================");
-console.log("🔥 BULK PICKUP CODE REACHED");
-console.log("🔥 Shipment Results:", shipmentResults.length);
-console.log("🔥 User ID:", user_id);
-console.log("================================================");
-console.log("");
+
 
 
 // ======================================================
