@@ -1204,12 +1204,10 @@ const buildDelhiveryShipment = ({
      weight: Math.ceil(
   Number(totalWeight) * 1000
 ),
-    pickup_location: {
-
-      name:
-        warehouse.warehouse_name,
-
-    },
+   pickup_location:
+  String(
+    warehouse.warehouse_name || ""
+  ).trim(),
 
     return_name:
       order.return_name || "",
