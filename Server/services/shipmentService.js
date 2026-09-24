@@ -707,11 +707,9 @@ const buildDelhiveryShipment = ({
         totalAmount.toFixed(2)
       ),
 
-       weight:
-      Number(
-        totalWeight
-      ),
-
+     weight: Math.ceil(
+  Number(totalWeight) * 1000
+),
     pickup_location: {
 
       name:
