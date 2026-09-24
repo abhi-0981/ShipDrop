@@ -261,6 +261,39 @@ const ensurePickupRequest = async ({
   pickup_time,
 } = getNextPickupSlot();
 
+
+console.log("");
+console.log("================================================");
+console.log("🔎 PICKUP SLOT DEBUG");
+console.log("================================================");
+
+console.log(
+  "Server UTC Time:",
+  new Date().toISOString()
+);
+
+console.log(
+  "Server India Time:",
+  new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Kolkata",
+    dateStyle: "full",
+    timeStyle: "long",
+    hour12: false,
+  }).format(new Date())
+);
+
+console.log(
+  "Calculated Pickup Date:",
+  pickup_date
+);
+
+console.log(
+  "Calculated Pickup Time:",
+  pickup_time
+);
+
+console.log("================================================");
+
   const pickup_location =
     String(
       warehouse_name || ""
