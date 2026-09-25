@@ -2752,6 +2752,9 @@ await txQuery(
 // DELHIVERY PICKUP REQUESTS - BULK SHIPMENT
 // ======================================================
 
+console.log("🔥🔥🔥 PICKUP BLOCK REACHED 🔥🔥🔥");
+console.log("Pickup groups will be created now...");
+
 const pickupResults = [];
 const pickupErrors = [];
 
@@ -2844,6 +2847,11 @@ for (
 ) {
 
   try {
+
+    console.log("🔥 CALLING getOrCreatePickupRequest");
+    console.log("Warehouse ID:", group.warehouse_id);
+    console.log("Package Count:", group.package_count);
+    console.log("Order IDs:", group.order_ids);
 
     const pickupRequest =
       await getOrCreatePickupRequest({
