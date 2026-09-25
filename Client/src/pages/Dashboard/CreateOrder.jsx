@@ -1022,7 +1022,7 @@ const [rateLoading, setRateLoading] = useState(false);
         if (!cancelled) {
           setPreviousCustomers([]);
           setShowPreviousCustomers(false);
-          console.log("Previous customer search error:", error);
+          console.log("Previous customer search errorrrrrrrr:", error);
         }
       } finally {
         if (!cancelled) setPreviousCustomersLoading(false);

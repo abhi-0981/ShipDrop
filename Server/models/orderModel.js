@@ -1181,76 +1181,86 @@ const deleteProcessingOrders = (userId, orderIds) => {
 // ======================================================
 // SEARCH PREVIOUS CUSTOMERS
 // ======================================================
-// Searches only the logged-in user's previous orders.
-// The latest record for each customer name + mobile
-// combination is returned.
-// ======================================================
 
-const searchPreviousCustomers = (
-  userId,
-  search,
-) => {
-  const term = `%${String(search || "").trim()}%`;
-
-  const query = `
-    SELECT
-      o.id,
-      o.consignee_name,
-      o.mobile,
-      o.alternate_mobile,
-      o.email,
-      o.gstin,
-      o.company_name,
-      o.floor_no,
-      o.landmark,
-      o.address_line1,
-      o.address_line2,
-      o.pincode,
-      o.city,
-      o.state,
-      o.country,
-      o.payment_type,
-      o.risk_type
-    FROM orders o
-    INNER JOIN (
-      SELECT
-        MAX(id) AS latest_id
-      FROM orders
-      WHERE
-        user_id = ?
-        AND TRIM(COALESCE(consignee_name, "")) <> ""
-        AND consignee_name LIKE ?
-      GROUP BY
-        LOWER(TRIM(consignee_name)),
-        mobile
-    ) latest
-      ON latest.latest_id = o.id
-    WHERE
-      o.user_id = ?
-    ORDER BY
-      o.id DESC
-    LIMIT 10
-  `;
-
+const searchPreviousCustomers = (userId, search) => {
   return new Promise((resolve, reject) => {
-    db.query(
-      query,
-      [
-        userId,
-        term,
-        userId,
-      ],
-      (error, rows) => {
-        if (error) {
-          return reject(error);
-        }
+    try {
+      const term = String(search || "").trim();
 
-        return resolve(rows || []);
-      },
-    );
+      if (!userId || term.length < 2) {
+        return resolve([]);
+      }
+
+      const query = `
+        SELECT
+          o.*
+        FROM orders o
+        WHERE
+          o.user_id = ?
+          AND TRIM(COALESCE(o.consignee_name, '')) <> ''
+          AND LOWER(o.consignee_name) LIKE LOWER(?)
+        ORDER BY o.id DESC
+        LIMIT 30
+      `;
+
+      db.query(
+        query,
+        [
+          Number(userId),
+          `%${term}%`,
+        ],
+        (error, rows) => {
+          if (error) {
+            console.error(
+              "PREVIOUS CUSTOMER SEARCH DB ERROR:",
+              error,
+            );
+
+            return reject(error);
+          }
+
+          const seen = new Set();
+          const customers = [];
+
+          for (const row of rows || []) {
+            const name = String(
+              row.consignee_name || "",
+            )
+              .trim()
+              .toLowerCase();
+
+            const mobile = String(
+              row.mobile || "",
+            ).trim();
+
+            const key = `${name}|${mobile}`;
+
+            if (seen.has(key)) {
+              continue;
+            }
+
+            seen.add(key);
+
+            customers.push(row);
+
+            if (customers.length >= 10) {
+              break;
+            }
+          }
+
+          return resolve(customers);
+        },
+      );
+    } catch (error) {
+      console.error(
+        "PREVIOUS CUSTOMER SEARCH ERROR:",
+        error,
+      );
+
+      reject(error);
+    }
   });
 };
-
 
 
 // ======================================================

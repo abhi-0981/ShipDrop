@@ -1469,30 +1469,30 @@ const deleteOrdersController =
 
   };
 
-  // ======================================================
+// ======================================================
 // SEARCH PREVIOUS CUSTOMERS
 // ======================================================
 
 const searchPreviousCustomersController = async (req, res) => {
   try {
-    const userId = Number(
-      req.query.user_id || req.body?.user_id,
-    );
+    const userId = Number(req.query?.user_id);
+    const search = String(req.query?.search || "").trim();
 
-    const search = String(
-      req.query.search || "",
-    ).trim();
+    console.log("==========================================");
+    console.log("PREVIOUS CUSTOMER SEARCH");
+    console.log("userId:", userId);
+    console.log("search:", search);
+    console.log("==========================================");
 
-    if (!userId) {
+    if (!Number.isInteger(userId) || userId <= 0) {
       return res.status(400).json({
         success: false,
-        message: "User ID is required",
+        message: "Valid user_id is required",
       });
     }
 
-    // Don't search for very short input.
     if (search.length < 2) {
-      return res.json({
+      return res.status(200).json({
         success: true,
         customers: [],
       });
@@ -1503,25 +1503,62 @@ const searchPreviousCustomersController = async (req, res) => {
       search,
     );
 
-    return res.json({
+    console.log(
+      "Previous customers found:",
+      customers?.length || 0,
+    );
+
+    return res.status(200).json({
       success: true,
       customers: Array.isArray(customers)
         ? customers
         : [],
     });
+
   } catch (error) {
+
     console.error(
-      "Search previous customers error:",
+      "==========================================",
+    );
+
+    console.error(
+      "PREVIOUS CUSTOMER SEARCH ERRORRRRR:",
       error,
+    );
+
+    console.error(
+      "MESSAGE:",
+      error?.message,
+    );
+
+    console.error(
+      "CODE:",
+      error?.code,
+    );
+
+    console.error(
+      "SQL MESSAGE:",
+      error?.sqlMessage,
+    );
+
+    console.error(
+      "==========================================",
     );
 
     return res.status(500).json({
       success: false,
-      message: "Unable to search previous customers",
+      message:
+        error?.message ||
+        "Unable to search previous customers",
+      code:
+        error?.code ||
+        null,
+      sqlMessage:
+        error?.sqlMessage ||
+        null,
     });
   }
 };
-
 
 // ======================================================
 // EXPORT
