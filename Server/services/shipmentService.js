@@ -439,6 +439,639 @@ const createDelhiveryShipment = async (
   }
 };
 
+const createDelhiveryPickupRequest = async ({
+  pickupDate,
+  pickupTime,
+  pickupLocation,
+  expectedPackageCount,
+}) => {
+  if (!DELHIVERY_API_TOKEN) {
+    throw new Error(
+      "Delhivery API token is not configured"
+    );
+  }
+
+  if (!pickupDate) {
+    throw new Error(
+      "Pickup date is required"
+    );
+  }
+
+  if (!pickupTime) {
+    throw new Error(
+      "Pickup time is required"
+    );
+  }
+
+  if (!pickupLocation) {
+    throw new Error(
+      "Pickup location is required"
+    );
+  }
+
+  const packageCount =
+    Number(expectedPackageCount);
+
+  if (
+    !Number.isInteger(packageCount) ||
+    packageCount <= 0
+  ) {
+    throw new Error(
+      "Invalid expected package count"
+    );
+  }
+
+  const url =
+    `${DELHIVERY_API_BASE_URL}` +
+    `/fm/request/new/`;
+
+  const payload = {
+    pickup_time: pickupTime,
+    pickup_date: pickupDate,
+    pickup_location: pickupLocation,
+    expected_package_count: packageCount,
+  };
+
+  console.log(
+    "========== DELHIVERY PICKUP REQUEST =========="
+  );
+
+  console.log(
+    "URL:",
+    url
+  );
+
+  console.log(
+    "Payload:",
+    JSON.stringify(
+      payload,
+      null,
+      2
+    )
+  );
+
+  console.log(
+    "=============================================="
+  );
+
+  try {
+    const response =
+      await axios.post(
+        url,
+        payload,
+        {
+          headers: {
+            Authorization:
+              `Token ${DELHIVERY_API_TOKEN}`,
+
+            "Content-Type":
+              "application/json",
+
+            Accept:
+              "application/json",
+          },
+
+          timeout: 30000,
+        }
+      );
+
+    const data =
+      response.data;
+
+    console.log(
+      "========== DELHIVERY PICKUP RESPONSE =========="
+    );
+
+    console.log(
+      JSON.stringify(
+        data,
+        null,
+        2
+      )
+    );
+
+    console.log(
+      "================================================"
+    );
+
+    if (!data) {
+      throw new Error(
+        "Empty response received from Delhivery"
+      );
+    }
+
+    if (!data.pickup_id) {
+      throw new Error(
+        "Delhivery pickup created but pickup_id was not returned"
+      );
+    }
+
+    return data;
+
+  } catch (error) {
+
+    console.log(
+      "================================================"
+    );
+
+    console.log(
+      "DELHIVERY PICKUP API ERROR"
+    );
+
+    console.log(
+      "Status:",
+      error.response?.status
+    );
+
+    console.log(
+      "Response:",
+      error.response?.data
+    );
+
+    console.log(
+      "Message:",
+      error.message
+    );
+
+    console.log(
+      "================================================"
+    );
+
+    throw new Error(
+      error.response?.data?.message ||
+      error.response?.data?.error ||
+      error.response?.data?.rmk ||
+      error.message ||
+      "Unable to create Delhivery pickup request"
+    );
+  }
+};
+
+const getOrCreatePickupRequest = async ({
+  warehouseId,
+  warehouseName,
+  manifestId,
+}) => {
+  if (!warehouseId) {
+    throw new Error(
+      "Warehouse ID is required for pickup request"
+    );
+  }
+
+  if (!warehouseName) {
+    throw new Error(
+      "Warehouse name is required for pickup request"
+    );
+  }
+
+  // ======================================================
+  // INDIA DATE & TIME
+  // ======================================================
+
+  const now = new Date();
+
+  const indiaDate =
+    new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Kolkata",
+    }).format(now);
+
+  const indiaTime =
+    new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Asia/Kolkata",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+    }).format(now);
+
+  const currentHour = Number(
+    indiaTime.substring(0, 2)
+  );
+
+  const currentMinute = Number(
+    indiaTime.substring(3, 5)
+  );
+
+  const currentMinutes =
+    currentHour * 60 + currentMinute;
+
+  // ======================================================
+  // DELHIVERY SAME-DAY CUTOFF
+  // Based on your Delhivery One screen:
+  // Same-day pickup booking cutoff = 2:00 PM
+  // ======================================================
+
+  const sameDayCutoff = 14 * 60;
+
+  let pickupDate = indiaDate;
+
+  // ======================================================
+  // AFTER 2 PM
+  // Move to next available normal working day.
+  //
+  // Your screenshot showed Sunday unavailable,
+  // so Sunday is skipped here.
+  //
+  // We are NOT guessing other holidays.
+  // ======================================================
+
+  if (currentMinutes >= sameDayCutoff) {
+    const nextDate = new Date(
+      `${indiaDate}T00:00:00+05:30`
+    );
+
+    nextDate.setDate(
+      nextDate.getDate() + 1
+    );
+
+    // Sunday = 0
+    while (nextDate.getDay() === 0) {
+      nextDate.setDate(
+        nextDate.getDate() + 1
+      );
+    }
+
+    pickupDate =
+      new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Kolkata",
+      }).format(nextDate);
+  }
+
+  // ======================================================
+  // PICKUP SLOT
+  // Your Delhivery One screen showed:
+  // Evening 14:00:00 - 18:00:00
+  // ======================================================
+
+  const pickupTime = "14:00:00";
+
+  console.log(
+    "=============================================="
+  );
+
+  console.log(
+    "📦 PICKUP DATE/TIME CALCULATION"
+  );
+
+  console.log(
+    "Current India Date:",
+    indiaDate
+  );
+
+  console.log(
+    "Current India Time:",
+    indiaTime
+  );
+
+  console.log(
+    "Pickup Date:",
+    pickupDate
+  );
+
+  console.log(
+    "Pickup Time:",
+    pickupTime
+  );
+
+  console.log(
+    "=============================================="
+  );
+
+  // ======================================================
+  // STEP 1
+  // CHECK EXISTING OPEN PICKUP
+  //
+  // IMPORTANT:
+  // Same warehouse + SAME pickup date + OPEN
+  // = reuse existing pickup.
+  // ======================================================
+
+  const existingPickupRows =
+    await query(
+      `
+        SELECT
+          id,
+          warehouse_id,
+          warehouse_name,
+          pickup_date,
+          pickup_time,
+          expected_package_count,
+          delhivery_request_id,
+          status
+        FROM pickup_requests
+        WHERE warehouse_id = ?
+          AND pickup_date = ?
+          AND status = 'OPEN'
+        ORDER BY id DESC
+        LIMIT 1
+      `,
+      [
+        warehouseId,
+        pickupDate,
+      ]
+    );
+
+  // ======================================================
+  // EXISTING PICKUP FOUND
+  // ======================================================
+
+  if (existingPickupRows.length > 0) {
+    const existingPickup =
+      existingPickupRows[0];
+
+    console.log(
+      "=============================================="
+    );
+
+    console.log(
+      "♻️ EXISTING DELHIVERY PICKUP FOUND"
+    );
+
+    console.log(
+      "ShipDrop Pickup ID:",
+      existingPickup.id
+    );
+
+    console.log(
+      "Delhivery Pickup ID:",
+      existingPickup.delhivery_request_id
+    );
+
+    console.log(
+      "Warehouse:",
+      existingPickup.warehouse_name
+    );
+
+    console.log(
+      "Pickup Date:",
+      existingPickup.pickup_date
+    );
+
+    console.log(
+      "Existing Package Count:",
+      existingPickup.expected_package_count
+    );
+
+    console.log(
+      "=============================================="
+    );
+
+    // ====================================================
+    // INCREASE INTERNAL PACKAGE COUNT
+    // ====================================================
+
+    await query(
+      `
+        UPDATE pickup_requests
+        SET
+          expected_package_count =
+            expected_package_count + 1
+        WHERE id = ?
+      `,
+      [
+        existingPickup.id,
+      ]
+    );
+
+    // ====================================================
+    // LINK CURRENT MANIFEST
+    // ====================================================
+
+    await query(
+      `
+        UPDATE manifests
+        SET
+          pickup_request_id = ?
+        WHERE id = ?
+      `,
+      [
+        existingPickup.id,
+        manifestId,
+      ]
+    );
+
+    const newPackageCount =
+      Number(
+        existingPickup.expected_package_count
+      ) + 1;
+
+    console.log(
+      "Updated Package Count:",
+      newPackageCount
+    );
+
+    return {
+      pickupRequestId:
+        existingPickup.id,
+
+      delhiveryPickupId:
+        existingPickup.delhivery_request_id,
+
+      created: false,
+
+      expectedPackageCount:
+        newPackageCount,
+    };
+  }
+
+  // ======================================================
+  // STEP 2
+  // NO EXISTING PICKUP
+  // CREATE NEW DELHIVERY PICKUP
+  // ======================================================
+
+  console.log(
+    "=============================================="
+  );
+
+  console.log(
+    "🆕 NO EXISTING PICKUP FOUND"
+  );
+
+  console.log(
+    "Creating NEW Delhivery Pickup"
+  );
+
+  console.log(
+    "Warehouse:",
+    warehouseName
+  );
+
+  console.log(
+    "Pickup Date:",
+    pickupDate
+  );
+
+  console.log(
+    "Pickup Time:",
+    pickupTime
+  );
+
+  console.log(
+    "Expected Package Count:",
+    1
+  );
+
+  console.log(
+    "=============================================="
+  );
+
+  // ======================================================
+  // CREATE DELHIVERY PICKUP
+  // ======================================================
+
+  const delhiveryResponse =
+    await createDelhiveryPickupRequest({
+      pickupDate,
+
+      pickupTime,
+
+      pickupLocation:
+        warehouseName,
+
+      expectedPackageCount:
+        1,
+    });
+
+  // ======================================================
+  // GET DELHIVERY PICKUP ID
+  // ======================================================
+
+  const delhiveryPickupId =
+    String(
+      delhiveryResponse.pickup_id || ""
+    ).trim();
+
+  if (!delhiveryPickupId) {
+    throw new Error(
+      "Delhivery did not return a valid pickup_id"
+    );
+  }
+
+  console.log(
+    "=============================================="
+  );
+
+  console.log(
+    "✅ DELHIVERY PICKUP CREATED"
+  );
+
+  console.log(
+    "Delhivery Pickup ID:",
+    delhiveryPickupId
+  );
+
+  console.log(
+    "=============================================="
+  );
+
+  // ======================================================
+  // SAVE PICKUP REQUEST IN SHIPDROP
+  // ======================================================
+
+  const insertResult =
+    await query(
+      `
+        INSERT INTO pickup_requests
+        (
+          warehouse_id,
+          warehouse_name,
+          pickup_date,
+          pickup_time,
+          expected_package_count,
+          delhivery_request_id,
+          status,
+          delhivery_response
+        )
+        VALUES
+        (
+          ?,
+          ?,
+          ?,
+          ?,
+          ?,
+          ?,
+          'OPEN',
+          ?
+        )
+      `,
+      [
+        warehouseId,
+
+        warehouseName,
+
+        pickupDate,
+
+        pickupTime,
+
+        1,
+
+        delhiveryPickupId,
+
+        JSON.stringify(
+          delhiveryResponse
+        ),
+      ]
+    );
+
+  const pickupRequestId =
+    insertResult.insertId;
+
+  // ======================================================
+  // LINK MANIFEST WITH SHIPDROP PICKUP
+  // ======================================================
+
+  await query(
+    `
+      UPDATE manifests
+      SET
+        pickup_request_id = ?
+      WHERE id = ?
+    `,
+    [
+      pickupRequestId,
+      manifestId,
+    ]
+  );
+
+  console.log(
+    "=============================================="
+  );
+
+  console.log(
+    "✅ PICKUP REQUEST SAVED"
+  );
+
+  console.log(
+    "ShipDrop Pickup ID:",
+    pickupRequestId
+  );
+
+  console.log(
+    "Delhivery Pickup ID:",
+    delhiveryPickupId
+  );
+
+  console.log(
+    "Manifest ID:",
+    manifestId
+  );
+
+  console.log(
+    "=============================================="
+  );
+
+  return {
+    pickupRequestId,
+
+    delhiveryPickupId,
+
+    created: true,
+
+    expectedPackageCount: 1,
+  };
+};
+
 const getWarehouseForOrder = async (
   warehouseId,
   userId
@@ -1718,6 +2351,72 @@ const confirmShipment = async ({
       connection
     );
 
+    // ======================================================
+// DELHIVERY PICKUP REQUEST
+// ======================================================
+
+let pickupResult = null;
+
+try {
+
+  pickupResult =
+    await getOrCreatePickupRequest({
+      warehouseId:
+        warehouse.id,
+
+      warehouseName:
+        warehouse.warehouse_name,
+
+      manifestId:
+        manifest_id,
+    });
+
+  console.log(
+    "=============================================="
+  );
+
+  console.log(
+    "✅ PICKUP READY"
+  );
+
+  console.log(
+    "ShipDrop Pickup ID:",
+    pickupResult.pickupRequestId
+  );
+
+  console.log(
+    "Delhivery Pickup ID:",
+    pickupResult.delhiveryPickupId
+  );
+
+  console.log(
+    "Created New:",
+    pickupResult.created
+  );
+
+  console.log(
+    "=============================================="
+  );
+
+} catch (pickupError) {
+
+  console.log(
+    "=============================================="
+  );
+
+  console.log(
+    "⚠️ PICKUP REQUEST FAILED"
+  );
+
+  console.log(
+    "Error:",
+    pickupError.message
+  );
+
+  console.log(
+    "=============================================="
+  );
+}
     console.log(
       "=============================================="
     );
