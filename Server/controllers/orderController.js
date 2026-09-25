@@ -771,7 +771,10 @@ const createOrderController = async (
 
   } catch (error) {
 
-   
+    console.log(
+      "Create order error:",
+      error
+    );
 
 
     return res.status(500).json({
@@ -834,7 +837,10 @@ const getProcessingOrdersController =
 
           if (error) {
 
-           
+            console.log(
+              "Get processing orders error:",
+              error
+            );
 
             return res.status(500).json({
 
@@ -931,7 +937,10 @@ const getAllOrdersController =
 
           if (error) {
 
-           
+            console.log(
+              "Get all orders error:",
+              error
+            );
 
 
             return res.status(500).json({
@@ -974,7 +983,10 @@ return res.status(200).json({
 
     } catch (error) {
 
-      
+      console.log(
+        "Get all orders controller error:",
+        error
+      );
 
 
       return res.status(500).json({
@@ -1065,7 +1077,11 @@ const getOrderByIdController =
 
     } catch (error) {
 
-    
+      console.log(
+        "Get order error:",
+        error
+      );
+
 
       const statusCode =
         error.message ===
@@ -1297,7 +1313,10 @@ const updateOrderController =
 
     } catch (error) {
 
-     
+      console.log(
+        "Update order error:",
+        error
+      );
 
 
       return res.status(500).json({
@@ -1429,7 +1448,10 @@ const deleteOrdersController =
 
     } catch (error) {
 
-     
+      console.log(
+        "Delete orders error:",
+        error
+      );
 
 
       return res.status(500).json({
@@ -1488,7 +1510,10 @@ const searchPreviousCustomersController = async (req, res) => {
         : [],
     });
   } catch (error) {
-   
+    console.error(
+      "Search previous customers error:",
+      error,
+    );
 
     return res.status(500).json({
       success: false,

@@ -537,10 +537,10 @@ const calculateRate = async (
 
   } catch (error) {
 
-    // console.log(
-    //   "Rate calculation error:",
-    //   error.message
-    // );
+    console.log(
+      "Rate calculation error:",
+      error.message
+    );
 
 
     return res.status(500).json({
@@ -634,10 +634,10 @@ const calculateRateOptions =
 
     } catch (error) {
 
-      // console.log(
-      //   "Rate options calculation error:",
-      //   error.message
-      // );
+      console.log(
+        "Rate options calculation error:",
+        error.message
+      );
 
 
       return res.status(500).json({

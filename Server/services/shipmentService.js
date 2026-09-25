@@ -5,12 +5,6 @@ const {
   calculateShippingRate,
 } = require("./rateService");
 
-const {
-  getOrCreatePickupRequest,
-  linkOrderToPickup,
-  linkOrdersToPickup,
-} = require("./delhiveryPickupService");
-
 const query = (
   sql,
   params = []
@@ -1666,90 +1660,9 @@ const confirmShipment = async ({
         0
       );
 
-   await commitTransaction(
-  connection
-);
-
-
-// ======================================================
-// DELHIVERY PICKUP REQUEST
-// ======================================================
-
-let pickupRequest = null;
-let pickupError = null;
-
-try {
-
-  const expectedPackageCount =
-    packages.reduce(
-      (
-        total,
-        packageData
-      ) => {
-
-        const count =
-          Number(
-            packageData.package_count
-          ) || 1;
-
-        return total + count;
-      },
-      0
+    await commitTransaction(
+      connection
     );
-
-  pickupRequest =
-    await getOrCreatePickupRequest({
-      user_id,
-
-      warehouse_id:
-        warehouse.id,
-
-      package_count:
-        expectedPackageCount,
-    });
-
-
-  await linkOrderToPickup({
-    order_id:
-      lockedOrder.id,
-
-    pickup_request_id:
-      pickupRequest.pickup_request_id,
-  });
-
-
-  console.log(
-    "=============================================="
-  );
-
-  console.log(
-    "✅ DELHIVERY PICKUP READY"
-  );
-
-  console.log(
-    "Pickup ID:",
-    pickupRequest.pickup_id
-  );
-
-  console.log(
-    "Pickup Request ID:",
-    pickupRequest.pickup_request_id
-  );
-
-  console.log(
-    "=============================================="
-  );
-
-} catch (pickupApiError) {
-
-  pickupError =
-    pickupApiError.message;
-
-  console.log(
-    "❌ Pickup request failed:",
-    pickupApiError.message
-  );
-}
 
     console.log(
       "=============================================="
@@ -1806,21 +1719,6 @@ try {
         String(
           awb
         ).trim(),
-
-        pickup_request_id:
-    pickupRequest?.pickup_request_id || null,
-
-  pickup_id:
-    pickupRequest?.pickup_id || null,
-
-  pickup_status:
-    pickupRequest
-      ? "CREATED"
-      : "FAILED",
-
-  pickup_error:
-    pickupError,
-
 
       manifest_id,
 
@@ -2743,273 +2641,45 @@ await txQuery(
         0
       );
 
-   await commitTransaction(
-  connection
-);
+    await commitTransaction(
+      connection
+    );
 
+    return {
 
-// ======================================================
-// DELHIVERY PICKUP REQUESTS - BULK SHIPMENT
-// ======================================================
+      success:
+        true,
 
-console.log("🔥🔥🔥 PICKUP BLOCK REACHED 🔥🔥🔥");
-console.log("Pickup groups will be created now...");
+      message:
+        "Selected orders manifested successfully",
 
-const pickupResults = [];
-const pickupErrors = [];
+      shipped_orders:
+        shippedOrders.map(
+          (item) =>
+            item.order_id
+        ),
 
+      total_orders:
+        shippedOrders.length,
 
-// ------------------------------------------------------
-// GROUP SHIPPED ORDERS BY WAREHOUSE
-// ------------------------------------------------------
+      total_charge:
+        Number(
+          totalCharge.toFixed(2)
+        ),
 
-const pickupGroups = {};
+      wallet_balance:
+        Number(
+          remainingBalance.toFixed(2)
+        ),
 
-for (
-  const shipmentItem
-  of shipmentOrders
-) {
+      orders:
+        shippedOrders,
 
-  const warehouseId =
-    shipmentItem.warehouse?.id;
+      delhivery_response:
+        delhiveryResponse,
 
-  if (!warehouseId) {
-    pickupErrors.push({
-      order_id:
-        shipmentItem.order?.order_id,
-
-      error:
-        "Warehouse ID not found",
-    });
-
-    continue;
-  }
-
-
-  if (!pickupGroups[warehouseId]) {
-
-    pickupGroups[warehouseId] = {
-      warehouse_id:
-        warehouseId,
-
-      warehouse:
-        shipmentItem.warehouse,
-
-      package_count:
-        0,
-
-      order_ids:
-        [],
     };
-  }
 
-
-  // ----------------------------------------------
-  // PACKAGE COUNT
-  // ----------------------------------------------
-
-  const packageCount =
-    (shipmentItem.packages || []).reduce(
-      (
-        total,
-        packageData
-      ) => {
-
-        const count =
-          Number(
-            packageData.package_count
-          ) || 1;
-
-        return total + count;
-
-      },
-      0
-    );
-
-
-  pickupGroups[warehouseId].package_count +=
-    packageCount;
-
-
-  pickupGroups[warehouseId].order_ids.push(
-    shipmentItem.order.id
-  );
-}
-
-
-// ------------------------------------------------------
-// CREATE / REUSE PICKUP REQUEST FOR EACH WAREHOUSE
-// ------------------------------------------------------
-
-for (
-  const group
-  of Object.values(pickupGroups)
-) {
-
-  try {
-
-    console.log("🔥 CALLING getOrCreatePickupRequest");
-    console.log("Warehouse ID:", group.warehouse_id);
-    console.log("Package Count:", group.package_count);
-    console.log("Order IDs:", group.order_ids);
-
-    const pickupRequest =
-      await getOrCreatePickupRequest({
-        user_id,
-
-        warehouse_id:
-          group.warehouse_id,
-
-        package_count:
-          group.package_count,
-      });
-
-
-    // ----------------------------------------------
-    // LINK ALL ORDERS OF THIS WAREHOUSE
-    // ----------------------------------------------
-
-    await linkOrdersToPickup({
-      order_ids:
-        group.order_ids,
-
-      pickup_request_id:
-        pickupRequest.pickup_request_id,
-    });
-
-
-    pickupResults.push({
-
-      warehouse_id:
-        group.warehouse_id,
-
-      pickup_request_id:
-        pickupRequest.pickup_request_id,
-
-      pickup_id:
-        pickupRequest.pickup_id,
-
-      package_count:
-        group.package_count,
-
-      order_ids:
-        group.order_ids,
-
-      status:
-        "CREATED",
-
-    });
-
-
-    console.log(
-      "=============================================="
-    );
-
-    console.log(
-      "✅ BULK DELHIVERY PICKUP READY"
-    );
-
-    console.log(
-      "Warehouse ID:",
-      group.warehouse_id
-    );
-
-    console.log(
-      "Pickup ID:",
-      pickupRequest.pickup_id
-    );
-
-    console.log(
-      "Pickup Request ID:",
-      pickupRequest.pickup_request_id
-    );
-
-    console.log(
-      "Package Count:",
-      group.package_count
-    );
-
-    console.log(
-      "Orders:",
-      group.order_ids
-    );
-
-    console.log(
-      "=============================================="
-    );
-
-  } catch (pickupError) {
-
-    console.log(
-      "❌ BULK PICKUP REQUEST FAILED:",
-      pickupError.message
-    );
-
-
-    pickupErrors.push({
-
-      warehouse_id:
-        group.warehouse_id,
-
-      order_ids:
-        group.order_ids,
-
-      error:
-        pickupError.message,
-
-    });
-  }
-}
-
-
-// ======================================================
-// FINAL RESPONSE
-// ======================================================
-
-return {
-
-  success:
-    true,
-
-  message:
-    "Selected orders manifested successfully",
-
-  shipped_orders:
-    shippedOrders.map(
-      (item) =>
-        item.order_id
-    ),
-
-  total_orders:
-    shippedOrders.length,
-
-  total_charge:
-    Number(
-      totalCharge.toFixed(2)
-    ),
-
-  wallet_balance:
-    Number(
-      remainingBalance.toFixed(2)
-    ),
-
-  orders:
-    shippedOrders,
-
-  // ====================================================
-  // PICKUP INFORMATION
-  // ====================================================
-
-  pickup_requests:
-    pickupResults,
-
-  pickup_errors:
-    pickupErrors,
-
-  delhivery_response:
-    delhiveryResponse,
-
-};
   } catch (error) {
 
     await rollbackTransaction(
