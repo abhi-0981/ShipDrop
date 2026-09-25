@@ -630,6 +630,29 @@ const buildDelhiveryShipment = ({
       ? totalAmount
       : 0;
 
+  console.log(
+  "========== WAREHOUSE DEBUG =========="
+);
+
+console.log(
+  "warehouse.warehouse_name:",
+  warehouse?.warehouse_name
+);
+
+console.log(
+  "warehouse.warehouse_name JSON:",
+  JSON.stringify(warehouse?.warehouse_name)
+);
+
+console.log(
+  "warehouse FULL:",
+  JSON.stringify(warehouse, null, 2)
+);
+
+console.log(
+  "====================================="
+);
+
   const shipment = {
 
   name:

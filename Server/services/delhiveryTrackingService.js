@@ -173,9 +173,7 @@ const getTrackingForWaybills = async (
   }
 
   if (!DELHIVERY_API_TOKEN) {
-    console.log(
-      "⚠️ Delhivery tracking token is not configured"
-    );
+    
 
     return {};
   }
@@ -226,22 +224,9 @@ const getTrackingForWaybills = async (
       `/api/v1/packages/json/`;
 
     try {
-      console.log(
-        "=========================================="
-      );
+      
 
-      console.log(
-        "📦 DELHIVERY TRACKING REQUEST"
-      );
-
-      console.log(
-        "WAYBILLS:",
-        waybillParam
-      );
-
-      console.log(
-        "=========================================="
-      );
+     
 
       const response =
         await axios.get(
@@ -270,17 +255,7 @@ const getTrackingForWaybills = async (
       const data =
         response?.data || {};
 
-      console.log(
-        "📦 DELHIVERY TRACKING RESPONSE:"
-      );
-
-      console.log(
-        JSON.stringify(
-          data,
-          null,
-          2
-        )
-      );
+     
 
       const shipmentData =
         Array.isArray(
@@ -460,24 +435,13 @@ try {
     ]
   );
 
-  console.log(
-    `💾 TRACKING SAVED | AWB: ${awb} | Tracking Status: ${trackingStatus} | Order Status: ${newOrderStatus || "UNCHANGED"}`
-  );
+
 } catch (dbError) {
-  console.error(
-    `❌ TRACKING DB SAVE ERROR | AWB: ${awb}:`,
-    dbError?.message || dbError
-  );
+  
 }
       }
     } catch (error) {
-      console.error(
-        "❌ DELHIVERY TRACKING ERROR:",
-        error?.response?.status,
-        error?.response?.data ||
-          error?.message
-      );
-
+      
       // ----------------------------------------------
       // IMPORTANT:
       // ONE BATCH FAIL SHOULD NOT BREAK ALL ORDERS
