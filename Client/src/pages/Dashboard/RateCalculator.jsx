@@ -258,10 +258,10 @@ function RateCalculator() {
         setUser(savedUser);
       }
     } catch (error) {
-      console.error(
-        "Rate calculator user error:",
-        error
-      );
+      // console.error(
+      //   "Rate calculator user error:",
+      //   error
+      // );
     }
   }, []);
 
@@ -386,10 +386,10 @@ function RateCalculator() {
 
       setShippingOptions(data);
     } catch (error) {
-      console.error(
-        "Rate calculation error:",
-        error
-      );
+      // console.error(
+      //   "Rate calculation error:",
+      //   error
+      // );
 
       setRateError(
         error?.response?.data?.message ||

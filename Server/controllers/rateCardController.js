@@ -147,10 +147,7 @@ const getRateCards = (
 
       if (err) {
 
-        console.log(
-          "Get rate cards error:",
-          err
-        );
+      
 
 
         return res.status(500).json({
@@ -352,10 +349,7 @@ const createRateCard = (
 
       if (err) {
 
-        console.log(
-          "Create rate card error:",
-          err
-        );
+       
 
 
         return res.status(500).json({

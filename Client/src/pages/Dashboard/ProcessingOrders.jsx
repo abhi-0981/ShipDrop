@@ -119,7 +119,7 @@ function ProcessingOrders() {
       try {
         user = storedUser ? JSON.parse(storedUser) : {};
       } catch (error) {
-        console.log("User parse error:", error);
+        // console.log("User parse error:", error);
       }
 
       const userId = user.id || user.user_id || user.userId;
@@ -133,7 +133,7 @@ function ProcessingOrders() {
       rateCacheRef.current.clear();
       setOrders(Array.isArray(data) ? data : []);
     } catch (error) {
-      console.log("Processing orders error:", error);
+      // console.log("Processing orders error:", error);
       setOrders([]);
     } finally {
       if (showLoader) setLoading(false);
@@ -316,7 +316,7 @@ function ProcessingOrders() {
       try {
         user = storedUser ? JSON.parse(storedUser) : {};
       } catch (error) {
-        console.log("User parse error:", error);
+        // console.log("User parse error:", error);
       }
 
       const userId = user.id || user.user_id || user.userId;
@@ -362,7 +362,7 @@ function ProcessingOrders() {
       const storedUser = localStorage.getItem("user");
       user = storedUser ? JSON.parse(storedUser) : {};
     } catch (error) {
-      console.log("User parse error:", error);
+      // console.log("User parse error:", error);
     }
 
     const userId = user.id || user.user_id || user.userId;
@@ -430,7 +430,7 @@ function ProcessingOrders() {
       );
       await fetchOrders(false);
     } catch (error) {
-      console.error("Duplicate order error:", error);
+      // console.error("Duplicate order error:", error);
       showToast(
         error?.response?.data?.message || error?.message || "Unable to duplicate order",
         "error"
@@ -559,7 +559,7 @@ function ProcessingOrders() {
           try {
             user = storedUser ? JSON.parse(storedUser) : {};
           } catch (error) {
-            console.log("User parse error:", error);
+            // console.log("User parse error:", error);
           }
 
           const userId = user.id || user.user_id || user.userId;
@@ -683,7 +683,7 @@ function ProcessingOrders() {
       try {
         user = storedUser ? JSON.parse(storedUser) : {};
       } catch (error) {
-        console.log("User parse error:", error);
+        // console.log("User parse error:", error);
       }
 
       const userId = user.id || user.user_id || user.userId;
@@ -764,7 +764,7 @@ function ProcessingOrders() {
       try {
         user = storedUser ? JSON.parse(storedUser) : {};
       } catch (error) {
-        console.log("User parse error:", error);
+        // console.log("User parse error:", error);
       }
 
       const userId = user.id || user.user_id || user.userId;

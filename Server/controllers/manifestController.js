@@ -76,10 +76,7 @@ const getManifestedOrders = async (req, res) => {
     });
 
   } catch (error) {
-    console.error(
-      "❌ GET MANIFESTED ORDERS ERROR:",
-      error
-    );
+   
 
     return sendError(
       res,
@@ -140,10 +137,10 @@ const getManifestById = async (req, res) => {
     });
 
   } catch (error) {
-    console.error(
-      "❌ GET MANIFEST BY ID ERROR:",
-      error
-    );
+    // console.error(
+    //   "❌ GET MANIFEST BY ID ERROR:",
+    //   error
+    // );
 
     if (
       error?.message ===
@@ -227,27 +224,8 @@ const cancelManifestedOrders = async (
       ...new Set(orderIds),
     ];
 
-    console.log(
-      "=========================================="
-    );
+    
 
-    console.log(
-      "🚫 CANCEL MANIFESTED ORDERS"
-    );
-
-    console.log(
-      "USER ID:",
-      userId
-    );
-
-    console.log(
-      "ORDER IDS:",
-      uniqueOrderIds
-    );
-
-    console.log(
-      "=========================================="
-    );
 
     const result =
       await manifestModel.cancelManifestedOrders(
@@ -267,10 +245,10 @@ const cancelManifestedOrders = async (
     });
 
   } catch (error) {
-    console.error(
-      "❌ CANCEL MANIFESTED ORDERS ERROR:",
-      error
-    );
+    // console.error(
+    //   "❌ CANCEL MANIFESTED ORDERS ERROR:",
+    //   error
+    // );
 
     if (
       error?.message ===
