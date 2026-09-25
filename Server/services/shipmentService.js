@@ -112,7 +112,8 @@ const DELHIVERY_API_BASE_URL =
   "https://track.delhivery.com";
 
 const createDelhiveryShipment = async (
-  shipments
+  shipments,
+  pickupLocationName
 ) => {
 
   if (
@@ -141,10 +142,13 @@ const createDelhiveryShipment = async (
       "json",
 
     data:
-      JSON.stringify({
-        shipments:
-          shipments,
-      }),
+  JSON.stringify({
+    shipments: shipments,
+
+    pickup_location: {
+      name: pickupLocationName,
+    },
+  }),
   };
 
   console.log(
@@ -756,17 +760,7 @@ const buildDelhiveryShipment = ({
         ? "Express"
         : "Surface",
 
-    // ----------------------------------------------------
-    // PICKUP LOCATION
-    // IMPORTANT:
-    // Delhivery expects the registered pickup-location
-    // name here.
-    // ----------------------------------------------------
-
-
-    pickup_location: warehouse.warehouse_name,
-
-    // ----------------------------------------------------
+   // ----------------------------------------------------
     // SELLER DETAILS
     // ----------------------------------------------------
 
@@ -1452,12 +1446,13 @@ const confirmShipment = async ({
       "=============================================="
     );
 
-    const delhiveryResponse =
-      await createDelhiveryShipment(
-        [
-          shipment
-        ]
-      );
+  const delhiveryResponse =
+  await createDelhiveryShipment(
+    [
+      shipment
+    ],
+    warehouse.warehouse_name
+  );
 
     console.log(
       "========== DELHIVERY RESPONSE =========="
