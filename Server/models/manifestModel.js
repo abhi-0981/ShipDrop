@@ -78,6 +78,7 @@ const getManifestedOrders = async (
         m.service_type,
         m.status AS manifest_status,
         m.created_at AS manifest_created_at,
+        m.pickup_request_id,
 
         o.id AS order_db_id,
 o.order_id AS display_order_id,
@@ -110,6 +111,8 @@ o.awb,
         pa.pickup_address,
         pa.pickup_pincode,
         pa.pickup_city,
+        pr.delhivery_request_id AS pickup_id,
+
 
         op.product_name,
         op.sku,
@@ -129,14 +132,16 @@ o.awb,
         ON o.id = m.order_id
        AND o.user_id = m.user_id
 
+   
+
       LEFT JOIN pickup_addresses pa
-        ON pa.id = o.pickup_address_id
+  ON pa.id = o.pickup_address_id
 
-      LEFT JOIN order_products op
-        ON op.order_id = o.id
+LEFT JOIN pickup_requests pr
+  ON pr.id = m.pickup_request_id
 
-      LEFT JOIN order_packages pkg
-        ON pkg.order_id = o.id
+LEFT JOIN order_products op
+  ON op.order_id = o.id
 
       WHERE
 
@@ -198,6 +203,14 @@ o.awb,
 
         display_order_id:
   row.display_order_id,
+
+  pickup_request_id:
+  row.pickup_request_id || null,
+
+pickup_id:
+  row.pickup_id
+    ? String(row.pickup_id).trim()
+    : null,
 
         awb:
           row.awb
