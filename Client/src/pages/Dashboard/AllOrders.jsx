@@ -130,7 +130,7 @@ const getUserId = () => {
 
     return user?.id || user?.user_id || user?.userId || null;
   } catch (error) {
-    console.error("Unable to read logged-in user:", error);
+    // console.error("Unable to read logged-in user:", error);
     return null;
   }
 };
@@ -600,7 +600,7 @@ setOrders(uniqueOrders);
 setSelectedIds([]);
       setSelectedIds([]);
     } catch (error) {
-      console.error("Get all orders error:", error);
+      // console.error("Get all orders error:", error);
 
       setOrders([]);
 
@@ -1361,10 +1361,10 @@ setSelectedIds([]);
       await fetchAllOrders();
 
     } catch (error) {
-      console.error(
-        "Duplicate order error:",
-        error
-      );
+      // console.error(
+      //   "Duplicate order error:",
+      //   error
+      // );
 
       toast.error(
         error?.response?.data?.message ||

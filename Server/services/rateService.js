@@ -793,7 +793,6 @@ const calculateDelhiveryRate = async ({
   // DEBUG
   // ====================================================
 
-  // console.log("Delhivery API response:", JSON.stringify(data));
 
   // ====================================================
   // TOTAL AMOUNT

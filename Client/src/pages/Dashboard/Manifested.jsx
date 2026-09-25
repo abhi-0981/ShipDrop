@@ -386,7 +386,7 @@ function Manifested() {
 
       setSelectedIds([]);
     } catch (error) {
-      console.error("Manifest fetch error:", error);
+      // console.error("Manifest fetch error:", error);
 
       toast.error(
         error.response?.data?.message ||
@@ -440,7 +440,7 @@ function Manifested() {
         setCustomLogo(data.custom_logo || null);
       }
     } catch (error) {
-      console.error("Label settings fetch error:", error);
+      // console.error("Label settings fetch error:", error);
     } finally {
       setLabelSettingsLoading(false);
     }
@@ -552,7 +552,7 @@ function Manifested() {
       await printShippingLabels(selectedOrders, labelSettings, customLogo, "ShipDrop Shipping Labels");
       toast.success(`${selectedOrders.length} ${selectedOrders.length === 1 ? "label" : "labels"} ready to print`);
     } catch (error) {
-      console.error("Print label error:", error);
+      // console.error("Print label error:", error);
       toast.error(error.message || "Unable to print labels");
     } finally {
       setActionLoading(false);
@@ -569,7 +569,7 @@ function Manifested() {
       await printShippingLabels([order], labelSettings, customLogo, "ShipDrop Shipping Label");
       toast.success("1 label ready to print");
     } catch (error) {
-      console.error("Print label error:", error);
+      // console.error("Print label error:", error);
       toast.error(error.message || "Unable to print label");
     } finally {
       setActionLoading(false);
@@ -590,7 +590,7 @@ function Manifested() {
       await downloadShippingLabels(selectedOrders, labelSettings, customLogo);
       toast.success(`${selectedOrders.length} ${selectedOrders.length === 1 ? "label" : "labels"} downloaded`);
     } catch (error) {
-      console.error("Download label error:", error);
+      // console.error("Download label error:", error);
       toast.error(error.message || "Unable to download labels");
     } finally {
       setActionLoading(false);
@@ -607,7 +607,7 @@ function Manifested() {
       await downloadShippingLabels([order], labelSettings, customLogo);
       toast.success("1 label downloaded");
     } catch (error) {
-      console.error("Download label error:", error);
+      // console.error("Download label error:", error);
       toast.error(error.message || "Unable to download label");
     } finally {
       setActionLoading(false);
@@ -867,7 +867,7 @@ function Manifested() {
       await fetchManifestedOrders();
       window.dispatchEvent(new Event("orderStatusUpdated"));
     } catch (error) {
-      console.error("Cancel manifest error:", error);
+      // console.error("Cancel manifest error:", error);
 
       toast.error(
         error.response?.data?.message ||
@@ -1070,10 +1070,7 @@ function Manifested() {
         new Event("orderStatusUpdated"),
       );
     } catch (error) {
-      console.error(
-        "Duplicate manifested order error:",
-        error,
-      );
+      
 
       toast.error(
         error?.response?.data?.message ||
