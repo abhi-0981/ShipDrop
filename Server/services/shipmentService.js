@@ -763,8 +763,9 @@ const buildDelhiveryShipment = ({
     // name here.
     // ----------------------------------------------------
 
-    pickup_location: warehouse.warehouse_name,
-
+pickup_location: {
+    name: warehouse.warehouse_name
+},
     // ----------------------------------------------------
     // SELLER DETAILS
     // ----------------------------------------------------
