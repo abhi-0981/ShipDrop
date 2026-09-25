@@ -793,6 +793,7 @@ const calculateDelhiveryRate = async ({
   // DEBUG
   // ====================================================
 
+  console.log("Delhivery API response:", JSON.stringify(data));
 
   // ====================================================
   // TOTAL AMOUNT
@@ -1243,6 +1244,7 @@ const calculateShippingOptions = async (
       productValue,
     );
   } catch (error) {
+    console.log("ROAD rate unavailable:", error.message);
   }
 
   // ====================================================
@@ -1268,6 +1270,7 @@ const calculateShippingOptions = async (
       productValue,
     );
   } catch (error) {
+    console.log("AIR rate unavailable:", error.message);
   }
 
   // ====================================================

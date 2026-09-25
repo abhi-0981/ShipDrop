@@ -529,99 +529,101 @@ const buildDelhiveryShipment = ({
   order,
   products,
   packages,
-    warehouse,
+  warehouse,
   delhiveryOrderId,
   service_type,
 }) => {
+  // ======================================================
+  // BASIC PACKAGE VALIDATION
+  // ======================================================
 
-  const totalQuantity =
-    products.reduce(
-      (
-        total,
-        product
-      ) => {
+  if (!Array.isArray(packages) || packages.length === 0) {
+    throw new Error(`No package found for Order #${order.id}`);
+  }
 
-        return (
-          total +
-          (
-            Number(
-              product.qty
-            ) || 1
-          )
-        );
+  const firstPackage = packages[0];
 
-      },
-      0
-    );
-
-  const totalAmount =
-    products.reduce(
-      (
-        total,
-        product
-      ) => {
-
-        const price =
-          Number(
-            product.price
-          ) || 0;
-
-        const qty =
-          Number(
-            product.qty
-          ) || 1;
-
-        return (
-          total +
-          price * qty
-        );
-
-      },
-      0
-    );
-
-  const totalWeight =
-    packages.reduce(
-      (
-        total,
-        packageData
-      ) => {
-
-        const weight =
-          Number(
-            packageData.weight
-          ) || 0;
-
-        const count =
-          Number(
-            packageData.package_count
-          ) || 1;
-
-        return (
-          total +
-          weight * count
-        );
-
-      },
-      0
-    );
+  const packageLength = Number(firstPackage.length);
+  const packageWidth = Number(firstPackage.width);
+  const packageHeight = Number(firstPackage.height);
 
   if (
-    totalWeight <= 0
+    !Number.isFinite(packageLength) ||
+    packageLength <= 0 ||
+    !Number.isFinite(packageWidth) ||
+    packageWidth <= 0 ||
+    !Number.isFinite(packageHeight) ||
+    packageHeight <= 0
   ) {
+    throw new Error(
+      `Invalid package dimensions for Order #${order.id}`
+    );
+  }
+
+  // ======================================================
+  // TOTAL QUANTITY
+  // ======================================================
+
+  const totalQuantity = products.reduce(
+    (total, product) => {
+      return (
+        total +
+        (Number(product.qty) || 1)
+      );
+    },
+    0
+  );
+
+  // ======================================================
+  // TOTAL AMOUNT
+  // ======================================================
+
+  const totalAmount = products.reduce(
+    (total, product) => {
+      const price =
+        Number(product.price) || 0;
+
+      const qty =
+        Number(product.qty) || 1;
+
+      return total + price * qty;
+    },
+    0
+  );
+
+  // ======================================================
+  // TOTAL WEIGHT
+  // ======================================================
+
+  const totalWeight = packages.reduce(
+    (total, packageData) => {
+      const weight =
+        Number(packageData.weight) || 0;
+
+      const count =
+        Number(packageData.package_count) || 1;
+
+      return total + weight * count;
+    },
+    0
+  );
+
+  if (totalWeight <= 0) {
     throw new Error(
       `Invalid package weight for Order #${order.id}`
     );
   }
 
+  // ======================================================
+  // PAYMENT MODE
+  // ======================================================
+
   const paymentMode =
     String(
-      order.payment_type ||
-      "Prepaid"
+      order.payment_type || "Prepaid"
     )
       .trim()
-      .toLowerCase() ===
-    "cod"
+      .toLowerCase() === "cod"
       ? "COD"
       : "Prepaid";
 
@@ -630,82 +632,78 @@ const buildDelhiveryShipment = ({
       ? totalAmount
       : 0;
 
-  console.log(
-  "========== WAREHOUSE DEBUG =========="
-);
+  // ======================================================
+  // SELLER / PICKUP ADDRESS
+  // ======================================================
 
-console.log(
-  "warehouse.warehouse_name:",
-  warehouse?.warehouse_name
-);
+  const sellerAddress = [
+    warehouse.address_line1,
+    warehouse.address_line2,
+    warehouse.floor_no
+      ? `Floor ${warehouse.floor_no}`
+      : null,
+    warehouse.landmark
+      ? `Landmark: ${warehouse.landmark}`
+      : null,
+    warehouse.city,
+    warehouse.state,
+    warehouse.pincode
+      ? `PIN - ${warehouse.pincode}`
+      : null,
+    warehouse.country || "India",
+  ]
+    .filter(Boolean)
+    .join(", ");
 
-console.log(
-  "warehouse.warehouse_name JSON:",
-  JSON.stringify(warehouse?.warehouse_name)
-);
+  // ======================================================
+  // DELIVERY ADDRESS
+  // ======================================================
 
-console.log(
-  "warehouse FULL:",
-  JSON.stringify(warehouse, null, 2)
-);
+  const deliveryAddress = [
+    order.address_line1,
+    order.address_line2,
+    order.floor_no
+      ? `Floor ${order.floor_no}`
+      : null,
+    order.landmark
+      ? `Landmark: ${order.landmark}`
+      : null,
+  ]
+    .filter(Boolean)
+    .join(", ");
 
-console.log(
-  "====================================="
-);
+  // ======================================================
+  // DELHIVERY SHIPMENT
+  // ======================================================
 
   const shipment = {
+    // ----------------------------------------------------
+    // CUSTOMER
+    // ----------------------------------------------------
 
-  name:
-    order.consignee_name,
+    name: order.consignee_name,
 
-  order:
-    String(
+    order: String(
       delhiveryOrderId ||
-      `SD-${order.id}-${order.order_id}`
+        `SD-${order.id}-${order.order_id}`
     ),
 
-  shipping_mode:
-    String(service_type || "ROAD")
-      .trim()
-      .toUpperCase() === "AIR"
-      ? "Express"
-      : "Surface",
+    phone: order.mobile,
 
-  phone:
-    order.mobile,
+    add: deliveryAddress,
 
-    add:
-      [
-        order.address_line1,
+    pin: Number(order.pincode),
 
-        order.address_line2,
+    city: order.city,
 
-        order.floor_no
-          ? `Floor ${order.floor_no}`
-          : null,
-
-        order.landmark
-          ? `Landmark: ${order.landmark}`
-          : null,
-
-      ]
-        .filter(Boolean)
-        .join(", "),
-
-    pin:
-      Number(
-        order.pincode
-      ),
-
-    city:
-      order.city,
-
-    state:
-      order.state,
+    state: order.state,
 
     country:
-      order.country ||
-      "India",
+      order.country || "India",
+
+    // ----------------------------------------------------
+    // PRODUCT
+    // ----------------------------------------------------
 
     products_desc:
       products
@@ -714,26 +712,72 @@ console.log(
             product.product_name
         )
         .filter(Boolean)
-        .join(", ") ||
-      "Shipment",
+        .join(", ") || "Shipment",
 
-    quantity:
-      String(
-        totalQuantity
-      ),
+    quantity: String(totalQuantity),
 
-    payment_mode:
-      paymentMode,
+    // ----------------------------------------------------
+    // PAYMENT
+    // ----------------------------------------------------
+
+    payment_mode: paymentMode,
 
     total_amount:
-      Number(
-        totalAmount.toFixed(2)
-      ),
+      Number(totalAmount.toFixed(2)),
 
-     weight: Math.ceil(
-  Number(totalWeight) * 1000
-),
-   pickup_location: warehouse.warehouse_name,
+    // ----------------------------------------------------
+    // WEIGHT
+    // ----------------------------------------------------
+
+    weight: Math.ceil(
+      Number(totalWeight) * 1000
+    ),
+
+    // ----------------------------------------------------
+    // DIMENSIONS
+    // ----------------------------------------------------
+
+    shipment_length: packageLength,
+
+    shipment_width: packageWidth,
+
+    shipment_height: packageHeight,
+
+    // ----------------------------------------------------
+    // SHIPPING MODE
+    // ----------------------------------------------------
+
+    shipping_mode:
+      String(
+        service_type || "ROAD"
+      )
+        .trim()
+        .toUpperCase() === "AIR"
+        ? "Express"
+        : "Surface",
+
+    // ----------------------------------------------------
+    // PICKUP LOCATION
+    // IMPORTANT:
+    // Delhivery expects the registered pickup-location
+    // name here.
+    // ----------------------------------------------------
+
+    pickup_location: warehouse.warehouse_name,
+
+    // ----------------------------------------------------
+    // SELLER DETAILS
+    // ----------------------------------------------------
+
+    seller_name:
+      warehouse.warehouse_name,
+
+    seller_add:
+      sellerAddress,
+
+    // ----------------------------------------------------
+    // RETURN DETAILS
+    // ----------------------------------------------------
 
     return_name:
       order.return_name || "",
@@ -741,14 +785,13 @@ console.log(
     return_phone:
       order.return_phone || "",
 
-    return_add:
-      [
-        order.return_address_line1,
-        order.return_address_line2,
-        order.return_landmark,
-      ]
-        .filter(Boolean)
-        .join(", "),
+    return_add: [
+      order.return_address_line1,
+      order.return_address_line2,
+      order.return_landmark,
+    ]
+      .filter(Boolean)
+      .join(", "),
 
     return_pin:
       order.return_pincode
@@ -763,18 +806,15 @@ console.log(
 
     return_country:
       order.return_country || "India",
-
   };
 
-  if (
-    paymentMode === "COD"
-  ) {
+  // ======================================================
+  // COD
+  // ======================================================
 
+  if (paymentMode === "COD") {
     shipment.cod_amount =
-      Number(
-        codAmount.toFixed(2)
-      );
-
+      Number(codAmount.toFixed(2));
   }
 
   return shipment;
