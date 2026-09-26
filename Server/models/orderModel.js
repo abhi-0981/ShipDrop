@@ -1263,6 +1263,68 @@ const searchPreviousCustomers = (userId, search) => {
 };
 
 
+
+
+
+
+// ======================================================
+// SEARCH ORDER FOR TRACKING
+// ======================================================
+
+const searchOrderForTracking = (userId, search) => {
+  return new Promise((resolve, reject) => {
+    const term = String(search || "").trim();
+
+    if (!userId || !term) {
+      return resolve(null);
+    }
+
+    const query = `
+      SELECT
+        id,
+        order_id,
+        user_id,
+        awb,
+        status,
+        tracking_status,
+        tracking_data,
+        tracking_updated_at,
+        created_at
+      FROM orders
+      WHERE user_id = ?
+        AND (
+          CAST(order_id AS CHAR) = ?
+          OR UPPER(TRIM(COALESCE(awb, ''))) = UPPER(?)
+        )
+      LIMIT 1
+    `;
+
+    db.query(
+      query,
+      [
+        Number(userId),
+        term,
+        term,
+      ],
+      (error, rows) => {
+        if (error) {
+          return reject(error);
+        }
+
+        return resolve(rows?.[0] || null);
+      }
+    );
+  });
+};
+
+
+
+
+
+
+
+
+
 // ======================================================
 // EXPORTS
 // ======================================================
@@ -1278,4 +1340,6 @@ module.exports = {
   updateOrder,
   deleteProcessingOrders,
   searchPreviousCustomers,
+
+  searchOrderForTracking,
 };

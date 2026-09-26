@@ -9,10 +9,12 @@ const {
   updateOrder,
   deleteProcessingOrders,
   searchPreviousCustomers,
+  searchOrderForTracking,
 } = require("../models/orderModel");
 
 const {
   attachTrackingToOrders,
+  getTrackingForWaybills,
 } = require("../services/delhiveryTrackingService");
 
 
@@ -1560,6 +1562,106 @@ const searchPreviousCustomersController = async (req, res) => {
   }
 };
 
+
+// ======================================================
+// TRACKING SEARCH
+// ======================================================
+
+const searchTrackingController = async (req, res) => {
+  try {
+    const userId = Number(
+      req.query?.user_id ||
+      req.body?.user_id
+    );
+
+    const search = String(
+      req.query?.search ||
+      req.body?.search ||
+      ""
+    ).trim();
+
+    if (!Number.isInteger(userId) || userId <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Valid user_id is required",
+      });
+    }
+
+    if (!search) {
+      return res.status(400).json({
+        success: false,
+        message: "Tracking ID or Order ID is required",
+      });
+    }
+
+    const order = await searchOrderForTracking(
+      userId,
+      search
+    );
+
+    // IMPORTANT:
+    // Do not reveal whether the shipment belongs
+    // to another user.
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Shipment not found",
+      });
+    }
+
+    const awb = String(order.awb || "").trim();
+
+if (awb) {
+  const trackingMap = await getTrackingForWaybills([awb]);
+
+  const tracking = trackingMap?.[awb] || {};
+
+  order.tracking_status =
+    tracking.tracking_status || order.tracking_status;
+
+  order.tracking_raw_status =
+    tracking.tracking_raw_status || null;
+
+  order.tracking_status_code =
+    tracking.tracking_status_code || null;
+
+  order.tracking_status_type =
+    tracking.tracking_status_type || null;
+
+  order.tracking_status_datetime =
+    tracking.tracking_status_datetime || null;
+
+  order.tracking_location =
+    tracking.tracking_location || null;
+
+  order.tracking_instructions =
+    tracking.tracking_instructions || null;
+
+  order.tracking_scans =
+    tracking.tracking_scans || [];
+
+  order.tracking_awb =
+    tracking.tracking_awb || awb;
+}
+
+    return res.status(200).json({
+      success: true,
+      order,
+    });
+
+  } catch (error) {
+    console.error(
+      "Tracking search error:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to search shipment",
+    });
+  }
+};
+
 // ======================================================
 // EXPORT
 // ======================================================
@@ -1587,4 +1689,6 @@ module.exports = {
   searchPreviousCustomers:
     searchPreviousCustomersController,
 
+  searchTracking:
+    searchTrackingController,
 };

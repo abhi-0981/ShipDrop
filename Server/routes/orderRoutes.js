@@ -1,5 +1,6 @@
 const express = require("express");
 const multer = require("multer");
+
 const router = express.Router();
 
 const {
@@ -10,12 +11,16 @@ const {
   updateOrder,
   deleteOrders,
   searchPreviousCustomers,
+  searchTracking,
 } = require("../controllers/orderController");
 
-const { importOrders } = require("../controllers/importOrderController");
+const {
+  importOrders,
+} = require("../controllers/importOrderController");
 
 const upload = multer({
   storage: multer.memoryStorage(),
+
   limits: {
     fileSize: 10 * 1024 * 1024,
   },
@@ -25,7 +30,10 @@ const upload = multer({
 // CREATE ORDER
 // ======================================================
 
-router.post("/create", createOrder);
+router.post(
+  "/create",
+  createOrder
+);
 
 // ======================================================
 // IMPORT ORDERS
@@ -34,7 +42,7 @@ router.post("/create", createOrder);
 router.post(
   "/import",
   upload.single("file"),
-  importOrders,
+  importOrders
 );
 
 // ======================================================
@@ -45,7 +53,7 @@ router.post(
 
 router.get(
   "/customers/search",
-  searchPreviousCustomers,
+  searchPreviousCustomers
 );
 
 // ======================================================
@@ -54,7 +62,7 @@ router.get(
 
 router.get(
   "/processing",
-  getProcessingOrders,
+  getProcessingOrders
 );
 
 // ======================================================
@@ -63,7 +71,18 @@ router.get(
 
 router.get(
   "/all",
-  getAllOrders,
+  getAllOrders
+);
+
+// ======================================================
+// TRACKING SEARCH
+// IMPORTANT:
+// Ye /:id se PEHLE hona chahiye.
+// ======================================================
+
+router.get(
+  "/tracking-search",
+  searchTracking
 );
 
 // ======================================================
@@ -72,7 +91,7 @@ router.get(
 
 router.get(
   "/:id",
-  getOrderById,
+  getOrderById
 );
 
 // ======================================================
@@ -81,7 +100,7 @@ router.get(
 
 router.put(
   "/:id",
-  updateOrder,
+  updateOrder
 );
 
 // ======================================================
@@ -90,7 +109,11 @@ router.put(
 
 router.post(
   "/delete",
-  deleteOrders,
+  deleteOrders
 );
+
+// ======================================================
+// EXPORT
+// ======================================================
 
 module.exports = router;

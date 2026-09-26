@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { toast } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
-import { FiMenu } from "react-icons/fi";
+import { FiMenu , FiSearch } from "react-icons/fi";
 import api from "../../services/api";
 
 const ImportIcon = () => (
@@ -97,6 +97,8 @@ function TopNavbar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed })
   const profileRef = useRef(null);
   const [amount, setAmount] = useState("");
   const [loading, setLoading] = useState(false);
+  const [trackingSearch, setTrackingSearch] = useState("");
+const [trackingSearchLoading, setTrackingSearchLoading] = useState(false);
 
   // ======================================================
   // IMPORT ORDER STATE
@@ -291,6 +293,63 @@ function TopNavbar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed })
       setLoading(false);
     }
   };
+
+
+  // ======================================================
+// TRACKING SEARCH
+// ======================================================
+
+const handleTrackingSearch = async (event) => {
+  event?.preventDefault();
+
+  const search = String(trackingSearch || "").trim();
+
+  if (!search) {
+    toast.error("Enter Tracking ID or Order ID");
+    return;
+  }
+
+  const userId = user?.id;
+
+  if (!userId) {
+    toast.error("Please login again");
+    return;
+  }
+
+  setTrackingSearchLoading(true);
+
+  try {
+    const response = await api.get("/orders/tracking-search", {
+      params: {
+        user_id: userId,
+        search,
+      },
+    });
+
+    const order = response.data?.order;
+
+    if (!order) {
+      toast.error("Shipment not found");
+      return;
+    }
+
+    console.log("Tracking Search Result:", order);
+
+    toast.success(
+      order.tracking_status
+        ? `Status: ${order.tracking_status}`
+        : "Shipment found"
+    );
+
+  } catch (error) {
+    toast.error(
+      error.response?.data?.message ||
+        "Unable to search shipment"
+    );
+  } finally {
+    setTrackingSearchLoading(false);
+  }
+};
 
   // ======================================================
   // IMPORT ORDER HELPERS
@@ -766,6 +825,39 @@ if (!normalizedErrors.length) {
         {/* RIGHT SECTION: WALLET PILL + ACTIONS + PROFILE */}
         {/* ======================================================== */}
         <div className="flex items-center gap-1 sm:gap-2.5 shrink-0">
+
+          {/* TRACKING SEARCH */}
+<form
+  onSubmit={handleTrackingSearch}
+  className="hidden md:flex relative w-[260px] lg:w-[320px] xl:w-[380px]"
+>
+  <FiSearch
+    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+    size={17}
+  />
+
+  <input
+    type="text"
+    value={trackingSearch}
+    onChange={(e) => setTrackingSearch(e.target.value)}
+    placeholder="Enter Tracking ID or Order ID..."
+    disabled={trackingSearchLoading}
+    className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/70 pl-10 pr-11 text-xs font-medium text-slate-700 placeholder:text-slate-400 outline-none transition-all duration-200 focus:border-[#008dd2] focus:bg-white focus:ring-4 focus:ring-[#008dd2]/10 disabled:cursor-not-allowed disabled:opacity-70"
+  />
+
+  <button
+    type="submit"
+    disabled={trackingSearchLoading || !trackingSearch.trim()}
+    className="absolute right-1.5 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-lg bg-[#008dd2] text-white transition-all duration-200 hover:bg-[#007ab6] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+    title="Search Shipment"
+  >
+    {trackingSearchLoading ? (
+      <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+    ) : (
+      <FiSearch size={14} />
+    )}
+  </button>
+</form>
           {/* IMPORT ORDER */}
           <button
             type="button"
