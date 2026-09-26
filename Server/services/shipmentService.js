@@ -838,17 +838,17 @@ const getOrCreatePickupRequest = async ({
     // ====================================================
 
     await query(
-      `
-        UPDATE manifests
-        SET
-          pickup_request_id = ?
-        WHERE id = ?
-      `,
-      [
-        existingPickup.id,
-        manifestId,
-      ]
-    );
+  `
+    UPDATE manifests
+    SET
+      pickup_request_id = ?
+    WHERE id = ?
+  `,
+  [
+    existingPickup.delhivery_request_id,
+    manifestId,
+  ]
+);
 
     const newPackageCount =
       Number(
@@ -1021,19 +1021,18 @@ const getOrCreatePickupRequest = async ({
   // LINK MANIFEST WITH SHIPDROP PICKUP
   // ======================================================
 
-  await query(
-    `
-      UPDATE manifests
-      SET
-        pickup_request_id = ?
-      WHERE id = ?
-    `,
-    [
-      pickupRequestId,
-      manifestId,
-    ]
-  );
-
+await query(
+  `
+    UPDATE manifests
+    SET
+      pickup_request_id = ?
+    WHERE id = ?
+  `,
+  [
+    delhiveryPickupId,
+    manifestId,
+  ]
+);
   console.log(
     "=============================================="
   );
