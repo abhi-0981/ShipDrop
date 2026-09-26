@@ -611,6 +611,7 @@ const getOrCreatePickupRequest = async ({
   warehouseId,
   warehouseName,
   manifestId,
+  expectedPackageCount = 1,
 }) => {
   if (!warehouseId) {
     throw new Error(
@@ -623,6 +624,24 @@ const getOrCreatePickupRequest = async ({
       "Warehouse name is required for pickup request"
     );
   }
+
+
+  const packageCount = Number(
+  expectedPackageCount
+);
+
+if (
+  !Number.isInteger(packageCount) ||
+  packageCount <= 0
+) {
+  throw new Error(
+    "Invalid expected package count"
+  );
+}
+
+
+
+
 
   // ======================================================
   // INDIA DATE & TIME
@@ -820,18 +839,19 @@ const getOrCreatePickupRequest = async ({
     // INCREASE INTERNAL PACKAGE COUNT
     // ====================================================
 
-    await query(
-      `
-        UPDATE pickup_requests
-        SET
-          expected_package_count =
-            expected_package_count + 1
-        WHERE id = ?
-      `,
-      [
-        existingPickup.id,
-      ]
-    );
+   await query(
+  `
+    UPDATE pickup_requests
+    SET
+      expected_package_count =
+        expected_package_count + ?
+    WHERE id = ?
+  `,
+  [
+    packageCount,
+    existingPickup.id,
+  ]
+);
 
     // ====================================================
     // LINK CURRENT MANIFEST
@@ -851,9 +871,9 @@ const getOrCreatePickupRequest = async ({
 );
 
     const newPackageCount =
-      Number(
-        existingPickup.expected_package_count
-      ) + 1;
+  Number(
+    existingPickup.expected_package_count
+  ) + packageCount;
 
     console.log(
       "Updated Package Count:",
@@ -907,10 +927,10 @@ const getOrCreatePickupRequest = async ({
     pickupTime
   );
 
-  console.log(
-    "Expected Package Count:",
-    1
-  );
+ console.log(
+  "Expected Package Count:",
+  packageCount
+);
 
   console.log(
     "=============================================="
@@ -929,8 +949,8 @@ const getOrCreatePickupRequest = async ({
       pickupLocation:
         warehouseName,
 
-      expectedPackageCount:
-        1,
+    expectedPackageCount:
+  packageCount,
     });
 
   // ======================================================
@@ -1004,7 +1024,7 @@ const getOrCreatePickupRequest = async ({
 
         pickupTime,
 
-        1,
+        packageCount,
 
         delhiveryPickupId,
 
@@ -1067,8 +1087,7 @@ await query(
 
     created: true,
 
-    expectedPackageCount: 1,
-  };
+expectedPackageCount: packageCount,  };
 };
 
 const getWarehouseForOrder = async (
@@ -3242,6 +3261,8 @@ await txQuery(
 
     const shippedOrders = [];
 
+    const pickupGroups = new Map();
+
     for (
       const shipment
       of shipmentResults
@@ -3335,6 +3356,22 @@ await txQuery(
           ]
         );
 
+        const expectedPackageCount =
+  shipment.packages.reduce(
+    (total, packageData) => {
+      const packageCount =
+        Number(
+          packageData.package_count
+        ) || 1;
+
+      return (
+        total +
+        packageCount
+      );
+    },
+    0
+  );
+
       shippedOrders.push({
 
         order_id:
@@ -3345,6 +3382,9 @@ await txQuery(
 
         manifest_id:
           manifestResult.insertId,
+
+         expected_package_count:
+    expectedPackageCount,
 
         shipping_charge:
           shipment.shippingCharge,
@@ -3367,6 +3407,40 @@ await txQuery(
           shipment.warehouse.warehouse_name,
 
       });
+
+      const warehouseKey =
+  String(
+    shipment.warehouse.id
+  );
+
+if (!pickupGroups.has(warehouseKey)) {
+  pickupGroups.set(
+    warehouseKey,
+    {
+      warehouse_id:
+        shipment.warehouse.id,
+
+      warehouse_name:
+        shipment.warehouse.warehouse_name,
+
+      manifest_ids: [],
+
+      expected_package_count: 0,
+    }
+  );
+}
+
+const pickupGroup =
+  pickupGroups.get(
+    warehouseKey
+  );
+
+pickupGroup.manifest_ids.push(
+  manifestResult.insertId
+);
+
+pickupGroup.expected_package_count +=
+  expectedPackageCount;
 
     }
 
@@ -3396,6 +3470,147 @@ await txQuery(
     await commitTransaction(
       connection
     );
+
+     // ======================================================
+    // STEP 7
+    // CREATE / REUSE PICKUP FOR BULK SHIPMENTS
+    // ======================================================
+
+    try {
+
+      for (const pickupGroup of pickupGroups.values()) {
+
+        if (
+          !pickupGroup.manifest_ids ||
+          pickupGroup.manifest_ids.length === 0
+        ) {
+          continue;
+        }
+
+        console.log(
+          "=============================================="
+        );
+
+        console.log(
+          "📦 BULK PICKUP GROUP"
+        );
+
+        console.log(
+          "Warehouse ID:",
+          pickupGroup.warehouse_id
+        );
+
+        console.log(
+          "Warehouse:",
+          pickupGroup.warehouse_name
+        );
+
+        console.log(
+          "Manifest Count:",
+          pickupGroup.manifest_ids.length
+        );
+
+        console.log(
+          "Expected Package Count:",
+          pickupGroup.expected_package_count
+        );
+
+        console.log(
+          "=============================================="
+        );
+
+        const firstManifestId =
+          pickupGroup.manifest_ids[0];
+
+        const pickupResult =
+          await getOrCreatePickupRequest({
+            warehouseId:
+              pickupGroup.warehouse_id,
+
+            warehouseName:
+              pickupGroup.warehouse_name,
+
+            manifestId:
+              firstManifestId,
+
+            expectedPackageCount:
+              pickupGroup.expected_package_count,
+          });
+
+        // ====================================================
+        // LINK ALL MANIFESTS TO SAME DELHIVERY PICKUP ID
+        // ====================================================
+
+        const placeholders =
+          pickupGroup.manifest_ids
+            .map(() => "?")
+            .join(", ");
+
+        await query(
+          `
+            UPDATE manifests
+            SET
+              pickup_request_id = ?
+            WHERE id IN (${placeholders})
+          `,
+          [
+            pickupResult.delhiveryPickupId,
+            ...pickupGroup.manifest_ids,
+          ]
+        );
+
+        console.log(
+          "✅ BULK PICKUP READY"
+        );
+
+        console.log(
+          "Delhivery Pickup ID:",
+          pickupResult.delhiveryPickupId
+        );
+
+        console.log(
+          "Expected Package Count:",
+          pickupResult.expectedPackageCount
+        );
+
+        console.log(
+          "=============================================="
+        );
+      }
+
+    } catch (pickupError) {
+
+      // ====================================================
+      // IMPORTANT:
+      // MAIN BULK TRANSACTION IS ALREADY COMMITTED.
+      // DO NOT ROLLBACK THE COMMITTED CONNECTION.
+      // ====================================================
+
+      console.log(
+        "=============================================="
+      );
+
+      console.log(
+        "⚠️ BULK PICKUP REQUEST FAILED"
+      );
+
+      console.log(
+        "Error:",
+        pickupError.message
+      );
+
+      console.log(
+        "Orders are already manifested successfully."
+      );
+
+      console.log(
+        "Pickup can be retried separately."
+      );
+
+      console.log(
+        "=============================================="
+      );
+    }
 
     return {
 
