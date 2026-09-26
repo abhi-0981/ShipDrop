@@ -435,11 +435,17 @@ function TopNavbar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed })
             detail?.scan_type ||
             "Shipment update",
           location:
-            detail?.ScanLocation ||
-            detail?.scan_location ||
-            detail?.Location ||
-            detail?.location ||
-            "",
+  detail?.ScanLocation ||
+  detail?.scan_location ||
+  detail?.StatusLocation ||
+  detail?.status_location ||
+  detail?.Location ||
+  detail?.location ||
+  detail?.ScanLocationName ||
+  detail?.scan_location_name ||
+  detail?.StatusLocationName ||
+  detail?.status_location_name ||
+  "",
           dateTime:
             detail?.ScanDateTime ||
             detail?.scan_date_time ||
