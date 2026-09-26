@@ -3750,7 +3750,7 @@ pickupGroup.expected_package_count +=
         shippedOrders,
 
       delhivery_response:
-        delhiveryResponse,
+  delhiveryPackages,
 
     };
 
