@@ -108,25 +108,38 @@ function TopNavbar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed })
   const [showTrackingDetails, setShowTrackingDetails] = useState(false);
 
 
-  useEffect(() => {
+useEffect(() => {
   const search = String(trackingSearch || "").trim();
 
   if (!search || trackingSearchLoading) {
     return;
   }
 
-  // 14 digit AWB -> immediately search
+  // ============================================
+  // 14 DIGITS = AWB
+  // IMMEDIATELY SEARCH
+  // ============================================
   if (/^\d{14}$/.test(search)) {
     handleTrackingSearch();
     return;
   }
 
-  // Order ID -> wait until user stops typing
-  const timer = setTimeout(() => {
-    handleTrackingSearch();
-  }, 700);
+  // ============================================
+  // 6 DIGITS = ORDER ID
+  // WAIT 700ms AFTER TYPING STOPS
+  // ============================================
+  if (/^\d{6}$/.test(search)) {
+    const timer = setTimeout(() => {
+      handleTrackingSearch();
+    }, 700);
 
-  return () => clearTimeout(timer);
+    return () => clearTimeout(timer);
+  }
+
+  // ============================================
+  // ANY OTHER LENGTH
+  // DO NOTHING
+  // ============================================
 }, [trackingSearch]);
 
   // ======================================================
