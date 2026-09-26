@@ -143,6 +143,9 @@ LEFT JOIN pickup_requests pr
 LEFT JOIN order_products op
   ON op.order_id = o.id
 
+  LEFT JOIN order_packages pkg
+  ON pkg.order_id = o.id
+
       WHERE
 
         m.user_id = ?
