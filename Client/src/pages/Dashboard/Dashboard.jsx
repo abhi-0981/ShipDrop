@@ -541,61 +541,87 @@ function Dashboard() {
     navigate("/create-order");
   };
 
- if (pageLoading && !orders.length) {
+if (pageLoading && !orders.length) {
   return (
     <div className="min-h-full bg-[#f6f8fb] p-4 sm:p-6">
       <div className="flex min-h-[65vh] items-center justify-center">
         <div className="flex w-full max-w-[360px] flex-col items-center">
 
-          {/* TRUCK LOADER */}
-          <div className="relative h-[110px] w-full overflow-hidden">
+          {/* ================= TRUCK LOADER ================= */}
+          <div className="relative h-[100px] w-full overflow-hidden">
 
             {/* Road */}
-            <div className="absolute bottom-5 left-0 right-0 h-[2px] bg-slate-200" />
+            <div className="absolute bottom-4 left-0 right-0 h-[2px] bg-slate-200" />
 
-            {/* Moving road lines */}
-            <div className="absolute bottom-[17px] left-0 flex w-[200%] animate-[roadMove_1s_linear_infinite] gap-8">
-              {Array.from({ length: 12 }).map((_, index) => (
+            {/* Moving Road Lines */}
+            <div className="absolute bottom-[11px] left-0 flex w-[200%] animate-[roadMove_1s_linear_infinite] gap-7">
+              {Array.from({ length: 14 }).map((_, index) => (
                 <span
                   key={index}
-                  className="h-[3px] w-10 rounded-full bg-slate-300"
+                  className="h-[3px] w-8 rounded-full bg-slate-300"
                 />
               ))}
             </div>
 
-            {/* Truck */}
-            <div className="absolute bottom-5 left-[-90px] animate-[truckMove_2.8s_ease-in-out_infinite]">
-              <div className="relative">
+            {/* Truck Track */}
+            <div className="absolute inset-x-4 bottom-4 h-[58px]">
 
-                {/* Cargo */}
-                <div className="h-12 w-[82px] rounded-md border border-sky-600 bg-[#008dd2] shadow-md">
-                  <div className="absolute left-2 top-2 h-1 w-12 rounded bg-white/30" />
-                  <div className="absolute left-2 top-5 h-1 w-16 rounded bg-white/20" />
+              {/* Moving Truck */}
+              <div className="absolute bottom-0 left-0 animate-[truckDrive_2.2s_ease-in-out_infinite]">
+
+                <div className="relative h-[42px] w-[82px]">
+
+                  {/* Cargo Body */}
+                  <div className="absolute left-0 top-0 h-[34px] w-[55px] rounded-[4px] border border-sky-600 bg-[#008dd2] shadow-sm">
+
+                    {/* Cargo Details */}
+                    <div className="absolute left-2 top-2 h-[2px] w-9 rounded bg-white/40" />
+
+                    <div className="absolute left-2 top-5 h-[2px] w-11 rounded bg-white/25" />
+
+                    {/* Door Line */}
+                    <div className="absolute right-2 top-0 h-full w-[1px] bg-sky-700/30" />
+
+                  </div>
+
+                  {/* Cabin */}
+                  <div className="absolute bottom-[8px] right-0 h-[27px] w-[30px] rounded-r-[5px] rounded-t-[6px] border border-sky-600 bg-[#008dd2]">
+
+                    {/* Window */}
+                    <div className="absolute left-[5px] top-[5px] h-[10px] w-[18px] rounded-[2px] bg-sky-100/90" />
+
+                    {/* Window Divider */}
+                    <div className="absolute left-[13px] top-[5px] h-[10px] w-[1px] bg-sky-300" />
+
+                    {/* Headlight */}
+                    <div className="absolute -right-[2px] bottom-[5px] h-[4px] w-[3px] rounded-full bg-white" />
+
+                  </div>
+
+                  {/* Front Bumper */}
+                  <div className="absolute -right-[3px] bottom-[8px] h-[5px] w-[4px] rounded-r bg-slate-500" />
+
+                  {/* Back Wheel */}
+                  <div className="absolute bottom-0 left-[9px] h-[14px] w-[14px] rounded-full border-[2px] border-slate-700 bg-white">
+
+                    <div className="absolute left-1/2 top-1/2 h-[4px] w-[4px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-slate-600" />
+
+                  </div>
+
+                  {/* Front Wheel */}
+                  <div className="absolute bottom-0 right-[5px] h-[14px] w-[14px] rounded-full border-[2px] border-slate-700 bg-white">
+
+                    <div className="absolute left-1/2 top-1/2 h-[4px] w-[4px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-slate-600" />
+
+                  </div>
+
                 </div>
-
-                {/* Cabin */}
-                <div className="absolute -right-[30px] bottom-0 h-9 w-9 rounded-r-md rounded-t-md border border-sky-600 bg-[#008dd2]">
-                  <div className="absolute right-1.5 top-1.5 h-3.5 w-5 rounded-sm bg-white/80" />
-                </div>
-
-                {/* Front bumper */}
-                <div className="absolute -right-[33px] bottom-0 h-2 w-2 rounded-r bg-sky-700" />
-
-                {/* Wheels */}
-                <div className="absolute -bottom-2 left-3 h-5 w-5 animate-spin rounded-full border-[3px] border-slate-700 bg-white">
-                  <div className="absolute left-1/2 top-1/2 h-1 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-slate-700" />
-                </div>
-
-                <div className="absolute -bottom-2 right-[-20px] h-5 w-5 animate-spin rounded-full border-[3px] border-slate-700 bg-white">
-                  <div className="absolute left-1/2 top-1/2 h-1 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-slate-700" />
-                </div>
-
               </div>
             </div>
           </div>
 
-          {/* TEXT */}
-          <div className="mt-2 text-center">
+          {/* Loading Text */}
+          <div className="mt-1 text-center">
             <p className="text-[14px] font-bold text-slate-700">
               Loading dashboard...
             </p>
@@ -608,20 +634,19 @@ function Dashboard() {
         </div>
       </div>
 
-      {/* Animation */}
+      {/* ================= ANIMATIONS ================= */}
       <style>{`
-        @keyframes truckMove {
+        @keyframes truckDrive {
           0% {
             transform: translateX(0);
           }
-          45% {
-            transform: translateX(220px);
+
+          50% {
+            transform: translateX(calc(100% - 82px));
           }
-          55% {
-            transform: translateX(220px);
-          }
+
           100% {
-            transform: translateX(460px);
+            transform: translateX(0);
           }
         }
 
@@ -629,6 +654,7 @@ function Dashboard() {
           from {
             transform: translateX(0);
           }
+
           to {
             transform: translateX(-72px);
           }
