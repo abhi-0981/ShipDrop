@@ -541,20 +541,102 @@ function Dashboard() {
     navigate("/create-order");
   };
 
-  if (pageLoading && !orders.length) {
-    return (
-      <div className="min-h-full bg-[#f6f8fb] p-4 sm:p-6">
-        <div className="flex min-h-[65vh] items-center justify-center">
-          <div className="flex flex-col items-center">
-            <div className="h-8 w-8 animate-spin rounded-full border-3 border-slate-200 border-t-[#008dd2]" />
-            <p className="mt-3 text-[13px] font-medium text-slate-500">
+ if (pageLoading && !orders.length) {
+  return (
+    <div className="min-h-full bg-[#f6f8fb] p-4 sm:p-6">
+      <div className="flex min-h-[65vh] items-center justify-center">
+        <div className="flex w-full max-w-[360px] flex-col items-center">
+
+          {/* TRUCK LOADER */}
+          <div className="relative h-[110px] w-full overflow-hidden">
+
+            {/* Road */}
+            <div className="absolute bottom-5 left-0 right-0 h-[2px] bg-slate-200" />
+
+            {/* Moving road lines */}
+            <div className="absolute bottom-[17px] left-0 flex w-[200%] animate-[roadMove_1s_linear_infinite] gap-8">
+              {Array.from({ length: 12 }).map((_, index) => (
+                <span
+                  key={index}
+                  className="h-[3px] w-10 rounded-full bg-slate-300"
+                />
+              ))}
+            </div>
+
+            {/* Truck */}
+            <div className="absolute bottom-5 left-[-90px] animate-[truckMove_2.8s_ease-in-out_infinite]">
+              <div className="relative">
+
+                {/* Cargo */}
+                <div className="h-12 w-[82px] rounded-md border border-sky-600 bg-[#008dd2] shadow-md">
+                  <div className="absolute left-2 top-2 h-1 w-12 rounded bg-white/30" />
+                  <div className="absolute left-2 top-5 h-1 w-16 rounded bg-white/20" />
+                </div>
+
+                {/* Cabin */}
+                <div className="absolute -right-[30px] bottom-0 h-9 w-9 rounded-r-md rounded-t-md border border-sky-600 bg-[#008dd2]">
+                  <div className="absolute right-1.5 top-1.5 h-3.5 w-5 rounded-sm bg-white/80" />
+                </div>
+
+                {/* Front bumper */}
+                <div className="absolute -right-[33px] bottom-0 h-2 w-2 rounded-r bg-sky-700" />
+
+                {/* Wheels */}
+                <div className="absolute -bottom-2 left-3 h-5 w-5 animate-spin rounded-full border-[3px] border-slate-700 bg-white">
+                  <div className="absolute left-1/2 top-1/2 h-1 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-slate-700" />
+                </div>
+
+                <div className="absolute -bottom-2 right-[-20px] h-5 w-5 animate-spin rounded-full border-[3px] border-slate-700 bg-white">
+                  <div className="absolute left-1/2 top-1/2 h-1 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-slate-700" />
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+          {/* TEXT */}
+          <div className="mt-2 text-center">
+            <p className="text-[14px] font-bold text-slate-700">
               Loading dashboard...
             </p>
+
+            <p className="mt-1 text-[11px] text-slate-400">
+              Getting your shipments ready
+            </p>
           </div>
+
         </div>
       </div>
-    );
-  }
+
+      {/* Animation */}
+      <style>{`
+        @keyframes truckMove {
+          0% {
+            transform: translateX(0);
+          }
+          45% {
+            transform: translateX(220px);
+          }
+          55% {
+            transform: translateX(220px);
+          }
+          100% {
+            transform: translateX(460px);
+          }
+        }
+
+        @keyframes roadMove {
+          from {
+            transform: translateX(0);
+          }
+          to {
+            transform: translateX(-72px);
+          }
+        }
+      `}</style>
+    </div>
+  );
+}
 
   return (
     <div className="min-h-full w-full overflow-x-hidden bg-[#f6f8fb] p-3.5 sm:p-5 md:p-6 pb-24 lg:pb-8">
