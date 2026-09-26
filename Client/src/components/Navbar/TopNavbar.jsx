@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { toast } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
-import { FiMenu , FiSearch } from "react-icons/fi";
+import { FiMenu, FiSearch } from "react-icons/fi";
 import api from "../../services/api";
 
 const ImportIcon = () => (
@@ -97,8 +97,15 @@ function TopNavbar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed })
   const profileRef = useRef(null);
   const [amount, setAmount] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // ======================================================
+  // TRACKING SEARCH STATE
+  // ======================================================
+
   const [trackingSearch, setTrackingSearch] = useState("");
-const [trackingSearchLoading, setTrackingSearchLoading] = useState(false);
+  const [trackingSearchLoading, setTrackingSearchLoading] = useState(false);
+  const [trackingOrder, setTrackingOrder] = useState(null);
+  const [showTrackingDetails, setShowTrackingDetails] = useState(false);
 
   // ======================================================
   // IMPORT ORDER STATE
@@ -294,62 +301,174 @@ const [trackingSearchLoading, setTrackingSearchLoading] = useState(false);
     }
   };
 
-
   // ======================================================
-// TRACKING SEARCH
-// ======================================================
+  // TRACKING HELPERS
+  // ======================================================
 
-const handleTrackingSearch = async (event) => {
-  event?.preventDefault();
+  const handleTrackingSearch = async (event) => {
+    event?.preventDefault();
 
-  const search = String(trackingSearch || "").trim();
+    const search = String(trackingSearch || "").trim();
 
-  if (!search) {
-    toast.error("Enter Tracking ID or Order ID");
-    return;
-  }
-
-  const userId = user?.id;
-
-  if (!userId) {
-    toast.error("Please login again");
-    return;
-  }
-
-  setTrackingSearchLoading(true);
-
-  try {
-    const response = await api.get("/orders/tracking-search", {
-      params: {
-        user_id: userId,
-        search,
-      },
-    });
-
-    const order = response.data?.order;
-
-    if (!order) {
-      toast.error("Shipment not found");
+    if (!search) {
+      toast.error("Enter Tracking ID or Order ID");
       return;
     }
 
-    console.log("Tracking Search Result:", order);
+    const userId = user?.id;
 
-    toast.success(
-      order.tracking_status
-        ? `Status: ${order.tracking_status}`
-        : "Shipment found"
-    );
+    if (!userId) {
+      toast.error("Please login again");
+      return;
+    }
 
-  } catch (error) {
-    toast.error(
-      error.response?.data?.message ||
-        "Unable to search shipment"
-    );
-  } finally {
-    setTrackingSearchLoading(false);
-  }
-};
+    setTrackingSearchLoading(true);
+
+    try {
+      const response = await api.get("/orders/tracking-search", {
+        params: {
+          user_id: userId,
+          search,
+        },
+      });
+
+      const order = response.data?.order;
+
+      if (!order) {
+        toast.error("Shipment not found");
+        return;
+      }
+
+      setTrackingOrder(order);
+      setShowTrackingDetails(true);
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message ||
+          "Unable to search shipment"
+      );
+    } finally {
+      setTrackingSearchLoading(false);
+    }
+  };
+
+  const closeTrackingDetails = () => {
+    setShowTrackingDetails(false);
+    setTrackingOrder(null);
+  };
+
+  const formatTrackingDateTime = (value) => {
+    if (!value) return "—";
+
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+      return String(value);
+    }
+
+    return date.toLocaleString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: true,
+    });
+  };
+
+  const formatTrackingDate = (value) => {
+    if (!value) return "—";
+
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+      return String(value);
+    }
+
+    return date.toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
+  const humanizeTrackingStatus = (value) => {
+    const text = String(value || "").trim();
+
+    if (!text) return "Tracking unavailable";
+
+    return text
+      .toLowerCase()
+      .split(" ")
+      .map((word) =>
+        word ? word.charAt(0).toUpperCase() + word.slice(1) : word
+      )
+      .join(" ");
+  };
+
+  const getTrackingScans = (order) => {
+    const scans = Array.isArray(order?.tracking_scans)
+      ? order.tracking_scans
+      : [];
+
+    return scans
+      .map((scan, index) => {
+        const detail =
+          scan?.ScanDetail ||
+          scan?.scanDetail ||
+          scan?.scan_detail ||
+          scan ||
+          {};
+
+        return {
+          id: `${index}-${
+            detail?.ScanDateTime ||
+            detail?.scan_date_time ||
+            detail?.Scan ||
+            index
+          }`,
+          status:
+            detail?.Instructions ||
+            detail?.ScanType ||
+            detail?.ScanGroup ||
+            detail?.Status ||
+            detail?.scan_type ||
+            "Shipment update",
+          location:
+            detail?.ScanLocation ||
+            detail?.scan_location ||
+            detail?.Location ||
+            detail?.location ||
+            "",
+          dateTime:
+            detail?.ScanDateTime ||
+            detail?.scan_date_time ||
+            detail?.StatusDateTime ||
+            detail?.status_date_time ||
+            detail?.DateTime ||
+            detail?.date_time ||
+            null,
+          instructions:
+            detail?.Instructions ||
+            detail?.instructions ||
+            "",
+        };
+      })
+      .sort((a, b) => {
+        const aTime = new Date(a.dateTime || 0).getTime();
+        const bTime = new Date(b.dateTime || 0).getTime();
+        return bTime - aTime;
+      });
+  };
+
+  const getTrackingCourier = (order) =>
+    order?.courier_name ||
+    order?.courier ||
+    order?.partner_name ||
+    order?.partner ||
+    "Delhivery";
+
+  const trackingScans = getTrackingScans(trackingOrder);
 
   // ======================================================
   // IMPORT ORDER HELPERS
@@ -825,39 +944,40 @@ if (!normalizedErrors.length) {
         {/* RIGHT SECTION: WALLET PILL + ACTIONS + PROFILE */}
         {/* ======================================================== */}
         <div className="flex items-center gap-1 sm:gap-2.5 shrink-0">
-
           {/* TRACKING SEARCH */}
-<form
-  onSubmit={handleTrackingSearch}
-  className="hidden md:flex relative w-[260px] lg:w-[320px] xl:w-[380px]"
->
-  <FiSearch
-    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
-    size={17}
-  />
+          <form
+            onSubmit={handleTrackingSearch}
+            className="hidden md:flex relative w-[250px] lg:w-[310px] xl:w-[370px]"
+          >
+            <FiSearch
+              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+              size={17}
+            />
 
-  <input
-    type="text"
-    value={trackingSearch}
-    onChange={(e) => setTrackingSearch(e.target.value)}
-    placeholder="Enter Tracking ID or Order ID..."
-    disabled={trackingSearchLoading}
-    className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/70 pl-10 pr-11 text-xs font-medium text-slate-700 placeholder:text-slate-400 outline-none transition-all duration-200 focus:border-[#008dd2] focus:bg-white focus:ring-4 focus:ring-[#008dd2]/10 disabled:cursor-not-allowed disabled:opacity-70"
-  />
+            <input
+              type="text"
+              value={trackingSearch}
+              onChange={(event) => setTrackingSearch(event.target.value)}
+              placeholder="Enter Tracking ID or Order ID..."
+              disabled={trackingSearchLoading}
+              className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/70 pl-10 pr-11 text-xs font-medium text-slate-700 placeholder:text-slate-400 outline-none transition-all duration-200 focus:border-[#008dd2] focus:bg-white focus:ring-4 focus:ring-[#008dd2]/10 disabled:cursor-not-allowed disabled:opacity-70"
+            />
 
-  <button
-    type="submit"
-    disabled={trackingSearchLoading || !trackingSearch.trim()}
-    className="absolute right-1.5 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-lg bg-[#008dd2] text-white transition-all duration-200 hover:bg-[#007ab6] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
-    title="Search Shipment"
-  >
-    {trackingSearchLoading ? (
-      <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
-    ) : (
-      <FiSearch size={14} />
-    )}
-  </button>
-</form>
+            <button
+              type="submit"
+              disabled={trackingSearchLoading || !trackingSearch.trim()}
+              className="absolute right-1.5 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-lg bg-[#008dd2] text-white transition-all duration-200 hover:bg-[#007ab6] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+              title="Search Shipment"
+              aria-label="Search Shipment"
+            >
+              {trackingSearchLoading ? (
+                <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+              ) : (
+                <FiSearch size={14} />
+              )}
+            </button>
+          </form>
+
           {/* IMPORT ORDER */}
           <button
             type="button"
@@ -1009,6 +1129,217 @@ if (!normalizedErrors.length) {
           </div>
         </div>
       </header>
+
+      {/* TRACKING DETAILS MODAL */}
+      {showTrackingDetails && trackingOrder && (
+        <div
+          className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/55 px-3 py-4 backdrop-blur-[2px]"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              closeTrackingDetails();
+            }
+          }}
+        >
+          <div className="flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+            {/* HEADER */}
+            <div className="flex items-center justify-between border-b border-slate-100 bg-white px-5 py-4 sm:px-6">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-sky-50 text-[#008dd2]">
+                    <FiSearch size={17} />
+                  </div>
+                  <div className="min-w-0">
+                    <h2 className="truncate text-base font-bold text-slate-800 sm:text-lg">
+                      Tracking Details
+                    </h2>
+                    <p className="mt-0.5 truncate text-[10px] text-slate-400 sm:text-xs">
+                      Live shipment status and Delhivery scan history
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={closeTrackingDetails}
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                aria-label="Close tracking details"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* BODY */}
+            <div className="overflow-y-auto bg-slate-50/60 px-4 py-4 sm:px-6 sm:py-5">
+              {/* SUMMARY */}
+              <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <div className="grid grid-cols-1 divide-y divide-slate-100 sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
+                  <div className="px-4 py-3.5">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                      Order ID
+                    </p>
+                    <p className="mt-1 truncate text-sm font-bold text-slate-800">
+                      {trackingOrder.order_id ?? trackingOrder.id ?? "—"}
+                    </p>
+                  </div>
+
+                  <div className="px-4 py-3.5">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                      Tracking No
+                    </p>
+                    <p className="mt-1 truncate text-sm font-bold text-slate-800">
+                      {trackingOrder.tracking_awb || trackingOrder.awb || "—"}
+                    </p>
+                  </div>
+
+                  <div className="px-4 py-3.5">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                      Courier
+                    </p>
+                    <p className="mt-1 truncate text-sm font-bold text-slate-800">
+                      {getTrackingCourier(trackingOrder)}
+                    </p>
+                  </div>
+
+                  <div className="px-4 py-3.5">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                      Current Status
+                    </p>
+                    <div className="mt-1 flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                      <p className="truncate text-sm font-bold text-emerald-600">
+                        {humanizeTrackingStatus(trackingOrder.tracking_status)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 border-t border-slate-100 md:grid-cols-2 lg:grid-cols-4">
+                  <div className="border-b border-slate-100 px-4 py-3.5 md:border-b-0 md:border-r lg:border-r">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                      Status Location
+                    </p>
+                    <p className="mt-1 text-xs font-semibold text-slate-700">
+                      {trackingOrder.tracking_location || "—"}
+                    </p>
+                  </div>
+
+                  <div className="border-b border-slate-100 px-4 py-3.5 lg:border-b-0 lg:border-r">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                      Status Date & Time
+                    </p>
+                    <p className="mt-1 text-xs font-semibold text-slate-700">
+                      {formatTrackingDateTime(trackingOrder.tracking_status_datetime)}
+                    </p>
+                  </div>
+
+                  <div className="border-b border-slate-100 px-4 py-3.5 md:border-r lg:border-b-0">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                      Expected Delivery
+                    </p>
+                    <p className="mt-1 text-xs font-semibold text-slate-700">
+                      {formatTrackingDate(trackingOrder.tracking_expected_delivery)}
+                    </p>
+                  </div>
+
+                  <div className="px-4 py-3.5">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                      Instructions
+                    </p>
+                    <p className="mt-1 line-clamp-2 text-xs font-semibold text-slate-700">
+                      {trackingOrder.tracking_instructions || "—"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* TRACKING TIMELINE */}
+              <div className="mt-4 rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm sm:px-5 sm:py-5">
+                <div className="mb-5 flex items-center justify-between gap-3">
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-800 sm:text-base">
+                      Shipment Timeline
+                    </h3>
+                    <p className="mt-0.5 text-[10px] text-slate-400 sm:text-xs">
+                      Complete tracking history from Delhivery
+                    </p>
+                  </div>
+                  <span className="shrink-0 rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-bold text-slate-500">
+                    {trackingScans.length} {trackingScans.length === 1 ? "event" : "events"}
+                  </span>
+                </div>
+
+                {trackingScans.length > 0 ? (
+                  <div className="relative">
+                    <div className="absolute bottom-4 left-[7px] top-4 w-px bg-slate-200" />
+
+                    <div className="space-y-3.5">
+                      {trackingScans.map((scan, index) => (
+                        <div key={scan.id} className="relative flex gap-3">
+                          <div className="relative z-10 mt-4 flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full border-2 border-[#008dd2] bg-white">
+                            {index === 0 && (
+                              <span className="h-1.5 w-1.5 rounded-full bg-[#008dd2]" />
+                            )}
+                          </div>
+
+                          <div className={`min-w-0 flex-1 rounded-xl border px-4 py-3 transition ${
+                            index === 0
+                              ? "border-sky-200 bg-sky-50/50 shadow-sm"
+                              : "border-slate-200 bg-white"
+                          }`}>
+                            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+                              <div className="min-w-0">
+                                <p className="text-sm font-bold text-slate-800">
+                                  {scan.status || "Shipment update"}
+                                </p>
+                                {scan.location && (
+                                  <p className="mt-1 text-[11px] font-medium text-slate-500">
+                                    {scan.location}
+                                  </p>
+                                )}
+                                {scan.instructions &&
+                                  scan.instructions !== scan.status && (
+                                    <p className="mt-1 text-[11px] leading-5 text-slate-500">
+                                      {scan.instructions}
+                                    </p>
+                                  )}
+                              </div>
+
+                              <p className="shrink-0 text-[10px] font-semibold text-slate-400 sm:text-right">
+                                {formatTrackingDateTime(scan.dateTime)}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center">
+                    <p className="text-sm font-semibold text-slate-600">
+                      No tracking scan history available
+                    </p>
+                    <p className="mt-1 text-[11px] text-slate-400">
+                      The latest shipment status is shown above.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* FOOTER */}
+            <div className="flex items-center justify-end border-t border-slate-100 bg-white px-5 py-3.5 sm:px-6">
+              <button
+                type="button"
+                onClick={closeTrackingDetails}
+                className="h-9 rounded-xl border border-slate-200 bg-white px-5 text-xs font-bold text-slate-600 transition hover:bg-slate-50 hover:text-slate-800"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* IMPORT ORDER MODAL */}
       {showImportOrder && (
