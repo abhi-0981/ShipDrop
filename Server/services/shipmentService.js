@@ -2991,103 +2991,210 @@ const bulkConfirmShipments = async ({
     });
   }
 
-  const delhiveryResponse =
-    await createDelhiveryShipment(
-      shipmentOrders.map(
-        (item) =>
-          item.delhiveryShipment
-      )
-    );
+// ======================================================
+// DELHIVERY BULK SHIPMENT
+// IMPORTANT:
+// Different warehouses cannot share one pickup_location.
+// So we group shipments warehouse-wise and create
+// separate Delhivery requests for each warehouse.
+// ======================================================
 
-  const delhiveryPackages =
-    Array.isArray(
-      delhiveryResponse.packages
-    )
-      ? delhiveryResponse.packages
-      : [];
+const delhiveryWarehouseGroups = new Map();
 
-  if (
-    delhiveryPackages.length !==
-    shipmentOrders.length
-  ) {
+for (const shipment of shipmentOrders) {
 
-    throw new Error(
-      "Delhivery did not return a response for every selected shipment"
+  const warehouseKey =
+    String(shipment.warehouse.id);
+
+  if (!delhiveryWarehouseGroups.has(warehouseKey)) {
+
+    delhiveryWarehouseGroups.set(
+      warehouseKey,
+      {
+        warehouse: shipment.warehouse,
+        shipments: [],
+      }
     );
 
   }
 
-  const shipmentResults =
-    shipmentOrders.map(
-      (shipment) => {
+  delhiveryWarehouseGroups
+    .get(warehouseKey)
+    .shipments
+    .push(shipment);
 
-        const pkg =
-          delhiveryPackages.find(
-            (item) =>
-              String(
-                item.refnum ||
-                ""
-              ) ===
+}
 
-              String(
-                shipment
-                  .delhiveryShipment
-                  .order
-              )
-          );
 
-        if (
-          !pkg ||
-          String(
-            pkg.status ||
-            ""
-          ).toLowerCase() !==
-          "success"
-        ) {
+// ======================================================
+// CREATE DELHIVERY SHIPMENTS WAREHOUSE-WISE
+// ======================================================
 
-          const remarks =
-            Array.isArray(
-              pkg?.remarks
+const delhiveryPackages = [];
+
+for (
+  const warehouseGroup
+  of delhiveryWarehouseGroups.values()
+) {
+
+  console.log(
+    "=============================================="
+  );
+
+  console.log(
+    "📦 DELHIVERY BULK WAREHOUSE GROUP"
+  );
+
+  console.log(
+    "Warehouse ID:",
+    warehouseGroup.warehouse.id
+  );
+
+  console.log(
+    "Warehouse Name:",
+    warehouseGroup.warehouse.warehouse_name
+  );
+
+  console.log(
+    "Shipment Count:",
+    warehouseGroup.shipments.length
+  );
+
+  console.log(
+    "=============================================="
+  );
+
+
+  const warehouseResponse =
+    await createDelhiveryShipment(
+
+      warehouseGroup.shipments.map(
+        (item) =>
+          item.delhiveryShipment
+      ),
+
+      warehouseGroup.warehouse.warehouse_name
+
+    );
+
+
+  const packages =
+    Array.isArray(
+      warehouseResponse.packages
+    )
+      ? warehouseResponse.packages
+      : [];
+
+
+  if (
+    packages.length !==
+    warehouseGroup.shipments.length
+  ) {
+
+    throw new Error(
+      `Delhivery did not return a response for every shipment of warehouse ${warehouseGroup.warehouse.warehouse_name}`
+    );
+
+  }
+
+
+  delhiveryPackages.push(
+    ...packages
+  );
+
+}
+
+
+// ======================================================
+// MAP DELHIVERY RESPONSE BACK TO ORDERS
+// ======================================================
+
+if (
+  delhiveryPackages.length !==
+  shipmentOrders.length
+) {
+
+  throw new Error(
+    "Delhivery did not return a response for every selected shipment"
+  );
+
+}
+
+
+const shipmentResults =
+  shipmentOrders.map(
+    (shipment) => {
+
+      const pkg =
+        delhiveryPackages.find(
+          (item) =>
+            String(
+              item.refnum ||
+              ""
+            ) ===
+
+            String(
+              shipment
+                .delhiveryShipment
+                .order
             )
-              ? pkg.remarks.join(
-                  ", "
-                )
-              : pkg?.remarks;
+        );
 
-          throw new Error(
-            remarks ||
 
-            `Delhivery shipment failed for Order #${shipment.order.order_id}`
-          );
+      if (
+        !pkg ||
+        String(
+          pkg.status ||
+          ""
+        ).toLowerCase() !==
+        "success"
+      ) {
 
-        }
+        const remarks =
+          Array.isArray(
+            pkg?.remarks
+          )
+            ? pkg.remarks.join(
+                ", "
+              )
+            : pkg?.remarks;
 
-        const awb =
-          String(
-            pkg.waybill ||
-            ""
-          ).trim();
 
-        if (
-          !awb
-        ) {
+        throw new Error(
+          remarks ||
 
-          throw new Error(
-            `Delhivery did not generate AWB for Order #${shipment.order.order_id}`
-          );
-
-        }
-
-        return {
-
-          ...shipment,
-
-          awb,
-
-        };
+          `Delhivery shipment failed for Order #${shipment.order.order_id}`
+        );
 
       }
-    );
+
+
+      const awb =
+        String(
+          pkg.waybill ||
+          ""
+        ).trim();
+
+
+      if (!awb) {
+
+        throw new Error(
+          `Delhivery did not generate AWB for Order #${shipment.order.order_id}`
+        );
+
+      }
+
+
+      return {
+
+        ...shipment,
+
+        awb,
+
+      };
+
+    }
+  );
 
   const connection =
     await beginTransaction();
