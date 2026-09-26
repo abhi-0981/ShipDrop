@@ -144,7 +144,7 @@ function Footer() {
               <FaLocationDot className="mt-1 text-lg text-[#ff4d8d]" />
 
               <p className="text-[14px] leading-6 text-gray-300">
-                
+                Jaipur
               </p>
             </div>
 

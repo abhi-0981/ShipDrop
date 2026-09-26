@@ -12,6 +12,7 @@ import OrdersProcessing from "./pages/Dashboard/OrdersProcessing";
 import AllOrders from "./pages/Dashboard/AllOrders";
 import Manifested from "./pages/Dashboard/Manifested";
 import RateCalculator from "./pages/Dashboard/RateCalculator";
+import Serviceability from "./pages/Dashboard/Serviceability";
 import Tickets from "./pages/Dashboard/Tickets";
 import GeneralSettings from "./pages/Dashboard/GeneralSettings";
 import RateCard from "./pages/Dashboard/RateCard";
@@ -150,6 +151,11 @@ function App() {
           path="/rate-calculator"
           element={<RateCalculator />}
         />
+
+        <Route
+  path="/serviceability"
+  element={<Serviceability />}
+/>
 
         <Route
           path="/tickets"

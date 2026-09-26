@@ -756,7 +756,7 @@ if (!normalizedErrors.length) {
           {(isCollapsed || (typeof window !== "undefined" && window.innerWidth < 1024)) && (
             <div className="flex items-center gap-1.5">
               <span className="text-[17px] sm:text-[20px] font-black tracking-tight text-[#008dd2]">
-                ShipDrop
+                ParcelDrop
               </span>
             </div>
           )}
@@ -1217,7 +1217,7 @@ if (!normalizedErrors.length) {
             <div className="mb-5 flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-bold text-slate-800">Recharge Wallet</h2>
-                <p className="mt-0.5 text-xs text-slate-400">Add money to your ShipDrop balance</p>
+                <p className="mt-0.5 text-xs text-slate-400">Add money to your ParcelDrop balance</p>
               </div>
               <button
                 type="button"

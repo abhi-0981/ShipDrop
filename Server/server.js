@@ -96,6 +96,9 @@ const labelSettingsRoutes =
 const ticketRoutes =
   require("./routes/ticketRoutes");
 
+const serviceabilityRoutes =
+  require("./routes/serviceabilityRoutes");
+
 
 // ======================================================
 // MIDDLEWARE
@@ -301,6 +304,13 @@ app.use(
   ticketRoutes
 );
 
+// SERVICEABILITY
+
+app.use(
+  "/api/serviceability",
+  serviceabilityRoutes
+);
+
 
 // ======================================================
 // OLD ORDERS ROUTE
@@ -422,4 +432,4 @@ if (require.main === module && !process.env.VERCEL) {
   });
 }
 
-module.exports = app;
+module.exports = app;

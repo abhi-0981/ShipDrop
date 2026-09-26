@@ -6,6 +6,7 @@ import {
   HiOutlineClock,
   HiOutlineCube,
   HiOutlineCalculator,
+  HiOutlineLocationMarker,
   HiOutlineTicket,
   HiOutlineLogout,
   HiOutlineCreditCard,
@@ -394,6 +395,20 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
             <HiOutlineCalculator size={20} />
             <span className="ml-3 truncate">Rate Calculator</span>
           </Link>
+
+
+
+          {/* SERVICEABILITY */}
+<Link
+  to="/serviceability"
+  onClick={handleNavClick}
+  className={`flex items-center rounded-xl px-3 py-2.5 text-[14px] transition duration-150 ${activeClass(
+    "/serviceability"
+  )}`}
+>
+  <HiOutlineLocationMarker size={20} />
+  <span className="ml-3 truncate">Serviceability</span>
+</Link>
 
           {/* FINANCE */}
           <div>
