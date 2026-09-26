@@ -21,11 +21,11 @@ function Footer() {
 
           <div>
             <h2 className="mb-4 text-2xl font-bold text-[#008dd2]">
-              ShipDrop
+              ParcelDrop
             </h2>
 
             <p className="max-w-[220px] text-[14px] leading-7 text-gray-300">
-              ShipDrop is a leading eCommerce logistics enabler for India's
+              ParcelDrop is a leading eCommerce logistics enabler for India's
               growing online businesses. Offering scalable shipping and
               fulfillment solutions powered by modern technology.
             </p>
@@ -144,8 +144,7 @@ function Footer() {
               <FaLocationDot className="mt-1 text-lg text-[#ff4d8d]" />
 
               <p className="text-[14px] leading-6 text-gray-300">
-                8th Floor, Splendor Spectrum One, Golf Course Ext Rd, Sector
-                58, Gurugram, Haryana 122011
+                
               </p>
             </div>
 
@@ -153,7 +152,7 @@ function Footer() {
               <MdEmail className="text-lg text-[#008dd2]" />
 
               <p className="text-[14px] text-gray-300">
-                care@shipdrop.com
+                care@parceldrop.com
               </p>
             </div>
 
@@ -178,7 +177,7 @@ function Footer() {
         </div>
 
         <div className="mt-8 flex flex-col items-center justify-between gap-3 border-t border-gray-700 pt-5 text-[13px] text-gray-400 md:flex-row">
-          <p>© 2026 ShipDrop. All rights reserved.</p>
+          <p>© 2026 ParcelDrop. All rights reserved.</p>
 
           <div className="flex gap-5">
             <p className="cursor-pointer hover:text-white">

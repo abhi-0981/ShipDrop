@@ -45,7 +45,7 @@ function Login() {
           </h1>
 
           <p className="mt-1 text-sm text-slate-500">
-            Login to your ShipDrop account
+            Login to your Parcel account
           </p>
         </div>
 
