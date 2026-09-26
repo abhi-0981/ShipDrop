@@ -107,6 +107,28 @@ function TopNavbar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed })
   const [trackingOrder, setTrackingOrder] = useState(null);
   const [showTrackingDetails, setShowTrackingDetails] = useState(false);
 
+
+  useEffect(() => {
+  const search = String(trackingSearch || "").trim();
+
+  if (!search || trackingSearchLoading) {
+    return;
+  }
+
+  // 14 digit AWB -> immediately search
+  if (/^\d{14}$/.test(search)) {
+    handleTrackingSearch();
+    return;
+  }
+
+  // Order ID -> wait until user stops typing
+  const timer = setTimeout(() => {
+    handleTrackingSearch();
+  }, 700);
+
+  return () => clearTimeout(timer);
+}, [trackingSearch]);
+
   // ======================================================
   // IMPORT ORDER STATE
   // ======================================================
@@ -964,22 +986,10 @@ if (!normalizedErrors.length) {
               onChange={(event) => setTrackingSearch(event.target.value)}
               placeholder="Enter Tracking ID or Order ID..."
               disabled={trackingSearchLoading}
-              className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/70 pl-10 pr-11 text-xs font-medium text-slate-700 placeholder:text-slate-400 outline-none transition-all duration-200 focus:border-[#008dd2] focus:bg-white focus:ring-4 focus:ring-[#008dd2]/10 disabled:cursor-not-allowed disabled:opacity-70"
+              className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/70 pl-10 pr-4 text-xs font-medium text-slate-700 placeholder:text-slate-400 outline-none transition-all duration-200 focus:border-[#008dd2] focus:bg-white focus:ring-4 focus:ring-[#008dd2]/10 disabled:cursor-not-allowed disabled:opacity-70"
             />
 
-            <button
-              type="submit"
-              disabled={trackingSearchLoading || !trackingSearch.trim()}
-              className="absolute right-1.5 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-lg bg-[#008dd2] text-white transition-all duration-200 hover:bg-[#007ab6] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
-              title="Search Shipment"
-              aria-label="Search Shipment"
-            >
-              {trackingSearchLoading ? (
-                <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
-              ) : (
-                <FiSearch size={14} />
-              )}
-            </button>
+          
           </form>
 
           {/* IMPORT ORDER */}
