@@ -6,40 +6,28 @@ const userModel = require("../models/userModel");
 // PASSWORD VALIDATION
 // ========================================
 
-const isStrongPassword = (password) => {
-  if (typeof password !== "string") {
-    return false;
-  }
-
-  if (password.length < 8) {
-    return false;
+const validatePassword = (password) => {
+  if (!password || password.length < 8) {
+    return "Password must be at least 8 characters";
   }
 
   if (!/[A-Z]/.test(password)) {
-    return false;
+    return "Password must contain at least one uppercase letter";
   }
 
   if (!/[a-z]/.test(password)) {
-    return false;
+    return "Password must contain at least one lowercase letter";
   }
 
   if (!/[0-9]/.test(password)) {
-    return false;
+    return "Password must contain at least one number";
   }
 
-  if (!/[^A-Za-z0-9]/.test(password)) {
-    return false;
+  if (!/[!@#$%^&*(),.?":{}|<>_\-\\[\]/;'`~+=]/.test(password)) {
+    return "Password must contain at least one special character";
   }
 
-  return true;
-};
-
-// ========================================
-// EMAIL VALIDATION
-// ========================================
-
-const isValidEmail = (email) => {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  return null;
 };
 
 // ========================================
@@ -48,221 +36,125 @@ const isValidEmail = (email) => {
 
 const registerUser = async (req, res) => {
   try {
-    let {
+    const {
       full_name,
       company_name,
       gst_no,
       email,
       phone_no,
-      password,
-      confirm_password,
+      password
     } = req.body;
 
-    // ------------------------------------
-    // BASIC CLEANUP
-    // ------------------------------------
+    const passwordError = validatePassword(password);
 
-    full_name = String(full_name || "").trim();
-    company_name = String(company_name || "").trim();
-    gst_no = String(gst_no || "").trim().toUpperCase();
-    email = String(email || "").trim().toLowerCase();
-    phone_no = String(phone_no || "")
-      .replace(/\D/g, "");
-
-    // ------------------------------------
-    // REQUIRED FIELDS
-    // ------------------------------------
-
-    if (!full_name) {
+    if (passwordError) {
       return res.status(400).json({
-        message: "Full name is required",
+        message: passwordError
       });
     }
 
-    if (!company_name) {
-      return res.status(400).json({
-        message: "Company name is required",
-      });
-    }
+    const normalizedEmail =
+      String(email || "").trim().toLowerCase();
 
-    if (!email) {
-      return res.status(400).json({
-        message: "Email address is required",
-      });
-    }
+    const normalizedPhone =
+      String(phone_no || "").replace(/\D/g, "");
 
-    if (!phone_no) {
-      return res.status(400).json({
-        message: "Mobile number is required",
-      });
-    }
+    const normalizedFullName =
+      String(full_name || "").trim();
 
-    if (!password) {
-      return res.status(400).json({
-        message: "Password is required",
-      });
-    }
+    const normalizedCompany =
+      String(company_name || "").trim();
 
-    // ------------------------------------
-    // EMAIL VALIDATION
-    // ------------------------------------
-
-    if (!isValidEmail(email)) {
-      return res.status(400).json({
-        message: "Please enter a valid email address",
-      });
-    }
-
-    // ------------------------------------
-    // PHONE VALIDATION
-    // ------------------------------------
-
-    if (!/^[6-9]\d{9}$/.test(phone_no)) {
-      return res.status(400).json({
-        message: "Please enter a valid 10-digit mobile number",
-      });
-    }
-
-    // ------------------------------------
-    // PASSWORD VALIDATION
-    // ------------------------------------
-
-    if (!isStrongPassword(password)) {
-      return res.status(400).json({
-        message:
-          "Password must contain 8+ characters, uppercase, lowercase, number and special character",
-      });
-    }
-
-    // ------------------------------------
-    // CONFIRM PASSWORD
-    // ------------------------------------
-
-    if (confirm_password !== password) {
-      return res.status(400).json({
-        message: "Passwords do not match",
-      });
-    }
-
-    // ------------------------------------
-    // CHECK DUPLICATE EMAIL / PHONE
-    // ------------------------------------
+    const normalizedGst =
+      String(gst_no || "").trim().toUpperCase();
 
     userModel.checkUser(
-      email,
-      phone_no,
+      normalizedEmail,
+      normalizedPhone,
       async (err, result) => {
         if (err) {
-          console.error("Register duplicate check error:", err);
-
           return res.status(500).json({
-            message: "Unable to create account. Please try again.",
+            message: err.message
           });
         }
 
         if (result.length > 0) {
           const existingUser = result[0];
 
-          const existingEmail =
-            String(existingUser.email || "")
-              .trim()
-              .toLowerCase();
-
-          const existingPhone =
-            String(existingUser.phone_no || "")
-              .replace(/\D/g, "");
-
-          if (existingEmail === email) {
-            return res.status(409).json({
-              message: "Email already registered",
+          if (
+            String(existingUser.email || "").toLowerCase() ===
+            normalizedEmail
+          ) {
+            return res.status(400).json({
+              message: "Email already exists"
             });
           }
 
-          if (existingPhone === phone_no) {
-            return res.status(409).json({
-              message: "Mobile number already registered",
+          if (
+            String(existingUser.phone_no || "") ===
+            normalizedPhone
+          ) {
+            return res.status(400).json({
+              message: "Phone number already exists"
             });
           }
-
-          return res.status(409).json({
-            message: "Email or mobile number already registered",
-          });
         }
 
-        // --------------------------------
-        // HASH PASSWORD
-        // --------------------------------
-
-        let hashedPassword;
-
         try {
-          hashedPassword = await bcrypt.hash(
+          // ======================================
+          // HASH PASSWORD
+          // ======================================
+
+          const hashedPassword = await bcrypt.hash(
             password,
-            12,
+            12
+          );
+
+          const userData = {
+            full_name: normalizedFullName,
+            company_name: normalizedCompany,
+            gst_no: normalizedGst,
+            email: normalizedEmail,
+            phone_no: normalizedPhone,
+            password: hashedPassword,
+            role: "user"
+          };
+
+          userModel.createUser(
+            userData,
+            (err, result) => {
+              if (err) {
+                return res.status(500).json({
+                  message: err.message
+                });
+              }
+
+              return res.status(201).json({
+                message: "User registered successfully"
+              });
+            }
           );
         } catch (hashError) {
           console.error(
             "Password hashing error:",
-            hashError,
+            hashError
           );
 
           return res.status(500).json({
-            message:
-              "Unable to create account. Please try again.",
+            message: "Registration failed"
           });
         }
-
-        // --------------------------------
-        // CREATE USER
-        // --------------------------------
-
-        const userData = {
-          full_name,
-          company_name,
-          gst_no: gst_no || null,
-          email,
-          phone_no,
-          password: hashedPassword,
-          role: "user",
-        };
-
-        userModel.createUser(
-          userData,
-          (createError, createResult) => {
-            if (createError) {
-              console.error(
-                "Create user error:",
-                createError,
-              );
-
-              // MySQL duplicate safety net
-              if (createError.code === "ER_DUP_ENTRY") {
-                return res.status(409).json({
-                  message:
-                    "Email or mobile number already registered",
-                });
-              }
-
-              return res.status(500).json({
-                message:
-                  "Unable to create account. Please try again.",
-              });
-            }
-
-            return res.status(201).json({
-              message:
-                "Account created successfully",
-            });
-          },
-        );
-      },
+      }
     );
+
   } catch (error) {
-    console.error("Register error:", error);
+    console.error(
+      "Register error:",
+      error
+    );
 
     return res.status(500).json({
-      message:
-        "Unable to create account. Please try again.",
+      message: "Registration failed"
     });
   }
 };
@@ -271,134 +163,204 @@ const registerUser = async (req, res) => {
 // LOGIN
 // ========================================
 
-const loginUser = (req, res) => {
+const loginUser = async (req, res) => {
   try {
-    let {
+    const {
       email,
-      password,
+      password
     } = req.body;
 
-    email = String(email || "")
-      .trim()
-      .toLowerCase();
+    const normalizedEmail =
+      String(email || "").trim().toLowerCase();
 
-    password = String(password || "");
-
-    // ------------------------------------
-    // BASIC VALIDATION
-    // ------------------------------------
-
-    if (!email || !password) {
+    if (!normalizedEmail || !password) {
       return res.status(400).json({
-        message: "Email and password are required",
+        message: "Email and password are required"
       });
     }
-
-    if (!isValidEmail(email)) {
-      return res.status(400).json({
-        message: "Please enter a valid email address",
-      });
-    }
-
-    // ------------------------------------
-    // FIND USER
-    // ------------------------------------
 
     userModel.findUserByEmail(
-      email,
+      normalizedEmail,
       async (err, result) => {
         if (err) {
-          console.error("Login database error:", err);
-
           return res.status(500).json({
-            message:
-              "Unable to login. Please try again.",
+            message: err.message
           });
         }
 
-        // Generic response for security
         if (result.length === 0) {
           return res.status(401).json({
-            message:
-              "Email or password is incorrect",
+            message: "Email or password is incorrect"
           });
         }
 
         const user = result[0];
 
-        // ----------------------------------
-        // COMPARE BCRYPT PASSWORD
-        // ----------------------------------
-
-        let passwordMatched = false;
-
         try {
-          passwordMatched = await bcrypt.compare(
-            password,
-            user.password,
+          const storedPassword =
+            String(user.password || "");
+
+          let passwordMatched = false;
+
+          // ======================================
+          // CHECK WHETHER PASSWORD IS BCRYPT
+          // ======================================
+
+          const isBcryptHash =
+            storedPassword.startsWith("$2a$") ||
+            storedPassword.startsWith("$2b$") ||
+            storedPassword.startsWith("$2y$");
+
+          // ======================================
+          // NEW USER / BCRYPT PASSWORD
+          // ======================================
+
+          if (isBcryptHash) {
+            passwordMatched =
+              await bcrypt.compare(
+                password,
+                storedPassword
+              );
+          }
+
+          // ======================================
+          // OLD USER / PLAIN PASSWORD
+          // ======================================
+
+          else {
+            passwordMatched =
+              storedPassword === password;
+          }
+
+          if (!passwordMatched) {
+            return res.status(401).json({
+              message: "Email or password is incorrect"
+            });
+          }
+
+          // ======================================
+          // MIGRATE OLD PASSWORD TO BCRYPT
+          // ======================================
+
+          if (!isBcryptHash) {
+            const newHash =
+              await bcrypt.hash(
+                password,
+                12
+              );
+
+            userModel.updateUserPassword(
+              user.id,
+              newHash,
+              (updateErr) => {
+                if (updateErr) {
+                  console.error(
+                    "Password migration error:",
+                    updateErr
+                  );
+
+                  // Login can still continue.
+                }
+
+                createLoginResponse(
+                  res,
+                  user
+                );
+              }
+            );
+
+            return;
+          }
+
+          // ======================================
+          // NORMAL BCRYPT LOGIN
+          // ======================================
+
+          createLoginResponse(
+            res,
+            user
           );
-        } catch (compareError) {
+
+        } catch (passwordError) {
           console.error(
-            "Password comparison error:",
-            compareError,
+            "Password verification error:",
+            passwordError
           );
 
           return res.status(500).json({
-            message:
-              "Unable to login. Please try again.",
+            message: "Login failed"
           });
         }
-
-        if (!passwordMatched) {
-          return res.status(401).json({
-            message:
-              "Email or password is incorrect",
-          });
-        }
-
-        // ----------------------------------
-        // NEVER SEND PASSWORD
-        // ----------------------------------
-
-        const safeUser = {
-          id: user.id,
-          full_name: user.full_name,
-          company_name: user.company_name,
-          gst_no: user.gst_no,
-          email: user.email,
-          phone_no: user.phone_no,
-          role: user.role,
-          profile_image: user.profile_image || null,
-          created_at: user.created_at,
-        };
-
-        return res.status(200).json({
-          message: "Login successful",
-          role: user.role,
-          user: safeUser,
-        });
-      },
+      }
     );
+
   } catch (error) {
-    console.error("Login error:", error);
+    console.error(
+      "Login error:",
+      error
+    );
 
     return res.status(500).json({
-      message:
-        "Unable to login. Please try again.",
+      message: "Login failed"
     });
   }
+};
+
+// ========================================
+// LOGIN RESPONSE
+// ========================================
+
+const createLoginResponse = (
+  res,
+  user
+) => {
+  const safeUser = {
+    id: user.id,
+    full_name: user.full_name,
+    company_name: user.company_name,
+    gst_no: user.gst_no,
+    email: user.email,
+    phone_no: user.phone_no,
+    role: user.role,
+    profile_image:
+      user.profile_image || null,
+    created_at: user.created_at
+  };
+
+  const token = jwt.sign(
+    {
+      user_id: user.id,
+      role: user.role
+    },
+    process.env.JWT_SECRET,
+    {
+      expiresIn: "7d"
+    }
+  );
+
+  return res.status(200).json({
+    message: "Login successful",
+    role: user.role,
+    token,
+    user: safeUser
+  });
 };
 
 // ========================================
 // GET USER PROFILE
 // ========================================
 
-const getUserProfile = (req, res) => {
-  const { user_id } = req.params;
+const getUserProfile = (
+  req,
+  res
+) => {
+  const {
+    user_id
+  } = req.params;
 
   if (!user_id) {
     return res.status(400).json({
-      message: "User ID is required",
+      message: "User ID is required"
     });
   }
 
@@ -406,31 +368,21 @@ const getUserProfile = (req, res) => {
     user_id,
     (err, result) => {
       if (err) {
-        console.error(
-          "Get profile error:",
-          err,
-        );
-
         return res.status(500).json({
-          message:
-            "Unable to load profile",
+          message: err.message
         });
       }
 
       if (result.length === 0) {
         return res.status(404).json({
-          message: "User not found",
+          message: "User not found"
         });
       }
 
-      const user = result[0];
-
-      delete user.password;
-
       return res.status(200).json({
-        user,
+        user: result[0]
       });
-    },
+    }
   );
 };
 
@@ -438,186 +390,147 @@ const getUserProfile = (req, res) => {
 // UPDATE USER PROFILE
 // ========================================
 
-const updateUserProfile = (req, res) => {
-  let {
+const updateUserProfile = (
+  req,
+  res
+) => {
+  const {
     user_id,
     full_name,
     email,
     phone_no,
-    profile_image,
+    profile_image
   } = req.body;
-
-  user_id = Number(user_id);
-
-  full_name = String(full_name || "").trim();
-  email = String(email || "")
-    .trim()
-    .toLowerCase();
-
-  phone_no = String(phone_no || "")
-    .replace(/\D/g, "");
 
   if (!user_id) {
     return res.status(400).json({
-      message: "User ID is required",
+      message: "User ID is required"
     });
   }
 
-  if (!full_name) {
+  if (
+    !full_name ||
+    !full_name.trim()
+  ) {
     return res.status(400).json({
-      message: "Name is required",
+      message: "Name is required"
     });
   }
 
-  if (!email) {
+  if (
+    !email ||
+    !email.trim()
+  ) {
     return res.status(400).json({
-      message: "Email is required",
+      message: "Email is required"
     });
   }
 
-  if (!isValidEmail(email)) {
+  if (
+    !phone_no ||
+    !phone_no.trim()
+  ) {
     return res.status(400).json({
-      message: "Please enter a valid email address",
+      message: "Mobile number is required"
     });
   }
-
-  if (!phone_no) {
-    return res.status(400).json({
-      message: "Mobile number is required",
-    });
-  }
-
-  if (!/^[6-9]\d{9}$/.test(phone_no)) {
-    return res.status(400).json({
-      message:
-        "Please enter a valid 10-digit mobile number",
-    });
-  }
-
-  // --------------------------------------
-  // CHECK DUPLICATES
-  // --------------------------------------
 
   userModel.checkDuplicateUser(
     user_id,
     email,
     phone_no,
     (err, result) => {
-      if (err) {
-        console.error(
-          "Profile duplicate check error:",
-          err,
-        );
 
+      if (err) {
         return res.status(500).json({
-          message:
-            "Unable to update profile",
+          message: err.message
         });
       }
 
       if (result.length > 0) {
-        const existingUser = result[0];
+        const existingUser =
+          result[0];
 
-        const existingEmail =
-          String(existingUser.email || "")
-            .trim()
-            .toLowerCase();
-
-        const existingPhone =
-          String(existingUser.phone_no || "")
-            .replace(/\D/g, "");
-
-        if (existingEmail === email) {
-          return res.status(409).json({
-            message: "Email already registered",
+        if (
+          existingUser.email === email
+        ) {
+          return res.status(400).json({
+            message: "Email already exists"
           });
         }
 
-        if (existingPhone === phone_no) {
-          return res.status(409).json({
-            message:
-              "Mobile number already registered",
+        if (
+          existingUser.phone_no === phone_no
+        ) {
+          return res.status(400).json({
+            message: "Phone number already exists"
           });
         }
-
-        return res.status(409).json({
-          message:
-            "Email or mobile number already registered",
-        });
       }
-
-      // ------------------------------------
-      // UPDATE
-      // ------------------------------------
 
       userModel.updateUserProfile(
         user_id,
         {
-          full_name,
-          email,
-          phone_no,
-          profile_image:
-            profile_image || null,
-        },
-        (updateError) => {
-          if (updateError) {
-            console.error(
-              "Profile update error:",
-              updateError,
-            );
+          full_name:
+            full_name.trim(),
 
+          email:
+            email.trim(),
+
+          phone_no:
+            phone_no.trim(),
+
+          profile_image:
+            profile_image || null
+        },
+        (err, result) => {
+
+          if (err) {
             return res.status(500).json({
-              message:
-                "Unable to update profile",
+              message: err.message
             });
           }
 
-          // ------------------------------
-          // RETURN UPDATED USER
-          // ------------------------------
-
           userModel.findUserById(
             user_id,
-            (findError, userResult) => {
-              if (findError) {
-                console.error(
-                  "Updated user fetch error:",
-                  findError,
-                );
+            (err, userResult) => {
 
+              if (err) {
                 return res.status(500).json({
-                  message:
-                    "Profile updated, but user data could not be loaded",
+                  message: err.message
                 });
               }
 
-              if (userResult.length === 0) {
+              if (
+                userResult.length === 0
+              ) {
                 return res.status(404).json({
-                  message: "User not found",
+                  message: "User not found"
                 });
               }
-
-              const user =
-                userResult[0];
-
-              delete user.password;
 
               return res.status(200).json({
                 message:
                   "Profile updated successfully",
-                user,
+
+                user:
+                  userResult[0]
               });
-            },
+            }
           );
-        },
+        }
       );
-    },
+    }
   );
 };
+
+// ========================================
+// EXPORT
+// ========================================
 
 module.exports = {
   registerUser,
   loginUser,
   getUserProfile,
-  updateUserProfile,
+  updateUserProfile
 };
