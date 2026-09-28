@@ -26,9 +26,7 @@ function Register() {
     confirm_password: "",
   });
 
-  const [showPassword, setShowPassword] =
-    useState(false);
-
+  const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] =
     useState(false);
 
@@ -45,15 +43,6 @@ function Register() {
       setFormData((prev) => ({
         ...prev,
         phone_no: numbersOnly,
-      }));
-
-      return;
-    }
-
-    if (name === "email") {
-      setFormData((prev) => ({
-        ...prev,
-        email: value,
       }));
 
       return;
@@ -78,18 +67,10 @@ function Register() {
 
   const passwordRules = {
     length: formData.password.length >= 8,
-    uppercase: /[A-Z]/.test(
-      formData.password,
-    ),
-    lowercase: /[a-z]/.test(
-      formData.password,
-    ),
-    number: /[0-9]/.test(
-      formData.password,
-    ),
-    special: /[^A-Za-z0-9]/.test(
-      formData.password,
-    ),
+    uppercase: /[A-Z]/.test(formData.password),
+    lowercase: /[a-z]/.test(formData.password),
+    number: /[0-9]/.test(formData.password),
+    special: /[^A-Za-z0-9]/.test(formData.password),
   };
 
   const passwordStrong =
@@ -102,31 +83,14 @@ function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (loading) {
-      return;
-    }
+    if (loading) return;
 
-    const fullName =
-      formData.full_name.trim();
-
-    const companyName =
-      formData.company_name.trim();
-
-    const email =
-      formData.email.trim().toLowerCase();
-
-    const phone =
-      formData.phone_no;
-
-    const password =
-      formData.password;
-
-    const confirmPassword =
-      formData.confirm_password;
-
-    // ------------------------------------
-    // VALIDATION
-    // ------------------------------------
+    const fullName = formData.full_name.trim();
+    const companyName = formData.company_name.trim();
+    const email = formData.email.trim().toLowerCase();
+    const phone = formData.phone_no;
+    const password = formData.password;
+    const confirmPassword = formData.confirm_password;
 
     if (!fullName) {
       toast.error("Please enter your full name");
@@ -143,27 +107,21 @@ function Register() {
       return;
     }
 
-    if (
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
-        email,
-      )
-    ) {
-      toast.error(
-        "Please enter a valid email address",
-      );
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast.error("Please enter a valid email address");
       return;
     }
 
     if (!/^[6-9]\d{9}$/.test(phone)) {
       toast.error(
-        "Please enter a valid 10-digit mobile number",
+        "Please enter a valid 10-digit mobile number"
       );
       return;
     }
 
     if (!passwordStrong) {
       toast.error(
-        "Please create a stronger password",
+        "Password does not meet the required security rules"
       );
       return;
     }
@@ -176,24 +134,19 @@ function Register() {
     setLoading(true);
 
     try {
-      const response = await api.post(
-        "/users/register",
-        {
-          full_name: fullName,
-          company_name: companyName,
-          gst_no:
-            formData.gst_no.trim().toUpperCase(),
-          email,
-          phone_no: phone,
-          password,
-          confirm_password:
-            confirmPassword,
-        },
-      );
+      const response = await api.post("/users/register", {
+        full_name: fullName,
+        company_name: companyName,
+        gst_no: formData.gst_no.trim().toUpperCase(),
+        email,
+        phone_no: phone,
+        password,
+        confirm_password: confirmPassword,
+      });
 
       toast.success(
         response.data?.message ||
-          "Account created successfully",
+          "Account created successfully"
       );
 
       setFormData({
@@ -206,34 +159,29 @@ function Register() {
         confirm_password: "",
       });
 
-      // ----------------------------------
-      // GO TO LOGIN
-      // ----------------------------------
-
       setTimeout(() => {
         navigate("/login", {
           replace: true,
         });
       }, 700);
     } catch (error) {
-      const message =
+      toast.error(
         error.response?.data?.message ||
-        "Unable to create account. Please try again.";
-
-      toast.error(message);
+          "Unable to create account. Please try again."
+      );
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 px-4 py-8">
-      <div className="mx-auto w-full max-w-3xl">
+    <div className="min-h-screen bg-slate-100 px-3 py-4 sm:flex sm:items-center sm:justify-center sm:px-4">
+      <div className="w-full max-w-3xl">
         {/* BACK TO HOME */}
 
         <Link
           to="/"
-          className="mb-5 inline-flex items-center gap-2 text-sm font-medium text-slate-600 transition hover:text-[#008dd2]"
+          className="mb-3 inline-flex items-center gap-2 text-sm font-medium text-slate-600 transition hover:text-[#008dd2]"
         >
           <FiArrowLeft size={17} />
           Back to Home
@@ -241,26 +189,23 @@ function Register() {
 
         {/* CARD */}
 
-        <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-xl shadow-slate-200/60 sm:p-8">
+        <div className="rounded-3xl border border-slate-100 bg-white p-5 shadow-xl shadow-slate-200/60 sm:p-7">
           {/* HEADER */}
 
-          <div className="mb-7 text-center">
+          <div className="mb-5 text-center">
             <Link
               to="/"
               className="inline-block text-3xl font-extrabold tracking-tight text-[#008dd2]"
             >
-              Ship<span className="text-slate-800">
-                Drop
-              </span>
+              Ship<span className="text-slate-800">Drop</span>
             </Link>
 
-            <h1 className="mt-5 text-2xl font-bold text-slate-800">
+            <h1 className="mt-3 text-2xl font-bold text-slate-800">
               Create Your Account
             </h1>
 
             <p className="mt-1 text-sm text-slate-500">
-              Start managing your shipments with
-              ShipDrop
+              Start managing your shipments with ShipDrop
             </p>
           </div>
 
@@ -268,48 +213,42 @@ function Register() {
 
           <form
             onSubmit={handleSubmit}
-            className="grid gap-4 md:grid-cols-2"
+            className="grid gap-3 md:grid-cols-2"
             noValidate
           >
             {/* FULL NAME */}
 
-            <div>
-              <label
-                htmlFor="full_name"
-                className="mb-1.5 block text-sm font-medium text-slate-700"
-              >
-                Full Name
-              </label>
+            <FieldLabel
+              htmlFor="full_name"
+              label="Full Name"
+            />
 
-              <div className="relative">
-                <FiUser
-                  size={18}
-                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
-                />
+            <div className="relative">
+              <FiUser
+                size={18}
+                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+              />
 
-                <input
-                  id="full_name"
-                  type="text"
-                  name="full_name"
-                  placeholder="Enter your full name"
-                  value={formData.full_name}
-                  onChange={handleChange}
-                  autoComplete="name"
-                  autoFocus
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-4 text-sm outline-none transition focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
-                />
-              </div>
+              <input
+                id="full_name"
+                type="text"
+                name="full_name"
+                placeholder="Enter your full name"
+                value={formData.full_name}
+                onChange={handleChange}
+                autoComplete="name"
+                autoFocus
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
+              />
             </div>
 
             {/* COMPANY */}
 
             <div>
-              <label
+              <FieldLabel
                 htmlFor="company_name"
-                className="mb-1.5 block text-sm font-medium text-slate-700"
-              >
-                Company Name
-              </label>
+                label="Company Name"
+              />
 
               <input
                 id="company_name"
@@ -319,19 +258,17 @@ function Register() {
                 value={formData.company_name}
                 onChange={handleChange}
                 autoComplete="organization"
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm outline-none transition focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
               />
             </div>
 
             {/* PHONE */}
 
             <div>
-              <label
+              <FieldLabel
                 htmlFor="phone_no"
-                className="mb-1.5 block text-sm font-medium text-slate-700"
-              >
-                Mobile Number
-              </label>
+                label="Mobile Number"
+              />
 
               <div className="relative">
                 <FiPhone
@@ -350,7 +287,7 @@ function Register() {
                   value={formData.phone_no}
                   onChange={handleChange}
                   autoComplete="tel"
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-4 text-sm outline-none transition focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
                 />
               </div>
             </div>
@@ -358,12 +295,10 @@ function Register() {
             {/* EMAIL */}
 
             <div>
-              <label
+              <FieldLabel
                 htmlFor="email"
-                className="mb-1.5 block text-sm font-medium text-slate-700"
-              >
-                Email Address
-              </label>
+                label="Email Address"
+              />
 
               <div className="relative">
                 <FiMail
@@ -379,7 +314,7 @@ function Register() {
                   value={formData.email}
                   onChange={handleChange}
                   autoComplete="email"
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-4 text-sm outline-none transition focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
                 />
               </div>
             </div>
@@ -387,15 +322,11 @@ function Register() {
             {/* GST */}
 
             <div className="md:col-span-2">
-              <label
+              <FieldLabel
                 htmlFor="gst_no"
-                className="mb-1.5 block text-sm font-medium text-slate-700"
-              >
-                GST Number
-                <span className="ml-1 text-xs font-normal text-slate-400">
-                  (Optional)
-                </span>
-              </label>
+                label="GST Number"
+                optional
+              />
 
               <input
                 id="gst_no"
@@ -405,19 +336,17 @@ function Register() {
                 value={formData.gst_no}
                 onChange={handleChange}
                 autoComplete="off"
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm uppercase outline-none transition focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm uppercase outline-none transition focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
               />
             </div>
 
             {/* PASSWORD */}
 
             <div>
-              <label
+              <FieldLabel
                 htmlFor="password"
-                className="mb-1.5 block text-sm font-medium text-slate-700"
-              >
-                Password
-              </label>
+                label="Password"
+              />
 
               <div className="relative">
                 <FiLock
@@ -427,32 +356,21 @@ function Register() {
 
                 <input
                   id="password"
-                  type={
-                    showPassword
-                      ? "text"
-                      : "password"
-                  }
+                  type={showPassword ? "text" : "password"}
                   name="password"
                   placeholder="Create password"
                   value={formData.password}
                   onChange={handleChange}
                   autoComplete="new-password"
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-11 text-sm outline-none transition focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-11 text-sm outline-none transition focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
                 />
 
                 <button
                   type="button"
                   onClick={() =>
-                    setShowPassword(
-                      (prev) => !prev,
-                    )
+                    setShowPassword((prev) => !prev)
                   }
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
-                  aria-label={
-                    showPassword
-                      ? "Hide password"
-                      : "Show password"
-                  }
                 >
                   {showPassword ? (
                     <FiEyeOff size={18} />
@@ -466,12 +384,10 @@ function Register() {
             {/* CONFIRM PASSWORD */}
 
             <div>
-              <label
+              <FieldLabel
                 htmlFor="confirm_password"
-                className="mb-1.5 block text-sm font-medium text-slate-700"
-              >
-                Confirm Password
-              </label>
+                label="Confirm Password"
+              />
 
               <div className="relative">
                 <FiLock
@@ -488,27 +404,20 @@ function Register() {
                   }
                   name="confirm_password"
                   placeholder="Confirm password"
-                  value={
-                    formData.confirm_password
-                  }
+                  value={formData.confirm_password}
                   onChange={handleChange}
                   autoComplete="new-password"
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-11 text-sm outline-none transition focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-11 text-sm outline-none transition focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
                 />
 
                 <button
                   type="button"
                   onClick={() =>
                     setShowConfirmPassword(
-                      (prev) => !prev,
+                      (prev) => !prev
                     )
                   }
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
-                  aria-label={
-                    showConfirmPassword
-                      ? "Hide password"
-                      : "Show password"
-                  }
                 >
                   {showConfirmPassword ? (
                     <FiEyeOff size={18} />
@@ -521,25 +430,25 @@ function Register() {
 
             {/* PASSWORD RULES */}
 
-            <div className="rounded-xl bg-slate-50 p-4 md:col-span-2">
+            <div className="rounded-xl bg-slate-50 p-3 md:col-span-2">
               <p className="mb-2 text-xs font-semibold text-slate-600">
                 Password must contain:
               </p>
 
-              <div className="grid gap-2 text-xs sm:grid-cols-2">
+              <div className="grid grid-cols-2 gap-1.5 text-xs">
                 <PasswordRule
                   valid={passwordRules.length}
-                  text="At least 8 characters"
+                  text="8+ characters"
                 />
 
                 <PasswordRule
                   valid={passwordRules.uppercase}
-                  text="One uppercase letter"
+                  text="Uppercase letter"
                 />
 
                 <PasswordRule
                   valid={passwordRules.lowercase}
-                  text="One lowercase letter"
+                  text="Lowercase letter"
                 />
 
                 <PasswordRule
@@ -549,7 +458,7 @@ function Register() {
 
                 <PasswordRule
                   valid={passwordRules.special}
-                  text="One special character"
+                  text="Special character"
                 />
               </div>
             </div>
@@ -559,7 +468,7 @@ function Register() {
             <button
               type="submit"
               disabled={loading}
-              className="md:col-span-2 flex w-full items-center justify-center rounded-xl bg-[#008dd2] py-3 text-sm font-semibold text-white transition hover:bg-[#007fbd] disabled:cursor-not-allowed disabled:opacity-60"
+              className="md:col-span-2 flex w-full items-center justify-center rounded-xl bg-[#008dd2] py-2.5 text-sm font-semibold text-white transition hover:bg-[#007fbd] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loading
                 ? "Creating account..."
@@ -569,7 +478,7 @@ function Register() {
 
           {/* LOGIN */}
 
-          <p className="mt-6 text-center text-sm text-slate-500">
+          <p className="mt-4 text-center text-sm text-slate-500">
             Already have an account?
 
             <Link
@@ -585,24 +494,37 @@ function Register() {
   );
 }
 
-// ========================================
-// PASSWORD RULE
-// ========================================
+function FieldLabel({
+  htmlFor,
+  label,
+  optional = false,
+}) {
+  return (
+    <label
+      htmlFor={htmlFor}
+      className="mb-1.5 block text-sm font-medium text-slate-700"
+    >
+      {label}
+
+      {optional && (
+        <span className="ml-1 text-xs font-normal text-slate-400">
+          (Optional)
+        </span>
+      )}
+    </label>
+  );
+}
 
 function PasswordRule({ valid, text }) {
   return (
     <div
       className={`flex items-center gap-2 ${
-        valid
-          ? "text-emerald-600"
-          : "text-slate-400"
+        valid ? "text-emerald-600" : "text-slate-400"
       }`}
     >
       <span
-        className={`flex h-4 w-4 items-center justify-center rounded-full ${
-          valid
-            ? "bg-emerald-100"
-            : "bg-slate-200"
+        className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full ${
+          valid ? "bg-emerald-100" : "bg-slate-200"
         }`}
       >
         {valid && <FiCheck size={10} />}
