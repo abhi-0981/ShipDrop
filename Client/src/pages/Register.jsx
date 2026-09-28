@@ -35,7 +35,6 @@ function Register() {
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    // PHONE - ONLY NUMBERS
     if (name === "phone_no") {
       const numbersOnly = value
         .replace(/\D/g, "")
@@ -49,7 +48,6 @@ function Register() {
       return;
     }
 
-    // GST
     if (name === "gst_no") {
       setFormData((prev) => ({
         ...prev,
@@ -67,10 +65,6 @@ function Register() {
     }));
   };
 
-  // ========================================
-  // PASSWORD RULES
-  // ========================================
-
   const passwordRules = {
     length: formData.password.length >= 8,
     uppercase: /[A-Z]/.test(formData.password),
@@ -86,10 +80,6 @@ function Register() {
     passwordRules.number &&
     passwordRules.special;
 
-  // ========================================
-  // SUBMIT
-  // ========================================
-
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -102,19 +92,16 @@ function Register() {
     const password = formData.password;
     const confirmPassword = formData.confirm_password;
 
-    // FULL NAME
     if (!fullName) {
       toast.error("Please enter your full name");
       return;
     }
 
-    // COMPANY
     if (!companyName) {
       toast.error("Please enter your company name");
       return;
     }
 
-    // EMAIL
     if (!email) {
       toast.error("Please enter your email address");
       return;
@@ -125,7 +112,6 @@ function Register() {
       return;
     }
 
-    // PHONE
     if (!/^[6-9]\d{9}$/.test(phone)) {
       toast.error(
         "Please enter a valid 10-digit mobile number"
@@ -133,15 +119,13 @@ function Register() {
       return;
     }
 
-    // PASSWORD
     if (!passwordStrong) {
       toast.error(
-        "Password does not meet the security rules"
+        "Password does not meet the required security rules"
       );
       return;
     }
 
-    // CONFIRM PASSWORD
     if (password !== confirmPassword) {
       toast.error("Passwords do not match");
       return;
@@ -191,36 +175,36 @@ function Register() {
   };
 
   return (
-    <div className="h-dvh overflow-hidden bg-slate-100 px-3 py-2 sm:px-4">
-      <div className="mx-auto flex h-full w-full max-w-3xl flex-col justify-center">
+    <div className="min-h-screen bg-slate-100 px-3 py-4 sm:flex sm:items-center sm:justify-center sm:px-4">
+      <div className="w-full max-w-3xl">
         {/* BACK TO HOME */}
 
         <Link
           to="/"
-          className="mb-2 inline-flex shrink-0 items-center gap-1.5 text-xs font-medium text-slate-600 transition hover:text-[#008dd2]"
+          className="mb-3 inline-flex items-center gap-2 text-sm font-medium text-slate-600 transition hover:text-[#008dd2]"
         >
-          <FiArrowLeft size={15} />
+          <FiArrowLeft size={17} />
           Back to Home
         </Link>
 
         {/* CARD */}
 
-        <div className="shrink-0 rounded-3xl border border-slate-100 bg-white px-4 py-3 shadow-xl shadow-slate-200/60 sm:px-6 sm:py-4">
+        <div className="rounded-3xl border border-slate-100 bg-white p-5 shadow-xl shadow-slate-200/60 sm:p-7">
           {/* HEADER */}
 
-          <div className="mb-3 text-center">
+          <div className="mb-5 text-center">
             <Link
               to="/"
-              className="inline-block text-2xl font-extrabold tracking-tight text-[#008dd2] sm:text-3xl"
+              className="inline-block text-3xl font-extrabold tracking-tight text-[#008dd2]"
             >
               Parcel<span className="text-slate-800">Drop</span>
             </Link>
 
-            <h1 className="mt-1 text-xl font-bold text-slate-800 sm:text-2xl">
+            <h1 className="mt-3 text-2xl font-bold text-slate-800">
               Create Your Account
             </h1>
 
-            <p className="mt-0.5 text-xs text-slate-500 sm:text-sm">
+            <p className="mt-1 text-sm text-slate-500">
               Start managing your shipments with ParcelDrop
             </p>
           </div>
@@ -229,45 +213,67 @@ function Register() {
 
           <form
             onSubmit={handleSubmit}
+            className="grid gap-3 md:grid-cols-2"
             noValidate
-            className="grid grid-cols-2 gap-x-3 gap-y-2"
           >
-            {/* ROW 1 - NAME */}
+            {/* FULL NAME */}
 
-            <FormField
-              label="Full Name"
+            <FieldLabel
               htmlFor="full_name"
-            >
-              <div className="relative">
-                <FiUser
-                  size={15}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-                />
+              label="Full Name"
+            />
 
-                <input
-                  id="full_name"
-                  type="text"
-                  name="full_name"
-                  placeholder="Full name"
-                  value={formData.full_name}
-                  onChange={handleChange}
-                  autoComplete="name"
-                  autoFocus
-                  className={inputClass("pl-9")}
-                />
-              </div>
-            </FormField>
+            <div className="relative">
+              <FiUser
+                size={18}
+                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+              />
 
-            {/* ROW 1 - PHONE */}
+              <input
+                id="full_name"
+                type="text"
+                name="full_name"
+                placeholder="Enter your full name"
+                value={formData.full_name}
+                onChange={handleChange}
+                autoComplete="name"
+                autoFocus
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
+              />
+            </div>
 
-            <FormField
-              label="Mobile Number"
-              htmlFor="phone_no"
-            >
+            {/* COMPANY */}
+
+            <div>
+              <FieldLabel
+                htmlFor="company_name"
+                label="Company Name"
+              />
+
+              <input
+                id="company_name"
+                type="text"
+                name="company_name"
+                placeholder="Enter company name"
+                value={formData.company_name}
+                onChange={handleChange}
+                autoComplete="organization"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm outline-none transition focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
+              />
+            </div>
+
+            {/* PHONE */}
+
+            <div>
+              <FieldLabel
+                htmlFor="phone_no"
+                label="Mobile Number"
+              />
+
               <div className="relative">
                 <FiPhone
-                  size={15}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                  size={18}
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
                 />
 
                 <input
@@ -277,133 +283,116 @@ function Register() {
                   inputMode="numeric"
                   pattern="[0-9]*"
                   maxLength={10}
-                  placeholder="10-digit mobile"
+                  placeholder="10-digit mobile number"
                   value={formData.phone_no}
                   onChange={handleChange}
                   autoComplete="tel"
-                  className={inputClass("pl-9")}
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
                 />
               </div>
-            </FormField>
+            </div>
 
-            {/* ROW 2 - EMAIL */}
+            {/* EMAIL */}
 
-            <FormField
-              label="Email Address"
-              htmlFor="email"
-            >
+            <div>
+              <FieldLabel
+                htmlFor="email"
+                label="Email Address"
+              />
+
               <div className="relative">
                 <FiMail
-                  size={15}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                  size={18}
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
                 />
 
                 <input
                   id="email"
                   type="email"
                   name="email"
-                  placeholder="Email address"
+                  placeholder="Enter email address"
                   value={formData.email}
                   onChange={handleChange}
                   autoComplete="email"
-                  className={inputClass("pl-9")}
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
                 />
               </div>
-            </FormField>
+            </div>
 
-            {/* ROW 2 - COMPANY */}
+            {/* GST */}
 
-            <FormField
-              label="Company Name"
-              htmlFor="company_name"
-            >
-              <input
-                id="company_name"
-                type="text"
-                name="company_name"
-                placeholder="Company name"
-                value={formData.company_name}
-                onChange={handleChange}
-                autoComplete="organization"
-                className={inputClass()}
+            <div className="md:col-span-2">
+              <FieldLabel
+                htmlFor="gst_no"
+                label="GST Number"
+                optional
               />
-            </FormField>
 
-            {/* ROW 3 - GST */}
-
-            <FormField
-              label="GST Number"
-              htmlFor="gst_no"
-              optional
-            >
               <input
                 id="gst_no"
                 type="text"
                 name="gst_no"
-                placeholder="GST number"
+                placeholder="Enter GST number"
                 value={formData.gst_no}
                 onChange={handleChange}
                 autoComplete="off"
-                className={inputClass("uppercase")}
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm uppercase outline-none transition focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
               />
-            </FormField>
+            </div>
 
-            {/* ROW 3 - PASSWORD */}
+            {/* PASSWORD */}
 
-            <FormField
-              label="Password"
-              htmlFor="password"
-            >
+            <div>
+              <FieldLabel
+                htmlFor="password"
+                label="Password"
+              />
+
               <div className="relative">
                 <FiLock
-                  size={15}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                  size={18}
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
                 />
 
                 <input
                   id="password"
-                  type={
-                    showPassword
-                      ? "text"
-                      : "password"
-                  }
+                  type={showPassword ? "text" : "password"}
                   name="password"
                   placeholder="Create password"
                   value={formData.password}
                   onChange={handleChange}
                   autoComplete="new-password"
-                  className={inputClass("pl-9 pr-9")}
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-11 text-sm outline-none transition focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
                 />
 
                 <button
                   type="button"
-                  tabIndex={-1}
                   onClick={() =>
-                    setShowPassword(
-                      (prev) => !prev
-                    )
+                    setShowPassword((prev) => !prev)
                   }
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
                 >
                   {showPassword ? (
-                    <FiEyeOff size={15} />
+                    <FiEyeOff size={18} />
                   ) : (
-                    <FiEye size={15} />
+                    <FiEye size={18} />
                   )}
                 </button>
               </div>
-            </FormField>
+            </div>
 
-            {/* ROW 4 - CONFIRM PASSWORD */}
+            {/* CONFIRM PASSWORD */}
 
-            <FormField
-              label="Confirm Password"
-              htmlFor="confirm_password"
-            >
+            <div>
+              <FieldLabel
+                htmlFor="confirm_password"
+                label="Confirm Password"
+              />
+
               <div className="relative">
                 <FiLock
-                  size={15}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                  size={18}
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
                 />
 
                 <input
@@ -418,69 +407,68 @@ function Register() {
                   value={formData.confirm_password}
                   onChange={handleChange}
                   autoComplete="new-password"
-                  className={inputClass("pl-9 pr-9")}
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-11 text-sm outline-none transition focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
                 />
 
                 <button
                   type="button"
-                  tabIndex={-1}
                   onClick={() =>
                     setShowConfirmPassword(
                       (prev) => !prev
                     )
                   }
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
                 >
                   {showConfirmPassword ? (
-                    <FiEyeOff size={15} />
+                    <FiEyeOff size={18} />
                   ) : (
-                    <FiEye size={15} />
+                    <FiEye size={18} />
                   )}
                 </button>
               </div>
-            </FormField>
+            </div>
 
-            {/* ROW 4 - PASSWORD RULES */}
+            {/* PASSWORD RULES */}
 
-            <div className="self-end rounded-xl bg-slate-50 px-3 py-2">
-              <p className="mb-1 text-[10px] font-semibold text-slate-600 sm:text-[11px]">
-                Password must contain
+            <div className="rounded-xl bg-slate-50 p-3 md:col-span-2">
+              <p className="mb-2 text-xs font-semibold text-slate-600">
+                Password must contain:
               </p>
 
-              <div className="grid grid-cols-2 gap-x-2 gap-y-0.5">
+              <div className="grid grid-cols-2 gap-1.5 text-xs">
                 <PasswordRule
                   valid={passwordRules.length}
-                  text="8+ chars"
+                  text="8+ characters"
                 />
 
                 <PasswordRule
                   valid={passwordRules.uppercase}
-                  text="Uppercase"
+                  text="Uppercase letter"
                 />
 
                 <PasswordRule
                   valid={passwordRules.lowercase}
-                  text="Lowercase"
+                  text="Lowercase letter"
                 />
 
                 <PasswordRule
                   valid={passwordRules.number}
-                  text="Number"
+                  text="One number"
                 />
 
                 <PasswordRule
                   valid={passwordRules.special}
-                  text="Special"
+                  text="Special character"
                 />
               </div>
             </div>
 
-            {/* SIGNUP BUTTON */}
+            {/* SUBMIT */}
 
             <button
               type="submit"
               disabled={loading}
-              className="col-span-2 mt-1 flex h-10 items-center justify-center rounded-xl bg-[#008dd2] text-sm font-semibold text-white transition hover:bg-[#007fbd] disabled:cursor-not-allowed disabled:opacity-60"
+              className="md:col-span-2 flex w-full items-center justify-center rounded-xl bg-[#008dd2] py-2.5 text-sm font-semibold text-white transition hover:bg-[#007fbd] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loading
                 ? "Creating account..."
@@ -490,12 +478,12 @@ function Register() {
 
           {/* LOGIN */}
 
-          <p className="mt-2 text-center text-xs text-slate-500 sm:text-sm">
+          <p className="mt-4 text-center text-sm text-slate-500">
             Already have an account?
 
             <Link
               to="/login"
-              className="ml-1 font-semibold text-[#008dd2] hover:underline"
+              className="ml-1.5 font-semibold text-[#008dd2] hover:underline"
             >
               Login
             </Link>
@@ -506,68 +494,43 @@ function Register() {
   );
 }
 
-// ========================================
-// FORM FIELD
-// ========================================
-
-function FormField({
-  label,
+function FieldLabel({
   htmlFor,
-  children,
+  label,
   optional = false,
 }) {
   return (
-    <div className="min-w-0">
-      <label
-        htmlFor={htmlFor}
-        className="mb-0.5 block truncate text-[11px] font-medium text-slate-700 sm:text-xs"
-      >
-        {label}
+    <label
+      htmlFor={htmlFor}
+      className="mb-1.5 block text-sm font-medium text-slate-700"
+    >
+      {label}
 
-        {optional && (
-          <span className="ml-1 text-[9px] font-normal text-slate-400">
-            (Optional)
-          </span>
-        )}
-      </label>
-
-      {children}
-    </div>
+      {optional && (
+        <span className="ml-1 text-xs font-normal text-slate-400">
+          (Optional)
+        </span>
+      )}
+    </label>
   );
 }
-
-// ========================================
-// INPUT CLASS
-// ========================================
-
-function inputClass(extra = "") {
-  return `h-9 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-xs text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10 ${extra}`;
-}
-
-// ========================================
-// PASSWORD RULE
-// ========================================
 
 function PasswordRule({ valid, text }) {
   return (
     <div
-      className={`flex min-w-0 items-center gap-1 text-[9px] ${
-        valid
-          ? "text-emerald-600"
-          : "text-slate-400"
+      className={`flex items-center gap-2 ${
+        valid ? "text-emerald-600" : "text-slate-400"
       }`}
     >
       <span
-        className={`flex h-3 w-3 shrink-0 items-center justify-center rounded-full ${
-          valid
-            ? "bg-emerald-100"
-            : "bg-slate-200"
+        className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full ${
+          valid ? "bg-emerald-100" : "bg-slate-200"
         }`}
       >
-        {valid && <FiCheck size={8} />}
+        {valid && <FiCheck size={10} />}
       </span>
 
-      <span className="truncate">{text}</span>
+      <span>{text}</span>
     </div>
   );
 }
