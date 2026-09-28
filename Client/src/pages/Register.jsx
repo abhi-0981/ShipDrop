@@ -560,7 +560,7 @@ function Register() {
 
                 <input
                   ref={(el) =>
-                    (inputRefs.current[2] =
+                    (inputRefs.current[1] =
                       el)
                   }
                   id="phone_no"
@@ -601,7 +601,7 @@ function Register() {
 
                 <input
                   ref={(el) =>
-                    (inputRefs.current[3] =
+                    (inputRefs.current[2] =
                       el)
                   }
                   id="email"
@@ -633,7 +633,7 @@ function Register() {
 
               <input
                 ref={(el) =>
-                  (inputRefs.current[1] =
+                  (inputRefs.current[3] =
                     el)
                 }
                 id="company_name"
