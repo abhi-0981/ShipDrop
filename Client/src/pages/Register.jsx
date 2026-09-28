@@ -575,7 +575,7 @@ function Register() {
                   }
                   onChange={handleChange}
                   onKeyDown={(e) =>
-                    handleKeyDown(e, 2)
+                    handleKeyDown(e, 1)
                   }
                   autoComplete="tel"
                   className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-4 text-base md:text-sm outline-none transition focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
@@ -611,7 +611,7 @@ function Register() {
                   value={formData.email}
                   onChange={handleChange}
                   onKeyDown={(e) =>
-                    handleKeyDown(e, 3)
+                    handleKeyDown(e, 2)
                   }
                   autoComplete="email"
                   className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-4 text-base md:text-sm outline-none transition focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
@@ -645,7 +645,7 @@ function Register() {
                 }
                 onChange={handleChange}
                 onKeyDown={(e) =>
-                  handleKeyDown(e, 1)
+                  handleKeyDown(e, 3)
                 }
                 autoComplete="organization"
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-base md:text-sm outline-none transition focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
