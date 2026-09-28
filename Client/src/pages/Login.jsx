@@ -68,7 +68,10 @@ function Login() {
         return;
       }
 
-      localStorage.setItem("user", JSON.stringify(user));
+      localStorage.setItem(
+        "user",
+        JSON.stringify(user)
+      );
 
       toast.success("Login successful");
 
@@ -86,24 +89,24 @@ function Login() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center overflow-hidden bg-slate-100 px-4 py-5">
-      <div className="w-full max-w-md">
-        {/* BACK TO HOME */}
+    <div className="h-dvh overflow-hidden bg-slate-100 px-4">
+      <div className="mx-auto flex h-full w-full max-w-md flex-col justify-center">
+        {/* BACK */}
 
         <Link
           to="/"
-          className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-slate-600 transition hover:text-[#008dd2]"
+          className="mb-3 inline-flex shrink-0 items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-[#008dd2]"
         >
-          <FiArrowLeft size={17} />
+          <FiArrowLeft size={15} />
           Back to Home
         </Link>
 
         {/* CARD */}
 
-        <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-xl shadow-slate-200/60 sm:p-8">
-          {/* LOGO */}
+        <div className="shrink-0 rounded-3xl border border-slate-100 bg-white p-6 shadow-xl shadow-slate-200/60 sm:p-7">
+          {/* HEADER */}
 
-          <div className="mb-6 text-center">
+          <div className="mb-5 text-center">
             <Link
               to="/"
               className="inline-block text-3xl font-extrabold tracking-tight text-[#008dd2]"
@@ -111,7 +114,7 @@ function Login() {
               Ship<span className="text-slate-800">Drop</span>
             </Link>
 
-            <h1 className="mt-4 text-2xl font-bold text-slate-800">
+            <h1 className="mt-3 text-2xl font-bold text-slate-800">
               Welcome Back
             </h1>
 
@@ -120,24 +123,26 @@ function Login() {
             </p>
           </div>
 
+          {/* FORM */}
+
           <form
             onSubmit={handleSubmit}
-            className="space-y-4"
             noValidate
+            className="space-y-3.5"
           >
             {/* EMAIL */}
 
             <div>
               <label
                 htmlFor="login-email"
-                className="mb-1.5 block text-sm font-medium text-slate-700"
+                className="mb-1 block text-xs font-medium text-slate-700"
               >
                 Email Address
               </label>
 
               <div className="relative">
                 <FiMail
-                  size={18}
+                  size={17}
                   className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
                 />
 
@@ -150,7 +155,7 @@ function Login() {
                   onChange={handleChange}
                   autoComplete="email"
                   autoFocus
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-4 text-sm text-slate-800 outline-none transition focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
+                  className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-4 text-sm outline-none transition focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
                 />
               </div>
             </div>
@@ -160,68 +165,70 @@ function Login() {
             <div>
               <label
                 htmlFor="login-password"
-                className="mb-1.5 block text-sm font-medium text-slate-700"
+                className="mb-1 block text-xs font-medium text-slate-700"
               >
                 Password
               </label>
 
               <div className="relative">
                 <FiLock
-                  size={18}
+                  size={17}
                   className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
                 />
 
                 <input
                   id="login-password"
-                  type={showPassword ? "text" : "password"}
+                  type={
+                    showPassword
+                      ? "text"
+                      : "password"
+                  }
                   name="password"
                   placeholder="Enter your password"
                   value={formData.password}
                   onChange={handleChange}
                   autoComplete="current-password"
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-11 text-sm text-slate-800 outline-none transition focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
+                  className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-11 text-sm outline-none transition focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
                 />
 
                 <button
                   type="button"
+                  tabIndex={-1}
                   onClick={() =>
-                    setShowPassword((prev) => !prev)
+                    setShowPassword(
+                      (prev) => !prev
+                    )
                   }
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-700"
-                  aria-label={
-                    showPassword
-                      ? "Hide password"
-                      : "Show password"
-                  }
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
                 >
                   {showPassword ? (
-                    <FiEyeOff size={18} />
+                    <FiEyeOff size={17} />
                   ) : (
-                    <FiEye size={18} />
+                    <FiEye size={17} />
                   )}
                 </button>
               </div>
             </div>
 
-            {/* LOGIN BUTTON */}
+            {/* BUTTON */}
 
             <button
               type="submit"
               disabled={loading}
-              className="mt-2 flex w-full items-center justify-center rounded-xl bg-[#008dd2] py-3 text-sm font-semibold text-white transition hover:bg-[#007fbd] disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex h-11 w-full items-center justify-center rounded-xl bg-[#008dd2] text-sm font-semibold text-white transition hover:bg-[#007fbd] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loading ? "Signing in..." : "Login"}
             </button>
           </form>
 
-          {/* SIGN UP */}
+          {/* SIGNUP */}
 
-          <p className="mt-5 text-center text-sm text-slate-500">
+          <p className="mt-4 text-center text-xs text-slate-500 sm:text-sm">
             Don't have an account?
 
             <Link
               to="/register"
-              className="ml-1.5 font-semibold text-[#008dd2] hover:underline"
+              className="ml-1 font-semibold text-[#008dd2] hover:underline"
             >
               Sign Up
             </Link>
