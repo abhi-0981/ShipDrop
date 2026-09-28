@@ -111,7 +111,7 @@ function Login() {
               to="/"
               className="inline-block text-3xl font-extrabold tracking-tight text-[#008dd2]"
             >
-              Ship<span className="text-slate-800">Drop</span>
+              Parcel<span className="text-slate-800">Drop</span>
             </Link>
 
             <h1 className="mt-3 text-2xl font-bold text-slate-800">
@@ -119,7 +119,7 @@ function Login() {
             </h1>
 
             <p className="mt-1 text-sm text-slate-500">
-              Login to your ShipDrop account
+              Login to your ParcelDrop account
             </p>
           </div>
 

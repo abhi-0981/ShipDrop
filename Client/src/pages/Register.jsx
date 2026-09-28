@@ -213,7 +213,7 @@ function Register() {
               to="/"
               className="inline-block text-2xl font-extrabold tracking-tight text-[#008dd2] sm:text-3xl"
             >
-              Ship<span className="text-slate-800">Drop</span>
+              Parcel<span className="text-slate-800">Drop</span>
             </Link>
 
             <h1 className="mt-1 text-xl font-bold text-slate-800 sm:text-2xl">
@@ -221,7 +221,7 @@ function Register() {
             </h1>
 
             <p className="mt-0.5 text-xs text-slate-500 sm:text-sm">
-              Start managing your shipments with ShipDrop
+              Start managing your shipments with ParcelDrop
             </p>
           </div>
 
