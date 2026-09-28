@@ -579,9 +579,7 @@ function Register() {
               >
                 Company Name
 
-                <span className="ml-1 text-xs font-normal text-slate-400">
-                  (Optional)
-                </span>
+               
               </label>
 
               <input
@@ -691,9 +689,7 @@ function Register() {
               >
                 GST Number
 
-                <span className="ml-1 text-xs font-normal text-slate-400">
-                  (Optional)
-                </span>
+               
               </label>
 
               <input
