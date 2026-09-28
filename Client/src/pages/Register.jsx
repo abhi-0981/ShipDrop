@@ -26,8 +26,7 @@ function Register() {
     confirm_password: "",
   });
 
-  const [showPassword, setShowPassword] =
-    useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const [showConfirmPassword, setShowConfirmPassword] =
     useState(false);
@@ -248,7 +247,6 @@ function Register() {
     const currentField =
       e.currentTarget.name;
 
-    // Required/current field validation
     const valid =
       validateField(currentField);
 
@@ -308,10 +306,7 @@ function Register() {
     const confirmPassword =
       formData.confirm_password;
 
-    // ======================================
-    // FULL NAME REQUIRED
-    // ======================================
-
+    // FULL NAME
     if (!fullName) {
       toast.error(
         "Please enter your full name"
@@ -321,16 +316,13 @@ function Register() {
       return;
     }
 
-    // ======================================
-    // PHONE REQUIRED
-    // ======================================
-
+    // PHONE
     if (!phone) {
       toast.error(
         "Please enter your mobile number"
       );
 
-      inputRefs.current[1]?.focus();
+      inputRefs.current[2]?.focus();
       return;
     }
 
@@ -339,20 +331,17 @@ function Register() {
         "Please enter a valid 10-digit mobile number"
       );
 
-      inputRefs.current[1]?.focus();
+      inputRefs.current[2]?.focus();
       return;
     }
 
-    // ======================================
-    // EMAIL REQUIRED
-    // ======================================
-
+    // EMAIL
     if (!email) {
       toast.error(
         "Please enter your email address"
       );
 
-      inputRefs.current[2]?.focus();
+      inputRefs.current[3]?.focus();
       return;
     }
 
@@ -365,26 +354,14 @@ function Register() {
         "Please enter a valid email address"
       );
 
-      inputRefs.current[2]?.focus();
+      inputRefs.current[3]?.focus();
       return;
     }
 
-    // ======================================
     // COMPANY OPTIONAL
-    // ======================================
-
-    // No validation required
-
-    // ======================================
     // GST OPTIONAL
-    // ======================================
 
-    // No validation required
-
-    // ======================================
-    // PASSWORD REQUIRED
-    // ======================================
-
+    // PASSWORD
     if (!password) {
       toast.error(
         "Please create a password"
@@ -403,10 +380,7 @@ function Register() {
       return;
     }
 
-    // ======================================
-    // CONFIRM PASSWORD REQUIRED
-    // ======================================
-
+    // CONFIRM PASSWORD
     if (!confirmPassword) {
       toast.error(
         "Please confirm your password"
@@ -435,11 +409,9 @@ function Register() {
         {
           full_name: fullName,
 
-          // OPTIONAL
           company_name:
             companyName || null,
 
-          // OPTIONAL
           gst_no:
             gst || null,
 
@@ -565,12 +537,11 @@ function Register() {
                   }
                   autoComplete="name"
                   autoFocus
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-4 text-sm outline-none transition focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-4 text-base md:text-sm outline-none transition focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
                 />
               </div>
             </div>
 
-           
             {/* PHONE */}
 
             <div>
@@ -607,7 +578,7 @@ function Register() {
                     handleKeyDown(e, 2)
                   }
                   autoComplete="tel"
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-4 text-sm outline-none transition focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-4 text-base md:text-sm outline-none transition focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
                 />
               </div>
             </div>
@@ -643,14 +614,12 @@ function Register() {
                     handleKeyDown(e, 3)
                   }
                   autoComplete="email"
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-4 text-sm outline-none transition focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-4 text-base md:text-sm outline-none transition focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
                 />
               </div>
             </div>
 
-
-
-             {/* COMPANY - OPTIONAL */}
+            {/* COMPANY - OPTIONAL */}
 
             <div>
               <label
@@ -659,7 +628,7 @@ function Register() {
               >
                 Company Name
 
-               
+                
               </label>
 
               <input
@@ -679,12 +648,9 @@ function Register() {
                   handleKeyDown(e, 1)
                 }
                 autoComplete="organization"
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-base md:text-sm outline-none transition focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
               />
             </div>
-
-
-
 
             {/* GST */}
 
@@ -695,7 +661,7 @@ function Register() {
               >
                 GST Number
 
-               
+                
               </label>
 
               <input
@@ -713,7 +679,7 @@ function Register() {
                   handleKeyDown(e, 4)
                 }
                 autoComplete="off"
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm uppercase outline-none transition focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-base md:text-sm uppercase outline-none transition focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
               />
             </div>
 
@@ -754,7 +720,7 @@ function Register() {
                     handleKeyDown(e, 5)
                   }
                   autoComplete="new-password"
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-11 text-sm outline-none transition focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-11 text-base md:text-sm outline-none transition focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
                 />
 
                 <button
@@ -817,7 +783,7 @@ function Register() {
                     handleKeyDown(e, 6)
                   }
                   autoComplete="new-password"
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-11 text-sm outline-none transition focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-11 text-base md:text-sm outline-none transition focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
                 />
 
                 <button
