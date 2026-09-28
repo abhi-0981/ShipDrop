@@ -1,15 +1,24 @@
 const db = require("../config/db");
 
-const checkUser = (email, phone_no, callback) => {
-  const query =
-    "SELECT * FROM users WHERE email = ? OR phone_no = ?";
+// ========================================
+// CHECK EMAIL / PHONE
+// ========================================
 
-  db.query(
-    query,
-    [email, phone_no],
-    callback
-  );
+const checkUser = (email, phone_no, callback) => {
+  const query = `
+    SELECT id, email, phone_no
+    FROM users
+    WHERE LOWER(TRIM(email)) = LOWER(TRIM(?))
+       OR phone_no = ?
+    LIMIT 1
+  `;
+
+  db.query(query, [email, phone_no], callback);
 };
+
+// ========================================
+// CREATE USER
+// ========================================
 
 const createUser = (userData, callback) => {
   const {
@@ -19,7 +28,7 @@ const createUser = (userData, callback) => {
     email,
     phone_no,
     password,
-    role
+    role,
   } = userData;
 
   const query = `
@@ -45,41 +54,37 @@ const createUser = (userData, callback) => {
       email,
       phone_no,
       password,
-      role
+      role,
     ],
-    callback
+    callback,
   );
 };
 
-const findUserByEmail = (
-  email,
-  callback
-) => {
-  const query =
-    "SELECT * FROM users WHERE email = ?";
+// ========================================
+// FIND USER BY EMAIL
+// ========================================
 
-  db.query(
-    query,
-    [email],
-    callback
-  );
+const findUserByEmail = (email, callback) => {
+  const query = `
+    SELECT *
+    FROM users
+    WHERE LOWER(TRIM(email)) = LOWER(TRIM(?))
+    LIMIT 1
+  `;
+
+  db.query(query, [email], callback);
 };
-
 
 // ========================================
 // UPDATE USER PROFILE
 // ========================================
 
-const updateUserProfile = (
-  user_id,
-  userData,
-  callback
-) => {
+const updateUserProfile = (user_id, userData, callback) => {
   const {
     full_name,
     email,
     phone_no,
-    profile_image
+    profile_image,
   } = userData;
 
   const query = `
@@ -99,12 +104,11 @@ const updateUserProfile = (
       email,
       phone_no,
       profile_image,
-      user_id
+      user_id,
     ],
-    callback
+    callback,
   );
 };
-
 
 // ========================================
 // CHECK EMAIL / PHONE FOR OTHER USERS
@@ -114,13 +118,17 @@ const checkDuplicateUser = (
   user_id,
   email,
   phone_no,
-  callback
+  callback,
 ) => {
   const query = `
     SELECT id, email, phone_no
     FROM users
-    WHERE (email = ? OR phone_no = ?)
+    WHERE (
+      LOWER(TRIM(email)) = LOWER(TRIM(?))
+      OR phone_no = ?
+    )
     AND id != ?
+    LIMIT 1
   `;
 
   db.query(
@@ -128,31 +136,30 @@ const checkDuplicateUser = (
     [
       email,
       phone_no,
-      user_id
+      user_id,
     ],
-    callback
+    callback,
   );
 };
-
 
 // ========================================
 // FIND USER BY ID
 // ========================================
 
-const findUserById = (
-  user_id,
-  callback
-) => {
-  const query =
-    "SELECT * FROM users WHERE id = ?";
+const findUserById = (user_id, callback) => {
+  const query = `
+    SELECT *
+    FROM users
+    WHERE id = ?
+    LIMIT 1
+  `;
 
   db.query(
     query,
     [user_id],
-    callback
+    callback,
   );
 };
-
 
 module.exports = {
   checkUser,
@@ -160,5 +167,5 @@ module.exports = {
   findUserByEmail,
   updateUserProfile,
   checkDuplicateUser,
-  findUserById
+  findUserById,
 };
