@@ -68,12 +68,17 @@ function Login() {
         return;
       }
 
-      localStorage.setItem(
-        "user",
-        JSON.stringify(user)
-      );
+      const token = response.data?.token;
 
-      toast.success("Login successful");
+if (!token) {
+  toast.error("Login failed. Please try again.");
+  return;
+}
+
+localStorage.setItem("token", token);
+localStorage.setItem("user", JSON.stringify(user));
+
+toast.success("Login successful");
 
       navigate("/dashboard", {
         replace: true,

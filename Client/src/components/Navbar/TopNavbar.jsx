@@ -1027,7 +1027,7 @@ if (!normalizedErrors.length) {
             <button
               type="button"
               onClick={() => setShowRecharge(true)}
-              className="ml-1.5 flex h-5 w-5 sm:h-6 sm:w-6 items-center justify-center rounded-full bg-violet-600 text-xs font-bold text-white transition hover:bg-violet-700 active:scale-90 shrink-0 shadow-xs"
+              className="ml-1.5 flex h-5 w-5 sm:h-6 sm:w-6 items-center justify-center rounded-full bg-[#008dd2] text-xs font-bold text-white transition hover:bg-violet-700 active:scale-90 shrink-0 shadow-xs"
               title="Recharge Wallet"
             >
               +

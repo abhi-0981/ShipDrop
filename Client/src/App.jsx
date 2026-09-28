@@ -4,6 +4,8 @@ import Home from "./pages/Home/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 
+import ProtectedRoute from "./components/ProtectedRoute/ProtectedRoute";
+
 import DashboardLayout from "./pages/Dashboard/DashboardLayout";
 import Dashboard from "./pages/Dashboard/Dashboard";
 import CreateOrder from "./pages/Dashboard/CreateOrder";
@@ -33,165 +35,230 @@ import Pending from "./pages/Dashboard/Pending";
 function App() {
   return (
     <Routes>
+      {/* ========================================
+          PUBLIC ROUTES
+      ======================================== */}
+
       <Route path="/" element={<Home />} />
+
       <Route path="/login" element={<Login />} />
+
       <Route path="/register" element={<Register />} />
 
-      <Route element={<DashboardLayout />}>
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/create-order" element={<CreateOrder />} />
+      {/* ========================================
+          PROTECTED ROUTES
+      ======================================== */}
 
-        {/* Existing standalone Processing Orders page */}
-        <Route
-          path="/processing-orders"
-          element={<ProcessingOrders />}
-        />
+      <Route element={<ProtectedRoute />}>
+        <Route element={<DashboardLayout />}>
 
-        {/* New Orders → Processing page */}
-        <Route
-          path="/orders/processing"
-          element={<OrdersProcessing />}
-        />
+          {/* Dashboard */}
+          <Route
+            path="/dashboard"
+            element={<Dashboard />}
+          />
 
-        {/* Orders status pages — same table, fixed status */}
-        <Route path="/all-orders" element={<AllOrders />} />
-        <Route path="/in-transit" element={<InTransit />} />
-        <Route
-          path="/out-for-delivery"
-          element={<OutForDelivery />}
-        />
-        <Route path="/delivered" element={<Delivered />} />
-        <Route
-          path="/rto-in-transit"
-          element={<RTOInTransit />}
-        />
-        <Route
-          path="/rto-delivered"
-          element={<RTODelivered />}
-        />
-        <Route path="/returned" element={<Returned />} />
+          {/* Create Order */}
+          <Route
+            path="/create-order"
+            element={<CreateOrder />}
+          />
 
-        <Route
-          path="/pending"
-          element={<Pending />}
-        />
+          {/* Processing Orders */}
+          <Route
+            path="/processing-orders"
+            element={<ProcessingOrders />}
+          />
 
-        <Route
-          path="/cancelled"
-          element={<Cancelled />}
-        />
+          {/* New Orders → Processing */}
+          <Route
+            path="/orders/processing"
+            element={<OrdersProcessing />}
+          />
 
- <Route
-  path="/orders/ndr-pending"
-  element={<Pending />}
-/>
+          {/* ========================================
+              ORDERS
+          ======================================== */}
 
-        <Route
-          path="/orders/ofd"
-          element={
-            <AllOrders
-              statusScope="OFD"
-              pageTitle="OFD"
-            />
-          }
-        />
+          <Route
+            path="/all-orders"
+            element={<AllOrders />}
+          />
 
-        <Route
-          path="/orders/delivered"
-          element={
-            <AllOrders
-              statusScope="DELIVERED"
-              pageTitle="Delivered"
-            />
-          }
-        />
+          <Route
+            path="/in-transit"
+            element={<InTransit />}
+          />
 
-        <Route
-          path="/orders/rto-in-transit"
-          element={
-            <AllOrders
-              statusScope="RTO_IN_TRANSIT"
-              pageTitle="RTO In Transit"
-            />
-          }
-        />
+          <Route
+            path="/out-for-delivery"
+            element={<OutForDelivery />}
+          />
 
-        <Route
-          path="/orders/rto-delivered"
-          element={
-            <AllOrders
-              statusScope="RTO_DELIVERED"
-              pageTitle="RTO Delivered"
-            />
-          }
-        />
+          <Route
+            path="/delivered"
+            element={<Delivered />}
+          />
 
-        <Route
-          path="/orders/lost"
-          element={
-            <AllOrders
-              statusScope="LOST"
-              pageTitle="Lost"
-            />
-          }
-        />
+          <Route
+            path="/rto-in-transit"
+            element={<RTOInTransit />}
+          />
 
-        {/* Manifested keeps its existing special manifest actions */}
-        <Route
-          path="/manifested"
-          element={<Manifested />}
-        />
+          <Route
+            path="/rto-delivered"
+            element={<RTODelivered />}
+          />
 
-        <Route
-          path="/not-picked"
-          element={<NotPicked />}
-        />
+          <Route
+            path="/returned"
+            element={<Returned />}
+          />
 
-        <Route
-          path="/rate-calculator"
-          element={<RateCalculator />}
-        />
+          <Route
+            path="/pending"
+            element={<Pending />}
+          />
 
-        <Route
-  path="/serviceability"
-  element={<Serviceability />}
-/>
+          <Route
+            path="/cancelled"
+            element={<Cancelled />}
+          />
 
-        <Route
-          path="/tickets"
-          element={<Tickets />}
-        />
+          <Route
+            path="/orders/ndr-pending"
+            element={<Pending />}
+          />
 
-        <Route
-          path="/general-settings"
-          element={<GeneralSettings />}
-        />
+          {/* ========================================
+              ORDER STATUS FILTER ROUTES
+          ======================================== */}
 
-        <Route
-          path="/rate-card"
-          element={<RateCard />}
-        />
+          <Route
+            path="/orders/ofd"
+            element={
+              <AllOrders
+                statusScope="OFD"
+                pageTitle="OFD"
+              />
+            }
+          />
 
-        <Route
-          path="/wallet"
-          element={<WalletHistory />}
-        />
+          <Route
+            path="/orders/delivered"
+            element={
+              <AllOrders
+                statusScope="DELIVERED"
+                pageTitle="Delivered"
+              />
+            }
+          />
 
-        {/* SETTINGS */}
-        <Route
-          path="/settings/pickup-address"
-          element={<PickupAddress />}
-        />
+          <Route
+            path="/orders/rto-in-transit"
+            element={
+              <AllOrders
+                statusScope="RTO_IN_TRANSIT"
+                pageTitle="RTO In Transit"
+              />
+            }
+          />
 
-        <Route
-          path="/settings/return-addresses"
-          element={<ReturnAddresses />}
-        />
+          <Route
+            path="/orders/rto-delivered"
+            element={
+              <AllOrders
+                statusScope="RTO_DELIVERED"
+                pageTitle="RTO Delivered"
+              />
+            }
+          />
 
-        <Route
-          path="/settings/label-settings"
-          element={<LabelSettings />}
-        />
+          <Route
+            path="/orders/lost"
+            element={
+              <AllOrders
+                statusScope="LOST"
+                pageTitle="Lost"
+              />
+            }
+          />
+
+          {/* ========================================
+              MANIFEST
+          ======================================== */}
+
+          <Route
+            path="/manifested"
+            element={<Manifested />}
+          />
+
+          <Route
+            path="/not-picked"
+            element={<NotPicked />}
+          />
+
+          {/* ========================================
+              TOOLS
+          ======================================== */}
+
+          <Route
+            path="/rate-calculator"
+            element={<RateCalculator />}
+          />
+
+          <Route
+            path="/serviceability"
+            element={<Serviceability />}
+          />
+
+          {/* ========================================
+              SUPPORT
+          ======================================== */}
+
+          <Route
+            path="/tickets"
+            element={<Tickets />}
+          />
+
+          {/* ========================================
+              SETTINGS
+          ======================================== */}
+
+          <Route
+            path="/general-settings"
+            element={<GeneralSettings />}
+          />
+
+          <Route
+            path="/rate-card"
+            element={<RateCard />}
+          />
+
+          <Route
+            path="/wallet"
+            element={<WalletHistory />}
+          />
+
+          {/* Pickup Address */}
+          <Route
+            path="/settings/pickup-address"
+            element={<PickupAddress />}
+          />
+
+          {/* Return Addresses */}
+          <Route
+            path="/settings/return-addresses"
+            element={<ReturnAddresses />}
+          />
+
+          {/* Label Settings */}
+          <Route
+            path="/settings/label-settings"
+            element={<LabelSettings />}
+          />
+
+        </Route>
       </Route>
     </Routes>
   );

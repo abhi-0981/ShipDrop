@@ -1,4 +1,5 @@
 const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 const userModel = require("../models/userModel");
 
 // ========================================
@@ -371,11 +372,26 @@ const loginUser = (req, res) => {
           created_at: user.created_at,
         };
 
-        return res.status(200).json({
-          message: "Login successful",
-          role: user.role,
-          user: safeUser,
-        });
+        const token = jwt.sign(
+  {
+    user_id: user.id,
+    role: user.role,
+  },
+  process.env.JWT_SECRET,
+  {
+    expiresIn: "7d",
+  }
+);
+console.log("JWT TOKEN GENERATED:", !!token);
+
+console.log("LOGIN RESPONSE HAS TOKEN:", !!token);
+
+return res.status(200).json({
+  message: "Login successful",
+  role: user.role,
+  token,
+  user: safeUser,
+});
       },
     );
   } catch (error) {
