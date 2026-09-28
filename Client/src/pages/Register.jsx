@@ -26,7 +26,9 @@ function Register() {
     confirm_password: "",
   });
 
-  const [showPassword, setShowPassword] = useState(false);
+  const [showPassword, setShowPassword] =
+    useState(false);
+
   const [showConfirmPassword, setShowConfirmPassword] =
     useState(false);
 
@@ -37,6 +39,52 @@ function Register() {
   // ========================================
 
   const inputRefs = useRef([]);
+
+  // ========================================
+  // HANDLE CHANGE
+  // ========================================
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+
+    if (name === "phone_no") {
+      const numbersOnly = value
+        .replace(/\D/g, "")
+        .slice(0, 10);
+
+      setFormData((prev) => ({
+        ...prev,
+        phone_no: numbersOnly,
+      }));
+
+      return;
+    }
+
+    if (name === "email") {
+      setFormData((prev) => ({
+        ...prev,
+        email: value,
+      }));
+
+      return;
+    }
+
+    if (name === "gst_no") {
+      setFormData((prev) => ({
+        ...prev,
+        gst_no: value
+          .replace(/\s/g, "")
+          .toUpperCase(),
+      }));
+
+      return;
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
 
   // ========================================
   // PASSWORD RULES
@@ -70,46 +118,7 @@ function Register() {
     passwordRules.special;
 
   // ========================================
-  // HANDLE CHANGE
-  // ========================================
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-
-    // PHONE - ONLY NUMBERS
-    if (name === "phone_no") {
-      const numbersOnly = value
-        .replace(/\D/g, "")
-        .slice(0, 10);
-
-      setFormData((prev) => ({
-        ...prev,
-        phone_no: numbersOnly,
-      }));
-
-      return;
-    }
-
-    // GST - UPPERCASE + NO SPACES
-    if (name === "gst_no") {
-      setFormData((prev) => ({
-        ...prev,
-        gst_no: value
-          .replace(/\s/g, "")
-          .toUpperCase(),
-      }));
-
-      return;
-    }
-
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  // ========================================
-  // VALIDATE CURRENT FIELD
+  // VALIDATE FIELD FOR ENTER
   // ========================================
 
   const validateField = (name) => {
@@ -117,96 +126,112 @@ function Register() {
       formData[name] || ""
     ).trim();
 
-    switch (name) {
-      case "full_name":
-        if (!value) {
-          toast.error("Please enter your full name");
-          return false;
-        }
-        return true;
+    // FULL NAME
+    if (name === "full_name") {
+      if (!value) {
+        toast.error(
+          "Please enter your full name"
+        );
+        return false;
+      }
 
-      case "phone_no":
-        if (!value) {
-          toast.error(
-            "Please enter your mobile number"
-          );
-          return false;
-        }
-
-        if (!/^[6-9]\d{9}$/.test(value)) {
-          toast.error(
-            "Please enter a valid 10-digit mobile number"
-          );
-          return false;
-        }
-
-        return true;
-
-      case "email":
-        if (!value) {
-          toast.error(
-            "Please enter your email address"
-          );
-          return false;
-        }
-
-        if (
-          !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
-            value
-          )
-        ) {
-          toast.error(
-            "Please enter a valid email address"
-          );
-          return false;
-        }
-
-        return true;
-
-      case "company_name":
-        // OPTIONAL
-        return true;
-
-      case "gst_no":
-        // OPTIONAL
-        return true;
-
-      case "password":
-        if (!formData.password) {
-          toast.error("Please create a password");
-          return false;
-        }
-
-        if (!passwordStrong) {
-          toast.error(
-            "Please create a stronger password"
-          );
-          return false;
-        }
-
-        return true;
-
-      case "confirm_password":
-        if (!formData.confirm_password) {
-          toast.error(
-            "Please confirm your password"
-          );
-          return false;
-        }
-
-        if (
-          formData.password !==
-          formData.confirm_password
-        ) {
-          toast.error("Passwords do not match");
-          return false;
-        }
-
-        return true;
-
-      default:
-        return true;
+      return true;
     }
+
+    // PHONE
+    if (name === "phone_no") {
+      if (!value) {
+        toast.error(
+          "Please enter your mobile number"
+        );
+        return false;
+      }
+
+      if (!/^[6-9]\d{9}$/.test(value)) {
+        toast.error(
+          "Please enter a valid 10-digit mobile number"
+        );
+        return false;
+      }
+
+      return true;
+    }
+
+    // EMAIL
+    if (name === "email") {
+      if (!value) {
+        toast.error(
+          "Please enter your email address"
+        );
+        return false;
+      }
+
+      if (
+        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+          value
+        )
+      ) {
+        toast.error(
+          "Please enter a valid email address"
+        );
+        return false;
+      }
+
+      return true;
+    }
+
+    // COMPANY = OPTIONAL
+    if (name === "company_name") {
+      return true;
+    }
+
+    // GST = OPTIONAL
+    if (name === "gst_no") {
+      return true;
+    }
+
+    // PASSWORD
+    if (name === "password") {
+      if (!formData.password) {
+        toast.error(
+          "Please create a password"
+        );
+        return false;
+      }
+
+      if (!passwordStrong) {
+        toast.error(
+          "Please create a stronger password"
+        );
+        return false;
+      }
+
+      return true;
+    }
+
+    // CONFIRM PASSWORD
+    if (name === "confirm_password") {
+      if (!formData.confirm_password) {
+        toast.error(
+          "Please confirm your password"
+        );
+        return false;
+      }
+
+      if (
+        formData.password !==
+        formData.confirm_password
+      ) {
+        toast.error(
+          "Passwords do not match"
+        );
+        return false;
+      }
+
+      return true;
+    }
+
+    return true;
   };
 
   // ========================================
@@ -220,18 +245,18 @@ function Register() {
 
     e.preventDefault();
 
-    const fieldName =
+    const currentField =
       e.currentTarget.name;
 
-    // Validate current field first
+    // Required/current field validation
     const valid =
-      validateField(fieldName);
+      validateField(currentField);
 
     if (!valid) {
       return;
     }
 
-    // Last input -> submit form
+    // Last field -> submit
     if (
       index ===
       inputRefs.current.length - 1
@@ -240,7 +265,7 @@ function Register() {
       return;
     }
 
-    // Move to next input
+    // Next input
     const nextInput =
       inputRefs.current[index + 1];
 
@@ -273,7 +298,9 @@ function Register() {
       formData.phone_no;
 
     const gst =
-      formData.gst_no.trim().toUpperCase();
+      formData.gst_no
+        .trim()
+        .toUpperCase();
 
     const password =
       formData.password;
@@ -282,32 +309,49 @@ function Register() {
       formData.confirm_password;
 
     // ======================================
-    // REQUIRED VALIDATION
+    // FULL NAME REQUIRED
     // ======================================
 
     if (!fullName) {
       toast.error(
         "Please enter your full name"
       );
+
       inputRefs.current[0]?.focus();
       return;
     }
 
-    if (!/^[6-9]\d{9}$/.test(phone)) {
+    // ======================================
+    // PHONE REQUIRED
+    // ======================================
+
+    if (!phone) {
       toast.error(
-        !phone
-          ? "Please enter your mobile number"
-          : "Please enter a valid 10-digit mobile number"
+        "Please enter your mobile number"
       );
 
       inputRefs.current[1]?.focus();
       return;
     }
 
+    if (!/^[6-9]\d{9}$/.test(phone)) {
+      toast.error(
+        "Please enter a valid 10-digit mobile number"
+      );
+
+      inputRefs.current[1]?.focus();
+      return;
+    }
+
+    // ======================================
+    // EMAIL REQUIRED
+    // ======================================
+
     if (!email) {
       toast.error(
         "Please enter your email address"
       );
+
       inputRefs.current[2]?.focus();
       return;
     }
@@ -320,18 +364,33 @@ function Register() {
       toast.error(
         "Please enter a valid email address"
       );
+
       inputRefs.current[2]?.focus();
       return;
     }
 
-    // Company optional
-    // GST optional
+    // ======================================
+    // COMPANY OPTIONAL
+    // ======================================
+
+    // No validation required
+
+    // ======================================
+    // GST OPTIONAL
+    // ======================================
+
+    // No validation required
+
+    // ======================================
+    // PASSWORD REQUIRED
+    // ======================================
 
     if (!password) {
       toast.error(
         "Please create a password"
       );
-      inputRefs.current[4]?.focus();
+
+      inputRefs.current[5]?.focus();
       return;
     }
 
@@ -339,15 +398,21 @@ function Register() {
       toast.error(
         "Please create a stronger password"
       );
-      inputRefs.current[4]?.focus();
+
+      inputRefs.current[5]?.focus();
       return;
     }
+
+    // ======================================
+    // CONFIRM PASSWORD REQUIRED
+    // ======================================
 
     if (!confirmPassword) {
       toast.error(
         "Please confirm your password"
       );
-      inputRefs.current[5]?.focus();
+
+      inputRefs.current[6]?.focus();
       return;
     }
 
@@ -357,7 +422,8 @@ function Register() {
       toast.error(
         "Passwords do not match"
       );
-      inputRefs.current[5]?.focus();
+
+      inputRefs.current[6]?.focus();
       return;
     }
 
@@ -370,17 +436,16 @@ function Register() {
           full_name: fullName,
 
           // OPTIONAL
-          company_name: companyName || null,
+          company_name:
+            companyName || null,
 
           // OPTIONAL
-          gst_no: gst || null,
+          gst_no:
+            gst || null,
 
           email,
-
           phone_no: phone,
-
           password,
-
           confirm_password:
             confirmPassword,
         }
@@ -401,7 +466,6 @@ function Register() {
         confirm_password: "",
       });
 
-      // Go to login
       setTimeout(() => {
         navigate("/login", {
           replace: true,
@@ -418,34 +482,30 @@ function Register() {
     }
   };
 
-  // ========================================
-  // REGISTER PAGE
-  // ========================================
-
   return (
-    <div className="h-dvh overflow-hidden bg-slate-100 px-3 py-2 sm:px-4">
-      <div className="mx-auto flex h-full w-full max-w-3xl flex-col justify-center">
+    <div className="min-h-screen bg-slate-100 px-4 py-8">
+      <div className="mx-auto w-full max-w-3xl">
 
         {/* BACK TO HOME */}
 
         <Link
           to="/"
-          className="mb-2 inline-flex shrink-0 items-center gap-1.5 text-xs font-medium text-slate-600 transition hover:text-[#008dd2]"
+          className="mb-5 inline-flex items-center gap-2 text-sm font-medium text-slate-600 transition hover:text-[#008dd2]"
         >
-          <FiArrowLeft size={15} />
+          <FiArrowLeft size={17} />
           Back to Home
         </Link>
 
         {/* CARD */}
 
-        <div className="shrink-0 rounded-3xl border border-slate-100 bg-white px-4 py-3 shadow-xl shadow-slate-200/60 sm:px-6 sm:py-4">
+        <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-xl shadow-slate-200/60 sm:p-8">
 
           {/* HEADER */}
 
-          <div className="mb-3 text-center">
+          <div className="mb-7 text-center">
             <Link
               to="/"
-              className="inline-block text-2xl font-extrabold tracking-tight text-[#008dd2] sm:text-3xl"
+              className="inline-block text-3xl font-extrabold tracking-tight text-[#008dd2]"
             >
               Parcel
               <span className="text-slate-800">
@@ -453,12 +513,13 @@ function Register() {
               </span>
             </Link>
 
-            <h1 className="mt-1 text-xl font-bold text-slate-800 sm:text-2xl">
+            <h1 className="mt-5 text-2xl font-bold text-slate-800">
               Create Your Account
             </h1>
 
-            <p className="mt-0.5 text-xs text-slate-500 sm:text-sm">
-              Start managing your shipments with ParcelDrop
+            <p className="mt-1 text-sm text-slate-500">
+              Start managing your shipments with
+              ParcelDrop
             </p>
           </div>
 
@@ -466,22 +527,24 @@ function Register() {
 
           <form
             onSubmit={handleSubmit}
+            className="grid gap-4 md:grid-cols-2"
             noValidate
-            className="grid grid-cols-2 gap-x-3 gap-y-2"
           >
 
-            {/* ==================================
-                ROW 1 - FULL NAME
-            ================================== */}
+            {/* FULL NAME */}
 
-            <FormField
-              label="Full Name"
-              htmlFor="full_name"
-            >
+            <div>
+              <label
+                htmlFor="full_name"
+                className="mb-1.5 block text-sm font-medium text-slate-700"
+              >
+                Full Name
+              </label>
+
               <div className="relative">
                 <FiUser
-                  size={15}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                  size={18}
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
                 />
 
                 <input
@@ -492,7 +555,7 @@ function Register() {
                   id="full_name"
                   type="text"
                   name="full_name"
-                  placeholder="Full name"
+                  placeholder="Enter your full name"
                   value={
                     formData.full_name
                   }
@@ -502,28 +565,65 @@ function Register() {
                   }
                   autoComplete="name"
                   autoFocus
-                  className={inputClass(
-                    "pl-9"
-                  )}
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-4 text-sm outline-none transition focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
                 />
               </div>
-            </FormField>
+            </div>
 
-            {/* ROW 1 - PHONE */}
+            {/* COMPANY - OPTIONAL */}
 
-            <FormField
-              label="Mobile Number"
-              htmlFor="phone_no"
-            >
+            <div>
+              <label
+                htmlFor="company_name"
+                className="mb-1.5 block text-sm font-medium text-slate-700"
+              >
+                Company Name
+
+                <span className="ml-1 text-xs font-normal text-slate-400">
+                  (Optional)
+                </span>
+              </label>
+
+              <input
+                ref={(el) =>
+                  (inputRefs.current[1] =
+                    el)
+                }
+                id="company_name"
+                type="text"
+                name="company_name"
+                placeholder="Enter company name"
+                value={
+                  formData.company_name
+                }
+                onChange={handleChange}
+                onKeyDown={(e) =>
+                  handleKeyDown(e, 1)
+                }
+                autoComplete="organization"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
+              />
+            </div>
+
+            {/* PHONE */}
+
+            <div>
+              <label
+                htmlFor="phone_no"
+                className="mb-1.5 block text-sm font-medium text-slate-700"
+              >
+                Mobile Number
+              </label>
+
               <div className="relative">
                 <FiPhone
-                  size={15}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                  size={18}
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
                 />
 
                 <input
                   ref={(el) =>
-                    (inputRefs.current[1] =
+                    (inputRefs.current[2] =
                       el)
                   }
                   id="phone_no"
@@ -532,95 +632,70 @@ function Register() {
                   inputMode="numeric"
                   pattern="[0-9]*"
                   maxLength={10}
-                  placeholder="10-digit mobile"
+                  placeholder="10-digit mobile number"
                   value={
                     formData.phone_no
                   }
                   onChange={handleChange}
                   onKeyDown={(e) =>
-                    handleKeyDown(e, 1)
+                    handleKeyDown(e, 2)
                   }
                   autoComplete="tel"
-                  className={inputClass(
-                    "pl-9"
-                  )}
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-4 text-sm outline-none transition focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
                 />
               </div>
-            </FormField>
+            </div>
 
-            {/* ==================================
-                ROW 2 - EMAIL
-            ================================== */}
+            {/* EMAIL */}
 
-            <FormField
-              label="Email Address"
-              htmlFor="email"
-            >
+            <div>
+              <label
+                htmlFor="email"
+                className="mb-1.5 block text-sm font-medium text-slate-700"
+              >
+                Email Address
+              </label>
+
               <div className="relative">
                 <FiMail
-                  size={15}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                  size={18}
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
                 />
 
                 <input
                   ref={(el) =>
-                    (inputRefs.current[2] =
+                    (inputRefs.current[3] =
                       el)
                   }
                   id="email"
                   type="email"
                   name="email"
-                  placeholder="Email address"
+                  placeholder="Enter email address"
                   value={formData.email}
                   onChange={handleChange}
                   onKeyDown={(e) =>
-                    handleKeyDown(e, 2)
+                    handleKeyDown(e, 3)
                   }
                   autoComplete="email"
-                  className={inputClass(
-                    "pl-9"
-                  )}
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-4 text-sm outline-none transition focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
                 />
               </div>
-            </FormField>
+            </div>
 
-            {/* ROW 2 - COMPANY OPTIONAL */}
+            {/* GST */}
 
-            <FormField
-              label="Company Name"
-              htmlFor="company_name"
-              optional
-            >
-              <input
-                ref={(el) =>
-                  (inputRefs.current[3] =
-                    el)
-                }
-                id="company_name"
-                type="text"
-                name="company_name"
-                placeholder="Company name (optional)"
-                value={
-                  formData.company_name
-                }
-                onChange={handleChange}
-                onKeyDown={(e) =>
-                  handleKeyDown(e, 3)
-                }
-                autoComplete="organization"
-                className={inputClass()}
-              />
-            </FormField>
+            <div className="md:col-span-2">
+              <label
+                htmlFor="gst_no"
+                className="mb-1.5 block text-sm font-medium text-slate-700"
+              >
+                GST Number
 
-            {/* ==================================
-                ROW 3 - GST OPTIONAL
-            ================================== */}
+                <span className="ml-1 text-xs font-normal text-slate-400">
+                  (Optional)
+                </span>
+              </label>
 
-            <FormField
-              label="GST Number"
-              htmlFor="gst_no"
-              optional
-            >
               <input
                 ref={(el) =>
                   (inputRefs.current[4] =
@@ -629,31 +704,31 @@ function Register() {
                 id="gst_no"
                 type="text"
                 name="gst_no"
-                placeholder="GST number (optional)"
+                placeholder="Enter GST number"
                 value={formData.gst_no}
                 onChange={handleChange}
                 onKeyDown={(e) =>
                   handleKeyDown(e, 4)
                 }
                 autoComplete="off"
-                className={inputClass(
-                  "uppercase"
-                )}
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm uppercase outline-none transition focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
               />
-            </FormField>
+            </div>
 
-            {/* ==================================
-                ROW 3 - PASSWORD
-            ================================== */}
+            {/* PASSWORD */}
 
-            <FormField
-              label="Password"
-              htmlFor="password"
-            >
+            <div>
+              <label
+                htmlFor="password"
+                className="mb-1.5 block text-sm font-medium text-slate-700"
+              >
+                Password
+              </label>
+
               <div className="relative">
                 <FiLock
-                  size={15}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                  size={18}
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
                 />
 
                 <input
@@ -677,20 +752,17 @@ function Register() {
                     handleKeyDown(e, 5)
                   }
                   autoComplete="new-password"
-                  className={inputClass(
-                    "pl-9 pr-9"
-                  )}
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-11 text-sm outline-none transition focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
                 />
 
                 <button
                   type="button"
-                  tabIndex={-1}
                   onClick={() =>
                     setShowPassword(
                       (prev) => !prev
                     )
                   }
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
                   aria-label={
                     showPassword
                       ? "Hide password"
@@ -698,26 +770,28 @@ function Register() {
                   }
                 >
                   {showPassword ? (
-                    <FiEyeOff size={15} />
+                    <FiEyeOff size={18} />
                   ) : (
-                    <FiEye size={15} />
+                    <FiEye size={18} />
                   )}
                 </button>
               </div>
-            </FormField>
+            </div>
 
-            {/* ==================================
-                ROW 4 - CONFIRM PASSWORD
-            ================================== */}
+            {/* CONFIRM PASSWORD */}
 
-            <FormField
-              label="Confirm Password"
-              htmlFor="confirm_password"
-            >
+            <div>
+              <label
+                htmlFor="confirm_password"
+                className="mb-1.5 block text-sm font-medium text-slate-700"
+              >
+                Confirm Password
+              </label>
+
               <div className="relative">
                 <FiLock
-                  size={15}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                  size={18}
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
                 />
 
                 <input
@@ -741,20 +815,17 @@ function Register() {
                     handleKeyDown(e, 6)
                   }
                   autoComplete="new-password"
-                  className={inputClass(
-                    "pl-9 pr-9"
-                  )}
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-11 text-sm outline-none transition focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
                 />
 
                 <button
                   type="button"
-                  tabIndex={-1}
                   onClick={() =>
                     setShowConfirmPassword(
                       (prev) => !prev
                     )
                   }
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
                   aria-label={
                     showConfirmPassword
                       ? "Hide password"
@@ -762,69 +833,65 @@ function Register() {
                   }
                 >
                   {showConfirmPassword ? (
-                    <FiEyeOff size={15} />
+                    <FiEyeOff size={18} />
                   ) : (
-                    <FiEye size={15} />
+                    <FiEye size={18} />
                   )}
                 </button>
               </div>
-            </FormField>
+            </div>
 
-            {/* ==================================
-                ROW 4 - PASSWORD RULES
-            ================================== */}
+            {/* PASSWORD RULES */}
 
-            <div className="self-end rounded-xl bg-slate-50 px-3 py-2">
-              <p className="mb-1 text-[10px] font-semibold text-slate-600 sm:text-[11px]">
-                Password must contain
+            <div className="rounded-xl bg-slate-50 p-4 md:col-span-2">
+              <p className="mb-2 text-xs font-semibold text-slate-600">
+                Password must contain:
               </p>
 
-              <div className="grid grid-cols-2 gap-x-2 gap-y-0.5">
+              <div className="grid gap-2 text-xs sm:grid-cols-2">
                 <PasswordRule
                   valid={
                     passwordRules.length
                   }
-                  text="8+ chars"
+                  text="At least 8 characters"
                 />
 
                 <PasswordRule
                   valid={
                     passwordRules.uppercase
                   }
-                  text="Uppercase"
+                  text="One uppercase letter"
                 />
 
                 <PasswordRule
                   valid={
                     passwordRules.lowercase
                   }
-                  text="Lowercase"
+                  text="One lowercase letter"
                 />
 
                 <PasswordRule
                   valid={
                     passwordRules.number
                   }
-                  text="Number"
+                  text="One number"
                 />
 
                 <PasswordRule
                   valid={
                     passwordRules.special
                   }
-                  text="Special"
+                  text="One special character"
                 />
               </div>
             </div>
 
-            {/* ==================================
-                SIGN UP BUTTON
-            ================================== */}
+            {/* SUBMIT */}
 
             <button
               type="submit"
               disabled={loading}
-              className="col-span-2 mt-1 flex h-10 items-center justify-center rounded-xl bg-[#008dd2] text-sm font-semibold text-white transition hover:bg-[#007fbd] disabled:cursor-not-allowed disabled:opacity-60"
+              className="md:col-span-2 flex w-full items-center justify-center rounded-xl bg-[#008dd2] py-3 text-sm font-semibold text-white transition hover:bg-[#007fbd] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loading
                 ? "Creating account..."
@@ -834,12 +901,12 @@ function Register() {
 
           {/* LOGIN */}
 
-          <p className="mt-2 text-center text-xs text-slate-500 sm:text-sm">
+          <p className="mt-6 text-center text-sm text-slate-500">
             Already have an account?
 
             <Link
               to="/login"
-              className="ml-1 font-semibold text-[#008dd2] hover:underline"
+              className="ml-1.5 font-semibold text-[#008dd2] hover:underline"
             >
               Login
             </Link>
@@ -848,62 +915,6 @@ function Register() {
       </div>
     </div>
   );
-}
-
-// ========================================
-// FORM FIELD
-// ========================================
-
-function FormField({
-  label,
-  htmlFor,
-  children,
-  optional = false,
-}) {
-  return (
-    <div className="min-w-0">
-      <label
-        htmlFor={htmlFor}
-        className="mb-0.5 block truncate text-[11px] font-medium text-slate-700 sm:text-xs"
-      >
-        {label}
-
-        {optional && (
-          <span className="ml-1 text-[9px] font-normal text-slate-400">
-            (Optional)
-          </span>
-        )}
-      </label>
-
-      {children}
-    </div>
-  );
-}
-
-// ========================================
-// INPUT CLASS
-// ========================================
-
-function inputClass(extra = "") {
-  return `
-    h-9
-    w-full
-    rounded-lg
-    border
-    border-slate-200
-    bg-slate-50
-    px-3
-    text-xs
-    text-slate-800
-    outline-none
-    transition
-    placeholder:text-slate-400
-    focus:border-[#008dd2]
-    focus:bg-white
-    focus:ring-2
-    focus:ring-[#008dd2]/10
-    ${extra}
-  `;
 }
 
 // ========================================
@@ -916,25 +927,23 @@ function PasswordRule({
 }) {
   return (
     <div
-      className={`flex min-w-0 items-center gap-1 text-[9px] ${
+      className={`flex items-center gap-2 ${
         valid
           ? "text-emerald-600"
           : "text-slate-400"
       }`}
     >
       <span
-        className={`flex h-3 w-3 shrink-0 items-center justify-center rounded-full ${
+        className={`flex h-4 w-4 items-center justify-center rounded-full ${
           valid
             ? "bg-emerald-100"
             : "bg-slate-200"
         }`}
       >
-        {valid && <FiCheck size={8} />}
+        {valid && <FiCheck size={10} />}
       </span>
 
-      <span className="truncate">
-        {text}
-      </span>
+      <span>{text}</span>
     </div>
   );
 }
