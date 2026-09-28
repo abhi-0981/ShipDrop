@@ -570,39 +570,7 @@ function Register() {
               </div>
             </div>
 
-            {/* COMPANY - OPTIONAL */}
-
-            <div>
-              <label
-                htmlFor="company_name"
-                className="mb-1.5 block text-sm font-medium text-slate-700"
-              >
-                Company Name
-
-               
-              </label>
-
-              <input
-                ref={(el) =>
-                  (inputRefs.current[1] =
-                    el)
-                }
-                id="company_name"
-                type="text"
-                name="company_name"
-                placeholder="Enter company name"
-                value={
-                  formData.company_name
-                }
-                onChange={handleChange}
-                onKeyDown={(e) =>
-                  handleKeyDown(e, 1)
-                }
-                autoComplete="organization"
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
-              />
-            </div>
-
+           
             {/* PHONE */}
 
             <div>
@@ -679,6 +647,44 @@ function Register() {
                 />
               </div>
             </div>
+
+
+
+             {/* COMPANY - OPTIONAL */}
+
+            <div>
+              <label
+                htmlFor="company_name"
+                className="mb-1.5 block text-sm font-medium text-slate-700"
+              >
+                Company Name
+
+               
+              </label>
+
+              <input
+                ref={(el) =>
+                  (inputRefs.current[1] =
+                    el)
+                }
+                id="company_name"
+                type="text"
+                name="company_name"
+                placeholder="Enter company name"
+                value={
+                  formData.company_name
+                }
+                onChange={handleChange}
+                onKeyDown={(e) =>
+                  handleKeyDown(e, 1)
+                }
+                autoComplete="organization"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
+              />
+            </div>
+
+
+
 
             {/* GST */}
 
