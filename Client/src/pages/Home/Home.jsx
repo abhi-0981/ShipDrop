@@ -1,4 +1,6 @@
 import Navbar from "../../components/Navbar/Navbar";
+import PublicTracking from "../../components/PublicTracking/PublicTracking";
+
 import Slider from "../../components/Slider/Slider";
 import Banner from "../../components/Banner/Banner";
 import RTO from "../../components/RTO/RTO";
@@ -12,14 +14,18 @@ function Home() {
   return (
     <>
       <Navbar />
-      <Slider />
-      <Banner />
-      <RTO />
-      <Partners />
-      <AppDownload />
-      <Testimonials />
-      <CTA />
-      <Footer />
+
+      <PublicTracking />
+
+      {/* Temporarily hidden */}
+      {false && <Slider />}
+      {false && <Banner />}
+      {false && <RTO />}
+      {false && <Partners />}
+      {false && <AppDownload />}
+      {false && <Testimonials />}
+      {false && <CTA />}
+      {false && <Footer />}
     </>
   );
 }

@@ -99,6 +99,9 @@ const ticketRoutes =
 const serviceabilityRoutes =
   require("./routes/serviceabilityRoutes");
 
+const publicTrackingRoutes =
+  require("./routes/publicTrackingRoutes");
+
 
 // ======================================================
 // MIDDLEWARE
@@ -309,6 +312,12 @@ app.use(
 app.use(
   "/api/serviceability",
   serviceabilityRoutes
+);
+
+// PUBLIC TRACKING
+app.use(
+  "/api/public/tracking",
+  publicTrackingRoutes
 );
 
 
