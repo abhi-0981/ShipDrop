@@ -1642,7 +1642,11 @@ if (awb) {
 
   order.tracking_awb =
     tracking.tracking_awb || awb;
+
+  order.tracking_expected_delivery =
+  tracking.tracking_expected_delivery || null;
 }
+
 
     return res.status(200).json({
       success: true,
