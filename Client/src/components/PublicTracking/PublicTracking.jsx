@@ -843,7 +843,7 @@ function PublicTracking() {
 
                     <div className="px-4 py-3.5">
                       <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-                        Instructions
+                        Update
                       </p>
 
                       <p className="mt-1 line-clamp-2 text-xs font-semibold text-slate-700">
