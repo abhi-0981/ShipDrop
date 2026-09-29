@@ -857,16 +857,13 @@ function Register() {
             {/* SUBMIT */}
 
             <button
-              type="submit"
-              disabled={loading}
-              disable
-              className="md:col-span-2 flex w-full items-center justify-center rounded-xl bg-[#008dd2] py-3 text-sm font-semibold text-white transition hover:bg-[#007fbd] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {loading
-                ? "Creating account..."
-                : "Create Account"}
-                
-            </button>
+  type="submit"
+  disabled
+  className="md:col-span-2 flex w-full items-center justify-center rounded-xl bg-[#008dd2] py-3 text-sm font-semibold text-white transition hover:bg-[#007fbd] disabled:cursor-not-allowed disabled:opacity-60"
+>
+  {loading ? "Creating account..." : "Create Account"}
+</button>
+
           </form>
 
           {/* LOGIN */}

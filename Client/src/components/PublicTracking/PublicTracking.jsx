@@ -146,7 +146,7 @@ const getTrackingScans = (tracking) => {
 
 function PublicTracking() {
   // ======================================================
-  // TRACKING
+  // TRACKING STATE
   // ======================================================
 
   const [awb, setAwb] = useState("");
@@ -159,7 +159,7 @@ function PublicTracking() {
     useState(false);
 
   // ======================================================
-  // SERVICEABILITY
+  // SERVICEABILITY STATE
   // ======================================================
 
   const [pincode, setPincode] = useState("");
@@ -215,7 +215,6 @@ function PublicTracking() {
 
       setTracking(trackingData);
 
-      // Open popup after successful tracking
       setShowTrackingDetails(true);
     } catch (error) {
       setTrackingError(
@@ -357,10 +356,6 @@ function PublicTracking() {
 
   return (
     <>
-      {/* ==================================================
-          TRACKING + SERVICEABILITY
-      ================================================== */}
-
       <section className="bg-[#f6f8fb] px-4 py-10 md:px-6 md:py-12">
         <div className="mx-auto max-w-7xl">
 
@@ -412,6 +407,7 @@ function PublicTracking() {
                   AWB Number
                 </label>
 
+                {/* 16px FONT = iPhone Safari zoom fix */}
                 <input
                   type="text"
                   inputMode="numeric"
@@ -428,7 +424,7 @@ function PublicTracking() {
                     setTrackingError("");
                   }}
                   placeholder="Enter AWB number"
-                  className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none transition placeholder:text-slate-300 focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
+                  className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-base text-slate-700 outline-none transition placeholder:text-slate-300 focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
                 />
 
                 {trackingError && (
@@ -513,6 +509,7 @@ function PublicTracking() {
                   Pincode
                 </label>
 
+                {/* 16px FONT = iPhone Safari zoom fix */}
                 <input
                   type="text"
                   inputMode="numeric"
@@ -530,7 +527,7 @@ function PublicTracking() {
                     setServiceabilityError("");
                   }}
                   placeholder="302012"
-                  className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none transition placeholder:text-slate-300 focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
+                  className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-base text-slate-700 outline-none transition placeholder:text-slate-300 focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
                 />
 
                 {serviceabilityError && (
@@ -701,9 +698,7 @@ function PublicTracking() {
 
             <div className="flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
 
-              {/* ==================================================
-                  MODAL HEADER
-              ================================================== */}
+              {/* MODAL HEADER */}
 
               <div className="flex items-center justify-between border-b border-slate-100 bg-white px-5 py-4 sm:px-6">
 
@@ -757,21 +752,15 @@ function PublicTracking() {
 
               </div>
 
-              {/* ==================================================
-                  MODAL BODY
-              ================================================== */}
+              {/* MODAL BODY */}
 
               <div className="overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
 
-                {/* =================================================
-                    TOP INFORMATION
-                ================================================= */}
+                {/* TOP DETAILS */}
 
                 <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
 
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-
-                    {/* TRACKING NUMBER */}
 
                     <div className="border-b border-slate-100 px-4 py-3.5 lg:border-r">
                       <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
@@ -785,8 +774,6 @@ function PublicTracking() {
                       </p>
                     </div>
 
-                    {/* COURIER */}
-
                     <div className="border-b border-slate-100 px-4 py-3.5 lg:border-r">
                       <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
                         Courier
@@ -796,8 +783,6 @@ function PublicTracking() {
                         Delhivery
                       </p>
                     </div>
-
-                    {/* CURRENT STATUS */}
 
                     <div className="border-b border-slate-100 px-4 py-3.5">
                       <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
@@ -821,8 +806,6 @@ function PublicTracking() {
 
                   <div className="grid grid-cols-1 border-t border-slate-100 md:grid-cols-2 lg:grid-cols-4">
 
-                    {/* LOCATION */}
-
                     <div className="border-b border-slate-100 px-4 py-3.5 md:border-r lg:border-b-0">
                       <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
                         Status Location
@@ -833,8 +816,6 @@ function PublicTracking() {
                           "—"}
                       </p>
                     </div>
-
-                    {/* STATUS DATE */}
 
                     <div className="border-b border-slate-100 px-4 py-3.5 lg:border-r lg:border-b-0">
                       <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
@@ -848,8 +829,6 @@ function PublicTracking() {
                       </p>
                     </div>
 
-                    {/* EXPECTED DELIVERY */}
-
                     <div className="border-b border-slate-100 px-4 py-3.5 md:border-r lg:border-b-0">
                       <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
                         Expected Delivery
@@ -861,8 +840,6 @@ function PublicTracking() {
                         )}
                       </p>
                     </div>
-
-                    {/* INSTRUCTIONS */}
 
                     <div className="px-4 py-3.5">
                       <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
@@ -879,9 +856,7 @@ function PublicTracking() {
 
                 </div>
 
-                {/* =================================================
-                    TIMELINE
-                ================================================= */}
+                {/* TIMELINE */}
 
                 <div className="mt-4 rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm sm:px-5 sm:py-5">
 
@@ -909,8 +884,6 @@ function PublicTracking() {
                   {trackingScans.length > 0 ? (
                     <div className="relative">
 
-                      {/* TIMELINE LINE */}
-
                       <div className="absolute bottom-4 left-[7px] top-4 w-px bg-slate-200" />
 
                       <div className="space-y-3.5">
@@ -922,8 +895,6 @@ function PublicTracking() {
                               className="relative flex gap-3"
                             >
 
-                              {/* DOT */}
-
                               <div className="relative z-10 mt-4 flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full border-2 border-[#008dd2] bg-white">
 
                                 {index === 0 && (
@@ -932,10 +903,8 @@ function PublicTracking() {
 
                               </div>
 
-                              {/* EVENT CARD */}
-
                               <div
-                                className={`min-w-0 flex-1 rounded-xl border px-4 py-3 transition ${
+                                className={`min-w-0 flex-1 rounded-xl border px-4 py-3 ${
                                   index === 0
                                     ? "border-sky-200 bg-sky-50/40 shadow-sm"
                                     : "border-slate-200 bg-white"
@@ -991,9 +960,7 @@ function PublicTracking() {
 
               </div>
 
-              {/* ==================================================
-                  FOOTER
-              ================================================== */}
+              {/* FOOTER */}
 
               <div className="flex justify-end border-t border-slate-100 bg-white px-4 py-3.5 sm:px-5">
 

@@ -1265,7 +1265,8 @@ if (!normalizedErrors.length) {
                       Expected Delivery
                     </p>
                     <p className="mt-1 text-xs font-semibold text-slate-700">
-                      {formatTrackingDate(trackingOrder.tracking_expected_delivery)}
+                      {formatTrackingDate(trackingOrder.expected_delivery)}
+                      
                     </p>
                   </div>
 
