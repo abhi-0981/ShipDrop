@@ -388,7 +388,13 @@ const getProcessingOrders = (user_id, callback) => {
 // GET ALL ORDERS
 // ======================================================
 
-const getAllOrders = (user_id, callback) => {
+const getAllOrders = (
+  user_id,
+  page = 1,
+  limit = 50,
+  search = "",
+  callback,
+) => {
   const query = `
     SELECT
       o.id,
@@ -516,13 +522,100 @@ m.shipping_charge AS shipping_charge,
     LEFT JOIN order_packages pkg
       ON pkg.order_id = o.id
 
-    WHERE
-      o.user_id = ?
+  WHERE
+  o.user_id = ?
+  AND UPPER(TRIM(COALESCE(o.status, ''))) <> 'PROCESSING'
+  AND (
+    ? = ''
+    OR CAST(o.order_id AS CHAR) LIKE ?
+    OR UPPER(TRIM(COALESCE(o.awb, ''))) LIKE UPPER(?)
+    OR UPPER(TRIM(COALESCE(o.consignee_name, ''))) LIKE UPPER(?)
+    OR TRIM(COALESCE(o.mobile, '')) LIKE ?
+  )
 
-    ORDER BY o.id DESC
+ORDER BY o.id DESC
+LIMIT ? OFFSET ?
   `;
 
-  db.query(query, [user_id], callback);
+const safePage = Math.max(
+  1,
+  Number(page) || 1
+);
+
+const safeLimit = Math.min(
+  100,
+  Math.max(
+    1,
+    Number(limit) || 50
+  )
+);
+
+const offset =
+  (safePage - 1) * safeLimit;
+
+const searchTerm = String(search || "").trim();
+
+const searchValue = `%${searchTerm}%`;
+
+const countQuery = `
+  SELECT COUNT(DISTINCT o.id) AS total
+  FROM orders o
+  WHERE
+    o.user_id = ?
+    AND UPPER(TRIM(COALESCE(o.status, ''))) <> 'PROCESSING'
+    AND (
+      ? = ''
+      OR CAST(o.order_id AS CHAR) LIKE ?
+      OR UPPER(TRIM(COALESCE(o.awb, ''))) LIKE UPPER(?)
+      OR UPPER(TRIM(COALESCE(o.consignee_name, ''))) LIKE UPPER(?)
+      OR TRIM(COALESCE(o.mobile, '')) LIKE ?
+    )
+`;
+
+db.query(
+  query,
+  [
+  user_id,
+  searchTerm,
+  searchValue,
+  searchValue,
+  searchValue,
+  searchValue,
+  safeLimit,
+  offset,
+],
+  (error, rows) => {
+    if (error) {
+      return callback(error);
+    }
+
+    db.query(
+  countQuery,
+  [
+    user_id,
+    searchTerm,
+    searchValue,
+    searchValue,
+    searchValue,
+    searchValue,
+  ],
+      (countError, countRows) => {
+        if (countError) {
+          return callback(countError);
+        }
+
+        const totalOrders =
+          Number(countRows?.[0]?.total) || 0;
+
+        return callback(
+          null,
+          rows || [],
+          totalOrders
+        );
+      }
+    );
+  }
+);
 };
 
 // ======================================================

@@ -905,6 +905,20 @@ const getAllOrdersController =
           req.body?.user_id
         );
 
+        const page = Math.max(
+  1,
+  Number(req.query.page) || 1
+);
+
+const limit = Math.min(
+  100,
+  Math.max(
+    1,
+    Number(req.query.limit) || 50
+  )
+);
+const search = String(req.query.search || "").trim();
+
 
       // ==================================================
       // USER ID
@@ -929,15 +943,8 @@ const getAllOrdersController =
       // ==================================================
 const dbStart = Date.now();
 
-getAllOrders(
-
-  user_id,
-
-  async (
-    error,
-    rows
-  ) => {
-
+getAllOrders(user_id, page, limit, search,
+async (error, rows, totalOrders) => {
     console.log(
       `GET ALL ORDERS DB TIME: ${
         Date.now() - dbStart
@@ -1003,6 +1010,15 @@ return res.status(200).json({
 
   orders:
     ordersWithTracking,
+
+  pagination: {
+    page,
+    limit,
+    totalOrders,
+    totalPages: Math.ceil(
+      totalOrders / limit
+    ),
+  },
 
 });
 
