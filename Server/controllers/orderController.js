@@ -961,9 +961,12 @@ const getAllOrdersController =
          // ==================================================
 // DELHIVERY TRACKING
 // ==================================================
+const includeTracking =
+  String(req.query.include_tracking || "true").toLowerCase() === "true";
 
-const ordersWithTracking =
-  await attachTrackingToOrders(rows || []);
+const ordersWithTracking = includeTracking
+  ? await attachTrackingToOrders(rows || [])
+  : (rows || []);
 
 
 // ==================================================

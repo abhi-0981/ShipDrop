@@ -307,8 +307,11 @@ function Dashboard() {
     try {
       const [ordersResponse, walletResponse] = await Promise.all([
         api.get("/orders/all", {
-          params: { user_id: currentUser.id },
-        }),
+  params: {
+    user_id: currentUser.id,
+    include_tracking: false,
+  },
+}),
         api.get(`/payments/wallet?user_id=${currentUser.id}`),
       ]);
 
