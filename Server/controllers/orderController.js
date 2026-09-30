@@ -898,7 +898,7 @@ const getAllOrdersController =
   ) => {
 
     try {
-
+      const requestStart = Date.now();
       const user_id =
         Number(
           req.query.user_id ||
@@ -927,15 +927,24 @@ const getAllOrdersController =
       // ==================================================
       // GET ALL ORDERS
       // ==================================================
+const dbStart = Date.now();
 
-      getAllOrders(
+getAllOrders(
 
-        user_id,
+  user_id,
 
-        async (
-  error,
-  rows
-) => {
+  async (
+    error,
+    rows
+  ) => {
+
+    console.log(
+      `GET ALL ORDERS DB TIME: ${
+        Date.now() - dbStart
+      } ms | ROWS: ${
+        rows?.length || 0
+      }`
+    );
 
           if (error) {
 
@@ -964,14 +973,29 @@ const getAllOrdersController =
 const includeTracking =
   String(req.query.include_tracking || "true").toLowerCase() === "true";
 
+const trackingStart = Date.now();
+
 const ordersWithTracking = includeTracking
   ? await attachTrackingToOrders(rows || [])
   : (rows || []);
+
+console.log(
+  `GET ALL ORDERS TRACKING TIME: ${
+    Date.now() - trackingStart
+  } ms`
+);
 
 
 // ==================================================
 // SUCCESS RESPONSE
 // ==================================================
+
+
+console.log(
+  `GET ALL ORDERS TOTAL TIME: ${
+    Date.now() - requestStart
+  } ms`
+);
 
 return res.status(200).json({
 
