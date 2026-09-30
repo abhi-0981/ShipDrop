@@ -525,18 +525,13 @@ function PublicTracking() {
 
   return (
     <>
-      <section className="bg-gradient-to-b from-white via-slate-50/70 to-[#f6f8fb] px-4 py-12 md:px-6 md:py-16">
+      <section className="bg-gradient-to-b from-white via-slate-50/70 to-[#f6f8fb] px-4 py-12 md:px-6 md:py-10">
         <div className="mx-auto max-w-6xl">
 
           {/* SECTION INTRO */}
 
-          <div className="mb-9 text-center">
-            <div className="mx-auto mb-3 flex w-fit items-center gap-2 rounded-full border border-sky-100 bg-white px-3.5 py-1.5 shadow-sm">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#008dd2]" />
-              <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#008dd2]">
-                ParcelDrop
-              </span>
-            </div>
+          <div className="mb-6 text-center">
+            
 
             <h2 className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
               Shipment Tracking & Serviceability
