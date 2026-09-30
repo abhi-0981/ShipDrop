@@ -484,7 +484,7 @@ function PublicTracking() {
 
   return (
     <>
-      <section className="h-[calc(100vh-78px)] overflow-hidden bg-gradient-to-b from-white via-slate-50/70 to-[#f6f8fb] px-4 py-6 md:px-6 md:py-7">
+     <section className="min-h-[calc(100vh-78px)] bg-gradient-to-b from-white via-slate-50/70 to-[#f6f8fb] px-4 py-6 md:px-6 md:py-7 lg:h-[calc(100vh-78px)] lg:overflow-hidden">
         <div className="mx-auto flex h-full max-w-6xl flex-col justify-center">
 
           {/* SECTION INTRO */}
