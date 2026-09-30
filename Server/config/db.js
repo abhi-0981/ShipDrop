@@ -81,7 +81,7 @@ if (
 
 Object.assign(dbConfig, {
   waitForConnections: true,
-  connectionLimit: Number(process.env.DB_CONNECTION_LIMIT || 5),
+connectionLimit: Number(process.env.DB_CONNECTION_LIMIT || 10),
   queueLimit: 0,
   enableKeepAlive: true,
   keepAliveInitialDelay: 0,
