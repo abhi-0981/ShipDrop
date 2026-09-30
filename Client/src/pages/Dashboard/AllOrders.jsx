@@ -63,16 +63,10 @@ const Icon = ({ name, size = 17, strokeWidth = 1.8 }) => {
         </svg>
       );
 
-          case "copy":
+    case "copy":
       return (
         <svg {...common}>
-          <rect
-            x="9"
-            y="9"
-            width="10"
-            height="10"
-            rx="2"
-          />
+          <rect x="9" y="9" width="10" height="10" rx="2" />
           <path d="M15 9V7a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2" />
         </svg>
       );
@@ -248,17 +242,11 @@ const getPaymentType = (order) => {
     .replace(/[-_]/g, " ")
     .replace(/\s+/g, " ");
 
-  if (
-    normalized === "COD" ||
-    normalized === "CASH ON DELIVERY"
-  ) {
+  if (normalized === "COD" || normalized === "CASH ON DELIVERY") {
     return "COD";
   }
 
-  if (
-    normalized === "PREPAID" ||
-    normalized === "PRE PAID"
-  ) {
+  if (normalized === "PREPAID" || normalized === "PRE PAID") {
     return "PREPAID";
   }
 
@@ -581,23 +569,20 @@ function AllOrders() {
 
       const list = Array.isArray(data?.orders) ? data.orders : [];
 
-// Remove duplicate rows created by SQL JOINs.
-// One order can have multiple product/package rows,
-// but All Orders should display the order only once.
-const uniqueOrders = Array.from(
-  new Map(
-    list.map((order) => {
-      const key =
-        order?.id ??
-        order?.order_id;
+      // Remove duplicate rows created by SQL JOINs.
+      // One order can have multiple product/package rows,
+      // but All Orders should display the order only once.
+      const uniqueOrders = Array.from(
+        new Map(
+          list.map((order) => {
+            const key = order?.id ?? order?.order_id;
 
-      return [String(key), order];
-    }),
-  ).values(),
-);
+            return [String(key), order];
+          }),
+        ).values(),
+      );
 
-setOrders(uniqueOrders);
-setSelectedIds([]);
+      setOrders(uniqueOrders);
       setSelectedIds([]);
     } catch (error) {
       // console.error("Get all orders error:", error);
@@ -638,10 +623,7 @@ setSelectedIds([]);
     const orderStatus = normalizeStatus(order?.status);
     const trackingStatus = normalizeStatus(order?.tracking_status);
 
-    return (
-      orderStatus === "PROCESSING" ||
-      trackingStatus === "PROCESSING"
-    );
+    return orderStatus === "PROCESSING" || trackingStatus === "PROCESSING";
   };
 
   // Orders that are allowed to appear on All Orders page.
@@ -676,27 +658,15 @@ setSelectedIds([]);
       .join(" ")
       .toLowerCase();
 
-    const searchMatch =
-      !query || searchable.includes(query);
+    const searchMatch = !query || searchable.includes(query);
 
-    const statusMatch =
-      statusFilter === "ALL" ||
-      status === statusFilter;
+    const statusMatch = statusFilter === "ALL" || status === statusFilter;
 
-    const serviceMatch =
-      serviceFilter === "ALL" ||
-      service === serviceFilter;
+    const serviceMatch = serviceFilter === "ALL" || service === serviceFilter;
 
-    const paymentMatch =
-      paymentFilter === "ALL" ||
-      payment === paymentFilter;
+    const paymentMatch = paymentFilter === "ALL" || payment === paymentFilter;
 
-    return (
-      searchMatch &&
-      statusMatch &&
-      serviceMatch &&
-      paymentMatch
-    );
+    return searchMatch && statusMatch && serviceMatch && paymentMatch;
   });
 
   // ====================================================
@@ -1031,9 +1001,7 @@ setSelectedIds([]);
     }
 
     const exportOrders =
-      selectedOrders.length > 0
-        ? selectedOrders
-        : nonProcessingOrders;
+      selectedOrders.length > 0 ? selectedOrders : nonProcessingOrders;
 
     const headers = [
       "AWB",
@@ -1107,8 +1075,7 @@ setSelectedIds([]);
     );
   };
 
-
-    // ====================================================
+  // ====================================================
   // DUPLICATE ORDER
   // ====================================================
 
@@ -1117,9 +1084,7 @@ setSelectedIds([]);
     const userId = getUserId();
 
     if (!orderId || !userId) {
-      toast.error(
-        "Unable to duplicate this order"
-      );
+      toast.error("Unable to duplicate this order");
       return;
     }
 
@@ -1128,25 +1093,16 @@ setSelectedIds([]);
       // GET ORIGINAL ORDER DETAILS
       // ================================================
 
-      const response = await api.get(
-        `/orders/${orderId}`,
-        {
-          params: {
-            user_id: userId,
-          },
-        }
-      );
+      const response = await api.get(`/orders/${orderId}`, {
+        params: {
+          user_id: userId,
+        },
+      });
 
       const result = response?.data;
 
-      if (
-        !result?.success ||
-        !result?.order
-      ) {
-        throw new Error(
-          result?.message ||
-            "Unable to load order details"
-        );
+      if (!result?.success || !result?.order) {
+        throw new Error(result?.message || "Unable to load order details");
       }
 
       const source = result.order;
@@ -1159,13 +1115,11 @@ setSelectedIds([]);
         source?.warehouse_id ||
           source?.warehouse?.id ||
           order?.warehouse_id ||
-          0
+          0,
       );
 
       if (!warehouseId) {
-        throw new Error(
-          "Pickup warehouse is missing"
-        );
+        throw new Error("Pickup warehouse is missing");
       }
 
       // ================================================
@@ -1175,178 +1129,91 @@ setSelectedIds([]);
       const payload = {
         user_id: Number(userId),
 
-        pickup_address:
-          source?.pickup_address ||
-          null,
+        pickup_address: source?.pickup_address || null,
 
-        pickup_pincode:
-          source?.pickup_pincode ||
-          null,
+        pickup_pincode: source?.pickup_pincode || null,
 
-        pickup_city:
-          source?.pickup_city ||
-          null,
+        pickup_city: source?.pickup_city || null,
 
-        warehouse_id:
-          warehouseId,
+        warehouse_id: warehouseId,
 
-        pickup_address_id:
-          source?.pickup_address_id ||
-          null,
+        pickup_address_id: source?.pickup_address_id || null,
 
         orderData: {
-          consignee_name:
-            source?.consignee_name ||
-            "",
+          consignee_name: source?.consignee_name || "",
 
-          mobile:
-            source?.mobile ||
-            "",
+          mobile: source?.mobile || "",
 
-          alternate_mobile:
-            source?.alternate_mobile ||
-            null,
+          alternate_mobile: source?.alternate_mobile || null,
 
-          email:
-            source?.email ||
-            null,
+          email: source?.email || null,
 
-          gstin:
-            source?.gstin ||
-            null,
+          gstin: source?.gstin || null,
 
-          company_name:
-            source?.company_name ||
-            null,
+          company_name: source?.company_name || null,
 
-          floor_no:
-            source?.floor_no ||
-            null,
+          floor_no: source?.floor_no || null,
 
-          landmark:
-            source?.landmark ||
-            null,
+          landmark: source?.landmark || null,
 
-          address_line1:
-            source?.address_line1 ||
-            "",
+          address_line1: source?.address_line1 || "",
 
-          address_line2:
-            source?.address_line2 ||
-            null,
+          address_line2: source?.address_line2 || null,
 
-          pincode:
-            source?.pincode ||
-            "",
+          pincode: source?.pincode || "",
 
-          city:
-            source?.city ||
-            "",
+          city: source?.city || "",
 
-          state:
-            source?.state ||
-            "",
+          state: source?.state || "",
 
-          country:
-            source?.country ||
-            "India",
+          country: source?.country || "India",
 
-          payment_type:
-            source?.payment_type ||
-            "Prepaid",
+          payment_type: source?.payment_type || "Prepaid",
 
-          risk_type:
-            source?.risk_type ||
-            "Owner Risk",
+          risk_type: source?.risk_type || "Owner Risk",
 
-          warehouse_id:
-            warehouseId,
+          warehouse_id: warehouseId,
         },
 
-        products:
-          Array.isArray(source?.products)
-            ? source.products.map(
-                (product) => ({
-                  product_name:
-                    product?.product_name ||
-                    "",
+        products: Array.isArray(source?.products)
+          ? source.products.map((product) => ({
+              product_name: product?.product_name || "",
 
-                  sku:
-                    product?.sku ||
-                    null,
+              sku: product?.sku || null,
 
-                  price:
-                    Number(
-                      product?.price
-                    ) || 0,
+              price: Number(product?.price) || 0,
 
-                  qty:
-                    Number(
-                      product?.qty
-                    ) || 1,
+              qty: Number(product?.qty) || 1,
 
-                  tax:
-                    Number(
-                      product?.tax
-                    ) || 0,
-                })
-              )
-            : [],
+              tax: Number(product?.tax) || 0,
+            }))
+          : [],
 
-        packages:
-          Array.isArray(source?.packages)
-            ? source.packages.map(
-                (pkg) => ({
-                  length:
-                    Number(
-                      pkg?.length
-                    ) || 0,
+        packages: Array.isArray(source?.packages)
+          ? source.packages.map((pkg) => ({
+              length: Number(pkg?.length) || 0,
 
-                  width:
-                    Number(
-                      pkg?.width
-                    ) || 0,
+              width: Number(pkg?.width) || 0,
 
-                  height:
-                    Number(
-                      pkg?.height
-                    ) || 0,
+              height: Number(pkg?.height) || 0,
 
-                  weight:
-                    Number(
-                      pkg?.weight
-                    ) || 0,
+              weight: Number(pkg?.weight) || 0,
 
-                  package_count:
-                    Number(
-                      pkg?.package_count
-                    ) || 1,
-                })
-              )
-            : [],
+              package_count: Number(pkg?.package_count) || 1,
+            }))
+          : [],
       };
 
       // ================================================
       // CREATE NEW ORDER
       // ================================================
 
-      const createResponse =
-        await api.post(
-          "/orders/create",
-          payload
-        );
+      const createResponse = await api.post("/orders/create", payload);
 
-      const createResult =
-        createResponse?.data;
+      const createResult = createResponse?.data;
 
-      if (
-        !createResult?.success ||
-        !createResult?.order_id
-      ) {
-        throw new Error(
-          createResult?.message ||
-            "Unable to duplicate order"
-        );
+      if (!createResult?.success || !createResult?.order_id) {
+        throw new Error(createResult?.message || "Unable to duplicate order");
       }
 
       // ================================================
@@ -1354,12 +1221,11 @@ setSelectedIds([]);
       // ================================================
 
       toast.success(
-        `Order duplicated successfully. New order #${createResult.order_id} is in Processing.`
+        `Order duplicated successfully. New order #${createResult.order_id} is in Processing.`,
       );
 
       // Refresh All Orders
       await fetchAllOrders();
-
     } catch (error) {
       // console.error(
       //   "Duplicate order error:",
@@ -1369,12 +1235,10 @@ setSelectedIds([]);
       toast.error(
         error?.response?.data?.message ||
           error?.message ||
-          "Unable to duplicate order"
+          "Unable to duplicate order",
       );
     }
   };
-
-
 
   // ====================================================
   // COUNTS
@@ -1814,12 +1678,10 @@ setSelectedIds([]);
                                 : "Prepaid"}
                             </p>
 
-                          <p className="text-[10px] text-slate-400">
-  Charge: ₹
-  {Number(
-    order?.shipping_charge || 0
-  ).toFixed(2)}
-</p>
+                            <p className="text-[10px] text-slate-400">
+                              Charge: ₹
+                              {Number(order?.shipping_charge || 0).toFixed(2)}
+                            </p>
                           </div>
                         </td>
 
@@ -1922,19 +1784,14 @@ setSelectedIds([]);
 
                             {/* DUPLICATE */}
 
-<button
-  type="button"
-  onClick={() =>
-    handleDuplicate(order)
-  }
-  title="Duplicate Order"
-  className="flex h-8 w-8 items-center justify-center rounded-md border border-violet-200 bg-white text-violet-500 transition hover:border-violet-300 hover:bg-violet-50"
->
-  <Icon
-    name="copy"
-    size={15}
-  />
-</button>
+                            <button
+                              type="button"
+                              onClick={() => handleDuplicate(order)}
+                              title="Duplicate Order"
+                              className="flex h-8 w-8 items-center justify-center rounded-md border border-violet-200 bg-white text-violet-500 transition hover:border-violet-300 hover:bg-violet-50"
+                            >
+                              <Icon name="copy" size={15} />
+                            </button>
 
                             {/* VIEW */}
 
@@ -1959,8 +1816,6 @@ setSelectedIds([]);
           {/* ==================================================
               FOOTER
           ================================================== */}
-
-         
         </div>
       </div>
 
