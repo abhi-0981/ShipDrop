@@ -274,7 +274,7 @@ const updateTrackingInDatabase = async (
   // ----------------------------------------------
   // Update database
   // ----------------------------------------------
-
+  const updateStart = Date.now();
   await db.promise().query(
     `
       UPDATE orders
@@ -310,6 +310,7 @@ const updateTrackingInDatabase = async (
 
       WHERE awb = ?
     `,
+    
     [
       trackingStatus,
 
@@ -321,6 +322,11 @@ const updateTrackingInDatabase = async (
       normalizedAwb,
     ]
   );
+  console.log(
+  `TRACKING DB SINGLE UPDATE: ${
+    Date.now() - updateStart
+  } ms | AWB: ${normalizedAwb}`
+);
 };
 
 // ======================================================
