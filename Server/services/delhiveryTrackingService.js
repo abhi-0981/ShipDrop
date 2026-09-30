@@ -29,6 +29,10 @@ const normalizeTrackingStatus = (
   )
     .trim();
 
+  const statusType = String(
+  status?.StatusType || ""
+).trim().toUpperCase();
+
   const instructions = String(
     status?.Instructions || ""
   )
@@ -77,12 +81,19 @@ const normalizeTrackingStatus = (
   // RTO IN TRANSIT
   // ----------------------------------------------
 
-  if (
-    rawUpper.includes("RTO") ||
-    rawUpper.includes("RETURN")
-  ) {
-    return "RTO IN TRANSIT";
-  }
+ if (
+  statusType === "RT" &&
+  rawUpper === "IN TRANSIT"
+) {
+  return "RTO IN TRANSIT";
+}
+
+if (
+  rawUpper.includes("RTO") ||
+  rawUpper.includes("RETURN")
+) {
+  return "RTO IN TRANSIT";
+}
 
   // ----------------------------------------------
   // OUT FOR DELIVERY
