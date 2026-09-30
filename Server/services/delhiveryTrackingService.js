@@ -658,11 +658,21 @@ const getTrackingForWaybills = async (
   // DB updates happen in controlled parallel batches.
   // ======================================================
 
-  await saveTrackingToDatabase(
-    trackingMap
-  );
+const dbUpdateStart = Date.now();
 
-  return trackingMap;
+await saveTrackingToDatabase(
+  trackingMap
+);
+
+console.log(
+  `TRACKING DB UPDATE TIME: ${
+    Date.now() - dbUpdateStart
+  } ms | AWBs: ${
+    Object.keys(trackingMap).length
+  }`
+);
+
+return trackingMap;
 };
 
 // ======================================================
@@ -709,16 +719,18 @@ const attachTrackingToOrders =
     // GET TRACKING
     // ----------------------------------------------
 
-    const trackingMap =
-      await getTrackingForWaybills(
-        waybills
-      );
+  const trackingMap =
+  await getTrackingForWaybills(
+    waybills
+  );
 
-    // ----------------------------------------------
-    // MERGE TRACKING INTO ORDERS
-    // ----------------------------------------------
+const mergeStart = Date.now();
 
-    return orders.map(
+// ----------------------------------------------
+// MERGE TRACKING INTO ORDERS
+// ----------------------------------------------
+
+const result = orders.map(
       (order) => {
         const awb =
           String(
@@ -823,6 +835,15 @@ const attachTrackingToOrders =
         };
       }
     );
+    console.log(
+  `TRACKING MERGE TIME: ${
+    Date.now() - mergeStart
+  } ms | ORDERS: ${
+    orders.length
+  }`
+);
+
+return result;
   };
 
 // ======================================================
