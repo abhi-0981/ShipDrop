@@ -168,6 +168,7 @@ const getTrackingForWaybills = async (waybills) => {
     const url = `${DELHIVERY_API_BASE_URL}` + `/api/v1/packages/json/`;
 
     try {
+      const trackingStart = Date.now();
       const response = await axios.get(url, {
         params: {
           waybill: waybillParam,
@@ -183,6 +184,12 @@ const getTrackingForWaybills = async (waybills) => {
 
         timeout: 30000,
       });
+
+          console.log(
+        `DELHIVERY TRACKING TIME: ${
+          Date.now() - trackingStart
+        } ms | AWBs: ${batch.length}`
+      );
 
       const data = response?.data || {};
 
