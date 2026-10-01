@@ -2860,22 +2860,48 @@ const bulkConfirmShipments = async ({
 
     }
 
-    const rate =
-      await calculateShippingRate(
-        user_id,
+  // ====================================================
+// USE THE SAME PAYMENT TYPE + PRODUCT VALUE AS PREVIEW
+// ====================================================
 
-        String(
-          order.warehouse_pincode
-        ).trim(),
+const paymentType =
+  order.payment_type ||
+  "Prepaid";
 
-        String(
-          order.pincode
-        ).trim(),
+const productValue =
+  products.reduce(
+    (total, product) => {
+      const price =
+        Number(product.price) || 0;
 
-        totalWeight,
+      const qty =
+        Number(product.qty) || 1;
 
-        normalizedServiceType
-      );
+      return total + price * qty;
+    },
+    0
+  );
+
+const rate =
+  await calculateShippingRate(
+    user_id,
+
+    String(
+      order.warehouse_pincode
+    ).trim(),
+
+    String(
+      order.pincode
+    ).trim(),
+
+    totalWeight,
+
+    normalizedServiceType,
+
+    paymentType,
+
+    productValue
+  );
 
     const shippingCharge =
       Number(
