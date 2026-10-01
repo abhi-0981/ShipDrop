@@ -3,3 +3,12 @@
 body {
   font-family: "Inter", sans-serif;
 }
+
+/* Prevent iPhone Safari automatic zoom on form fields */
+@media screen and (max-width: 767px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
