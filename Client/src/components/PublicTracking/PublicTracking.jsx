@@ -539,6 +539,12 @@ function PublicTracking() {
             animation: parcelDropTruckMove 1.4s ease-in-out infinite;
           }
 
+          /* Truck faces upward while moving bottom -> top */
+          .parcel-drop-truck-face {
+            display: block;
+            transform: rotate(-90deg);
+          }
+
           .parcel-drop-truck-marker {
             animation: parcelDropTruckGlow 1.8s ease-in-out infinite;
           }
@@ -1091,7 +1097,9 @@ function PublicTracking() {
                                     title="Latest shipment update"
                                   >
                                     <span className="parcel-drop-truck block">
-                                      <TruckIcon size={27} />
+                                      <span className="parcel-drop-truck-face">
+                                        <TruckIcon size={27} />
+                                      </span>
                                     </span>
                                   </div>
                                 ) : (
