@@ -250,6 +250,37 @@ const CheckIcon = ({ size = 20 }) => (
   </svg>
 );
 
+const TruckIcon = ({ size = 28 }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 64 40"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path
+      d="M4 7.5C4 6.67 4.67 6 5.5 6H38C38.83 6 39.5 6.67 39.5 7.5V28H4V7.5Z"
+      fill="currentColor"
+    />
+    <path
+      d="M39.5 13H48.2C49.1 13 49.95 13.4 50.55 14.08L58.1 22.55C58.68 23.2 59 24.04 59 24.91V28H39.5V13Z"
+      fill="currentColor"
+    />
+    <path
+      d="M43 16.5H48.1C48.48 16.5 48.84 16.67 49.1 16.96L54.45 22.75H43V16.5Z"
+      fill="white"
+      opacity="0.9"
+    />
+    <rect x="8" y="10" width="12" height="6" rx="1.5" fill="white" opacity="0.28" />
+    <path d="M25 10H35.5V16H25V10Z" fill="white" opacity="0.18" />
+    <circle cx="16" cy="31" r="5.5" fill="#0f172a" />
+    <circle cx="48" cy="31" r="5.5" fill="#0f172a" />
+    <circle cx="16" cy="31" r="2.1" fill="white" />
+    <circle cx="48" cy="31" r="2.1" fill="white" />
+    <path d="M4 27.5H59" stroke="#0f172a" strokeWidth="1.5" opacity="0.18" />
+  </svg>
+);
+
 const AlertIcon = ({ size = 20 }) => (
   <svg
     width={size}
@@ -484,6 +515,43 @@ function PublicTracking() {
 
   return (
     <>
+      <style>
+        {`
+          @keyframes parcelDropTruckMove {
+            0%, 100% {
+              transform: translateX(0);
+            }
+            50% {
+              transform: translateX(5px);
+            }
+          }
+
+          @keyframes parcelDropTruckGlow {
+            0%, 100% {
+              box-shadow: 0 0 0 0 rgba(0, 141, 210, 0);
+            }
+            50% {
+              box-shadow: 0 0 0 6px rgba(0, 141, 210, 0.08);
+            }
+          }
+
+          .parcel-drop-truck {
+            animation: parcelDropTruckMove 1.4s ease-in-out infinite;
+          }
+
+          .parcel-drop-truck-marker {
+            animation: parcelDropTruckGlow 1.8s ease-in-out infinite;
+          }
+
+          @media (prefers-reduced-motion: reduce) {
+            .parcel-drop-truck,
+            .parcel-drop-truck-marker {
+              animation: none;
+            }
+          }
+        `}
+      </style>
+
      <section className="min-h-[calc(100vh-78px)] bg-gradient-to-b from-white via-slate-50/70 to-[#f6f8fb] px-4 py-6 md:px-6 md:py-7 lg:h-[calc(100vh-78px)] lg:overflow-hidden">
         <div className="mx-auto flex h-full max-w-6xl flex-col justify-center">
 
@@ -1005,7 +1073,7 @@ function PublicTracking() {
                   {trackingScans.length > 0 ? (
                     <div className="relative">
 
-                      <div className="absolute bottom-4 left-[7px] top-4 w-px bg-slate-200" />
+                      <div className="absolute bottom-4 left-[15px] top-4 w-px bg-slate-200" />
 
                       <div className="space-y-3.5">
 
@@ -1016,15 +1084,18 @@ function PublicTracking() {
                               className="relative flex gap-3"
                             >
 
-                              <div
-                                className={`relative z-10 mt-4 flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full border-2 ${
-                                  index === 0
-                                    ? "border-[#008dd2] bg-white"
-                                    : "border-[#008dd2] bg-white"
-                                }`}
-                              >
-                                {index === 0 && (
-                                  <span className="h-1.5 w-1.5 rounded-full bg-[#008dd2]" />
+                              <div className="relative z-10 mt-2 flex h-8 w-8 shrink-0 items-center justify-center">
+                                {index === 0 ? (
+                                  <div
+                                    className="parcel-drop-truck-marker flex h-8 w-8 items-center justify-center rounded-full border border-sky-200 bg-white text-[#008dd2] shadow-sm"
+                                    title="Latest shipment update"
+                                  >
+                                    <span className="parcel-drop-truck block">
+                                      <TruckIcon size={27} />
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <span className="h-3.5 w-3.5 rounded-full border-2 border-[#008dd2] bg-white" />
                                 )}
                               </div>
 
