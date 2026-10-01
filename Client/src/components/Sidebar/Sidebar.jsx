@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   HiOutlineViewGrid,
@@ -85,6 +85,123 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
   );
 
   const [statusCounts, setStatusCounts] = useState({});
+  // ================= SIDEBAR SEARCH =================
+const [sidebarSearch, setSidebarSearch] = useState("");
+const [selectedSearchIndex, setSelectedSearchIndex] = useState(0);
+const sidebarSearchRef = useRef(null);
+
+const sidebarSearchItems = [
+  { name: "Dashboard", path: "/dashboard" },
+  { name: "Create Order", path: "/create-order" },
+  { name: "Processing Orders", path: "/processing-orders" },
+  { name: "All Orders", path: "/all-orders" },
+  { name: "Manifested", path: "/manifested" },
+  { name: "Not Picked", path: "/not-picked" },
+  { name: "In Transit", path: "/in-transit" },
+  { name: "Out For Delivery", path: "/out-for-delivery" },
+  { name: "Delivered", path: "/delivered" },
+  { name: "RTO In Transit", path: "/rto-in-transit" },
+  { name: "RTO Delivered", path: "/rto-delivered" },
+  { name: "Returned", path: "/returned" },
+  { name: "Cancelled", path: "/cancelled" },
+  { name: "Pending", path: "/pending" },
+  { name: "Rate Calculator", path: "/rate-calculator" },
+  { name: "Serviceability", path: "/serviceability" },
+  { name: "Wallet", path: "/wallet" },
+  { name: "Weight Mismatch", path: "/weight-mismatch" },
+  { name: "Tickets", path: "/tickets" },
+  { name: "Pickup Address", path: "/settings/pickup-address" },
+  { name: "Return Addresses", path: "/settings/return-addresses" },
+  { name: "Label Settings", path: "/settings/label-settings" },
+];
+
+const filteredSearchItems = sidebarSearch.trim()
+  ? sidebarSearchItems.filter((item) =>
+      item.name
+        .toLowerCase()
+        .includes(sidebarSearch.trim().toLowerCase())
+    )
+  : [];
+
+// Ctrl + Shift + F
+// Ctrl + F browser ka normal Find hi rahega.
+useEffect(() => {
+  const handleSidebarShortcut = (event) => {
+    if (event.key === "f2") {
+      event.preventDefault();
+
+      if (collapsed) {
+        handleToggle(false);
+      }
+
+      setTimeout(() => {
+        sidebarSearchRef.current?.focus();
+        sidebarSearchRef.current?.select();
+      }, 0);
+    }
+  };
+
+  window.addEventListener("keydown", handleSidebarShortcut);
+
+  return () => {
+    window.removeEventListener(
+      "keydown",
+      handleSidebarShortcut
+    );
+  };
+}, [collapsed]);
+
+useEffect(() => {
+  setSelectedSearchIndex(0);
+}, [sidebarSearch]);
+
+const handleSidebarSearchKeyDown = (event) => {
+  // ESC
+  if (event.key === "Escape") {
+    event.preventDefault();
+    setSidebarSearch("");
+    sidebarSearchRef.current?.blur();
+    return;
+  }
+
+  if (!filteredSearchItems.length) return;
+
+  // DOWN
+  if (event.key === "ArrowDown") {
+    event.preventDefault();
+
+    setSelectedSearchIndex((prev) =>
+      prev < filteredSearchItems.length - 1
+        ? prev + 1
+        : 0
+    );
+  }
+
+  // UP
+  else if (event.key === "ArrowUp") {
+    event.preventDefault();
+
+    setSelectedSearchIndex((prev) =>
+      prev > 0
+        ? prev - 1
+        : filteredSearchItems.length - 1
+    );
+  }
+
+  // ENTER
+  else if (event.key === "Enter") {
+    event.preventDefault();
+
+    const selectedItem =
+      filteredSearchItems[selectedSearchIndex];
+
+    if (!selectedItem) return;
+
+    window.location.href = selectedItem.path;
+
+    setSidebarSearch("");
+  }
+};
 
   const handleNavClick = () => {
     if (window.innerWidth < 1024) {
@@ -303,6 +420,61 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
 
         {/* MENU LINKS */}
         <div className="flex-1 overflow-y-auto px-3 py-4 space-y-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pb-20 lg:pb-6">
+         {/* SIDEBAR SEARCH */}
+<div className="relative mb-2">
+
+  <input
+    ref={sidebarSearchRef}
+    type="text"
+    value={sidebarSearch}
+    onChange={(e) => setSidebarSearch(e.target.value)}
+    onKeyDown={handleSidebarSearchKeyDown}
+    placeholder="Press F2 to Search "
+    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 pr-14 text-[12px] text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
+    aria-label="Search sidebar menu"
+  />
+
+ 
+
+  {sidebarSearch.trim() && (
+    <div className="absolute left-0 right-0 top-full z-[60] mt-1 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl">
+
+      {filteredSearchItems.length > 0 ? (
+
+        <div className="max-h-64 overflow-y-auto py-1">
+
+          {filteredSearchItems.map((item, index) => (
+            <Link
+              key={item.path}
+              to={item.path}
+              onClick={() => {
+                setSidebarSearch("");
+                handleNavClick();
+              }}
+              className={`block px-3 py-2.5 text-[13px] transition ${
+                index === selectedSearchIndex
+                  ? "bg-sky-50 text-[#008dd2] font-semibold"
+                  : "text-slate-600 hover:bg-slate-50"
+              }`}
+            >
+              {item.name}
+            </Link>
+          ))}
+
+        </div>
+
+      ) : (
+
+        <div className="px-3 py-3 text-[12px] text-slate-400">
+          No menu found
+        </div>
+
+      )}
+
+    </div>
+  )}
+
+</div>
           {/* DASHBOARD */}
           <Link
             to="/dashboard"
