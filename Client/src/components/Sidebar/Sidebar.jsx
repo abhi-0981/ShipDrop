@@ -429,7 +429,7 @@ const handleSidebarSearchKeyDown = (event) => {
     value={sidebarSearch}
     onChange={(e) => setSidebarSearch(e.target.value)}
     onKeyDown={handleSidebarSearchKeyDown}
-    placeholder="Press F2 to Search "
+    placeholder="Press F4 to Search "
     className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 pr-14 text-[12px] text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
     aria-label="Search sidebar menu"
   />
