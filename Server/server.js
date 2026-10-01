@@ -2,9 +2,7 @@
 // ENVIRONMENT
 // ======================================================
 
-require("dotenv").config({
-  path: require("path").join(__dirname, ".env"),
-});
+require("./config/env");
 
 
 // ======================================================
@@ -114,30 +112,60 @@ const rawOrigins = (process.env.FRONTEND_URL || "")
   .map((o) => o.trim().replace(/\/+$/, ""))
   .filter(Boolean);
 
-const allowedOrigins = [
+const explicitAllowedOrigins = [
   "http://localhost:5173",
   "http://localhost:5174",
+  "http://localhost:3000",
+  "http://127.0.0.1:5173",
+  "http://127.0.0.1:5174",
   "https://parceldrop.netlify.app",
+  "https://parceldrop.in",
+  "https://www.parceldrop.in",
+  "https://admin.parceldrop.in",
   ...rawOrigins,
-].map((o) => o.replace(/\/+$/, ""));
+  ...(process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(",").map((s) => s.trim())
+    : []),
+]
+  .filter(Boolean)
+  .map((o) => o.replace(/\/+$/, ""));
 
-console.log("Allowed CORS origins:", allowedOrigins);
+const isAllowedOrigin = (origin) => {
+  if (!origin) return true; // Allow non-browser requests
+  if (process.env.NODE_ENV !== "production") return true;
+
+  const normalized = origin.replace(/\/+$/, "");
+  if (
+    explicitAllowedOrigins.includes(normalized) ||
+    explicitAllowedOrigins.includes("*")
+  ) {
+    return true;
+  }
+
+  try {
+    const parsed = new URL(normalized);
+    if (
+      parsed.hostname.endsWith(".netlify.app") ||
+      parsed.hostname.endsWith(".vercel.app") ||
+      parsed.hostname.endsWith(".parceldrop.in") ||
+      parsed.hostname === "localhost" ||
+      parsed.hostname === "127.0.0.1"
+    ) {
+      return true;
+    }
+  } catch (e) {
+    // invalid URL format
+  }
+
+  return false;
+};
+
+console.log("Allowed CORS origins:", explicitAllowedOrigins);
 
 app.use(
   cors({
     origin: function (origin, callback) {
-      // Allow requests without Origin (e.g. Postman/server-to-server)
-      if (!origin) {
-        return callback(null, true);
-      }
-
-      const normalizedOrigin = origin.replace(/\/+$/, "");
-
-      if (
-        allowedOrigins.includes(normalizedOrigin) ||
-        allowedOrigins.includes("*") ||
-        process.env.NODE_ENV !== "production"
-      ) {
+      if (isAllowedOrigin(origin)) {
         return callback(null, true);
       }
 

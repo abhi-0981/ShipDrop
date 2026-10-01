@@ -4,6 +4,7 @@
   "description": "",
   "main": "adminServer.js",
   "scripts": {
+    "dev": "node --watch adminServer.js",
     "start": "node adminServer.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

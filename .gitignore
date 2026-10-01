@@ -10,8 +10,16 @@ node_modules/
 # =====================================================
 
 .env
-.env.*
+.env*.local
 !.env.example
+!Client/.env.development
+!Client/.env.production
+!Client/.env.example
+!AdminPanel/frontend/.env.development
+!AdminPanel/frontend/.env.production
+!AdminPanel/frontend/.env.example
+!Server/.env.example
+!AdminPanel/backend/.env.example
 
 
 # =====================================================

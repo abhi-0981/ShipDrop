@@ -8,7 +8,7 @@ try {
 }
 const jwt = require("jsonwebtoken");
 
-require("dotenv").config();
+require("./config/env");
 
 const db = require("./config/db");
 

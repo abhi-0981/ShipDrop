@@ -2,8 +2,15 @@ backend/node_modules/
 frontend/node_modules/
 
 backend/.env
+backend/.env.*
+!backend/.env.example
 frontend/.env
+frontend/.env*.local
+!frontend/.env.example
+!frontend/.env.development
+!frontend/.env.production
 .env
+.env*.local
 
 frontend/dist/
 frontend/build/

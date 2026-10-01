@@ -1,10 +1,6 @@
 import { useState } from "react";
 import axios from "axios";
-import api from "../../services/api";
-
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL ||
-  "https://parceldropbackend.vercel.app/api";
+import api, { API_BASE_URL } from "../../services/api";
 
 // ======================================================
 // DATE HELPERS

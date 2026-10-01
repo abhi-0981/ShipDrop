@@ -3,10 +3,7 @@
 // Supports Local MySQL & Cloud/Aiven MySQL on Vercel
 // ======================================================
 
-const path = require("path");
-require("dotenv").config({
-  path: path.join(__dirname, "../.env"),
-});
+require("./env");
 const mysql = require("mysql2/promise");
 
 const isRemote =
