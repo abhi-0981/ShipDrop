@@ -2889,6 +2889,7 @@ const rate =
     String(
       order.warehouse_pincode
     ).trim(),
+    
 
     String(
       order.pincode
