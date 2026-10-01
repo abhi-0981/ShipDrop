@@ -127,7 +127,7 @@ const filteredSearchItems = sidebarSearch.trim()
 // Ctrl + F browser ka normal Find hi rahega.
 useEffect(() => {
   const handleSidebarShortcut = (event) => {
-    if (event.key === "f2") {
+    if (event.key === "F4") {
       event.preventDefault();
 
       if (collapsed) {
