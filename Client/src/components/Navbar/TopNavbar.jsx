@@ -387,6 +387,64 @@
       }
     };
 
+
+    useEffect(() => {
+  const handleOpenTracking = async (event) => {
+    const awb = String(event.detail || "").trim();
+
+    if (!awb) return;
+
+    const userId = user?.id;
+
+    if (!userId) {
+      toast.error("Please login again");
+      return;
+    }
+
+    setTrackingSearch(awb);
+    setTrackingSearchLoading(true);
+
+    try {
+      const response = await api.get("/orders/tracking-search", {
+        params: {
+          user_id: userId,
+          search: awb,
+        },
+      });
+
+      const order = response.data?.order;
+
+      if (!order) {
+        toast.error("Shipment not found");
+        return;
+      }
+
+      setTrackingOrder(order);
+      setShowTrackingDetails(true);
+      setTrackingSearch("");
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message ||
+          "Unable to search shipment"
+      );
+    } finally {
+      setTrackingSearchLoading(false);
+    }
+  };
+
+  window.addEventListener(
+    "shipdrop:openTracking",
+    handleOpenTracking
+  );
+
+  return () => {
+    window.removeEventListener(
+      "shipdrop:openTracking",
+      handleOpenTracking
+    );
+  };
+}, [user?.id]);
+
     const closeTrackingDetails = () => {
       setShowTrackingDetails(false);
       setTrackingOrder(null);

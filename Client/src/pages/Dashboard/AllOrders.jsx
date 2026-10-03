@@ -521,15 +521,15 @@ const StatusBadge = ({ status }) => {
 // ======================================================
 
 function AllOrders() {
-const [orders, setOrders] = useState([]);
+  const [orders, setOrders] = useState([]);
 
-const [currentPage, setCurrentPage] = useState(1);
-const [totalPages, setTotalPages] = useState(1);
-const [totalOrderCount, setTotalOrderCount] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalOrderCount, setTotalOrderCount] = useState(0);
 
-const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
 
-const [search, setSearch] = useState("");
+  const [search, setSearch] = useState("");
 
   const [statusFilter, setStatusFilter] = useState("ALL");
 
@@ -559,24 +559,20 @@ const [search, setSearch] = useState("");
     try {
       setLoading(true);
 
-const response = await api.get("/orders/all", {
-  params: {
-    user_id: userId,
-    page: currentPage,
-    limit: 50,
-    search: search.trim(),
-  },
-});
+      const response = await api.get("/orders/all", {
+        params: {
+          user_id: userId,
+          page: currentPage,
+          limit: 50,
+          search: search.trim(),
+        },
+      });
 
-const data = response?.data;
+      const data = response?.data;
 
-setTotalPages(
-  Number(data?.pagination?.totalPages) || 1
-);
+      setTotalPages(Number(data?.pagination?.totalPages) || 1);
 
-setTotalOrderCount(
-  Number(data?.pagination?.totalOrders) || 0
-);
+      setTotalOrderCount(Number(data?.pagination?.totalOrders) || 0);
 
       if (!data?.success) {
         throw new Error(data?.message || "Unable to fetch all orders");
@@ -618,9 +614,9 @@ setTotalOrderCount(
   // INITIAL LOAD
   // ====================================================
 
-useEffect(() => {
-  fetchAllOrders();
-}, [currentPage, search]);
+  useEffect(() => {
+    fetchAllOrders();
+  }, [currentPage, search]);
 
   // ====================================================
   // ALL ORDERS PAGE MUST EXCLUDE PROCESSING ORDERS
@@ -1335,11 +1331,11 @@ useEffect(() => {
                   All Orders
                 </h1>
 
-               <p className="mt-0.5 text-[12px] text-slate-400">
-  {totalOrderCount}{" "}
-  {totalOrderCount === 1 ? "shipment" : "shipments"}{" "}
-  across all statuses
-</p>
+                <p className="mt-0.5 text-[12px] text-slate-400">
+                  {totalOrderCount}{" "}
+                  {totalOrderCount === 1 ? "shipment" : "shipments"} across all
+                  statuses
+                </p>
               </div>
             </div>
 
@@ -1615,9 +1611,21 @@ useEffect(() => {
                           <div className="min-w-0">
                             {status !== "PROCESSING" && (
                               <>
-                                <p className="truncate text-[13px] font-semibold text-slate-800">
-                                  {awb}
-                                </p>
+                                <p
+  onDoubleClick={() => {
+    if (!awb || awb === "—") return;
+
+    window.dispatchEvent(
+      new CustomEvent("shipdrop:openTracking", {
+        detail: String(awb),
+      })
+    );
+  }}
+  title="Double click to track"
+  className="truncate text-[13px] font-semibold text-slate-800 cursor-pointer select-none"
+>
+  {awb}
+</p>
 
                                 <p className="mt-0.5 text-[10px] text-slate-400">
                                   Pickup ID:{" "}
@@ -1834,40 +1842,32 @@ useEffect(() => {
           ================================================== */}
 
           <div className="flex items-center justify-between border-t border-slate-200 bg-white px-4 py-3">
+            <p className="text-[12px] text-slate-500">
+              Page {currentPage} of {totalPages}
+            </p>
 
-  <p className="text-[12px] text-slate-500">
-    Page {currentPage} of {totalPages}
-  </p>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                disabled={currentPage <= 1}
+                onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-[12px] font-medium text-slate-600 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Previous
+              </button>
 
-  <div className="flex items-center gap-2">
-
-    <button
-      type="button"
-      disabled={currentPage <= 1}
-      onClick={() =>
-        setCurrentPage((page) => Math.max(1, page - 1))
-      }
-      className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-[12px] font-medium text-slate-600 disabled:cursor-not-allowed disabled:opacity-40"
-    >
-      Previous
-    </button>
-
-    <button
-      type="button"
-      disabled={currentPage >= totalPages}
-      onClick={() =>
-        setCurrentPage((page) =>
-          Math.min(totalPages, page + 1)
-        )
-      }
-      className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-[12px] font-medium text-slate-600 disabled:cursor-not-allowed disabled:opacity-40"
-    >
-      Next
-    </button>
-
-  </div>
-
-</div>
+              <button
+                type="button"
+                disabled={currentPage >= totalPages}
+                onClick={() =>
+                  setCurrentPage((page) => Math.min(totalPages, page + 1))
+                }
+                className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-[12px] font-medium text-slate-600 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Next
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
