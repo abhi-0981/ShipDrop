@@ -124,7 +124,6 @@ const getUserId = () => {
 
     return user?.id || user?.user_id || user?.userId || null;
   } catch (error) {
-    // console.error("Unable to read logged-in user:", error);
     return null;
   }
 };
@@ -206,7 +205,6 @@ const getServiceType = (order) => {
     .replace(/[-_]/g, " ")
     .replace(/\s+/g, " ");
 
-  // AIR / EXPRESS
   if (
     normalized === "AIR" ||
     normalized === "EXPRESS" ||
@@ -215,7 +213,6 @@ const getServiceType = (order) => {
     return "AIR";
   }
 
-  // ROAD / SURFACE
   if (
     normalized === "ROAD" ||
     normalized === "SURFACE" ||
@@ -318,9 +315,7 @@ const getWeight = (order) => {
   if (Array.isArray(order?.packages)) {
     return order.packages.reduce((total, pkg) => {
       const weight = Number(pkg?.weight) || 0;
-
       const count = Number(pkg?.package_count ?? pkg?.count ?? 1) || 1;
-
       return total + weight * count;
     }, 0);
   }
@@ -418,6 +413,7 @@ const getStatus = (order) => {
     .replace(/[-_]+/g, " ")
     .replace(/\s+/g, " ");
 };
+
 const getStatusLabel = (status) => {
   switch (status) {
     case "PROCESSING":
@@ -522,23 +518,17 @@ const StatusBadge = ({ status }) => {
 
 function AllOrders() {
   const [orders, setOrders] = useState([]);
-
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalOrderCount, setTotalOrderCount] = useState(0);
-
   const [loading, setLoading] = useState(true);
 
   const [search, setSearch] = useState("");
-
   const [statusFilter, setStatusFilter] = useState("ALL");
-
   const [serviceFilter, setServiceFilter] = useState("ALL");
-
   const [paymentFilter, setPaymentFilter] = useState("ALL");
 
   const [selectedIds, setSelectedIds] = useState([]);
-
   const [viewingOrder, setViewingOrder] = useState(null);
 
   // ====================================================
@@ -550,9 +540,7 @@ function AllOrders() {
 
     if (!userId) {
       setLoading(false);
-
       toast.error("User ID is required");
-
       return;
     }
 
@@ -571,7 +559,6 @@ function AllOrders() {
       const data = response?.data;
 
       setTotalPages(Number(data?.pagination?.totalPages) || 1);
-
       setTotalOrderCount(Number(data?.pagination?.totalOrders) || 0);
 
       if (!data?.success) {
@@ -580,14 +567,10 @@ function AllOrders() {
 
       const list = Array.isArray(data?.orders) ? data.orders : [];
 
-      // Remove duplicate rows created by SQL JOINs.
-      // One order can have multiple product/package rows,
-      // but All Orders should display the order only once.
       const uniqueOrders = Array.from(
         new Map(
           list.map((order) => {
             const key = order?.id ?? order?.order_id;
-
             return [String(key), order];
           }),
         ).values(),
@@ -596,10 +579,7 @@ function AllOrders() {
       setOrders(uniqueOrders);
       setSelectedIds([]);
     } catch (error) {
-      // console.error("Get all orders error:", error);
-
       setOrders([]);
-
       toast.error(
         error?.response?.data?.message ||
           error?.message ||
@@ -610,18 +590,9 @@ function AllOrders() {
     }
   };
 
-  // ====================================================
-  // INITIAL LOAD
-  // ====================================================
-
   useEffect(() => {
     fetchAllOrders();
   }, [currentPage, search]);
-
-  // ====================================================
-  // ALL ORDERS PAGE MUST EXCLUDE PROCESSING ORDERS
-  // Processing orders are handled in the Processing Orders page.
-  // ====================================================
 
   const isProcessingOrder = (order) => {
     const normalizeStatus = (value) =>
@@ -629,7 +600,7 @@ function AllOrders() {
         .trim()
         .toUpperCase()
         .replace(/[-_]+/g, " ")
-        .replace(/\\s+/g, " ");
+        .replace(/\s+/g, " ");
 
     const orderStatus = normalizeStatus(order?.status);
     const trackingStatus = normalizeStatus(order?.tracking_status);
@@ -637,15 +608,9 @@ function AllOrders() {
     return orderStatus === "PROCESSING" || trackingStatus === "PROCESSING";
   };
 
-  // Orders that are allowed to appear on All Orders page.
-  // Processing orders are intentionally excluded.
   const nonProcessingOrders = orders.filter(
     (order) => !isProcessingOrder(order),
   );
-
-  // ====================================================
-  // FILTERED ORDERS
-  // ====================================================
 
   const filteredOrders = nonProcessingOrders.filter((order) => {
     const query = search.trim().toLowerCase();
@@ -670,25 +635,14 @@ function AllOrders() {
       .toLowerCase();
 
     const searchMatch = !query || searchable.includes(query);
-
     const statusMatch = statusFilter === "ALL" || status === statusFilter;
-
     const serviceMatch = serviceFilter === "ALL" || service === serviceFilter;
-
     const paymentMatch = paymentFilter === "ALL" || payment === paymentFilter;
 
     return searchMatch && statusMatch && serviceMatch && paymentMatch;
   });
 
-  // ====================================================
-  // ORDER KEY
-  // ====================================================
-
   const getOrderKey = (order) => String(order?.id ?? order?.order_id);
-
-  // ====================================================
-  // SELECTED ORDERS
-  // ====================================================
 
   const selectedOrders = nonProcessingOrders.filter((order) =>
     selectedIds.includes(getOrderKey(order)),
@@ -698,18 +652,12 @@ function AllOrders() {
     filteredOrders.length > 0 &&
     filteredOrders.every((order) => selectedIds.includes(getOrderKey(order)));
 
-  // ====================================================
-  // SELECT ALL
-  // ====================================================
-
   const handleSelectAll = () => {
     if (allVisibleSelected) {
       const visibleIds = filteredOrders.map(getOrderKey);
-
       setSelectedIds((previous) =>
         previous.filter((id) => !visibleIds.includes(id)),
       );
-
       return;
     }
 
@@ -718,10 +666,6 @@ function AllOrders() {
     ]);
   };
 
-  // ====================================================
-  // SELECT SINGLE
-  // ====================================================
-
   const handleSelect = (order) => {
     const id = getOrderKey(order);
 
@@ -729,22 +673,13 @@ function AllOrders() {
       if (previous.includes(id)) {
         return previous.filter((item) => item !== id);
       }
-
       return [...previous, id];
     });
   };
 
-  // ====================================================
-  // VIEW
-  // ====================================================
-
   const handleView = (order) => {
     setViewingOrder(order);
   };
-
-  // ====================================================
-  // LABEL HTML
-  // ====================================================
 
   const buildLabel = (order) => {
     const service = getServiceType(order);
@@ -771,7 +706,6 @@ function AllOrders() {
           page-break-after:always;
         "
       >
-
         <div
           style="
             display:flex;
@@ -880,7 +814,6 @@ function AllOrders() {
             gap:10px;
           "
         >
-
           <div
             style="
               border:1px solid #e4eaf2;
@@ -934,7 +867,6 @@ function AllOrders() {
               ${getWeight(order).toFixed(2)} Kg
             </div>
           </div>
-
         </div>
 
         <div
@@ -949,14 +881,9 @@ function AllOrders() {
         >
           ShipDrop • Handle with care
         </div>
-
       </div>
     `;
   };
-
-  // ====================================================
-  // PRINT LABELS
-  // ====================================================
 
   const handlePrintLabels = () => {
     if (selectedOrders.length === 0) {
@@ -977,17 +904,9 @@ function AllOrders() {
       <!DOCTYPE html>
       <html>
         <head>
-          <title>
-            ShipDrop Shipping Labels
-          </title>
+          <title>ShipDrop Shipping Labels</title>
         </head>
-
-        <body
-          style="
-            margin:30px;
-            background:#fff;
-          "
-        >
+        <body style="margin:30px; background:#fff;">
           ${html}
         </body>
       </html>
@@ -1000,10 +919,6 @@ function AllOrders() {
       printWindow.print();
     }, 300);
   };
-
-  // ====================================================
-  // EXPORT CSV
-  // ====================================================
 
   const handleExport = () => {
     if (orders.length === 0) {
@@ -1046,11 +961,9 @@ function AllOrders() {
 
     const escapeCsv = (value) => {
       const text = String(value ?? "");
-
       if (text.includes(",") || text.includes('"') || text.includes("\n")) {
         return `"${text.replace(/"/g, '""')}"`;
       }
-
       return text;
     };
 
@@ -1064,11 +977,9 @@ function AllOrders() {
     });
 
     const url = URL.createObjectURL(blob);
-
     const link = document.createElement("a");
 
     link.href = url;
-
     link.download = `shipdrop-all-orders-${new Date()
       .toISOString()
       .slice(0, 10)}.csv`;
@@ -1086,10 +997,6 @@ function AllOrders() {
     );
   };
 
-  // ====================================================
-  // DUPLICATE ORDER
-  // ====================================================
-
   const handleDuplicate = async (order) => {
     const orderId = order?.id;
     const userId = getUserId();
@@ -1100,14 +1007,8 @@ function AllOrders() {
     }
 
     try {
-      // ================================================
-      // GET ORIGINAL ORDER DETAILS
-      // ================================================
-
       const response = await api.get(`/orders/${orderId}`, {
-        params: {
-          user_id: userId,
-        },
+        params: { user_id: userId },
       });
 
       const result = response?.data;
@@ -1117,10 +1018,6 @@ function AllOrders() {
       }
 
       const source = result.order;
-
-      // ================================================
-      // WAREHOUSE
-      // ================================================
 
       const warehouseId = Number(
         source?.warehouse_id ||
@@ -1133,116 +1030,65 @@ function AllOrders() {
         throw new Error("Pickup warehouse is missing");
       }
 
-      // ================================================
-      // CREATE NEW PROCESSING ORDER
-      // ================================================
-
       const payload = {
         user_id: Number(userId),
-
         pickup_address: source?.pickup_address || null,
-
         pickup_pincode: source?.pickup_pincode || null,
-
         pickup_city: source?.pickup_city || null,
-
         warehouse_id: warehouseId,
-
         pickup_address_id: source?.pickup_address_id || null,
-
         orderData: {
           consignee_name: source?.consignee_name || "",
-
           mobile: source?.mobile || "",
-
           alternate_mobile: source?.alternate_mobile || null,
-
           email: source?.email || null,
-
           gstin: source?.gstin || null,
-
           company_name: source?.company_name || null,
-
           floor_no: source?.floor_no || null,
-
           landmark: source?.landmark || null,
-
           address_line1: source?.address_line1 || "",
-
           address_line2: source?.address_line2 || null,
-
           pincode: source?.pincode || "",
-
           city: source?.city || "",
-
           state: source?.state || "",
-
           country: source?.country || "India",
-
           payment_type: source?.payment_type || "Prepaid",
-
           risk_type: source?.risk_type || "Owner Risk",
-
           warehouse_id: warehouseId,
         },
-
         products: Array.isArray(source?.products)
           ? source.products.map((product) => ({
               product_name: product?.product_name || "",
-
               sku: product?.sku || null,
-
               price: Number(product?.price) || 0,
-
               qty: Number(product?.qty) || 1,
-
               tax: Number(product?.tax) || 0,
             }))
           : [],
-
         packages: Array.isArray(source?.packages)
           ? source.packages.map((pkg) => ({
               length: Number(pkg?.length) || 0,
-
               width: Number(pkg?.width) || 0,
-
               height: Number(pkg?.height) || 0,
-
               weight: Number(pkg?.weight) || 0,
-
               package_count: Number(pkg?.package_count) || 1,
             }))
           : [],
       };
 
-      // ================================================
-      // CREATE NEW ORDER
-      // ================================================
-
       const createResponse = await api.post("/orders/create", payload);
-
       const createResult = createResponse?.data;
 
       if (!createResult?.success || !createResult?.order_id) {
         throw new Error(createResult?.message || "Unable to duplicate order");
       }
 
-      // ================================================
-      // SUCCESS
-      // ================================================
-
       toast.success(
         `Order duplicated successfully. New order #${createResult.order_id} is in Processing.`,
       );
 
-      // Refresh All Orders
       await fetchAllOrders();
     } catch (error) {
-      // console.error(
-      //   "Duplicate order error:",
-      //   error
-      // );
-
       toast.error(
         error?.response?.data?.message ||
           error?.message ||
@@ -1251,45 +1097,14 @@ function AllOrders() {
     }
   };
 
-  // ====================================================
-  // COUNTS
-  // ====================================================
-
-  const totalOrders = nonProcessingOrders.length;
-
-  const manifestedCount = orders.filter(
-    (order) => getStatus(order) === "MANIFESTED",
-  ).length;
-
-  const pendingCount = orders.filter(
-    (order) => getStatus(order) === "PENDING",
-  ).length;
-
-  const deliveredCount = orders.filter(
-    (order) => getStatus(order) === "DELIVERED",
-  ).length;
-
-  const cancelledCount = orders.filter((order) => {
-    const status = getStatus(order);
-
-    return status === "CANCELLED" || status === "CANCELED";
-  }).length;
-
-  // ====================================================
-  // LOADING
-  // ====================================================
-
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#f5f8fc] px-4 py-5">
+      <div className="min-h-screen bg-[#f5f8fc] px-3.5 sm:px-4 py-4 sm:py-5">
         <div className="mx-auto max-w-[1450px]">
-          <div className="mb-3 h-[92px] animate-pulse rounded-xl border border-slate-200 bg-white" />
-
-          <div className="mb-3 h-[62px] animate-pulse rounded-xl border border-slate-200 bg-white" />
-
-          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+          <div className="mb-3 h-[92px] animate-pulse rounded-2xl border border-slate-200 bg-white" />
+          <div className="mb-3 h-[62px] animate-pulse rounded-2xl border border-slate-200 bg-white" />
+          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
             <div className="h-12 animate-pulse bg-slate-50" />
-
             {[1, 2, 3, 4].map((item) => (
               <div
                 key={item}
@@ -1302,22 +1117,17 @@ function AllOrders() {
     );
   }
 
-  // ====================================================
-  // RENDER
-  // ====================================================
-
   return (
-    <div className="min-h-screen bg-[#f5f8fc] px-4 py-5">
+    <div className="min-h-screen bg-[#f5f8fc] px-3 sm:px-4 py-4 sm:py-5 pb-24 lg:pb-8">
       <div className="mx-auto max-w-[1450px]">
         {/* ==================================================
             TOP HEADER
         ================================================== */}
-
-        <div className="mb-3 rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-[0_1px_2px_rgba(15,23,42,0.02)]">
-          <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="mb-3 rounded-2xl border border-slate-200 bg-white px-4 sm:px-5 py-3.5 sm:py-4 shadow-[0_1px_2px_rgba(15,23,42,0.02)]">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
               <div
-                className="flex h-10 w-10 items-center justify-center rounded-lg"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
                 style={{
                   background: "#edf8ff",
                   color: PRIMARY,
@@ -1327,11 +1137,10 @@ function AllOrders() {
               </div>
 
               <div>
-                <h1 className="text-[17px] font-semibold tracking-[-0.2px] text-slate-900">
+                <h1 className="text-base sm:text-[17px] font-semibold tracking-[-0.2px] text-slate-900">
                   All Orders
                 </h1>
-
-                <p className="mt-0.5 text-[12px] text-slate-400">
+                <p className="mt-0.5 text-xs text-slate-400">
                   {totalOrderCount}{" "}
                   {totalOrderCount === 1 ? "shipment" : "shipments"} across all
                   statuses
@@ -1339,41 +1148,38 @@ function AllOrders() {
               </div>
             </div>
 
-            {/* TOP BUTTONS */}
-
+            {/* ACTION BUTTONS */}
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={handlePrintLabels}
                 disabled={selectedOrders.length === 0}
-                className="inline-flex h-9 items-center gap-1.5 rounded-md bg-[#8fcce8] px-3.5 text-[12px] font-medium text-white transition hover:bg-[#7fc2e1] disabled:cursor-not-allowed disabled:opacity-55"
+                className="inline-flex h-9 flex-1 sm:flex-initial items-center justify-center gap-1.5 rounded-xl bg-[#8fcce8] px-3.5 text-xs font-semibold text-white transition hover:bg-[#7fc2e1] active:scale-95 disabled:cursor-not-allowed disabled:opacity-55"
               >
                 <Icon name="printer" size={15} />
-                Print Shipping Label
+                <span>Print Labels ({selectedOrders.length})</span>
               </button>
 
               <button
                 type="button"
                 onClick={handleExport}
                 disabled={nonProcessingOrders.length === 0}
-                className="inline-flex h-9 items-center gap-1.5 rounded-md bg-[#10b981] px-3.5 text-[12px] font-medium text-white transition hover:bg-[#059669] disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-9 flex-1 sm:flex-initial items-center justify-center gap-1.5 rounded-xl bg-[#10b981] px-3.5 text-xs font-semibold text-white transition hover:bg-[#059669] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Icon name="download" size={15} />
-                Export
+                <span>Export</span>
               </button>
             </div>
           </div>
         </div>
 
         {/* ==================================================
-            FILTER BAR
+            FILTER BAR (RESPONSIVE DOCK)
         ================================================== */}
-
-        <div className="mb-3 rounded-xl border border-slate-200 bg-white p-3 shadow-[0_1px_2px_rgba(15,23,42,0.02)]">
-          <div className="flex flex-wrap items-center gap-2">
+        <div className="mb-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_1px_2px_rgba(15,23,42,0.02)] space-y-2.5">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
             {/* SEARCH */}
-
-            <div className="relative min-w-[280px] flex-1">
+            <div className="relative min-w-0 flex-1">
               <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
                 <Icon name="search" size={15} />
               </span>
@@ -1383,94 +1189,275 @@ function AllOrders() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search customer, AWB, Order ID or mobile..."
-                className="h-10 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-[12px] text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#008dd2] focus:ring-2 focus:ring-[#008dd2]/5"
+                className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-xs text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#008dd2] focus:ring-2 focus:ring-[#008dd2]/10"
               />
             </div>
 
-            {/* STATUS */}
+            {/* FILTER DROPDOWNS */}
+            <div className="grid grid-cols-3 sm:flex sm:items-center gap-1.5 sm:gap-2">
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="h-10 w-full sm:min-w-[130px] rounded-xl border border-slate-200 bg-white px-2.5 text-xs text-slate-600 outline-none focus:border-[#008dd2]"
+              >
+                <option value="ALL">All Status</option>
+                <option value="MANIFESTED">Manifested</option>
+                <option value="NOT PICKED">Not Picked</option>
+                <option value="PENDING">Pending</option>
+                <option value="IN TRANSIT">In Transit</option>
+                <option value="OUT FOR DELIVERY">Out For Delivery</option>
+                <option value="DELIVERED">Delivered</option>
+                <option value="RTO IN TRANSIT">RTO In Transit</option>
+                <option value="RTO DELIVERED">RTO Delivered</option>
+                <option value="RETURNED">Returned</option>
+                <option value="CANCELLED">Cancelled</option>
+              </select>
 
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="h-10 min-w-[135px] rounded-lg border border-slate-200 bg-white px-3 text-[12px] text-slate-600 outline-none focus:border-[#008dd2]"
-            >
-              <option value="ALL">All Status</option>
+              <select
+                value={serviceFilter}
+                onChange={(e) => setServiceFilter(e.target.value)}
+                className="h-10 w-full sm:min-w-[110px] rounded-xl border border-slate-200 bg-white px-2.5 text-xs text-slate-600 outline-none focus:border-[#008dd2]"
+              >
+                <option value="ALL">All Mode</option>
+                <option value="ROAD">Road</option>
+                <option value="AIR">Air</option>
+              </select>
 
-              <option value="MANIFESTED">Manifested</option>
+              <select
+                value={paymentFilter}
+                onChange={(e) => setPaymentFilter(e.target.value)}
+                className="h-10 w-full sm:min-w-[110px] rounded-xl border border-slate-200 bg-white px-2.5 text-xs text-slate-600 outline-none focus:border-[#008dd2]"
+              >
+                <option value="ALL">All Pay</option>
+                <option value="PREPAID">Prepaid</option>
+                <option value="COD">COD</option>
+              </select>
 
-              <option value="NOT PICKED">Not Picked</option>
-
-              <option value="PENDING">Pending</option>
-
-              <option value="IN TRANSIT">In Transit</option>
-
-              <option value="OUT FOR DELIVERY">Out For Delivery</option>
-
-              <option value="DELIVERED">Delivered</option>
-
-              <option value="RTO IN TRANSIT">RTO In Transit</option>
-
-              <option value="RTO DELIVERED">RTO Delivered</option>
-
-              <option value="RETURNED">Returned</option>
-
-              <option value="CANCELLED">Cancelled</option>
-            </select>
-
-            {/* SERVICE */}
-
-            <select
-              value={serviceFilter}
-              onChange={(e) => setServiceFilter(e.target.value)}
-              className="h-10 min-w-[135px] rounded-lg border border-slate-200 bg-white px-3 text-[12px] text-slate-600 outline-none focus:border-[#008dd2]"
-            >
-              <option value="ALL">All Services</option>
-
-              <option value="ROAD">Road</option>
-
-              <option value="AIR">Air</option>
-            </select>
-
-            {/* PAYMENT */}
-
-            <select
-              value={paymentFilter}
-              onChange={(e) => setPaymentFilter(e.target.value)}
-              className="h-10 min-w-[135px] rounded-lg border border-slate-200 bg-white px-3 text-[12px] text-slate-600 outline-none focus:border-[#008dd2]"
-            >
-              <option value="ALL">All Payment</option>
-
-              <option value="PREPAID">Prepaid</option>
-
-              <option value="COD">COD</option>
-            </select>
-
-            {/* REFRESH */}
-
-            <button
-              type="button"
-              onClick={fetchAllOrders}
-              title="Refresh"
-              className="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-slate-700"
-            >
-              <Icon name="refresh" size={15} />
-            </button>
+              <button
+                type="button"
+                onClick={fetchAllOrders}
+                title="Refresh"
+                className="hidden sm:flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-slate-700 active:scale-95"
+              >
+                <Icon name="refresh" size={15} />
+              </button>
+            </div>
           </div>
+
+          {/* MOBILE SELECT ALL BAR */}
+          {filteredOrders.length > 0 && (
+            <div className="flex items-center justify-between border-t border-slate-100 pt-2 sm:hidden">
+              <label className="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer">
+                <button
+                  type="button"
+                  onClick={handleSelectAll}
+                  className={`flex h-4 w-4 items-center justify-center rounded border transition ${
+                    allVisibleSelected
+                      ? "border-[#008dd2] bg-[#008dd2] text-white"
+                      : "border-slate-300 bg-white text-transparent"
+                  }`}
+                >
+                  <Icon name="check" size={11} />
+                </button>
+                <span>Select All ({filteredOrders.length})</span>
+              </label>
+
+              <button
+                type="button"
+                onClick={fetchAllOrders}
+                className="flex items-center gap-1 text-xs font-bold text-[#008dd2]"
+              >
+                <Icon name="refresh" size={12} />
+                Refresh
+              </button>
+            </div>
+          )}
         </div>
 
         {/* ==================================================
-            SMALL SUMMARY
+            1. MOBILE VIEW: APP-STYLE CARD TILES
         ================================================== */}
+        <div className="space-y-3 sm:hidden">
+          {filteredOrders.length === 0 ? (
+            <div className="flex min-h-[200px] flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white p-6 text-center text-slate-400">
+              <Icon name="box" size={24} />
+              <p className="mt-2 text-xs font-bold text-slate-700">
+                {nonProcessingOrders.length > 0
+                  ? "No matching orders"
+                  : "No orders found"}
+              </p>
+            </div>
+          ) : (
+            filteredOrders.map((order) => {
+              const id = getOrderKey(order);
+              const selected = selectedIds.includes(id);
+              const service = getServiceType(order);
+              const payment = getPaymentType(order);
+              const weight = getWeight(order);
+              const status = getStatus(order);
+              const awb = getAWB(order);
+
+              return (
+                <div
+                  key={id}
+                  className={`rounded-2xl border bg-white p-3.5 shadow-xs space-y-2.5 transition ${
+                    selected
+                      ? "border-[#008dd2] ring-2 ring-[#008dd2]/10"
+                      : "border-slate-200/80"
+                  }`}
+                >
+                  {/* CARD HEADER */}
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleSelect(order)}
+                        className={`flex h-4 w-4 items-center justify-center rounded border transition ${
+                          selected
+                            ? "border-[#008dd2] bg-[#008dd2] text-white"
+                            : "border-slate-300 bg-white text-transparent"
+                        }`}
+                      >
+                        <Icon name="check" size={11} />
+                      </button>
+
+                      <span className="font-mono text-xs font-bold text-slate-800">
+                        #{getOrderId(order)}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      <span
+                        className={`rounded-md border px-2 py-0.5 text-[10px] font-bold ${
+                          payment === "COD"
+                            ? "border-amber-100 bg-amber-50 text-amber-600"
+                            : "border-sky-100 bg-sky-50 text-[#008dd2]"
+                        }`}
+                      >
+                        {payment}
+                      </span>
+                      <StatusBadge status={status} />
+                    </div>
+                  </div>
+
+                  {/* AWB & CUSTOMER */}
+                  <div className="space-y-1 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-slate-800 truncate">
+                        {getCustomerName(order)}
+                      </span>
+                      <span className="text-slate-400 text-[11px]">
+                        {getMobile(order)}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between font-mono text-[11px] text-slate-600 bg-slate-50/70 px-2 py-1 rounded-lg">
+                      <span className="truncate">AWB: {awb}</span>
+                      {awb && awb !== "—" && (
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            try {
+                              await navigator.clipboard.writeText(String(awb));
+                              toast.success("AWB copied");
+                            } catch {
+                              toast.error("Unable to copy AWB");
+                            }
+                          }}
+                          className="text-[#008dd2] font-semibold flex items-center gap-1"
+                        >
+                          <Icon name="copy" size={12} />
+                          Copy
+                        </button>
+                      )}
+                    </div>
+
+                    {/* ROUTE */}
+                    <div className="flex items-center justify-between text-[11px] text-slate-500 pt-0.5">
+                      <span className="truncate max-w-[120px]">
+                        {getPickupCity(order)} ({getPickupPincode(order)})
+                      </span>
+                      <span className="text-slate-400 font-bold px-1">→</span>
+                      <span className="truncate max-w-[120px] text-right">
+                        {getDeliveryCity(order)} ({getDeliveryPincode(order)})
+                      </span>
+                    </div>
+
+                    {/* SPECS */}
+                    <div className="flex items-center justify-between text-[11px] text-slate-400 border-t border-slate-50 pt-1.5">
+                      <span>
+                        {service === "AIR" ? "By Air" : "By Road"} •{" "}
+                        {weight.toFixed(2)} Kg
+                      </span>
+                      <span className="font-semibold text-slate-600">
+                        {formatDate(getCreatedAt(order))}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* CARD ACTIONS */}
+                  <div className="flex items-center justify-end gap-1.5 border-t border-slate-100 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => handleView(order)}
+                      className="flex h-8 items-center gap-1 rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-600 hover:bg-slate-50 active:scale-95"
+                    >
+                      <Icon name="eye" size={13} />
+                      View
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleDuplicate(order)}
+                      className="flex h-8 items-center gap-1 rounded-lg border border-violet-200 bg-violet-50/50 px-3 text-xs font-semibold text-violet-600 hover:bg-violet-100 active:scale-95"
+                    >
+                      <Icon name="copy" size={13} />
+                      Duplicate
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const printWindow = window.open(
+                          "",
+                          "_blank",
+                          "width=900,height=700",
+                        );
+                        if (!printWindow) {
+                          toast.error("Please allow pop-ups to print labels");
+                          return;
+                        }
+                        printWindow.document.write(`
+                          <!DOCTYPE html>
+                          <html>
+                            <head><title>Shipping Label</title></head>
+                            <body style="margin:30px; background:#fff;">${buildLabel(
+                              order,
+                            )}</body>
+                          </html>
+                        `);
+                        printWindow.document.close();
+                        printWindow.focus();
+                        setTimeout(() => printWindow.print(), 300);
+                      }}
+                      className="flex h-8 items-center gap-1 rounded-lg bg-[#008dd2] px-3 text-xs font-bold text-white shadow-xs active:scale-95"
+                    >
+                      <Icon name="printer" size={13} />
+                      Label
+                    </button>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
 
         {/* ==================================================
-            TABLE
+            2. TABLET & DESKTOP: STRUCTURED TABLE
         ================================================== */}
-
-        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
+        <div className="hidden sm:block overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
           <div className="max-h-[calc(100vh-180px)] overflow-auto">
             <table className="w-full min-w-[1120px] border-collapse">
-              {/* TABLE HEADER */}
-
               <thead className="sticky top-0 z-20 bg-white">
                 <tr className="border-b border-slate-200 bg-white">
                   <th className="sticky top-0 z-20 w-[52px] bg-white px-4 py-3.5 text-left">
@@ -1517,8 +1504,6 @@ function AllOrders() {
                 </tr>
               </thead>
 
-              {/* TABLE BODY */}
-
               <tbody>
                 {filteredOrders.length === 0 ? (
                   <tr>
@@ -1545,17 +1530,11 @@ function AllOrders() {
                 ) : (
                   filteredOrders.map((order) => {
                     const id = getOrderKey(order);
-
                     const selected = selectedIds.includes(id);
-
                     const service = getServiceType(order);
-
                     const payment = getPaymentType(order);
-
                     const weight = getWeight(order);
-
                     const status = getStatus(order);
-
                     const awb = getAWB(order);
 
                     return (
@@ -1565,8 +1544,6 @@ function AllOrders() {
                           selected ? "bg-[#f8fcff]" : "bg-white"
                         } hover:bg-slate-50`}
                       >
-                        {/* CHECKBOX */}
-
                         <td className="px-4 py-3">
                           <button
                             type="button"
@@ -1580,10 +1557,6 @@ function AllOrders() {
                             <Icon name="check" size={11} />
                           </button>
                         </td>
-
-                        {/* ==================================
-                              CUSTOMER
-                          ================================== */}
 
                         <td className="px-3 py-3">
                           <div className="min-w-0">
@@ -1603,51 +1576,47 @@ function AllOrders() {
                           </div>
                         </td>
 
-                        {/* ==================================
-                              SHIPMENT
-                          ================================== */}
-
                         <td className="px-3 py-3">
                           <div className="min-w-0">
                             {status !== "PROCESSING" && (
                               <>
-<div className="flex items-center gap-1.5 min-w-0">
-  <p
-    onDoubleClick={() => {
-      if (!awb || awb === "—") return;
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                  <p
+                                    onDoubleClick={() => {
+                                      if (!awb || awb === "—") return;
+                                      window.dispatchEvent(
+                                        new CustomEvent("shipdrop:openTracking", {
+                                          detail: String(awb),
+                                        }),
+                                      );
+                                    }}
+                                    title="Double click to track"
+                                    className="truncate text-[13px] font-semibold text-slate-800 cursor-pointer select-none"
+                                  >
+                                    {awb}
+                                  </p>
 
-      window.dispatchEvent(
-        new CustomEvent("shipdrop:openTracking", {
-          detail: String(awb),
-        })
-      );
-    }}
-    title="Double click to track"
-    className="truncate text-[13px] font-semibold text-slate-800 cursor-pointer select-none"
-  >
-    {awb}
-  </p>
-
-  {awb && awb !== "—" && (
-    <button
-      type="button"
-      onClick={async (event) => {
-        event.stopPropagation();
-
-        try {
-          await navigator.clipboard.writeText(String(awb));
-          toast.success("AWB copied");
-        } catch {
-          toast.error("Unable to copy AWB");
-        }
-      }}
-      title="Copy AWB"
-      className="shrink-0 p-0.5 text-slate-400 hover:text-slate-700 transition"
-    >
-      <Icon name="copy" size={14} />
-    </button>
-  )}
-</div>
+                                  {awb && awb !== "—" && (
+                                    <button
+                                      type="button"
+                                      onClick={async (event) => {
+                                        event.stopPropagation();
+                                        try {
+                                          await navigator.clipboard.writeText(
+                                            String(awb),
+                                          );
+                                          toast.success("AWB copied");
+                                        } catch {
+                                          toast.error("Unable to copy AWB");
+                                        }
+                                      }}
+                                      title="Copy AWB"
+                                      className="shrink-0 p-0.5 text-slate-400 hover:text-slate-700 transition"
+                                    >
+                                      <Icon name="copy" size={14} />
+                                    </button>
+                                  )}
+                                </div>
 
                                 <p className="mt-0.5 text-[10px] text-slate-400">
                                   Pickup ID:{" "}
@@ -1663,15 +1632,10 @@ function AllOrders() {
                           </div>
                         </td>
 
-                        {/* ==================================
-                              ROUTE
-                          ================================== */}
-
                         <td className="px-3 py-3">
                           <div>
                             <p className="text-[12px] font-medium text-slate-700">
                               {getPickupCity(order)}
-
                               {getPickupPincode(order) && (
                                 <span className="text-[10px] text-slate-400">
                                   {" "}
@@ -1686,7 +1650,6 @@ function AllOrders() {
 
                             <p className="text-[12px] font-medium text-slate-700">
                               {getDeliveryCity(order)}
-
                               {getDeliveryPincode(order) && (
                                 <span className="text-[10px] text-slate-400">
                                   {" "}
@@ -1701,10 +1664,6 @@ function AllOrders() {
                             </p>
                           </div>
                         </td>
-
-                        {/* ==================================
-                              PAYMENT
-                          ================================== */}
 
                         <td className="px-3 py-3">
                           <div>
@@ -1731,10 +1690,6 @@ function AllOrders() {
                           </div>
                         </td>
 
-                        {/* ==================================
-                              WEIGHT
-                          ================================== */}
-
                         <td className="px-3 py-3">
                           <div>
                             <p className="text-[12px] font-semibold text-slate-700">
@@ -1751,10 +1706,6 @@ function AllOrders() {
                           </div>
                         </td>
 
-                        {/* ==================================
-                              CREATED
-                          ================================== */}
-
                         <td className="px-3 py-3">
                           <p className="text-[12px] font-medium text-slate-700">
                             #{getOrderId(order)}
@@ -1764,7 +1715,6 @@ function AllOrders() {
                             {status === "MANIFESTED"
                               ? "Manifested: "
                               : "Created: "}
-
                             {formatDate(getCreatedAt(order))}
                           </p>
 
@@ -1773,14 +1723,8 @@ function AllOrders() {
                           </p>
                         </td>
 
-                        {/* ==================================
-                              ACTIONS
-                          ================================== */}
-
                         <td className="px-3 py-3">
                           <div className="flex items-center gap-1.5">
-                            {/* PRINT */}
-
                             <button
                               type="button"
                               onClick={() => {
@@ -1798,28 +1742,17 @@ function AllOrders() {
                                 }
 
                                 printWindow.document.write(`
-                                    <!DOCTYPE html>
-                                    <html>
-                                      <head>
-                                        <title>
-                                          ShipDrop Shipping Label
-                                        </title>
-                                      </head>
-
-                                      <body
-                                        style="
-                                          margin:30px;
-                                          background:#fff;
-                                        "
-                                      >
-                                        ${buildLabel(order)}
-                                      </body>
-                                    </html>
-                                  `);
+                                  <!DOCTYPE html>
+                                  <html>
+                                    <head><title>ShipDrop Shipping Label</title></head>
+                                    <body style="margin:30px; background:#fff;">
+                                      ${buildLabel(order)}
+                                    </body>
+                                  </html>
+                                `);
 
                                 printWindow.document.close();
                                 printWindow.focus();
-
                                 setTimeout(() => printWindow.print(), 300);
                               }}
                               title="Print Shipping Label"
@@ -1827,8 +1760,6 @@ function AllOrders() {
                             >
                               <Icon name="printer" size={15} />
                             </button>
-
-                            {/* DUPLICATE */}
 
                             <button
                               type="button"
@@ -1838,8 +1769,6 @@ function AllOrders() {
                             >
                               <Icon name="copy" size={15} />
                             </button>
-
-                            {/* VIEW */}
 
                             <button
                               type="button"
@@ -1859,10 +1788,7 @@ function AllOrders() {
             </table>
           </div>
 
-          {/* ==================================================
-              FOOTER
-          ================================================== */}
-
+          {/* TABLE FOOTER */}
           <div className="flex items-center justify-between border-t border-slate-200 bg-white px-4 py-3">
             <p className="text-[12px] text-slate-500">
               Page {currentPage} of {totalPages}
@@ -1891,29 +1817,53 @@ function AllOrders() {
             </div>
           </div>
         </div>
+
+        {/* MOBILE PAGINATION DOCK */}
+        <div className="flex sm:hidden items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3 mt-3 shadow-xs">
+          <span className="text-xs font-semibold text-slate-600">
+            Page {currentPage} of {totalPages}
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              disabled={currentPage <= 1}
+              onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+              className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-700 disabled:opacity-40"
+            >
+              Prev
+            </button>
+            <button
+              type="button"
+              disabled={currentPage >= totalPages}
+              onClick={() =>
+                setCurrentPage((page) => Math.min(totalPages, page + 1))
+              }
+              className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-700 disabled:opacity-40"
+            >
+              Next
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* ====================================================
-          VIEW ORDER MODAL
+          VIEW ORDER MODAL (RESPONSIVE)
       ==================================================== */}
-
       {viewingOrder && (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/30 p-4 backdrop-blur-[2px]"
+          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-slate-900/40 p-0 sm:p-4 backdrop-blur-[2px]"
           onClick={() => setViewingOrder(null)}
         >
           <div
-            className="w-full max-w-[620px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
+            className="w-full max-w-[620px] max-h-[90vh] flex flex-col rounded-t-3xl sm:rounded-2xl border border-slate-200 bg-white shadow-2xl overflow-hidden animate-in slide-in-from-bottom duration-200"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* HEADER */}
-
+            {/* MODAL HEADER */}
             <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
               <div>
-                <h2 className="text-[16px] font-semibold text-slate-900">
+                <h2 className="text-base font-semibold text-slate-900">
                   Order Details
                 </h2>
-
                 <p className="mt-0.5 text-[11px] text-slate-400">
                   Order #{getOrderId(viewingOrder)}
                 </p>
@@ -1928,19 +1878,16 @@ function AllOrders() {
               </button>
             </div>
 
-            {/* BODY */}
-
-            <div className="max-h-[70vh] overflow-y-auto p-5">
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {/* MODAL BODY */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3">
+              <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
                 <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
                   <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
                     Customer
                   </p>
-
                   <p className="mt-1 text-[13px] font-semibold text-slate-800">
                     {getCustomerName(viewingOrder)}
                   </p>
-
                   <p className="mt-0.5 text-[11px] text-slate-500">
                     {getMobile(viewingOrder)}
                   </p>
@@ -1950,8 +1897,7 @@ function AllOrders() {
                   <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
                     AWB
                   </p>
-
-                  <p className="mt-1 text-[13px] font-semibold text-slate-800">
+                  <p className="mt-1 text-[13px] font-semibold text-slate-800 font-mono">
                     {getAWB(viewingOrder)}
                   </p>
                 </div>
@@ -1960,11 +1906,9 @@ function AllOrders() {
                   <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
                     Shipment
                   </p>
-
                   <p className="mt-1 text-[13px] font-semibold text-slate-800">
                     {getShipmentName(viewingOrder)}
                   </p>
-
                   <p className="mt-0.5 text-[11px] text-slate-500">
                     {getServiceType(viewingOrder) === "AIR"
                       ? "By Air"
@@ -1976,11 +1920,9 @@ function AllOrders() {
                   <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
                     Payment
                   </p>
-
                   <p className="mt-1 text-[13px] font-semibold text-slate-800">
                     {getPaymentType(viewingOrder)}
                   </p>
-
                   <p className="mt-0.5 text-[11px] text-slate-500">
                     ₹{getAmount(viewingOrder).toFixed(2)}
                   </p>
@@ -1988,12 +1930,10 @@ function AllOrders() {
               </div>
 
               {/* ADDRESS */}
-
-              <div className="mt-3 rounded-xl border border-slate-200 bg-white p-4">
+              <div className="rounded-xl border border-slate-200 bg-white p-3.5">
                 <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
                   Delivery Address
                 </p>
-
                 <p className="mt-1 text-[13px] font-medium leading-6 text-slate-700">
                   {[
                     viewingOrder?.address_line1,
@@ -2003,40 +1943,33 @@ function AllOrders() {
                   ]
                     .filter(Boolean)
                     .join(", ") || "—"}
-
                   {viewingOrder?.pincode ? ` - ${viewingOrder.pincode}` : ""}
                 </p>
               </div>
 
               {/* ROUTE */}
-
-              <div className="mt-3 rounded-xl border border-slate-200 bg-white p-4">
+              <div className="rounded-xl border border-slate-200 bg-white p-3.5">
                 <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
                   Route
                 </p>
-
-                <div className="mt-2 flex items-center gap-3">
-                  <div className="rounded-lg bg-[#edf8ff] px-3 py-2 text-[12px] font-semibold text-[#008dd2]">
+                <div className="mt-2 flex items-center gap-2.5">
+                  <div className="rounded-lg bg-[#edf8ff] px-2.5 py-1.5 text-xs font-semibold text-[#008dd2]">
                     {getPickupCity(viewingOrder)}
                   </div>
-
-                  <span className="text-slate-300">→</span>
-
-                  <div className="rounded-lg bg-[#f0ecff] px-3 py-2 text-[12px] font-semibold text-[#7052ff]">
+                  <span className="text-slate-300 font-bold">→</span>
+                  <div className="rounded-lg bg-[#f0ecff] px-2.5 py-1.5 text-xs font-semibold text-[#7052ff]">
                     {getDeliveryCity(viewingOrder)}
                   </div>
                 </div>
               </div>
 
-              {/* WEIGHT / STATUS */}
-
-              <div className="mt-3 grid grid-cols-2 gap-3">
+              {/* WEIGHT & STATUS */}
+              <div className="grid grid-cols-2 gap-2.5">
                 <div className="rounded-xl border border-slate-200 p-3">
                   <p className="text-[10px] uppercase tracking-wide text-slate-400">
                     Weight
                   </p>
-
-                  <p className="mt-1 text-[15px] font-semibold text-slate-800">
+                  <p className="mt-1 text-sm font-semibold text-slate-800">
                     {getWeight(viewingOrder).toFixed(2)} Kg
                   </p>
                 </div>
@@ -2045,7 +1978,6 @@ function AllOrders() {
                   <p className="text-[10px] uppercase tracking-wide text-slate-400">
                     Status
                   </p>
-
                   <div className="mt-1">
                     <StatusBadge status={getStatus(viewingOrder)} />
                   </div>
@@ -2053,13 +1985,12 @@ function AllOrders() {
               </div>
             </div>
 
-            {/* FOOTER */}
-
-            <div className="flex items-center justify-end gap-2 border-t border-slate-100 bg-[#fafbfc] px-5 py-3">
+            {/* MODAL FOOTER */}
+            <div className="flex items-center justify-end gap-2 border-t border-slate-100 bg-[#fafbfc] px-4 sm:px-5 py-3">
               <button
                 type="button"
                 onClick={() => setViewingOrder(null)}
-                className="h-9 rounded-lg border border-slate-200 bg-white px-4 text-[12px] font-medium text-slate-600 hover:bg-slate-50"
+                className="h-9.5 rounded-xl border border-slate-200 bg-white px-4 text-xs font-medium text-slate-600 hover:bg-slate-50"
               >
                 Close
               </button>
@@ -2068,7 +1999,6 @@ function AllOrders() {
                 type="button"
                 onClick={() => {
                   const order = viewingOrder;
-
                   setViewingOrder(null);
 
                   const printWindow = window.open(
@@ -2076,38 +2006,24 @@ function AllOrders() {
                     "_blank",
                     "width=900,height=700",
                   );
-
                   if (!printWindow) {
                     toast.error("Please allow pop-ups to print labels");
                     return;
                   }
-
                   printWindow.document.write(`
                     <!DOCTYPE html>
                     <html>
-                      <head>
-                        <title>
-                          ShipDrop Shipping Label
-                        </title>
-                      </head>
-
-                      <body
-                        style="
-                          margin:30px;
-                          background:#fff;
-                        "
-                      >
+                      <head><title>ShipDrop Shipping Label</title></head>
+                      <body style="margin:30px; background:#fff;">
                         ${buildLabel(order)}
                       </body>
                     </html>
                   `);
-
                   printWindow.document.close();
                   printWindow.focus();
-
                   setTimeout(() => printWindow.print(), 300);
                 }}
-                className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[#008dd2] px-4 text-[12px] font-medium text-white hover:bg-[#007dbb]"
+                className="inline-flex h-9.5 items-center gap-1.5 rounded-xl bg-[#008dd2] px-4 text-xs font-bold text-white shadow-xs hover:bg-[#007dbb] active:scale-95"
               >
                 <Icon name="printer" size={14} />
                 Print Label
