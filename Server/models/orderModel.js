@@ -419,7 +419,10 @@ const getAllOrders = (
       o.awb,
 
 (
-  SELECT pr.delhivery_request_id
+  SELECT COALESCE(
+    pr.delhivery_request_id,
+    m_pickup.pickup_request_id
+  )
   FROM manifests m_pickup
   LEFT JOIN pickup_requests pr
     ON pr.id = m_pickup.pickup_request_id
@@ -431,7 +434,7 @@ const getAllOrders = (
   ORDER BY m_pickup.id DESC
   LIMIT 1
 ) AS pickup_id,
-
+ 
 o.consignee_name,
 
       o.consignee_name,
