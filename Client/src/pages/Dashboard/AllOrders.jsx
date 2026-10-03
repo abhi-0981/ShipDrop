@@ -1611,21 +1611,43 @@ function AllOrders() {
                           <div className="min-w-0">
                             {status !== "PROCESSING" && (
                               <>
-<p
-  onDoubleClick={() => {
-    if (!awb || awb === "—") return;
+<div className="flex items-center gap-1.5 min-w-0">
+  <p
+    onDoubleClick={() => {
+      if (!awb || awb === "—") return;
 
-    window.dispatchEvent(
-      new CustomEvent("shipdrop:openTracking", {
-        detail: String(awb),
-      })
-    );
-  }}
-  title="Double click to track"
-  className="truncate text-[13px] font-semibold text-slate-800 cursor-pointer select-none"
->
-  {awb}
-</p>
+      window.dispatchEvent(
+        new CustomEvent("shipdrop:openTracking", {
+          detail: String(awb),
+        })
+      );
+    }}
+    title="Double click to track"
+    className="truncate text-[13px] font-semibold text-slate-800 cursor-pointer select-none"
+  >
+    {awb}
+  </p>
+
+  {awb && awb !== "—" && (
+    <button
+      type="button"
+      onClick={async (event) => {
+        event.stopPropagation();
+
+        try {
+          await navigator.clipboard.writeText(String(awb));
+          toast.success("AWB copied");
+        } catch {
+          toast.error("Unable to copy AWB");
+        }
+      }}
+      title="Copy AWB"
+      className="shrink-0 p-0.5 text-slate-400 hover:text-slate-700 transition"
+    >
+      <Icon name="copy" size={14} />
+    </button>
+  )}
+</div>
 
                                 <p className="mt-0.5 text-[10px] text-slate-400">
                                   Pickup ID:{" "}
