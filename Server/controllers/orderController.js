@@ -907,7 +907,7 @@ const getAllOrdersController =
 
         const page = Math.max(
   1,
-  Number(req.query.page) || 1
+  Number(req.query.page) || 1 
 );
 
 const limit = Math.min(
