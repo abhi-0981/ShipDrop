@@ -418,6 +418,22 @@ const getAllOrders = (
 
       o.awb,
 
+(
+  SELECT pr.delhivery_request_id
+  FROM manifests m_pickup
+  LEFT JOIN pickup_requests pr
+    ON pr.id = m_pickup.pickup_request_id
+  WHERE m_pickup.order_id = o.id
+    AND m_pickup.user_id = o.user_id
+    AND UPPER(
+      COALESCE(m_pickup.status, '')
+    ) = 'CONFIRMED'
+  ORDER BY m_pickup.id DESC
+  LIMIT 1
+) AS pickup_id,
+
+o.consignee_name,
+
       o.consignee_name,
       o.mobile,
       o.alternate_mobile,
