@@ -857,7 +857,7 @@ if (
     // LINK CURRENT MANIFEST
     // ====================================================
 
-await query(
+    await query(
   `
     UPDATE manifests
     SET
@@ -865,7 +865,7 @@ await query(
     WHERE id = ?
   `,
   [
-    existingPickup.id,
+    existingPickup.delhivery_request_id,
     manifestId,
   ]
 );
@@ -1049,7 +1049,7 @@ await query(
     WHERE id = ?
   `,
   [
-    pickupRequestId,
+    delhiveryPickupId,
     manifestId,
   ]
 );

@@ -449,20 +449,6 @@ const getAllOrders = (
 
 m.shipping_charge AS shipping_charge,
 
-(
-  SELECT pr.delhivery_request_id
-  FROM manifests mf
-  LEFT JOIN pickup_requests pr
-    ON pr.id = mf.pickup_request_id
-  WHERE
-    mf.order_id = o.id
-    AND mf.user_id = o.user_id
-    AND UPPER(COALESCE(mf.status, '')) = 'CONFIRMED'
-    AND pr.delhivery_request_id IS NOT NULL
-  ORDER BY mf.id DESC
-  LIMIT 1
-) AS pickup_id,
-
       -- ==================================================
       -- ACTUAL SERVICE USED DURING MANIFEST
       -- This is required for AIR / ROAD filter.
