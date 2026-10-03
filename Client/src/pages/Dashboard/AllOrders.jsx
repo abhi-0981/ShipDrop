@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { toast } from "react-hot-toast";
 import api from "../../services/api";
 
@@ -83,7 +83,7 @@ const Icon = ({ name, size = 17, strokeWidth = 1.8 }) => {
     case "eye":
       return (
         <svg {...common}>
-          <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
+          <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6Z" />
           <circle cx="12" cy="12" r="2.5" />
         </svg>
       );
@@ -103,46 +103,40 @@ const Icon = ({ name, size = 17, strokeWidth = 1.8 }) => {
         </svg>
       );
 
+    case "truck":
+      return (
+        <svg {...common}>
+          <path d="M3 6h11v10H3z" />
+          <path d="M14 10h4l3 3v3h-7z" />
+          <circle cx="7" cy="18" r="2" />
+          <circle cx="18" cy="18" r="2" />
+        </svg>
+      );
+
     default:
       return null;
   }
 };
 
 // ======================================================
-// USER ID
+// USER ID & HELPERS
 // ======================================================
 
 const getUserId = () => {
   try {
     const storedUser = localStorage.getItem("user");
-
-    if (!storedUser) {
-      return null;
-    }
-
+    if (!storedUser) return null;
     const user = JSON.parse(storedUser);
-
     return user?.id || user?.user_id || user?.userId || null;
   } catch (error) {
     return null;
   }
 };
 
-// ======================================================
-// BASIC HELPERS
-// ======================================================
-
 const safeString = (value) => {
-  if (value === null || value === undefined) {
-    return "";
-  }
-
+  if (value === null || value === undefined) return "";
   return String(value);
 };
-
-// ======================================================
-// CUSTOMER
-// ======================================================
 
 const getCustomerName = (order) => {
   return (
@@ -164,10 +158,6 @@ const getMobile = (order) => {
   );
 };
 
-// ======================================================
-// ORDER / AWB
-// ======================================================
-
 const getAWB = (order) => {
   return order?.awb || order?.waybill || order?.awb_number || "—";
 };
@@ -175,10 +165,6 @@ const getAWB = (order) => {
 const getOrderId = (order) => {
   return order?.order_id || order?.id || "—";
 };
-
-// ======================================================
-// SHIPMENT
-// ======================================================
 
 const getShipmentName = (order) => {
   return (
@@ -258,13 +244,8 @@ const getAmount = (order) => {
       order?.shipping_charges ??
       0,
   );
-
   return Number.isFinite(amount) ? amount : 0;
 };
-
-// ======================================================
-// ROUTE
-// ======================================================
 
 const getPickupCity = (order) => {
   return (
@@ -299,10 +280,6 @@ const getDeliveryPincode = (order) => {
   return order?.pincode || order?.delivery_pincode || order?.to_pincode || "";
 };
 
-// ======================================================
-// WEIGHT
-// ======================================================
-
 const getWeight = (order) => {
   const directWeight = Number(
     order?.total_weight ?? order?.weight ?? order?.shipment_weight,
@@ -330,7 +307,6 @@ const getVolumetricWeight = (order) => {
       order?.volumetricWeight ??
       0,
   );
-
   return Number.isFinite(value) ? value : 0;
 };
 
@@ -348,10 +324,6 @@ const getPackageCount = (order) => {
   );
 };
 
-// ======================================================
-// DATE
-// ======================================================
-
 const getCreatedAt = (order) => {
   return (
     order?.created_at ||
@@ -363,16 +335,9 @@ const getCreatedAt = (order) => {
 };
 
 const formatDate = (value) => {
-  if (!value) {
-    return "—";
-  }
-
+  if (!value) return "—";
   const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return "—";
-  }
-
+  if (Number.isNaN(date.getTime())) return "—";
   return date.toLocaleDateString("en-IN", {
     day: "2-digit",
     month: "short",
@@ -381,25 +346,14 @@ const formatDate = (value) => {
 };
 
 const formatTime = (value) => {
-  if (!value) {
-    return "";
-  }
-
+  if (!value) return "";
   const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return "";
-  }
-
+  if (Number.isNaN(date.getTime())) return "";
   return date.toLocaleTimeString("en-IN", {
     hour: "2-digit",
     minute: "2-digit",
   });
 };
-
-// ======================================================
-// STATUS
-// ======================================================
 
 const getStatus = (order) => {
   return safeString(
@@ -418,24 +372,18 @@ const getStatusLabel = (status) => {
   switch (status) {
     case "PROCESSING":
       return "Processing";
-
     case "MANIFESTED":
       return "Manifested";
-
     case "IN TRANSIT":
     case "IN_TRANSIT":
       return "In Transit";
-
     case "DELIVERED":
       return "Delivered";
-
     case "CANCELLED":
     case "CANCELED":
       return "Cancelled";
-
     case "PENDING":
       return "Pending";
-
     default:
       return (
         status?.toLowerCase()?.replace(/\b\w/g, (char) => char.toUpperCase()) ||
@@ -444,10 +392,6 @@ const getStatusLabel = (status) => {
   }
 };
 
-// ======================================================
-// STATUS BADGE
-// ======================================================
-
 const StatusBadge = ({ status }) => {
   let className = "bg-slate-50 text-slate-600";
 
@@ -455,48 +399,38 @@ const StatusBadge = ({ status }) => {
     case "MANIFESTED":
       className = "bg-sky-50 text-sky-600";
       break;
-
     case "NOT PICKED":
       className = "bg-orange-50 text-orange-600";
       break;
-
     case "IN TRANSIT":
     case "IN_TRANSIT":
       className = "bg-violet-50 text-violet-600";
       break;
-
     case "OUT FOR DELIVERY":
     case "OFD":
       className = "bg-cyan-50 text-cyan-600";
       break;
-
     case "DELIVERED":
       className = "bg-emerald-50 text-emerald-600";
       break;
-
     case "RTO IN TRANSIT":
     case "RTO_IN_TRANSIT":
       className = "bg-amber-50 text-amber-600";
       break;
-
     case "RTO DELIVERED":
     case "RTO_DELIVERED":
       className = "bg-rose-50 text-rose-600";
       break;
-
     case "RETURNED":
       className = "bg-slate-100 text-slate-600";
       break;
-
     case "CANCELLED":
     case "CANCELED":
       className = "bg-red-50 text-red-600";
       break;
-
     case "PENDING":
       className = "bg-yellow-50 text-yellow-600";
       break;
-
     case "PROCESSING":
       className = "bg-indigo-50 text-indigo-600";
       break;
@@ -531,13 +465,32 @@ function AllOrders() {
   const [selectedIds, setSelectedIds] = useState([]);
   const [viewingOrder, setViewingOrder] = useState(null);
 
-  // ====================================================
-  // FETCH ALL ORDERS
-  // ====================================================
+  // Mobile Touch tracking reference
+  const lastTapRef = useRef({});
+
+  // Trigger global tracking event
+  const triggerTracking = (awb) => {
+    if (!awb || awb === "—") return;
+    window.dispatchEvent(
+      new CustomEvent("shipdrop:openTracking", {
+        detail: String(awb),
+      }),
+    );
+  };
+
+  const handleTouchTracking = (awb) => {
+    const now = Date.now();
+    const lastTap = lastTapRef.current[awb] || 0;
+    if (now - lastTap < 350) {
+      triggerTracking(awb);
+      lastTapRef.current[awb] = 0;
+    } else {
+      lastTapRef.current[awb] = now;
+    }
+  };
 
   const fetchAllOrders = async () => {
     const userId = getUserId();
-
     if (!userId) {
       setLoading(false);
       toast.error("User ID is required");
@@ -557,7 +510,6 @@ function AllOrders() {
       });
 
       const data = response?.data;
-
       setTotalPages(Number(data?.pagination?.totalPages) || 1);
       setTotalOrderCount(Number(data?.pagination?.totalOrders) || 0);
 
@@ -566,7 +518,6 @@ function AllOrders() {
       }
 
       const list = Array.isArray(data?.orders) ? data.orders : [];
-
       const uniqueOrders = Array.from(
         new Map(
           list.map((order) => {
@@ -614,7 +565,6 @@ function AllOrders() {
 
   const filteredOrders = nonProcessingOrders.filter((order) => {
     const query = search.trim().toLowerCase();
-
     const status = getStatus(order);
     const service = getServiceType(order);
     const payment = getPaymentType(order);
@@ -668,7 +618,6 @@ function AllOrders() {
 
   const handleSelect = (order) => {
     const id = getOrderKey(order);
-
     setSelectedIds((previous) => {
       if (previous.includes(id)) {
         return previous.filter((item) => item !== id);
@@ -683,7 +632,6 @@ function AllOrders() {
 
   const buildLabel = (order) => {
     const service = getServiceType(order);
-
     const address = [
       order?.address_line1,
       order?.address_line2,
@@ -717,168 +665,53 @@ function AllOrders() {
           "
         >
           <div>
-            <div
-              style="
-                font-size:20px;
-                font-weight:700;
-                color:${PRIMARY};
-              "
-            >
+            <div style="font-size:20px; font-weight:700; color:${PRIMARY};">
               ShipDrop
             </div>
-
-            <div
-              style="
-                font-size:11px;
-                color:#718096;
-                margin-top:4px;
-              "
-            >
+            <div style="font-size:11px; color:#718096; margin-top:4px;">
               Shipping Label
             </div>
           </div>
-
-          <div
-            style="
-              font-size:12px;
-              font-weight:700;
-            "
-          >
+          <div style="font-size:12px; font-weight:700;">
             AWB ${getAWB(order)}
           </div>
         </div>
 
-        <div
-          style="
-            font-size:10px;
-            color:#718096;
-            margin-bottom:5px;
-          "
-        >
+        <div style="font-size:10px; color:#718096; margin-bottom:5px;">
           CONSIGNEE
         </div>
-
-        <div
-          style="
-            font-size:16px;
-            font-weight:700;
-          "
-        >
+        <div style="font-size:16px; font-weight:700;">
           ${getCustomerName(order)}
         </div>
-
-        <div
-          style="
-            font-size:12px;
-            margin-top:5px;
-            margin-bottom:16px;
-          "
-        >
+        <div style="font-size:12px; margin-top:5px; margin-bottom:16px;">
           ${getMobile(order)}
         </div>
 
-        <div
-          style="
-            background:#f7f9fc;
-            border-radius:8px;
-            padding:12px;
-            margin-bottom:16px;
-          "
-        >
-          <div
-            style="
-              font-size:10px;
-              color:#718096;
-              margin-bottom:5px;
-            "
-          >
+        <div style="background:#f7f9fc; border-radius:8px; padding:12px; margin-bottom:16px;">
+          <div style="font-size:10px; color:#718096; margin-bottom:5px;">
             DELIVERY ADDRESS
           </div>
-
-          <div
-            style="
-              font-size:12px;
-              line-height:1.5;
-            "
-          >
-            ${address || "—"}
-            <br />
-            ${getDeliveryPincode(order)}
+          <div style="font-size:12px; line-height:1.5;">
+            ${address || "—"}<br />${getDeliveryPincode(order)}
           </div>
         </div>
 
-        <div
-          style="
-            display:grid;
-            grid-template-columns:1fr 1fr;
-            gap:10px;
-          "
-        >
-          <div
-            style="
-              border:1px solid #e4eaf2;
-              border-radius:8px;
-              padding:10px;
-            "
-          >
-            <div
-              style="
-                font-size:10px;
-                color:#718096;
-              "
-            >
-              SERVICE
-            </div>
-
-            <div
-              style="
-                font-size:12px;
-                font-weight:700;
-                margin-top:4px;
-              "
-            >
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+          <div style="border:1px solid #e4eaf2; border-radius:8px; padding:10px;">
+            <div style="font-size:10px; color:#718096;">SERVICE</div>
+            <div style="font-size:12px; font-weight:700; margin-top:4px;">
               ${service === "AIR" ? "By Air" : "By Road"}
             </div>
           </div>
-
-          <div
-            style="
-              border:1px solid #e4eaf2;
-              border-radius:8px;
-              padding:10px;
-            "
-          >
-            <div
-              style="
-                font-size:10px;
-                color:#718096;
-              "
-            >
-              WEIGHT
-            </div>
-
-            <div
-              style="
-                font-size:12px;
-                font-weight:700;
-                margin-top:4px;
-              "
-            >
+          <div style="border:1px solid #e4eaf2; border-radius:8px; padding:10px;">
+            <div style="font-size:10px; color:#718096;">WEIGHT</div>
+            <div style="font-size:12px; font-weight:700; margin-top:4px;">
               ${getWeight(order).toFixed(2)} Kg
             </div>
           </div>
         </div>
 
-        <div
-          style="
-            margin-top:18px;
-            padding-top:12px;
-            border-top:1px dashed #cbd5e1;
-            font-size:10px;
-            color:#718096;
-            text-align:center;
-          "
-        >
+        <div style="margin-top:18px; padding-top:12px; border-top:1px dashed #cbd5e1; font-size:10px; color:#718096; text-align:center;">
           ShipDrop • Handle with care
         </div>
       </div>
@@ -892,32 +725,23 @@ function AllOrders() {
     }
 
     const printWindow = window.open("", "_blank", "width=900,height=700");
-
     if (!printWindow) {
       toast.error("Please allow pop-ups to print labels");
       return;
     }
 
     const html = selectedOrders.map(buildLabel).join("");
-
     printWindow.document.write(`
       <!DOCTYPE html>
       <html>
-        <head>
-          <title>ShipDrop Shipping Labels</title>
-        </head>
-        <body style="margin:30px; background:#fff;">
-          ${html}
-        </body>
+        <head><title>ShipDrop Shipping Labels</title></head>
+        <body style="margin:30px; background:#fff;">${html}</body>
       </html>
     `);
 
     printWindow.document.close();
     printWindow.focus();
-
-    setTimeout(() => {
-      printWindow.print();
-    }, 300);
+    setTimeout(() => printWindow.print(), 300);
   };
 
   const handleExport = () => {
@@ -972,22 +796,15 @@ function AllOrders() {
       ...rows.map((row) => row.map(escapeCsv).join(",")),
     ].join("\n");
 
-    const blob = new Blob([csv], {
-      type: "text/csv;charset=utf-8;",
-    });
-
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
 
     link.href = url;
-    link.download = `shipdrop-all-orders-${new Date()
-      .toISOString()
-      .slice(0, 10)}.csv`;
-
+    link.download = `shipdrop-all-orders-${new Date().toISOString().slice(0, 10)}.csv`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-
     URL.revokeObjectURL(url);
 
     toast.success(
@@ -1012,13 +829,11 @@ function AllOrders() {
       });
 
       const result = response?.data;
-
       if (!result?.success || !result?.order) {
         throw new Error(result?.message || "Unable to load order details");
       }
 
       const source = result.order;
-
       const warehouseId = Number(
         source?.warehouse_id ||
           source?.warehouse?.id ||
@@ -1086,7 +901,6 @@ function AllOrders() {
       toast.success(
         `Order duplicated successfully. New order #${createResult.order_id} is in Processing.`,
       );
-
       await fetchAllOrders();
     } catch (error) {
       toast.error(
@@ -1275,7 +1089,7 @@ function AllOrders() {
         </div>
 
         {/* ==================================================
-            1. MOBILE VIEW: APP-STYLE CARD TILES
+            1. MOBILE VIEW: APP-STYLE CARD TILES (FIXED TRACKING)
         ================================================== */}
         <div className="space-y-3 sm:hidden">
           {filteredOrders.length === 0 ? (
@@ -1351,24 +1165,45 @@ function AllOrders() {
                       </span>
                     </div>
 
-                    <div className="flex items-center justify-between font-mono text-[11px] text-slate-600 bg-slate-50/70 px-2 py-1 rounded-lg">
-                      <span className="truncate">AWB: {awb}</span>
+                    {/* AWB TOUCH/CLICK ACTION BAR */}
+                    <div className="flex items-center justify-between font-mono text-[11px] text-slate-600 bg-slate-50/70 px-2 py-1.5 rounded-lg border border-slate-100">
+                      <span
+                        onTouchEnd={() => handleTouchTracking(awb)}
+                        onDoubleClick={() => triggerTracking(awb)}
+                        className="truncate font-semibold select-none cursor-pointer"
+                        title="Double-tap or click Track to track order"
+                      >
+                        AWB: {awb}
+                      </span>
+
                       {awb && awb !== "—" && (
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            try {
-                              await navigator.clipboard.writeText(String(awb));
-                              toast.success("AWB copied");
-                            } catch {
-                              toast.error("Unable to copy AWB");
-                            }
-                          }}
-                          className="text-[#008dd2] font-semibold flex items-center gap-1"
-                        >
-                          <Icon name="copy" size={12} />
-                          Copy
-                        </button>
+                        <div className="flex items-center gap-2 shrink-0">
+                          {/* 1-TAP TRACK BUTTON FOR MOBILE TOUCH */}
+                          <button
+                            type="button"
+                            onClick={() => triggerTracking(awb)}
+                            className="flex items-center gap-1 rounded-md bg-[#008dd2]/10 px-2 py-0.5 text-[10px] font-bold text-[#008dd2] active:scale-95 transition"
+                          >
+                            <Icon name="truck" size={11} />
+                            Track
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              try {
+                                await navigator.clipboard.writeText(String(awb));
+                                toast.success("AWB copied");
+                              } catch {
+                                toast.error("Unable to copy AWB");
+                              }
+                            }}
+                            className="text-slate-400 hover:text-slate-700 flex items-center p-0.5"
+                            title="Copy AWB"
+                          >
+                            <Icon name="copy" size={12} />
+                          </button>
+                        </div>
                       )}
                     </div>
 
@@ -1582,14 +1417,7 @@ function AllOrders() {
                               <>
                                 <div className="flex items-center gap-1.5 min-w-0">
                                   <p
-                                    onDoubleClick={() => {
-                                      if (!awb || awb === "—") return;
-                                      window.dispatchEvent(
-                                        new CustomEvent("shipdrop:openTracking", {
-                                          detail: String(awb),
-                                        }),
-                                      );
-                                    }}
+                                    onDoubleClick={() => triggerTracking(awb)}
                                     title="Double click to track"
                                     className="truncate text-[13px] font-semibold text-slate-800 cursor-pointer select-none"
                                   >
