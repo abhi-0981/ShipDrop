@@ -11,6 +11,10 @@ const {
 } = require("../controllers/orderAdminController");
 
 const {
+  getAdminDashboard,
+} = require("../controllers/adminDashboardController");
+
+const {
   getTicketsController,
   getTicketController,
   updateTicketStatusController,
@@ -42,6 +46,11 @@ router.patch(
 router.post(
   "/tickets/:id/reply",
   replyToTicketController
+);
+
+router.get(
+  "/dashboard",
+  getAdminDashboard
 );
 
 /* ORDERS */
