@@ -104,7 +104,7 @@ function StatusBadge({ status }) {
 
   return (
     <span
-      className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold ${config.className}`}
+      className={`inline-flex items-center rounded-full border px-2 py-0.5 sm:px-2.5 sm:py-1 text-[10px] sm:text-[11px] font-semibold ${config.className}`}
     >
       {config.label}
     </span>
@@ -123,30 +123,34 @@ function StatCard({
     <button
       type="button"
       onClick={onClick}
-      className="group w-full rounded-2xl border border-slate-200/80 bg-white p-4.5 sm:p-5 text-left shadow-[0_4px_20px_rgba(15,23,42,0.04)] transition-all duration-200 hover:-translate-y-[2px] hover:border-[#008dd2]/20 hover:shadow-[0_10px_30px_rgba(15,23,42,0.07)] active:scale-[0.99]"
+      className="group w-full rounded-2xl border border-slate-200/80 bg-white p-3.5 sm:p-5 text-left shadow-[0_4px_20px_rgba(15,23,42,0.04)] transition-all duration-200 hover:-translate-y-[2px] hover:border-[#008dd2]/20 hover:shadow-[0_10px_30px_rgba(15,23,42,0.07)] active:scale-[0.99]"
     >
-      <div className="flex items-start justify-between gap-2">
+      <div className="flex items-start justify-between gap-1.5">
         <div className="min-w-0">
-          <p className="text-[12px] font-medium text-slate-500">{title}</p>
+          <p className="text-[11px] sm:text-[12px] font-medium text-slate-500 truncate">
+            {title}
+          </p>
 
-          <p className="mt-1.5 sm:mt-2 text-[22px] sm:text-[25px] font-bold tracking-tight text-slate-900 truncate">
+          <p className="mt-1 sm:mt-2 text-[19px] sm:text-[25px] font-bold tracking-tight text-slate-900 truncate">
             {value}
           </p>
 
-          <p className="mt-1 text-[11px] text-slate-400 truncate">{subtitle}</p>
+          <p className="mt-0.5 sm:mt-1 text-[10px] sm:text-[11px] text-slate-400 truncate">
+            {subtitle}
+          </p>
         </div>
 
         <div
-          className={`flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-xl ${iconClass}`}
+          className={`flex h-8 w-8 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-lg sm:rounded-xl ${iconClass}`}
         >
-          <Icon size={20} />
+          <Icon className="text-[16px] sm:text-[21px]" />
         </div>
       </div>
 
-      <div className="mt-3.5 sm:mt-4 flex items-center gap-1 text-[11px] font-semibold text-slate-400 transition-colors group-hover:text-[#008dd2]">
+      <div className="mt-2.5 sm:mt-4 flex items-center gap-1 text-[10px] sm:text-[11px] font-semibold text-slate-400 transition-colors group-hover:text-[#008dd2]">
         View details
         <HiOutlineArrowRight
-          size={13}
+          size={12}
           className="transition-transform group-hover:translate-x-1"
         />
       </div>
@@ -342,11 +346,12 @@ function Dashboard() {
         <div className="mx-auto max-w-[1500px] animate-pulse space-y-4 sm:space-y-5">
           <div className="h-24 sm:h-28 rounded-2xl bg-white" />
 
-          <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 xl:grid-cols-4">
+          {/* SKELETON: 2 COLUMNS ON MOBILE */}
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
             {[1, 2, 3, 4].map((item) => (
               <div
                 key={item}
-                className="h-32 sm:h-36 rounded-2xl bg-white"
+                className="h-28 sm:h-36 rounded-2xl bg-white"
               />
             ))}
           </div>
@@ -426,11 +431,10 @@ function Dashboard() {
         )}
 
         {/* ================================================= */}
-        {/* KPI CARDS (ROW 1) */}
+        {/* KPI CARDS (ROW 1: MOBILE 2 PER ROW) */}
         {/* ================================================= */}
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-4">
-
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-4 xl:grid-cols-4">
           <StatCard
             title="Total Orders"
             value={formatNumber(totalOrders)}
@@ -443,7 +447,7 @@ function Dashboard() {
           <StatCard
             title="Total Users"
             value={formatNumber(data.totalUsers)}
-            subtitle="Registered customers"
+            subtitle="Registered accounts"
             icon={HiOutlineUsers}
             iconClass="bg-violet-50 text-violet-600"
             onClick={openUsers}
@@ -452,7 +456,7 @@ function Dashboard() {
           <StatCard
             title="In Transit"
             value={formatNumber(inTransit)}
-            subtitle="Shipments on the move"
+            subtitle="On the move"
             icon={HiOutlineTruck}
             iconClass="bg-blue-50 text-blue-600"
             onClick={openOrders}
@@ -461,7 +465,7 @@ function Dashboard() {
           <StatCard
             title="Delivered"
             value={`${formatNumber(delivered)}`}
-            subtitle={`${deliveryPercentage}% of total orders`}
+            subtitle={`${deliveryPercentage}% of total`}
             icon={HiOutlineCheckCircle}
             iconClass="bg-emerald-50 text-emerald-600"
             onClick={openOrders}
@@ -469,15 +473,14 @@ function Dashboard() {
         </div>
 
         {/* ================================================= */}
-        {/* KPI CARDS (ROW 2) */}
+        {/* KPI CARDS (ROW 2: MOBILE 2 PER ROW) */}
         {/* ================================================= */}
 
-        <div className="mt-3 sm:mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-4">
-
+        <div className="mt-2.5 sm:mt-4 grid grid-cols-2 gap-2.5 sm:gap-4 xl:grid-cols-4">
           <StatCard
             title="Processing"
             value={formatNumber(processing)}
-            subtitle="Waiting for processing"
+            subtitle="Pending processing"
             icon={HiOutlineClock}
             iconClass="bg-amber-50 text-amber-600"
             onClick={openOrders}
@@ -486,7 +489,7 @@ function Dashboard() {
           <StatCard
             title="Manifested"
             value={formatNumber(manifested)}
-            subtitle="Manifested shipments"
+            subtitle="Manifested orders"
             icon={HiOutlineClipboardList}
             iconClass="bg-purple-50 text-purple-600"
             onClick={openOrders}
@@ -504,7 +507,7 @@ function Dashboard() {
           <StatCard
             title="Total Charges"
             value={formatMoney(data.totalCharges)}
-            subtitle="Shipping charges"
+            subtitle="Shipping revenue"
             icon={HiOutlineCurrencyRupee}
             iconClass="bg-teal-50 text-teal-600"
             onClick={openOrders}
@@ -619,7 +622,7 @@ function Dashboard() {
         </div>
 
         {/* ================================================= */}
-        {/* RECENT ORDERS (RESPONSIVE CARDS + TABLE) */}
+        {/* RECENT ORDERS */}
         {/* ================================================= */}
 
         <div className="mt-4 sm:mt-5 rounded-2xl border border-slate-200/80 bg-white shadow-[0_4px_20px_rgba(15,23,42,0.04)] overflow-hidden">
