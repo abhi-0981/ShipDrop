@@ -6,16 +6,15 @@ import {
   HiOutlineTruck,
   HiOutlineCurrencyRupee,
   HiOutlineSearch,
-  HiOutlineFilter,
   HiOutlineDownload,
   HiOutlineChevronDown,
-  HiOutlineInformationCircle,
   HiOutlineArrowUp,
   HiOutlineArrowRight,
-  HiOutlineCheckCircle,
+  HiOutlineDotsHorizontal,
 } from "react-icons/hi";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5001/api";
+const API_BASE =
+  import.meta.env.VITE_API_URL || "http://localhost:5001/api";
 
 const formatNumber = (value) =>
   new Intl.NumberFormat("en-IN").format(Number(value || 0));
@@ -47,79 +46,92 @@ const normalizeStatus = (status) =>
 const statusConfig = {
   PROCESSING: {
     label: "Processing",
-    className: "bg-amber-50 text-amber-700 border-amber-200/80",
+    className: "bg-amber-50/80 text-amber-700 border-amber-200/60",
+    dot: "bg-amber-500",
   },
   MANIFESTED: {
     label: "Manifested",
-    className: "bg-purple-50 text-purple-700 border-purple-200/80",
+    className: "bg-purple-50/80 text-purple-700 border-purple-200/60",
+    dot: "bg-purple-500",
   },
   "NOT PICKED": {
     label: "Not Picked",
-    className: "bg-rose-50 text-rose-600 border-rose-200/80",
+    className: "bg-rose-50/80 text-rose-600 border-rose-200/60",
+    dot: "bg-rose-500",
   },
   "IN TRANSIT": {
     label: "In Transit",
-    className: "bg-blue-50 text-blue-700 border-blue-200/80",
+    className: "bg-sky-50/80 text-sky-700 border-sky-200/60",
+    dot: "bg-sky-500",
   },
   "OUT FOR DELIVERY": {
     label: "Out for Delivery",
-    className: "bg-indigo-50 text-indigo-700 border-indigo-200/80",
+    className: "bg-indigo-50/80 text-indigo-700 border-indigo-200/60",
+    dot: "bg-indigo-500",
   },
   DELIVERED: {
     label: "Delivered",
-    className: "bg-emerald-50 text-emerald-700 border-emerald-200/80",
+    className: "bg-emerald-50/80 text-emerald-700 border-emerald-200/60",
+    dot: "bg-emerald-500",
   },
   "RTO IN TRANSIT": {
     label: "RTO In Transit",
-    className: "bg-orange-50 text-orange-700 border-orange-200/80",
+    className: "bg-orange-50/80 text-orange-700 border-orange-200/60",
+    dot: "bg-orange-500",
   },
   "RTO DELIVERED": {
     label: "RTO Delivered",
-    className: "bg-orange-50 text-orange-700 border-orange-200/80",
+    className: "bg-orange-50/80 text-orange-700 border-orange-200/60",
+    dot: "bg-orange-500",
   },
   RETURNED: {
     label: "Returned",
-    className: "bg-rose-50 text-rose-700 border-rose-200/80",
+    className: "bg-rose-50/80 text-rose-700 border-rose-200/60",
+    dot: "bg-rose-500",
   },
   CANCELLED: {
     label: "Cancelled",
-    className: "bg-slate-100 text-slate-600 border-slate-200",
+    className: "bg-slate-100 text-slate-600 border-slate-200/60",
+    dot: "bg-slate-400",
   },
   PENDING: {
     label: "Pending",
-    className: "bg-yellow-50 text-yellow-700 border-yellow-200/80",
+    className: "bg-yellow-50/80 text-yellow-700 border-yellow-200/60",
+    dot: "bg-yellow-500",
   },
 };
 
 function StatusBadge({ status }) {
   const normalized = normalizeStatus(status);
-  const config = statusConfig[normalized] || {
-    label: status || "Unknown",
-    className: "bg-slate-50 text-slate-600 border-slate-200",
-  };
+  const config =
+    statusConfig[normalized] || {
+      label: status || "Unknown",
+      className: "bg-slate-50 text-slate-600 border-slate-200",
+      dot: "bg-slate-400",
+    };
 
   return (
     <span
-      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10.5px] font-bold ${config.className}`}
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[10.5px] font-semibold ${config.className}`}
     >
+      <span className={`h-1.5 w-1.5 rounded-full ${config.dot}`} />
       {config.label}
     </span>
   );
 }
 
 // -------------------------------------------------------------
-// RADIAL SPEEDOMETER GAUGE COMPONENT (Matches Reference Image)
+// RADIAL SPEEDOMETER SEGMENTED GAUGE (Enterprise UI Polish)
 // -------------------------------------------------------------
 function SpeedometerGauge({ percentage = 70.8 }) {
-  const totalBars = 18;
+  const totalBars = 20;
   const activeBars = Math.round((percentage / 100) * totalBars);
 
   return (
-    <div className="relative flex flex-col items-center justify-center py-2">
-      <div className="relative h-28 w-56 flex items-end justify-center overflow-hidden">
-        {/* Semi-circular Segmented Dashes */}
+    <div className="relative flex flex-col items-center justify-center py-1">
+      <div className="relative h-32 w-64 flex items-end justify-center overflow-hidden">
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="relative h-44 w-44">
+          <div className="relative h-48 w-48">
             {Array.from({ length: totalBars }).map((_, index) => {
               const rotation = -135 + index * (270 / (totalBars - 1));
               const isActive = index < activeBars;
@@ -132,8 +144,8 @@ function SpeedometerGauge({ percentage = 70.8 }) {
                   <div
                     className={`h-4.5 w-1.5 rounded-full transition-all duration-300 ${
                       isActive
-                        ? "bg-[#008dd2] shadow-xs"
-                        : "bg-slate-100 dark:bg-slate-200"
+                        ? "bg-[#008dd2] shadow-[0_0_8px_rgba(0,141,210,0.3)]"
+                        : "bg-slate-200/80"
                     }`}
                   />
                 </div>
@@ -142,12 +154,11 @@ function SpeedometerGauge({ percentage = 70.8 }) {
           </div>
         </div>
 
-        {/* Center Percentage Display */}
-        <div className="z-10 pb-1 text-center">
+        <div className="z-10 pb-2 text-center">
           <span className="text-3xl font-black tracking-tight text-slate-900">
             {percentage}%
           </span>
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+          <p className="text-[10px] font-bold tracking-widest text-slate-400 uppercase">
             Delivery Rate
           </p>
         </div>
@@ -224,7 +235,7 @@ function Dashboard() {
   const delivered = Number(counts.Delivered ?? counts.delivered ?? 0);
   const inTransit = Number(counts["In Transit"] ?? counts.in_transit ?? 0);
   const outForDelivery = Number(
-    counts["Out For Delivery"] ?? counts.out_for_delivery ?? 0,
+    counts["Out For Delivery"] ?? counts.out_for_delivery ?? 0
   );
   const activeShipments = inTransit + outForDelivery;
 
@@ -233,22 +244,15 @@ function Dashboard() {
     return Math.round((delivered / totalOrders) * 100);
   }, [delivered, totalOrders]);
 
-  // Filtered orders table
   const filteredOrders = useMemo(() => {
     return data.orders.filter((order) => {
       const q = searchTable.trim().toLowerCase();
       const status = normalizeStatus(order.status);
       const matchesSearch =
         !q ||
-        String(order.order_id || order.id || "")
-          .toLowerCase()
-          .includes(q) ||
-        String(order.awb || "")
-          .toLowerCase()
-          .includes(q) ||
-        String(order.customer_name || order.customer || "")
-          .toLowerCase()
-          .includes(q);
+        String(order.order_id || order.id || "").toLowerCase().includes(q) ||
+        String(order.awb || "").toLowerCase().includes(q) ||
+        String(order.customer_name || order.customer || "").toLowerCase().includes(q);
 
       const matchesStatus =
         statusTableFilter === "ALL" || status === statusTableFilter;
@@ -257,7 +261,6 @@ function Dashboard() {
     });
   }, [data.orders, searchTable, statusTableFilter]);
 
-  // Current formatted date string matching reference UI
   const currentDateString = useMemo(() => {
     const d = new Date();
     return d.toLocaleDateString("en-IN", {
@@ -268,7 +271,7 @@ function Dashboard() {
     });
   }, []);
 
-  // Mock bar heights for the 12-month visualizer
+  // 12-Month Bar representation matching screenshot
   const months = [
     { label: "Jan", height: "42%" },
     { label: "Feb", height: "55%" },
@@ -293,15 +296,15 @@ function Dashboard() {
     return (
       <div className="min-h-screen bg-[#f8fafc] p-4 sm:p-6 lg:p-8">
         <div className="mx-auto max-w-[1500px] animate-pulse space-y-6">
-          <div className="h-20 rounded-2xl bg-white shadow-xs" />
+          <div className="h-16 rounded-2xl bg-white shadow-2xs" />
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-32 rounded-2xl bg-white shadow-xs" />
+              <div key={i} className="h-32 rounded-2xl bg-white shadow-2xs" />
             ))}
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-            <div className="h-80 rounded-2xl bg-white lg:col-span-2 shadow-xs" />
-            <div className="h-80 rounded-2xl bg-white shadow-xs" />
+            <div className="h-80 rounded-2xl bg-white lg:col-span-2 shadow-2xs" />
+            <div className="h-80 rounded-2xl bg-white shadow-2xs" />
           </div>
         </div>
       </div>
@@ -309,12 +312,13 @@ function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-slate-800 p-3 sm:p-6 lg:p-7 pb-24 lg:pb-10">
+    <div className="min-h-screen bg-[#f8fafc] text-slate-800 p-3 sm:p-6 lg:p-7 pb-24 lg:pb-10 font-sans">
       <div className="mx-auto max-w-[1500px] space-y-5 sm:space-y-6">
+
         {/* ========================================================= */}
-        {/* 1. TOP HEADER & GREETINGS (Matches Screenshot Header) */}
+        {/* 1. TOP HEADER & WORKSPACE GREETING */}
         {/* ========================================================= */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-transparent pt-1">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900">
               Welcome back, Admin! 👋
@@ -330,7 +334,7 @@ function Dashboard() {
               <select
                 value={period}
                 onChange={(e) => setPeriod(e.target.value)}
-                className="h-9.5 appearance-none rounded-xl border border-slate-200/90 bg-white pl-3.5 pr-8 text-xs font-bold text-slate-700 shadow-2xs outline-none transition hover:bg-slate-50 focus:border-[#008dd2]"
+                className="h-10 appearance-none rounded-xl border border-slate-200/90 bg-white pl-3.5 pr-8 text-xs font-bold text-slate-700 shadow-2xs outline-none transition hover:bg-slate-50 focus:border-[#008dd2]"
               >
                 <option value="This Month">This Month</option>
                 <option value="Last 30 Days">Last 30 Days</option>
@@ -347,8 +351,8 @@ function Dashboard() {
               type="button"
               onClick={refreshDashboard}
               disabled={refreshing}
-              className="flex h-9.5 w-9.5 items-center justify-center rounded-xl border border-slate-200/90 bg-white text-slate-600 shadow-2xs transition hover:bg-slate-50 active:scale-95 disabled:opacity-50"
-              title="Refresh"
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200/90 bg-white text-slate-600 shadow-2xs transition hover:bg-slate-50 active:scale-95 disabled:opacity-50"
+              title="Refresh Dashboard"
             >
               <HiOutlineRefresh
                 size={16}
@@ -360,7 +364,7 @@ function Dashboard() {
             <button
               type="button"
               onClick={() => (window.location.href = "/orders")}
-              className="flex h-9.5 items-center gap-1.5 rounded-xl border border-slate-200/90 bg-white px-3.5 text-xs font-bold text-slate-700 shadow-2xs transition hover:bg-slate-50 active:scale-95"
+              className="flex h-10 items-center gap-1.5 rounded-xl border border-slate-200/90 bg-white px-3.5 text-xs font-bold text-slate-700 shadow-2xs transition hover:bg-slate-50 active:scale-95"
             >
               <HiOutlineDownload size={15} className="text-slate-500" />
               <span>Export</span>
@@ -379,28 +383,24 @@ function Dashboard() {
         )}
 
         {/* ========================================================= */}
-        {/* 2. TOP 4 METRIC CARDS (Exact match to top row of screenshot) */}
+        {/* 2. TOP METRIC SUMMARY CARDS */}
         {/* ========================================================= */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4.5">
-          {/* CARD 1: Total Orders */}
+          {/* Card 1: Total Orders */}
           <div
             onClick={() => (window.location.href = "/orders")}
-            className="group cursor-pointer rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-xs transition hover:border-[#008dd2]/30 hover:shadow-md"
+            className="group cursor-pointer rounded-2xl border border-slate-200/80 bg-white p-4.5 shadow-2xs transition duration-200 hover:border-[#008dd2]/40 hover:shadow-md"
           >
             <div className="flex items-center justify-between">
-              <div className="flex h-9.5 w-9.5 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-blue-50 text-[#008dd2]">
-                <HiOutlineClipboardList size={19} />
+              <span className="text-[11.5px] font-bold text-slate-500">
+                Total Orders
+              </span>
+              <div className="flex h-8.5 w-8.5 items-center justify-center rounded-xl bg-blue-50 text-[#008dd2]">
+                <HiOutlineClipboardList size={18} />
               </div>
-              <HiOutlineInformationCircle
-                size={16}
-                className="text-slate-300 group-hover:text-slate-400"
-              />
             </div>
 
-            <p className="text-[11px] sm:text-xs font-bold text-slate-500 mt-3">
-              Total Orders
-            </p>
-            <p className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 mt-0.5">
+            <p className="text-2xl sm:text-[28px] font-black tracking-tight text-slate-900 mt-2">
               {formatNumber(totalOrders)}
             </p>
 
@@ -413,25 +413,21 @@ function Dashboard() {
             </div>
           </div>
 
-          {/* CARD 2: Total Customers */}
+          {/* Card 2: Total Customers */}
           <div
             onClick={() => (window.location.href = "/users")}
-            className="group cursor-pointer rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-xs transition hover:border-[#008dd2]/30 hover:shadow-md"
+            className="group cursor-pointer rounded-2xl border border-slate-200/80 bg-white p-4.5 shadow-2xs transition duration-200 hover:border-[#008dd2]/40 hover:shadow-md"
           >
             <div className="flex items-center justify-between">
-              <div className="flex h-9.5 w-9.5 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-purple-50 text-purple-600">
-                <HiOutlineUsers size={19} />
+              <span className="text-[11.5px] font-bold text-slate-500">
+                Total Customers
+              </span>
+              <div className="flex h-8.5 w-8.5 items-center justify-center rounded-xl bg-purple-50 text-purple-600">
+                <HiOutlineUsers size={18} />
               </div>
-              <HiOutlineInformationCircle
-                size={16}
-                className="text-slate-300 group-hover:text-slate-400"
-              />
             </div>
 
-            <p className="text-[11px] sm:text-xs font-bold text-slate-500 mt-3">
-              Total Customers
-            </p>
-            <p className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 mt-0.5">
+            <p className="text-2xl sm:text-[28px] font-black tracking-tight text-slate-900 mt-2">
               {formatNumber(data.totalUsers)}
             </p>
 
@@ -444,25 +440,21 @@ function Dashboard() {
             </div>
           </div>
 
-          {/* CARD 3: Total Revenue */}
+          {/* Card 3: Total Revenue */}
           <div
             onClick={() => (window.location.href = "/orders")}
-            className="group cursor-pointer rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-xs transition hover:border-[#008dd2]/30 hover:shadow-md"
+            className="group cursor-pointer rounded-2xl border border-slate-200/80 bg-white p-4.5 shadow-2xs transition duration-200 hover:border-[#008dd2]/40 hover:shadow-md"
           >
             <div className="flex items-center justify-between">
-              <div className="flex h-9.5 w-9.5 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
-                <HiOutlineCurrencyRupee size={21} />
+              <span className="text-[11.5px] font-bold text-slate-500">
+                Total Revenue
+              </span>
+              <div className="flex h-8.5 w-8.5 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+                <HiOutlineCurrencyRupee size={20} />
               </div>
-              <HiOutlineInformationCircle
-                size={16}
-                className="text-slate-300 group-hover:text-slate-400"
-              />
             </div>
 
-            <p className="text-[11px] sm:text-xs font-bold text-slate-500 mt-3">
-              Total Revenue
-            </p>
-            <p className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 mt-0.5">
+            <p className="text-2xl sm:text-[28px] font-black tracking-tight text-slate-900 mt-2 truncate">
               {formatMoney(data.totalCharges)}
             </p>
 
@@ -475,25 +467,21 @@ function Dashboard() {
             </div>
           </div>
 
-          {/* CARD 4: Active Shipments (In Transit) */}
+          {/* Card 4: Active Shipments */}
           <div
             onClick={() => (window.location.href = "/orders")}
-            className="group cursor-pointer rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-xs transition hover:border-[#008dd2]/30 hover:shadow-md"
+            className="group cursor-pointer rounded-2xl border border-slate-200/80 bg-white p-4.5 shadow-2xs transition duration-200 hover:border-[#008dd2]/40 hover:shadow-md"
           >
             <div className="flex items-center justify-between">
-              <div className="flex h-9.5 w-9.5 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
-                <HiOutlineTruck size={20} />
+              <span className="text-[11.5px] font-bold text-slate-500">
+                Active Shipments
+              </span>
+              <div className="flex h-8.5 w-8.5 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
+                <HiOutlineTruck size={19} />
               </div>
-              <HiOutlineInformationCircle
-                size={16}
-                className="text-slate-300 group-hover:text-slate-400"
-              />
             </div>
 
-            <p className="text-[11px] sm:text-xs font-bold text-slate-500 mt-3">
-              Active Shipments
-            </p>
-            <p className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 mt-0.5">
+            <p className="text-2xl sm:text-[28px] font-black tracking-tight text-slate-900 mt-2">
               {formatNumber(activeShipments)}
             </p>
 
@@ -502,17 +490,18 @@ function Dashboard() {
                 <HiOutlineArrowUp size={11} className="mr-0.5" />
                 +3.4%
               </span>
-              <span className="text-slate-400 truncate">On delivery track</span>
+              <span className="text-slate-400 truncate">In transit loop</span>
             </div>
           </div>
         </div>
 
         {/* ========================================================= */}
-        {/* 3. MIDDLE SECTION: BAR CHART INSIGHTS + SPEEDOMETER GAUGE */}
+        {/* 3. CHARTS GRID (Columns + Speedometer Gauge) */}
         {/* ========================================================= */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4.5">
-          {/* INSIGHTS COLUMN GRAPH (2 cols on lg) */}
-          <div className="lg:col-span-2 rounded-2xl border border-slate-200/80 bg-white p-4.5 sm:p-6 shadow-xs flex flex-col justify-between">
+
+          {/* REVENUE INSIGHTS COLUMN GRAPH */}
+          <div className="lg:col-span-2 rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-2xs flex flex-col justify-between">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <p className="text-xs sm:text-sm font-bold text-slate-800">
@@ -522,51 +511,49 @@ function Dashboard() {
                   <span className="text-2xl sm:text-3xl font-black text-slate-900">
                     {formatMoney(data.totalCharges)}
                   </span>
-                  <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-600">
+                  <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10.5px] font-bold text-emerald-600">
                     +4.8%
                   </span>
                 </div>
               </div>
 
               {/* View Toggle Pill */}
-              <div className="flex items-center gap-2">
-                <div className="flex rounded-xl bg-slate-100 p-1 text-[11px] font-bold">
-                  <button
-                    type="button"
-                    onClick={() => setInsightsView("Monthly")}
-                    className={`rounded-lg px-3 py-1 transition ${
-                      insightsView === "Monthly"
-                        ? "bg-white text-slate-900 shadow-xs"
-                        : "text-slate-500 hover:text-slate-800"
-                    }`}
-                  >
-                    Monthly
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setInsightsView("Yearly")}
-                    className={`rounded-lg px-3 py-1 transition ${
-                      insightsView === "Yearly"
-                        ? "bg-slate-900 text-white shadow-xs"
-                        : "text-slate-500 hover:text-slate-800"
-                    }`}
-                  >
-                    Yearly
-                  </button>
-                </div>
+              <div className="flex rounded-xl bg-slate-100 p-1 text-[11px] font-bold self-start sm:self-auto">
+                <button
+                  type="button"
+                  onClick={() => setInsightsView("Monthly")}
+                  className={`rounded-lg px-3 py-1 transition ${
+                    insightsView === "Monthly"
+                      ? "bg-white text-slate-900 shadow-2xs"
+                      : "text-slate-500 hover:text-slate-800"
+                  }`}
+                >
+                  Monthly
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setInsightsView("Yearly")}
+                  className={`rounded-lg px-3 py-1 transition ${
+                    insightsView === "Yearly"
+                      ? "bg-slate-900 text-white shadow-2xs"
+                      : "text-slate-500 hover:text-slate-800"
+                  }`}
+                >
+                  Yearly
+                </button>
               </div>
             </div>
 
-            {/* Custom Bar Chart Visualizer matching reference */}
+            {/* Custom Bar Graph Layout */}
             <div className="mt-8">
-              <div className="flex items-center justify-end gap-3 text-[10px] sm:text-[11px] font-semibold text-slate-500 mb-4">
+              <div className="flex items-center justify-end gap-3 text-[11px] font-semibold text-slate-500 mb-4">
                 <span className="flex items-center gap-1.5">
                   <span className="h-2 w-2 rounded-full bg-[#008dd2]" />
-                  Earnings
+                  Freight Earnings
                 </span>
                 <span className="flex items-center gap-1.5">
                   <span className="h-2 w-2 rounded-full bg-slate-200" />
-                  Shipments
+                  Shipment Baseline
                 </span>
               </div>
 
@@ -583,10 +570,9 @@ function Dashboard() {
                       </div>
                     )}
 
-                    {/* Bar graphic */}
                     <div
                       style={{ height: m.height }}
-                      className={`w-full max-w-[28px] rounded-t-lg transition-all duration-300 ${
+                      className={`w-full max-w-[26px] rounded-t-lg transition-all duration-300 ${
                         m.active
                           ? "bg-gradient-to-t from-[#008dd2] to-[#38bdf8] shadow-sm"
                           : "bg-slate-100 hover:bg-slate-200"
@@ -601,29 +587,25 @@ function Dashboard() {
             </div>
           </div>
 
-          {/* PERFORMANCE GAUGE CARD (Exact match to Speedometer UI) */}
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-4.5 sm:p-6 shadow-xs flex flex-col justify-between">
+          {/* PERFORMANCE RADIAL SPEEDOMETER CARD */}
+          <div className="rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-2xs flex flex-col justify-between">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs sm:text-sm font-bold text-slate-800">
-                  Delivery Overview
+                  Sales & Delivery Overview
                 </p>
                 <p className="text-[11px] text-slate-400 mt-0.5">
-                  Fulfillment success rate
+                  Fulfillment success performance
                 </p>
               </div>
-              <span className="rounded-lg bg-slate-50 p-1 text-slate-400">
-                •••
-              </span>
+              <HiOutlineDotsHorizontal size={18} className="text-slate-400" />
             </div>
 
-            {/* Segmented Speedometer Arc */}
-            <div className="my-auto py-2">
+            <div className="my-auto py-3">
               <SpeedometerGauge percentage={deliveryPercentage || 70.8} />
             </div>
 
-            {/* Stats Row */}
-            <div className="pt-2 border-t border-slate-100">
+            <div className="pt-3 border-t border-slate-100">
               <div className="flex items-center justify-between text-xs mb-2">
                 <div>
                   <span className="text-[10px] font-bold text-slate-400 block uppercase">
@@ -635,7 +617,7 @@ function Dashboard() {
                 </div>
                 <div className="text-right">
                   <span className="text-[10px] font-bold text-slate-400 block uppercase">
-                    Total
+                    Target Total
                   </span>
                   <span className="font-bold text-slate-900">
                     {formatNumber(totalOrders)}
@@ -643,7 +625,6 @@ function Dashboard() {
                 </div>
               </div>
 
-              {/* Progress bar */}
               <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
                 <div
                   style={{ width: `${deliveryPercentage}%` }}
@@ -655,22 +636,21 @@ function Dashboard() {
         </div>
 
         {/* ========================================================= */}
-        {/* 4. RECENT ORDERS DATA TABLE (Clean Modern Style) */}
+        {/* 4. RECENT ORDERS TABLE (Matches Screenshot Bottom Grid) */}
         {/* ========================================================= */}
-        <div className="rounded-2xl border border-slate-200/80 bg-white shadow-xs overflow-hidden">
-          {/* Table Toolbar matching reference */}
+        <div className="rounded-2xl border border-slate-200/80 bg-white shadow-2xs overflow-hidden">
+          {/* Table Toolbar */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 sm:p-5 border-b border-slate-100">
             <div>
               <h2 className="text-sm sm:text-base font-bold text-slate-900">
                 Recent Orders
               </h2>
               <p className="text-[11px] text-slate-400 mt-0.5">
-                Real-time shipments booked on platform
+                Real-time shipments processed through logistics network
               </p>
             </div>
 
             <div className="flex items-center gap-2">
-              {/* Search */}
               <div className="relative w-full sm:w-60">
                 <HiOutlineSearch
                   size={15}
@@ -680,19 +660,18 @@ function Dashboard() {
                   type="text"
                   value={searchTable}
                   onChange={(e) => setSearchTable(e.target.value)}
-                  placeholder="Search order, AWB..."
+                  placeholder="Search order ID, AWB..."
                   className="h-9 w-full rounded-xl border border-slate-200 bg-slate-50/60 pl-8.5 pr-3 text-xs text-slate-700 outline-none transition focus:border-[#008dd2] focus:bg-white"
                 />
               </div>
 
-              {/* Filter */}
               <div className="relative">
                 <select
                   value={statusTableFilter}
                   onChange={(e) => setStatusTableFilter(e.target.value)}
                   className="h-9 appearance-none rounded-xl border border-slate-200 bg-white pl-3 pr-7 text-xs font-bold text-slate-700 outline-none focus:border-[#008dd2]"
                 >
-                  <option value="ALL">All Status</option>
+                  <option value="ALL">All Category</option>
                   <option value="PROCESSING">Processing</option>
                   <option value="IN TRANSIT">In Transit</option>
                   <option value="DELIVERED">Delivered</option>
@@ -707,7 +686,7 @@ function Dashboard() {
               <button
                 type="button"
                 onClick={() => (window.location.href = "/orders")}
-                className="hidden sm:flex h-9 items-center gap-1 rounded-xl bg-slate-900 px-3.5 text-xs font-bold text-white shadow-xs transition hover:bg-slate-800"
+                className="hidden sm:flex h-9 items-center gap-1 rounded-xl bg-slate-900 px-3.5 text-xs font-bold text-white shadow-2xs transition hover:bg-slate-800"
               >
                 <span>View All</span>
                 <HiOutlineArrowRight size={13} />
@@ -715,7 +694,7 @@ function Dashboard() {
             </div>
           </div>
 
-          {/* Mobile Card Tile View */}
+          {/* Mobile Card List View */}
           <div className="space-y-2.5 p-3.5 sm:hidden">
             {filteredOrders.length === 0 ? (
               <div className="p-8 text-center text-xs text-slate-400">
@@ -753,7 +732,7 @@ function Dashboard() {
             )}
           </div>
 
-          {/* Desktop Structured Table View */}
+          {/* Desktop Table View */}
           <div className="hidden sm:block overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
@@ -770,10 +749,7 @@ function Dashboard() {
               <tbody className="divide-y divide-slate-100 text-xs">
                 {filteredOrders.length === 0 ? (
                   <tr>
-                    <td
-                      colSpan="6"
-                      className="py-12 text-center text-slate-400 font-medium"
-                    >
+                    <td colSpan="6" className="py-12 text-center text-slate-400 font-medium">
                       No matching orders found.
                     </td>
                   </tr>
@@ -792,8 +768,8 @@ function Dashboard() {
                         {formatDate(order.created_at)}
                       </td>
 
-                      <td className="px-4 py-3.5">
-                        <span className="font-semibold text-slate-800 truncate max-w-xs block">
+                      <td className="px-4 py-3.5 font-semibold text-slate-800">
+                        <span className="truncate max-w-xs block">
                           {order.customer_name || order.customer || "-"}
                         </span>
                       </td>
@@ -816,6 +792,7 @@ function Dashboard() {
             </table>
           </div>
         </div>
+
       </div>
     </div>
   );
