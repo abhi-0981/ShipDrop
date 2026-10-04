@@ -1,283 +1,477 @@
-import { useEffect, useState } from "react";
-import { NavLink, useNavigate, useLocation } from "react-router-dom";
+import React, { useState } from "react";
+import { NavLink, useNavigate } from "react-router-dom";
+
 import {
   HiOutlineViewGrid,
-  HiOutlineCreditCard,
-  HiOutlineLogout,
+  HiOutlineCube,
   HiOutlineUsers,
-  HiOutlineChevronDown,
+  HiOutlineCreditCard,
   HiOutlineTicket,
-  HiOutlineClipboardList,
   HiOutlineScale,
+  HiOutlineLogout,
+  HiOutlineMenu,
   HiOutlineX,
-  HiMenuAlt2,
 } from "react-icons/hi";
 
+
+const menuItems = [
+  {
+    label: "Dashboard",
+    path: "/dashboard",
+    icon: HiOutlineViewGrid,
+  },
+  {
+    label: "All Orders",
+    path: "/orders",
+    icon: HiOutlineCube,
+  },
+  {
+    label: "Users",
+    path: "/users",
+    icon: HiOutlineUsers,
+  },
+  {
+    label: "Rate Card",
+    path: "/rate-card",
+    icon: HiOutlineCreditCard,
+  },
+  {
+    label: "Weight Checking",
+    path: "/weight-checking",
+    icon: HiOutlineScale,
+  },
+  {
+    label: "Tickets",
+    path: "/tickets",
+    icon: HiOutlineTicket,
+  },
+];
+
+
 function AdminLayout({ children }) {
+
   const navigate = useNavigate();
-  const location = useLocation();
 
-  const [collapsed, setCollapsed] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] =
+    useState(false);
 
-  const [usersOpen, setUsersOpen] = useState(() =>
-    location.pathname.startsWith("/users")
-  );
 
-  useEffect(() => {
-    setMobileOpen(false);
-  }, [location.pathname]);
+  const handleLogout = () => {
 
-  const logout = () => {
     localStorage.removeItem("adminToken");
     localStorage.removeItem("admin");
-    navigate("/login");
+
+    navigate("/login", {
+      replace: true,
+    });
+
   };
 
-  const isUsersActive = location.pathname.startsWith("/users");
-
-  const menuItems = [
-    {
-      name: "Dashboard",
-      path: "/dashboard",
-      icon: HiOutlineViewGrid,
-    },
-    {
-      name: "All Orders",
-      path: "/orders",
-      icon: HiOutlineClipboardList,
-    },
-    {
-      name: "Weight Checking",
-      path: "/weight-checking",
-      icon: HiOutlineScale,
-    },
-    {
-      name: "Rate Card",
-      path: "/rate-card",
-      icon: HiOutlineCreditCard,
-    },
-    {
-      name: "Tickets",
-      path: "/tickets",
-      icon: HiOutlineTicket,
-    },
-  ];
-
-  const renderNavItem = (item) => {
-    const Icon = item.icon;
-    const isDesktopCollapsed = collapsed && !mobileOpen;
-
-    return (
-      <NavLink
-        key={item.path}
-        to={item.path}
-        title={isDesktopCollapsed ? item.name : ""}
-        className={({ isActive }) =>
-          `group relative flex items-center rounded-xl transition-all duration-150 ${
-            isDesktopCollapsed ? "h-11 justify-center px-0" : "h-11 px-3.5 gap-3"
-          } ${
-            isActive
-              ? "bg-[#008dd2]/10 text-[#008dd2] font-semibold"
-              : "text-slate-600 hover:bg-slate-100/70 hover:text-slate-900 font-medium"
-          }`
-        }
-      >
-        {({ isActive }) => (
-          <>
-            {isActive && (
-              <span className="absolute left-0 top-2 bottom-2 w-1 rounded-r-md bg-[#008dd2]" />
-            )}
-
-            <Icon
-              size={20}
-              className={`shrink-0 transition-colors ${
-                isActive ? "text-[#008dd2]" : "text-slate-400 group-hover:text-slate-700"
-              }`}
-            />
-
-            {!isDesktopCollapsed && (
-              <span className="text-[13px] tracking-tight truncate">
-                {item.name}
-              </span>
-            )}
-          </>
-        )}
-      </NavLink>
-    );
-  };
 
   return (
-    <div className="min-h-screen bg-[#f6f8fb] text-slate-800">
-      {/* MOBILE HEADER */}
-      <header className="sticky top-0 z-30 flex h-14 w-full items-center justify-between border-b border-slate-200 bg-white px-4 lg:hidden">
-        <div className="flex items-center gap-2.5">
-          <button
-            type="button"
-            onClick={() => setMobileOpen(true)}
-            className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-700 active:scale-95"
-            aria-label="Open sidebar"
-          >
-            <HiMenuAlt2 size={20} />
-          </button>
-          <span className="text-lg font-black tracking-tight text-[#008dd2]">
-            ShipDrop
-          </span>
-        </div>
+    <div className="min-h-screen bg-[#f6f8fb]">
 
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#008dd2]/10 text-xs font-bold text-[#008dd2]">
-          A
-        </div>
-      </header>
 
-      {/* MOBILE BACKDROP */}
+      {/* =====================================================
+          MOBILE OVERLAY
+      ===================================================== */}
+
       {mobileOpen && (
         <div
-          className="fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-xs lg:hidden transition-opacity"
           onClick={() => setMobileOpen(false)}
+          className="
+            fixed
+            inset-0
+            z-40
+            bg-slate-950/40
+            lg:hidden
+          "
         />
       )}
 
-      {/* SIDEBAR */}
+
+      {/* =====================================================
+          SIDEBAR
+      ===================================================== */}
+
       <aside
-        className={`fixed top-0 bottom-0 left-0 z-50 flex flex-col border-r border-slate-200 bg-white shadow-xl lg:shadow-[2px_0_12px_rgba(15,23,42,0.03)] transition-all duration-300 ease-in-out ${
-          mobileOpen ? "translate-x-0 w-[260px]" : "-translate-x-full lg:translate-x-0"
-        } ${
-          collapsed ? "lg:w-[76px]" : "lg:w-[250px]"
-        }`}
+        className={`
+          fixed
+          left-0
+          top-0
+          z-50
+          h-screen
+          w-[245px]
+          border-r
+          border-slate-200
+          bg-white
+          flex
+          flex-col
+          transition-transform
+          duration-200
+
+          ${
+            mobileOpen
+              ? "translate-x-0"
+              : "-translate-x-full"
+          }
+
+          lg:translate-x-0
+        `}
       >
-        {/* LOGO AREA */}
+
+
+        {/* LOGO */}
+
         <div
-          className={`flex h-16 shrink-0 items-center border-b border-slate-100 px-4 ${
-            collapsed && !mobileOpen ? "justify-center" : "justify-between"
-          }`}
+          className="
+            h-[68px]
+            shrink-0
+            flex
+            items-center
+            justify-between
+            px-5
+            border-b
+            border-slate-100
+          "
         >
-          {(!collapsed || mobileOpen) && (
-            <span className="text-xl font-black tracking-tight text-[#008dd2]">
-              ShipDrop
-            </span>
-          )}
 
           <button
             type="button"
-            onClick={() => setCollapsed(!collapsed)}
-            className="hidden lg:flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition"
-            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            onClick={() =>
+              navigate("/dashboard")
+            }
+            className="flex items-center gap-2.5"
           >
-            <HiMenuAlt2 size={20} />
+
+            <div
+              className="
+                h-9
+                w-9
+                rounded-xl
+                bg-[#008dd2]
+                flex
+                items-center
+                justify-center
+                text-white
+                font-bold
+                text-lg
+                shadow-sm
+              "
+            >
+              P
+            </div>
+
+
+            <div className="text-left">
+
+              <p
+                className="
+                  text-[19px]
+                  font-extrabold
+                  tracking-tight
+                  text-[#008dd2]
+                "
+              >
+                ParcelDrop
+              </p>
+
+              <p
+                className="
+                  text-[9px]
+                  uppercase
+                  tracking-[0.18em]
+                  font-bold
+                  text-slate-400
+                "
+              >
+                Admin Panel
+              </p>
+
+            </div>
+
           </button>
+
 
           <button
             type="button"
-            onClick={() => setMobileOpen(false)}
-            className="flex lg:hidden h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100"
+            onClick={() =>
+              setMobileOpen(false)
+            }
+            className="
+              lg:hidden
+              h-8
+              w-8
+              rounded-lg
+              flex
+              items-center
+              justify-center
+              text-slate-400
+              hover:bg-slate-100
+            "
           >
-            <HiOutlineX size={20} />
+            <HiOutlineX size={19} />
           </button>
+
         </div>
 
-        {/* NAVIGATION LIST */}
-        <nav className="flex-1 min-h-0 overflow-y-auto px-3 py-3 space-y-1 [scrollbar-width:thin]">
-          {menuItems.map((item) => renderNavItem(item))}
 
-          {/* USERS DROPDOWN */}
-          <div>
-            <button
-              type="button"
-              onClick={() => {
-                if (collapsed && !mobileOpen) {
-                  setCollapsed(false);
-                  setUsersOpen(true);
-                  return;
-                }
-                setUsersOpen(!usersOpen);
-              }}
-              className={`group relative flex w-full items-center rounded-xl transition-all duration-150 ${
-                collapsed && !mobileOpen
-                  ? "h-11 justify-center px-0"
-                  : "h-11 px-3.5 gap-3"
-              } ${
-                isUsersActive
-                  ? "bg-[#008dd2]/10 text-[#008dd2] font-semibold"
-                  : "text-slate-600 hover:bg-slate-100/70 hover:text-slate-900 font-medium"
-              }`}
-              title={collapsed && !mobileOpen ? "Users" : ""}
-            >
-              {isUsersActive && (
-                <span className="absolute left-0 top-2 bottom-2 w-1 rounded-r-md bg-[#008dd2]" />
-              )}
+        {/* MENU */}
 
-              <HiOutlineUsers
-                size={20}
-                className={`shrink-0 transition-colors ${
-                  isUsersActive
-                    ? "text-[#008dd2]"
-                    : "text-slate-400 group-hover:text-slate-700"
-                }`}
-              />
+        <div className="flex-1 px-3 py-5 overflow-y-auto">
 
-              {(!collapsed || mobileOpen) && (
-                <>
-                  <span className="flex-1 text-left text-[13px] tracking-tight">
-                    Users
-                  </span>
-                  <HiOutlineChevronDown
-                    size={15}
-                    className={`text-slate-400 transition-transform duration-200 ${
-                      usersOpen ? "rotate-180" : ""
-                    }`}
-                  />
-                </>
-              )}
-            </button>
+          <p
+            className="
+              px-3
+              mb-2
+              text-[9px]
+              font-bold
+              uppercase
+              tracking-[0.16em]
+              text-slate-400
+            "
+          >
+            Main Menu
+          </p>
 
-            {(!collapsed || mobileOpen) && usersOpen && (
-              <div className="ml-5 mt-1 border-l-2 border-slate-100 pl-3 space-y-1">
+
+          <nav className="space-y-1">
+
+            {menuItems.map(
+              ({
+                label,
+                path,
+                icon: Icon,
+              }) => (
+
                 <NavLink
-                  to="/users"
+                  key={path}
+                  to={path}
+                  onClick={() =>
+                    setMobileOpen(false)
+                  }
                   className={({ isActive }) =>
-                    `flex h-9 items-center rounded-lg px-3 text-xs font-semibold transition ${
+                    `
+                    flex
+                    items-center
+                    gap-3
+                    rounded-xl
+                    px-3
+                    py-2.5
+                    text-[13px]
+                    font-medium
+                    transition-all
+
+                    ${
                       isActive
-                        ? "bg-[#008dd2]/10 text-[#008dd2]"
-                        : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
-                    }`
+                        ? `
+                          bg-[#008dd2]
+                          text-white
+                          shadow-sm
+                        `
+                        : `
+                          text-slate-600
+                          hover:bg-slate-50
+                          hover:text-[#008dd2]
+                        `
+                    }
+                    `
                   }
                 >
-                  All Users
-                </NavLink>
-              </div>
-            )}
-          </div>
-        </nav>
 
-        {/* LOGOUT BUTTON */}
-        <div className="shrink-0 border-t border-slate-100 p-3 bg-slate-50/50">
+                  <Icon size={19} />
+
+                  <span>
+                    {label}
+                  </span>
+
+                </NavLink>
+
+              )
+            )}
+
+          </nav>
+
+
+          {/* OPERATIONS */}
+
+          <div className="mt-7">
+
+            <p
+              className="
+                px-3
+                mb-2
+                text-[9px]
+                font-bold
+                uppercase
+                tracking-[0.16em]
+                text-slate-400
+              "
+            >
+              Operations
+            </p>
+
+
+            <div
+              className="
+                rounded-xl
+                border
+                border-[#008dd2]/10
+                bg-[#008dd2]/5
+                p-3
+              "
+            >
+
+              <div className="flex items-center gap-2">
+
+                <div
+                  className="
+                    h-7
+                    w-7
+                    rounded-lg
+                    bg-[#008dd2]/10
+                    flex
+                    items-center
+                    justify-center
+                    text-[#008dd2]
+                  "
+                >
+                  <HiOutlineCube size={15} />
+                </div>
+
+                <div>
+
+                  <p className="text-[10px] font-bold text-slate-700">
+                    Shipment Operations
+                  </p>
+
+                  <p className="text-[9px] text-slate-400">
+                    Monitor orders & delivery
+                  </p>
+
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+        {/* LOGOUT */}
+
+        <div
+          className="
+            p-3
+            border-t
+            border-slate-100
+          "
+        >
+
           <button
             type="button"
-            onClick={logout}
-            className={`flex w-full items-center rounded-xl text-rose-600 hover:bg-rose-50 transition-colors ${
-              collapsed && !mobileOpen
-                ? "h-10 justify-center px-0"
-                : "h-10 px-3.5 gap-2.5 text-xs font-bold"
-            }`}
-            title="Logout"
+            onClick={handleLogout}
+            className="
+              w-full
+              flex
+              items-center
+              gap-3
+              rounded-xl
+              px-3
+              py-2.5
+              text-[13px]
+              font-medium
+              text-red-500
+              hover:bg-red-50
+              transition
+            "
           >
-            <HiOutlineLogout size={19} className="shrink-0" />
-            {(!collapsed || mobileOpen) && <span>Logout</span>}
+
+            <HiOutlineLogout size={19} />
+
+            <span>
+              Logout
+            </span>
+
           </button>
+
         </div>
+
       </aside>
 
-      {/* MAIN CONTAINER */}
-      <main
-        className={`min-h-[calc(100vh-56px)] lg:min-h-screen transition-all duration-300 ${
-          collapsed ? "lg:ml-[76px]" : "lg:ml-[250px]"
-        }`}
-      >
-        {children}
-      </main>
+
+      {/* =====================================================
+          MAIN AREA
+      ===================================================== */}
+
+      <div className="lg:pl-[245px] min-h-screen">
+
+
+        {/* MOBILE HEADER */}
+
+        <div
+          className="
+            lg:hidden
+            h-14
+            bg-white
+            border-b
+            border-slate-200
+            flex
+            items-center
+            px-4
+            sticky
+            top-0
+            z-30
+          "
+        >
+
+          <button
+            type="button"
+            onClick={() =>
+              setMobileOpen(true)
+            }
+            className="
+              h-9
+              w-9
+              rounded-lg
+              flex
+              items-center
+              justify-center
+              text-slate-600
+              hover:bg-slate-100
+            "
+          >
+            <HiOutlineMenu size={21} />
+          </button>
+
+
+          <span
+            className="
+              ml-3
+              text-sm
+              font-bold
+              text-slate-800
+            "
+          >
+            ParcelDrop Admin
+          </span>
+
+        </div>
+
+
+        {/* PAGE */}
+
+        <main className="min-h-screen">
+          {children}
+        </main>
+
+      </div>
+
     </div>
   );
 }
+
 
 export default AdminLayout;
