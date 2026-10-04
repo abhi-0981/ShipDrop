@@ -27,7 +27,7 @@ import WeightChecking from "./pages/weightcheck/WeightChecking";
 
 
 /* =========================================================
-   PROTECTED ROUTE
+   ADMIN PROTECTED ROUTE
 ========================================================= */
 
 function ProtectedRoute({ children }) {
@@ -42,7 +42,7 @@ function ProtectedRoute({ children }) {
 
 
 /* =========================================================
-   ADMIN PAGE WRAPPER
+   ADMIN PAGE
 ========================================================= */
 
 function AdminPage({ children }) {
@@ -64,7 +64,6 @@ function App() {
   return (
     <BrowserRouter>
 
-      {/* Toast Notifications */}
       <Toaster
         position="top-right"
         toastOptions={{
@@ -74,20 +73,14 @@ function App() {
 
       <Routes>
 
-        {/* =================================================
-            LOGIN
-        ================================================= */}
-
+        {/* LOGIN */}
         <Route
           path="/login"
           element={<Login />}
         />
 
 
-        {/* =================================================
-            DASHBOARD
-        ================================================= */}
-
+        {/* DASHBOARD */}
         <Route
           path="/dashboard"
           element={
@@ -98,10 +91,7 @@ function App() {
         />
 
 
-        {/* =================================================
-            ALL ORDERS
-        ================================================= */}
-
+        {/* ALL ORDERS */}
         <Route
           path="/orders"
           element={
@@ -112,10 +102,7 @@ function App() {
         />
 
 
-        {/* =================================================
-            WEIGHT CHECKING
-        ================================================= */}
-
+        {/* WEIGHT CHECKING */}
         <Route
           path="/weight-checking"
           element={
@@ -126,10 +113,7 @@ function App() {
         />
 
 
-        {/* =================================================
-            RATE CARD
-        ================================================= */}
-
+        {/* RATE CARD */}
         <Route
           path="/rate-card"
           element={
@@ -149,10 +133,7 @@ function App() {
         />
 
 
-        {/* =================================================
-            USERS
-        ================================================= */}
-
+        {/* USERS */}
         <Route
           path="/users"
           element={
@@ -172,10 +153,7 @@ function App() {
         />
 
 
-        {/* =================================================
-            TICKETS
-        ================================================= */}
-
+        {/* TICKETS */}
         <Route
           path="/tickets"
           element={
@@ -186,10 +164,7 @@ function App() {
         />
 
 
-        {/* =================================================
-            ROOT
-        ================================================= */}
-
+        {/* ROOT */}
         <Route
           path="/"
           element={
@@ -201,10 +176,7 @@ function App() {
         />
 
 
-        {/* =================================================
-            UNKNOWN ROUTE
-        ================================================= */}
-
+        {/* UNKNOWN */}
         <Route
           path="*"
           element={
