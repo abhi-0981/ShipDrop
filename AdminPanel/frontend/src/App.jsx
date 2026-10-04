@@ -12,14 +12,12 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/dashboard/Dashboard";
 
 import RateCard from "./rate-card/RateCard";
-
 import SetRate from "./rate-card/SetRate";
 
 import Users from "./pages/users/Users";
-
 import UserDetails from "./pages/users/UserDetails";
 
-import AdminTickets from "./pages/ticket/AdminTickets"; 
+import AdminTickets from "./pages/ticket/AdminTickets";
 
 import AdminLayout from "./components/AdminLayout";
 
@@ -28,66 +26,45 @@ import AllOrders from "./pages/orders/AllOrders";
 import WeightChecking from "./pages/weightcheck/WeightChecking";
 
 
-// =====================================================
-// PROTECTED ROUTE
-// =====================================================
+/* =========================================================
+   PROTECTED ROUTE
+========================================================= */
 
 function ProtectedRoute({ children }) {
-
-  const token =
-    localStorage.getItem(
-      "adminToken"
-    );
+  const token = localStorage.getItem("adminToken");
 
   if (!token) {
-
-    return (
-      <Navigate
-        to="/login"
-        replace
-      />
-    );
+    return <Navigate to="/login" replace />;
   }
 
   return children;
 }
 
 
-// =====================================================
-// ADMIN PAGE
-// =====================================================
+/* =========================================================
+   ADMIN PAGE WRAPPER
+========================================================= */
 
 function AdminPage({ children }) {
-
   return (
-
     <ProtectedRoute>
-
       <AdminLayout>
-
         {children}
-
       </AdminLayout>
-
     </ProtectedRoute>
   );
 }
 
 
-// =====================================================
-// APP
-// =====================================================
+/* =========================================================
+   APP
+========================================================= */
 
 function App() {
-
   return (
-
     <BrowserRouter>
 
-      {/* ================================================= */}
-      {/* GLOBAL TOASTER */}
-      {/* ================================================= */}
-
+      {/* Toast Notifications */}
       <Toaster
         position="top-right"
         toastOptions={{
@@ -95,25 +72,21 @@ function App() {
         }}
       />
 
-
       <Routes>
 
-
-        {/* ================================================= */}
-        {/* LOGIN */}
-        {/* ================================================= */}
+        {/* =================================================
+            LOGIN
+        ================================================= */}
 
         <Route
           path="/login"
-          element={
-            <Login />
-          }
+          element={<Login />}
         />
 
 
-        {/* ================================================= */}
-        {/* DASHBOARD */}
-        {/* ================================================= */}
+        {/* =================================================
+            DASHBOARD
+        ================================================= */}
 
         <Route
           path="/dashboard"
@@ -125,9 +98,37 @@ function App() {
         />
 
 
-        {/* ================================================= */}
-        {/* RATE CARD */}
-        {/* ================================================= */}
+        {/* =================================================
+            ALL ORDERS
+        ================================================= */}
+
+        <Route
+          path="/orders"
+          element={
+            <AdminPage>
+              <AllOrders />
+            </AdminPage>
+          }
+        />
+
+
+        {/* =================================================
+            WEIGHT CHECKING
+        ================================================= */}
+
+        <Route
+          path="/weight-checking"
+          element={
+            <AdminPage>
+              <WeightChecking />
+            </AdminPage>
+          }
+        />
+
+
+        {/* =================================================
+            RATE CARD
+        ================================================= */}
 
         <Route
           path="/rate-card"
@@ -137,13 +138,6 @@ function App() {
             </AdminPage>
           }
         />
-
-        
-
-
-        {/* ================================================= */}
-        {/* SET RATE */}
-        {/* ================================================= */}
 
         <Route
           path="/rate-card/:id/set-rate"
@@ -155,9 +149,9 @@ function App() {
         />
 
 
-        {/* ================================================= */}
-        {/* USERS → ALL USERS */}
-        {/* ================================================= */}
+        {/* =================================================
+            USERS
+        ================================================= */}
 
         <Route
           path="/users"
@@ -167,11 +161,6 @@ function App() {
             </AdminPage>
           }
         />
-
-
-        {/* ================================================= */}
-        {/* USER DETAILS */}
-        {/* ================================================= */}
 
         <Route
           path="/users/:id"
@@ -183,9 +172,9 @@ function App() {
         />
 
 
-        {/* ================================================= */}
-        {/* TICKETS */}
-        {/* ================================================= */}
+        {/* =================================================
+            TICKETS
+        ================================================= */}
 
         <Route
           path="/tickets"
@@ -197,48 +186,30 @@ function App() {
         />
 
 
-          <Route
-  path="/orders"
-  element={
-    <AdminPage>
-      <AllOrders />
-    </AdminPage>
-  }
-/>
-
-<Route
-  path="/weight-checking"
-  element={
-    <AdminPage>
-      <WeightChecking />
-    </AdminPage>
-  }
-/>
-
-        {/* ================================================= */}
-        {/* DEFAULT */}
-        {/* ================================================= */}
+        {/* =================================================
+            ROOT
+        ================================================= */}
 
         <Route
           path="/"
           element={
             <Navigate
-              to="/login"
+              to="/dashboard"
               replace
             />
           }
         />
 
 
-        {/* ================================================= */}
-        {/* UNKNOWN URL */}
-        {/* ================================================= */}
+        {/* =================================================
+            UNKNOWN ROUTE
+        ================================================= */}
 
         <Route
           path="*"
           element={
             <Navigate
-              to="/login"
+              to="/dashboard"
               replace
             />
           }
@@ -249,6 +220,5 @@ function App() {
     </BrowserRouter>
   );
 }
-
 
 export default App;
