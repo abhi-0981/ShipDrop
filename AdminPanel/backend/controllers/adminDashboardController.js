@@ -1,12 +1,8 @@
-const mysql = require("mysql2/promise");
-require("dotenv").config();
+// ======================================================
+// ADMIN DASHBOARD CONTROLLER
+// ======================================================
 
-const db = mysql.createPool({
-  host: "localhost",
-  user: "root",
-  password: process.env.DB_PASSWORD,
-  database: "shipdrop",
-});
+const db = require("../config/db");
 
 /* =========================================================
    ADMIN DASHBOARD
@@ -185,7 +181,8 @@ const getAdminDashboard = async (req, res) => {
     /* =====================================================
        RECENT TICKETS
 
-       We keep this tolerant because ticket schema can vary.
+       Kept tolerant so dashboard does not crash
+       if ticket table/schema has an issue.
     ===================================================== */
 
     let recentTickets = [];
@@ -264,6 +261,10 @@ const getAdminDashboard = async (req, res) => {
     });
   }
 };
+
+/* =========================================================
+   EXPORT
+========================================================= */
 
 module.exports = {
   getAdminDashboard,
