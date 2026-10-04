@@ -1,54 +1,46 @@
-import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
-
-import {
-  ResponsiveContainer,
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  PieChart,
-  Pie,
-  Cell,
-} from "recharts";
-
+import React, { useEffect, useMemo, useState } from "react";
 import {
   HiOutlineRefresh,
-  HiOutlineSearch,
-  HiOutlineArrowRight,
-  HiOutlineClipboardList,
-  HiOutlineClock,
+  HiOutlineCube,
+  HiOutlineUsers,
   HiOutlineTruck,
   HiOutlineCheckCircle,
-  HiOutlineExclamation,
+  HiOutlineClock,
+  HiOutlineExclamationCircle,
+  HiOutlineArrowRight,
   HiOutlineTicket,
-  HiOutlineUsers,
-  HiOutlineEye,
   HiOutlineCurrencyRupee,
-  HiOutlineCube,
+  HiOutlineExternalLink,
+  HiOutlineClipboardList,
+  HiOutlineOfficeBuilding,
 } from "react-icons/hi";
+import { useNavigate } from "react-router-dom";
 
-import { API_BASE_URL } from "../../config/api";
+/* =========================================================
+   API
+========================================================= */
+
+const API_BASE =
+  import.meta.env.VITE_API_URL ||
+  "http://localhost:5001/api";
 
 /* =========================================================
    HELPERS
 ========================================================= */
 
-const money = (value) => {
-  const number = Number(value || 0);
+const formatNumber = (value) => {
+  return new Intl.NumberFormat("en-IN").format(
+    Number(value || 0)
+  );
+};
 
-  return `₹${number.toLocaleString("en-IN", {
-    maximumFractionDigits: 0,
+const formatCurrency = (value) => {
+  return `₹${Number(value || 0).toLocaleString("en-IN", {
+    maximumFractionDigits: 2,
   })}`;
 };
 
-const number = (value) => {
-  return Number(value || 0).toLocaleString("en-IN");
-};
-
-const dateFormat = (value) => {
+const formatDate = (value) => {
   if (!value) return "-";
 
   const date = new Date(value);
@@ -64,1223 +56,1336 @@ const dateFormat = (value) => {
   });
 };
 
-const normalizeStatus = (value) => {
-  const status = String(value || "")
+const normalizeStatus = (status) => {
+  return String(status || "")
     .trim()
     .toUpperCase()
     .replace(/_/g, " ");
-
-  const map = {
-    PROCESSING: "Processing",
-    MANIFESTED: "Manifested",
-    "NOT PICKED": "Not Picked",
-    "IN TRANSIT": "In Transit",
-    "OUT FOR DELIVERY": "Out For Delivery",
-    DELIVERED: "Delivered",
-    "RTO IN TRANSIT": "RTO In Transit",
-    "RTO DELIVERED": "RTO Delivered",
-    RTO: "RTO",
-    RETURNED: "Returned",
-    CANCELLED: "Cancelled",
-    CANCELED: "Cancelled",
-    PENDING: "Pending",
-    NDR: "NDR",
-  };
-
-  return map[status] || value || "Pending";
-};
-
-const statusClass = (status) => {
-  const value = normalizeStatus(status);
-
-  if (value === "Delivered") {
-    return "bg-emerald-50 text-emerald-700 border-emerald-100";
-  }
-
-  if (value === "In Transit" || value === "Out For Delivery") {
-    return "bg-blue-50 text-blue-700 border-blue-100";
-  }
-
-  if (value === "Processing" || value === "Manifested") {
-    return "bg-violet-50 text-violet-700 border-violet-100";
-  }
-
-  if (value === "Not Picked" || value === "Pending") {
-    return "bg-amber-50 text-amber-700 border-amber-100";
-  }
-
-  if (
-    value === "RTO" ||
-    value === "RTO In Transit" ||
-    value === "RTO Delivered" ||
-    value === "Returned"
-  ) {
-    return "bg-orange-50 text-orange-700 border-orange-100";
-  }
-
-  if (value === "Cancelled" || value === "NDR") {
-    return "bg-red-50 text-red-700 border-red-100";
-  }
-
-  return "bg-slate-50 text-slate-600 border-slate-100";
 };
 
 /* =========================================================
-   KPI CARD
+   STATUS CONFIG
 ========================================================= */
 
-function StatCard({ title, value, subtitle, icon: Icon, iconBg, onClick }) {
+const STATUS_CONFIG = {
+  Processing: {
+    key: "Processing",
+    label: "Processing",
+    path: "/processing-orders",
+    icon: HiOutlineClock,
+    iconBg: "bg-indigo-50",
+    iconColor: "text-indigo-600",
+    dot: "bg-indigo-500",
+  },
+
+  Manifested: {
+    key: "Manifested",
+    label: "Manifested",
+    path: "/manifested",
+    icon: HiOutlineClipboardList,
+    iconBg: "bg-blue-50",
+    iconColor: "text-blue-600",
+    dot: "bg-blue-500",
+  },
+
+  "Not Picked": {
+    key: "Not Picked",
+    label: "Not Picked",
+    path: "/not-picked",
+    icon: HiOutlineExclamationCircle,
+    iconBg: "bg-orange-50",
+    iconColor: "text-orange-600",
+    dot: "bg-orange-500",
+  },
+
+  "In Transit": {
+    key: "In Transit",
+    label: "In Transit",
+    path: "/in-transit",
+    icon: HiOutlineTruck,
+    iconBg: "bg-violet-50",
+    iconColor: "text-violet-600",
+    dot: "bg-violet-500",
+  },
+
+  "Out For Delivery": {
+    key: "Out For Delivery",
+    label: "Out For Delivery",
+    path: "/out-for-delivery",
+    icon: HiOutlineTruck,
+    iconBg: "bg-cyan-50",
+    iconColor: "text-cyan-600",
+    dot: "bg-cyan-500",
+  },
+
+  Delivered: {
+    key: "Delivered",
+    label: "Delivered",
+    path: "/delivered",
+    icon: HiOutlineCheckCircle,
+    iconBg: "bg-emerald-50",
+    iconColor: "text-emerald-600",
+    dot: "bg-emerald-500",
+  },
+
+  "RTO In Transit": {
+    key: "RTO In Transit",
+    label: "RTO In Transit",
+    path: "/rto-in-transit",
+    icon: HiOutlineTruck,
+    iconBg: "bg-amber-50",
+    iconColor: "text-amber-600",
+    dot: "bg-amber-500",
+  },
+
+  "RTO Delivered": {
+    key: "RTO Delivered",
+    label: "RTO Delivered",
+    path: "/rto-delivered",
+    icon: HiOutlineCheckCircle,
+    iconBg: "bg-rose-50",
+    iconColor: "text-rose-600",
+    dot: "bg-rose-500",
+  },
+
+  Returned: {
+    key: "Returned",
+    label: "Returned",
+    path: "/returned",
+    icon: HiOutlineArrowRight,
+    iconBg: "bg-slate-100",
+    iconColor: "text-slate-600",
+    dot: "bg-slate-500",
+  },
+
+  Cancelled: {
+    key: "Cancelled",
+    label: "Cancelled",
+    path: "/cancelled",
+    icon: HiOutlineExclamationCircle,
+    iconBg: "bg-red-50",
+    iconColor: "text-red-600",
+    dot: "bg-red-500",
+  },
+
+  Pending: {
+    key: "Pending",
+    label: "Pending",
+    path: "/pending",
+    icon: HiOutlineClock,
+    iconBg: "bg-yellow-50",
+    iconColor: "text-yellow-600",
+    dot: "bg-yellow-500",
+  },
+};
+
+/* =========================================================
+   STATUS BADGE
+========================================================= */
+
+const StatusBadge = ({ status }) => {
+  const normalized = normalizeStatus(status);
+
+  let classes =
+    "bg-slate-100 text-slate-600";
+
+  switch (normalized) {
+    case "PROCESSING":
+      classes =
+        "bg-indigo-50 text-indigo-600";
+      break;
+
+    case "MANIFESTED":
+      classes =
+        "bg-blue-50 text-blue-600";
+      break;
+
+    case "NOT PICKED":
+      classes =
+        "bg-orange-50 text-orange-600";
+      break;
+
+    case "IN TRANSIT":
+      classes =
+        "bg-violet-50 text-violet-600";
+      break;
+
+    case "OUT FOR DELIVERY":
+      classes =
+        "bg-cyan-50 text-cyan-600";
+      break;
+
+    case "DELIVERED":
+      classes =
+        "bg-emerald-50 text-emerald-600";
+      break;
+
+    case "RTO IN TRANSIT":
+      classes =
+        "bg-amber-50 text-amber-600";
+      break;
+
+    case "RTO DELIVERED":
+      classes =
+        "bg-rose-50 text-rose-600";
+      break;
+
+    case "RETURNED":
+      classes =
+        "bg-slate-100 text-slate-600";
+      break;
+
+    case "CANCELLED":
+    case "CANCELED":
+      classes =
+        "bg-red-50 text-red-600";
+      break;
+
+    case "PENDING":
+      classes =
+        "bg-yellow-50 text-yellow-600";
+      break;
+  }
+
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ${classes}`}
+    >
+      <span className="h-1.5 w-1.5 rounded-full bg-current" />
+      {normalized || "Unknown"}
+    </span>
+  );
+};
+
+/* =========================================================
+   STAT CARD
+========================================================= */
+
+const StatCard = ({
+  title,
+  value,
+  subtitle,
+  icon: Icon,
+  iconBg,
+  iconColor,
+  onClick,
+}) => {
   return (
     <button
       type="button"
       onClick={onClick}
       className="
-        group
-        text-left
-        bg-white
-        border border-slate-200
-        rounded-2xl
-        p-4
+        group w-full rounded-2xl border border-slate-200
+        bg-white p-4 text-left
+        shadow-[0_2px_10px_rgba(15,23,42,0.04)]
+        transition duration-200
+        hover:-translate-y-0.5
         hover:border-[#008dd2]/30
-        hover:shadow-[0_12px_35px_rgba(15,23,42,0.06)]
-        transition-all
-        duration-200
+        hover:shadow-[0_8px_24px_rgba(15,23,42,0.08)]
+        focus:outline-none focus:ring-2
+        focus:ring-[#008dd2]/20
       "
     >
-      <div className="flex items-start justify-between">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[12px] font-medium text-slate-500">
+            {title}
+          </p>
+
+          <p className="mt-1 text-[24px] font-bold tracking-tight text-slate-900">
+            {value}
+          </p>
+
+          {subtitle && (
+            <p className="mt-1 text-[11px] text-slate-400">
+              {subtitle}
+            </p>
+          )}
+        </div>
+
         <div
-          className={`h-10 w-10 rounded-xl flex items-center justify-center ${iconBg}`}
+          className={`
+            flex h-10 w-10 shrink-0 items-center
+            justify-center rounded-xl
+            ${iconBg} ${iconColor}
+            transition duration-200
+            group-hover:scale-105
+          `}
         >
           <Icon size={19} />
         </div>
-
-        <HiOutlineArrowRight
-          size={15}
-          className="
-            text-slate-300
-            group-hover:text-[#008dd2]
-            group-hover:translate-x-0.5
-            transition
-          "
-        />
       </div>
 
-      <div className="mt-4">
-        <p className="text-[11px] font-medium text-slate-400">{title}</p>
-
-        <p className="mt-1 text-[25px] font-bold tracking-tight text-slate-900">
-          {value}
-        </p>
-
-        <p className="mt-1.5 text-[10px] text-slate-400">{subtitle}</p>
+      <div className="mt-3 flex items-center gap-1 text-[11px] font-semibold text-[#008dd2] opacity-0 transition group-hover:opacity-100">
+        Open
+        <HiOutlineArrowRight size={13} />
       </div>
     </button>
   );
-}
+};
 
 /* =========================================================
-   DASHBOARD
+   STATUS ROW
 ========================================================= */
 
-function Dashboard() {
+const StatusRow = ({
+  status,
+  count,
+  total,
+  onClick,
+}) => {
+  const config = STATUS_CONFIG[status];
+
+  if (!config) return null;
+
+  const Icon = config.icon;
+
+  const percentage =
+    total > 0
+      ? Math.min(
+          100,
+          (Number(count || 0) / total) * 100
+        )
+      : 0;
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="
+        group w-full rounded-xl p-2.5
+        text-left transition
+        hover:bg-slate-50
+      "
+    >
+      <div className="flex items-center gap-3">
+        <div
+          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${config.iconBg} ${config.iconColor}`}
+        >
+          <Icon size={15} />
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center justify-between gap-3">
+            <span className="truncate text-[12px] font-medium text-slate-700">
+              {config.label}
+            </span>
+
+            <span className="text-[12px] font-bold text-slate-900">
+              {formatNumber(count)}
+            </span>
+          </div>
+
+          <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-slate-100">
+            <div
+              className="h-full rounded-full bg-[#008dd2] transition-all duration-500"
+              style={{
+                width: `${percentage}%`,
+              }}
+            />
+          </div>
+        </div>
+
+        <HiOutlineArrowRight
+          size={14}
+          className="
+            shrink-0 text-slate-300
+            transition group-hover:translate-x-0.5
+            group-hover:text-[#008dd2]
+          "
+        />
+      </div>
+    </button>
+  );
+};
+
+/* =========================================================
+   MAIN DASHBOARD
+========================================================= */
+
+function AdminDashboard() {
   const navigate = useNavigate();
 
+  const [dashboard, setDashboard] = useState(null);
   const [loading, setLoading] = useState(true);
-
   const [refreshing, setRefreshing] = useState(false);
-
   const [error, setError] = useState("");
 
-  const [search, setSearch] = useState("");
-
-  const [data, setData] = useState({
-    counts: {},
-    orders: [],
-    totalUsers: 0,
-    totalCharges: 0,
-    recentTickets: [],
-  });
-
-  /* =======================================================
+  /* =====================================================
      FETCH DASHBOARD
-  ======================================================= */
+  ===================================================== */
 
-  const fetchDashboard = async (refresh = false) => {
+  const loadDashboard = async () => {
     try {
-      if (refresh) {
-        setRefreshing(true);
-      } else {
-        setLoading(true);
-      }
-
       setError("");
 
-      const token = localStorage.getItem("adminToken");
+      const token =
+        localStorage.getItem("adminToken");
 
-      const response = await fetch(`${API_BASE_URL}/admin/dashboard`, {
-        method: "GET",
+      const response = await fetch(
+        `${API_BASE}/admin/dashboard`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token
+              ? {
+                  Authorization: `Bearer ${token}`,
+                }
+              : {}),
+          },
+        }
+      );
 
-        headers: {
-          "Content-Type": "application/json",
+      const data = await response.json();
 
-          ...(token
-            ? {
-                Authorization: `Bearer ${token}`,
-              }
-            : {}),
-        },
-      });
-
-      let result = {};
-
-      try {
-        result = await response.json();
-      } catch {
-        result = {};
-      }
-
-      /*
-        IMPORTANT:
-
-        Do NOT remove adminToken here.
-
-        API failure != logout.
-
-        This was causing:
-        Dashboard API error
-        -> token deleted
-        -> every click -> /login
-      */
-
-      if (!response.ok) {
+      if (!response.ok || !data?.success) {
         throw new Error(
-          result?.message || `Dashboard request failed (${response.status})`,
+          data?.message ||
+            "Unable to load dashboard"
         );
       }
 
-      if (result?.success === false) {
-        throw new Error(result?.message || "Unable to load dashboard");
-      }
-
-      setData({
-        counts: result?.counts || {},
-
-        orders: Array.isArray(result?.orders) ? result.orders : [],
-
-        totalUsers: Number(result?.totalUsers || 0),
-
-        totalCharges: Number(result?.totalCharges || 0),
-
-        recentTickets: Array.isArray(result?.recentTickets)
-          ? result.recentTickets
-          : [],
-      });
+      setDashboard(data);
     } catch (err) {
-      console.error("ADMIN DASHBOARD ERROR:", err);
+      console.error(
+        "Admin dashboard loading error:",
+        err
+      );
 
-      setError(err?.message || "Unable to load dashboard");
+      setError(
+        err?.message ||
+          "Unable to load dashboard"
+      );
     } finally {
       setLoading(false);
-
       setRefreshing(false);
     }
   };
 
   useEffect(() => {
-    fetchDashboard(false);
+    loadDashboard();
   }, []);
 
-  /* =======================================================
-     COUNTS
-  ======================================================= */
+  /* =====================================================
+     REFRESH
+  ===================================================== */
 
-  const counts = data.counts || {};
-
-  const count = (...keys) => {
-    for (const key of keys) {
-      if (counts[key] !== undefined && counts[key] !== null) {
-        return Number(counts[key]) || 0;
-      }
-    }
-
-    return 0;
+  const handleRefresh = () => {
+    setRefreshing(true);
+    loadDashboard();
   };
 
-  const totalOrders = count("all_orders", "All", "ALL", "total");
+  /* =====================================================
+     DATA
+  ===================================================== */
 
-  const processing = count("processing", "Processing");
+  const counts = dashboard?.counts || {};
 
-  const manifested = count("manifested", "Manifested");
+  const totalOrders =
+    Number(counts.All || 0);
 
-  const notPicked = count("not_picked", "Not Picked");
+  const delivered =
+    Number(counts.Delivered || 0);
 
-  const inTransit = count("in_transit", "In Transit");
+  const inTransit =
+    Number(counts["In Transit"] || 0);
 
-  const outForDelivery = count("out_for_delivery", "Out For Delivery");
+  const processing =
+    Number(counts.Processing || 0);
 
-  const delivered = count("delivered", "Delivered");
+  const manifested =
+    Number(counts.Manifested || 0);
 
-  const rtoInTransit = count("rto_in_transit", "RTO In Transit");
+  const rto =
+    Number(counts["RTO In Transit"] || 0) +
+    Number(counts["RTO Delivered"] || 0);
 
-  const rtoDelivered = count("rto_delivered", "RTO Delivered");
+  const deliveryPercentage =
+    totalOrders > 0
+      ? Math.round(
+          (delivered / totalOrders) * 100
+        )
+      : 0;
 
-  const rto = rtoInTransit + rtoDelivered;
+  const recentOrders = Array.isArray(
+    dashboard?.orders
+  )
+    ? dashboard.orders
+    : [];
 
-  const pending = count("pending", "Pending");
+  const recentTickets = Array.isArray(
+    dashboard?.recentTickets
+  )
+    ? dashboard.recentTickets
+    : [];
 
-  const cancelled = count("cancelled", "Cancelled");
+  const statusRows = useMemo(
+    () => [
+      "Processing",
+      "Manifested",
+      "Not Picked",
+      "In Transit",
+      "Out For Delivery",
+      "Delivered",
+      "RTO In Transit",
+      "RTO Delivered",
+      "Returned",
+      "Cancelled",
+      "Pending",
+    ],
+    []
+  );
 
-  const returned = count("returned", "Returned");
-
-  const ndr = count("ndr", "NDR");
-
-  const deliveryRate =
-    totalOrders > 0 ? Math.round((delivered / totalOrders) * 100) : 0;
-
-  /* =======================================================
-     ORDERS SEARCH
-  ======================================================= */
-
-  const filteredOrders = useMemo(() => {
-    const query = search.trim().toLowerCase();
-
-    const list = Array.isArray(data.orders) ? data.orders : [];
-
-    if (!query) {
-      return list.slice(0, 7);
-    }
-
-    return list
-      .filter((order) => {
-        const values = [
-          order?.order_id,
-
-          order?.orderId,
-
-          order?.id,
-
-          order?.customer_name,
-
-          order?.customerName,
-
-          order?.consignee_name,
-
-          order?.name,
-
-          order?.status,
-
-          order?.tracking_status,
-
-          order?.city,
-
-          order?.state,
-        ];
-
-        return values.some(
-          (value) => value && String(value).toLowerCase().includes(query),
-        );
-      })
-      .slice(0, 7);
-  }, [data.orders, search]);
-
-  /* =======================================================
-     CHART DATA
-  ======================================================= */
-
-  const monthlyData = useMemo(() => {
-    const months = [
-      "Jan",
-      "Feb",
-      "Mar",
-      "Apr",
-      "May",
-      "Jun",
-      "Jul",
-      "Aug",
-      "Sep",
-      "Oct",
-      "Nov",
-      "Dec",
-    ];
-
-    const result = months.map((month) => ({
-      month,
-      orders: 0,
-    }));
-
-    for (const order of data.orders) {
-      const raw = order?.created_at || order?.createdAt || order?.order_date;
-
-      if (!raw) continue;
-
-      const date = new Date(raw);
-
-      if (Number.isNaN(date.getTime())) {
-        continue;
-      }
-
-      const month = date.getMonth();
-
-      result[month].orders += 1;
-    }
-
-    return result;
-  }, [data.orders]);
-
-  /* =======================================================
-     PIE DATA
-  ======================================================= */
-
-  const pieData = [
-    {
-      name: "Delivered",
-      value: deliveryRate,
-    },
-    {
-      name: "Remaining",
-      value: Math.max(0, 100 - deliveryRate),
-    },
-  ];
-
-  /* =======================================================
+  /* =====================================================
      LOADING
-  ======================================================= */
+  ===================================================== */
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#f6f8fb] p-5 lg:p-7">
-        <div className="animate-pulse space-y-5">
-          <div className="h-9 w-56 bg-slate-200 rounded-lg" />
+      <div className="min-h-full bg-[#f7f9fc] p-4 sm:p-5 lg:p-6">
+        <div className="mx-auto max-w-[1600px]">
+          <div className="animate-pulse space-y-5">
+            <div className="h-28 rounded-2xl bg-white" />
 
-          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-            {Array.from({
-              length: 5,
-            }).map((_, index) => (
-              <div
-                key={index}
-                className="h-32 rounded-2xl bg-white border border-slate-200"
-              />
-            ))}
-          </div>
+            <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+              {Array.from({ length: 8 }).map(
+                (_, index) => (
+                  <div
+                    key={index}
+                    className="h-32 rounded-2xl bg-white"
+                  />
+                )
+              )}
+            </div>
 
-          <div className="grid xl:grid-cols-3 gap-5">
-            <div className="xl:col-span-2 h-[330px] rounded-2xl bg-white border border-slate-200" />
-
-            <div className="h-[330px] rounded-2xl bg-white border border-slate-200" />
+            <div className="grid gap-5 xl:grid-cols-3">
+              <div className="h-96 rounded-2xl bg-white xl:col-span-2" />
+              <div className="h-96 rounded-2xl bg-white" />
+            </div>
           </div>
         </div>
       </div>
     );
   }
 
-  return (
-    <div className="min-h-screen bg-[#f6f8fb]">
-      {/* ===================================================
-          HEADER
-      =================================================== */}
+  /* =====================================================
+     ERROR
+  ===================================================== */
 
-      <header className="bg-white border-b border-slate-200">
-        <div className="px-5 lg:px-7 py-5">
-          <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#008dd2]">
-                Overview
-              </p>
-
-              <h1 className="mt-1 text-[25px] font-bold tracking-tight text-slate-900">
-                Dashboard
-              </h1>
-
-              <p className="mt-1 text-xs text-slate-400">
-                Monitor your shipping operations and business performance.
-              </p>
+  if (error) {
+    return (
+      <div className="min-h-full bg-[#f7f9fc] p-5">
+        <div className="mx-auto flex min-h-[60vh] max-w-[700px] items-center justify-center">
+          <div className="w-full rounded-2xl border border-red-100 bg-white p-8 text-center shadow-sm">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-50 text-red-500">
+              <HiOutlineExclamationCircle size={25} />
             </div>
 
-            <div className="flex items-center gap-2">
-              {/* SEARCH */}
+            <h2 className="mt-4 text-lg font-bold text-slate-900">
+              Dashboard couldn't load
+            </h2>
 
-              <div className="hidden md:flex h-10 w-[270px] items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3">
-                <HiOutlineSearch size={17} className="text-slate-400" />
+            <p className="mt-2 text-sm text-slate-500">
+              {error}
+            </p>
 
-                <input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search orders..."
-                  className="
-                    w-full
-                    bg-transparent
-                    outline-none
-                    text-xs
-                    text-slate-700
-                    placeholder:text-slate-400
-                  "
-                />
-              </div>
-
-              {/* REFRESH */}
-
-              <button
-                type="button"
-                onClick={() => fetchDashboard(true)}
-                disabled={refreshing}
-                className="
-                  h-10
-                  px-3
-                  rounded-xl
-                  border border-slate-200
-                  bg-white
-                  text-slate-600
-                  hover:bg-slate-50
-                  flex items-center gap-2
-                  text-xs
-                  font-semibold
-                  transition
-                "
-              >
-                <HiOutlineRefresh
-                  size={16}
-                  className={refreshing ? "animate-spin" : ""}
-                />
-                Refresh
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={handleRefresh}
+              className="
+                mt-5 inline-flex items-center gap-2
+                rounded-xl bg-[#008dd2]
+                px-4 py-2.5 text-sm
+                font-semibold text-white
+                transition hover:bg-[#007fbd]
+              "
+            >
+              <HiOutlineRefresh size={17} />
+              Try Again
+            </button>
           </div>
         </div>
-      </header>
+      </div>
+    );
+  }
 
-      {/* ===================================================
-          MAIN
-      =================================================== */}
+  /* =====================================================
+     UI
+  ===================================================== */
 
-      <main className="p-5 lg:p-7 space-y-5">
+  return (
+    <div className="min-h-full bg-[#f7f9fc]">
+      <div className="mx-auto max-w-[1600px] space-y-5 p-4 sm:p-5 lg:p-6">
+
         {/* =================================================
-            ERROR
+            HEADER
         ================================================= */}
 
-        {error && (
-          <div className="flex items-center justify-between gap-4 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3">
-            <div className="flex items-center gap-3">
-              <HiOutlineExclamation size={19} className="text-amber-600" />
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_2px_12px_rgba(15,23,42,0.04)]">
+          <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="flex items-center gap-2">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#008dd2]/10 text-[#008dd2]">
+                  <HiOutlineOfficeBuilding size={19} />
+                </div>
+
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#008dd2]">
+                    ParcelDrop Admin
+                  </p>
+
+                  <h1 className="mt-0.5 text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
+                    Dashboard
+                  </h1>
+                </div>
+              </div>
+
+              <p className="mt-2 text-xs text-slate-500 sm:text-sm">
+                Monitor your shipments, delivery performance and
+                operations from one place.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="
+                inline-flex shrink-0 items-center
+                justify-center gap-2 rounded-xl
+                border border-slate-200 bg-white
+                px-4 py-2.5 text-xs font-semibold
+                text-slate-700 shadow-sm
+                transition hover:border-[#008dd2]/30
+                hover:bg-[#008dd2]/5
+                hover:text-[#008dd2]
+                disabled:cursor-not-allowed
+                disabled:opacity-60
+              "
+            >
+              <HiOutlineRefresh
+                size={16}
+                className={
+                  refreshing
+                    ? "animate-spin"
+                    : ""
+                }
+              />
+              {refreshing
+                ? "Refreshing..."
+                : "Refresh"}
+            </button>
+          </div>
+
+          {/* TOP SUMMARY */}
+          <div className="grid border-t border-slate-100 sm:grid-cols-4">
+            <button
+              type="button"
+              onClick={() =>
+                navigate("/all-orders")
+              }
+              className="flex items-center gap-3 border-b border-slate-100 p-4 text-left transition hover:bg-slate-50 sm:border-b-0 sm:border-r"
+            >
+              <HiOutlineCube
+                size={18}
+                className="text-[#008dd2]"
+              />
 
               <div>
-                <p className="text-xs font-bold text-amber-800">
-                  Dashboard data unavailable
+                <p className="text-[11px] text-slate-400">
+                  Total Orders
                 </p>
 
-                <p className="text-[11px] text-amber-600 mt-0.5">{error}</p>
+                <p className="text-base font-bold text-slate-900">
+                  {formatNumber(totalOrders)}
+                </p>
+              </div>
+            </button>
+
+            <div className="flex items-center gap-3 border-b border-slate-100 p-4 sm:border-b-0 sm:border-r">
+              <HiOutlineUsers
+                size={18}
+                className="text-violet-500"
+              />
+
+              <div>
+                <p className="text-[11px] text-slate-400">
+                  Customers
+                </p>
+
+                <p className="text-base font-bold text-slate-900">
+                  {formatNumber(
+                    dashboard?.totalUsers
+                  )}
+                </p>
               </div>
             </div>
 
             <button
               type="button"
-              onClick={() => fetchDashboard(false)}
-              className="text-xs font-bold text-amber-700 hover:underline"
+              onClick={() =>
+                navigate("/delivered")
+              }
+              className="flex items-center gap-3 border-b border-slate-100 p-4 text-left transition hover:bg-slate-50 sm:border-b-0 sm:border-r"
             >
-              Retry
+              <HiOutlineCheckCircle
+                size={18}
+                className="text-emerald-500"
+              />
+
+              <div>
+                <p className="text-[11px] text-slate-400">
+                  Delivered
+                </p>
+
+                <p className="text-base font-bold text-slate-900">
+                  {formatNumber(delivered)}
+                </p>
+              </div>
             </button>
+
+            <div className="flex items-center gap-3 p-4">
+              <HiOutlineCurrencyRupee
+                size={18}
+                className="text-amber-500"
+              />
+
+              <div>
+                <p className="text-[11px] text-slate-400">
+                  Shipping Charges
+                </p>
+
+                <p className="text-base font-bold text-slate-900">
+                  {formatCurrency(
+                    dashboard?.totalCharges
+                  )}
+                </p>
+              </div>
+            </div>
           </div>
-        )}
+        </div>
 
         {/* =================================================
-            MAIN KPI
+            KPI CARDS
         ================================================= */}
 
-        <section className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 xl:grid-cols-8">
           <StatCard
-            title="Total Orders"
-            value={number(totalOrders)}
-            subtitle="All shipments"
-            icon={HiOutlineClipboardList}
-            iconBg="bg-[#008dd2]/10 text-[#008dd2]"
-            onClick={() => navigate("/orders")}
+            title="All Orders"
+            value={formatNumber(totalOrders)}
+            subtitle="View all shipments"
+            icon={HiOutlineCube}
+            iconBg="bg-sky-50"
+            iconColor="text-[#008dd2]"
+            onClick={() =>
+              navigate("/all-orders")
+            }
           />
 
           <StatCard
             title="Processing"
-            value={number(processing)}
-            subtitle="Awaiting processing"
+            value={formatNumber(processing)}
+            subtitle="Ready to process"
             icon={HiOutlineClock}
-            iconBg="bg-violet-50 text-violet-600"
-            onClick={() => navigate("/orders")}
+            iconBg="bg-indigo-50"
+            iconColor="text-indigo-600"
+            onClick={() =>
+              navigate("/processing-orders")
+            }
+          />
+
+          <StatCard
+            title="Manifested"
+            value={formatNumber(manifested)}
+            subtitle="Manifested shipments"
+            icon={HiOutlineClipboardList}
+            iconBg="bg-blue-50"
+            iconColor="text-blue-600"
+            onClick={() =>
+              navigate("/manifested")
+            }
           />
 
           <StatCard
             title="In Transit"
-            value={number(inTransit)}
-            subtitle="Currently moving"
+            value={formatNumber(inTransit)}
+            subtitle="On the way"
             icon={HiOutlineTruck}
-            iconBg="bg-blue-50 text-blue-600"
-            onClick={() => navigate("/orders")}
+            iconBg="bg-violet-50"
+            iconColor="text-violet-600"
+            onClick={() =>
+              navigate("/in-transit")
+            }
           />
 
           <StatCard
             title="Delivered"
-            value={number(delivered)}
-            subtitle={`${deliveryRate}% delivery rate`}
+            value={formatNumber(delivered)}
+            subtitle={`${deliveryPercentage}% of total`}
             icon={HiOutlineCheckCircle}
-            iconBg="bg-emerald-50 text-emerald-600"
-            onClick={() => navigate("/orders")}
+            iconBg="bg-emerald-50"
+            iconColor="text-emerald-600"
+            onClick={() =>
+              navigate("/delivered")
+            }
+          />
+
+          <StatCard
+            title="Not Picked"
+            value={formatNumber(
+              counts["Not Picked"]
+            )}
+            subtitle="Pickup pending"
+            icon={HiOutlineExclamationCircle}
+            iconBg="bg-orange-50"
+            iconColor="text-orange-600"
+            onClick={() =>
+              navigate("/not-picked")
+            }
           />
 
           <StatCard
             title="RTO"
-            value={number(rto)}
-            subtitle="Return shipments"
-            icon={HiOutlineRefresh}
-            iconBg="bg-orange-50 text-orange-600"
-            onClick={() => navigate("/orders")}
+            value={formatNumber(rto)}
+            subtitle="RTO shipments"
+            icon={HiOutlineArrowRight}
+            iconBg="bg-rose-50"
+            iconColor="text-rose-600"
+            onClick={() =>
+              navigate("/rto-in-transit")
+            }
           />
-        </section>
+
+          <StatCard
+            title="Pending"
+            value={formatNumber(
+              counts.Pending
+            )}
+            subtitle="Pending shipments"
+            icon={HiOutlineClock}
+            iconBg="bg-yellow-50"
+            iconColor="text-yellow-600"
+            onClick={() =>
+              navigate("/pending")
+            }
+          />
+        </div>
 
         {/* =================================================
-            SMALL METRICS
+            MAIN ANALYTICS
         ================================================= */}
 
-        <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-white border border-slate-200 rounded-2xl px-4 py-3">
+        <div className="grid gap-5 xl:grid-cols-3">
+
+          {/* STATUS OVERVIEW */}
+
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_2px_12px_rgba(15,23,42,0.04)] xl:col-span-2">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] text-slate-400">Manifested</span>
-
-              <span className="text-xs font-bold text-violet-600">
-                {number(manifested)}
-              </span>
-            </div>
-          </div>
-
-          <div className="bg-white border border-slate-200 rounded-2xl px-4 py-3">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] text-slate-400">
-                Out For Delivery
-              </span>
-
-              <span className="text-xs font-bold text-blue-600">
-                {number(outForDelivery)}
-              </span>
-            </div>
-          </div>
-
-          <div className="bg-white border border-slate-200 rounded-2xl px-4 py-3">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] text-slate-400">Not Picked</span>
-
-              <span className="text-xs font-bold text-amber-600">
-                {number(notPicked)}
-              </span>
-            </div>
-          </div>
-
-          <div className="bg-white border border-slate-200 rounded-2xl px-4 py-3">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] text-slate-400">
-                Shipping Charges
-              </span>
-
-              <span className="text-xs font-bold text-[#008dd2]">
-                {money(data.totalCharges)}
-              </span>
-            </div>
-          </div>
-        </section>
-
-        {/* =================================================
-            CHART SECTION
-        ================================================= */}
-
-        <section className="grid xl:grid-cols-3 gap-5">
-          {/* ORDER / REVENUE INSIGHT */}
-
-          <div className="xl:col-span-2 bg-white border border-slate-200 rounded-2xl p-5">
-            <div className="flex items-start justify-between mb-5">
               <div>
                 <h2 className="text-sm font-bold text-slate-900">
-                  Shipment Insights
+                  Shipment Overview
                 </h2>
 
-                <p className="text-[11px] text-slate-400 mt-1">
-                  Monthly shipment activity
+                <p className="mt-0.5 text-[11px] text-slate-400">
+                  Current order distribution by status
                 </p>
               </div>
 
-              <div className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-[#008dd2]" />
-
-                <span className="text-[10px] font-semibold text-slate-500">
-                  Orders
-                </span>
-              </div>
+              <button
+                type="button"
+                onClick={() =>
+                  navigate("/all-orders")
+                }
+                className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#008dd2] hover:underline"
+              >
+                All orders
+                <HiOutlineArrowRight size={13} />
+              </button>
             </div>
 
-            <div className="h-[280px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart
-                  data={monthlyData}
-                  margin={{
-                    top: 5,
-                    right: 5,
-                    left: -20,
-                    bottom: 0,
-                  }}
-                >
-                  <defs>
-                    <linearGradient
-                      id="shipDropArea"
-                      x1="0"
-                      y1="0"
-                      x2="0"
-                      y2="1"
-                    >
-                      <stop
-                        offset="0%"
-                        stopColor="#008dd2"
-                        stopOpacity={0.22}
-                      />
-
-                      <stop offset="100%" stopColor="#008dd2" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-
-                  <CartesianGrid vertical={false} stroke="#eef2f6" />
-
-                  <XAxis
-                    dataKey="month"
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{
-                      fontSize: 10,
-                      fill: "#94a3b8",
-                    }}
-                  />
-
-                  <YAxis
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{
-                      fontSize: 10,
-                      fill: "#94a3b8",
-                    }}
-                  />
-
-                  <Tooltip
-                    contentStyle={{
-                      borderRadius: "12px",
-                      border: "1px solid #e2e8f0",
-                      boxShadow: "0 12px 30px rgba(15,23,42,.08)",
-                      fontSize: "11px",
-                    }}
-                  />
-
-                  <Area
-                    type="monotone"
-                    dataKey="orders"
-                    stroke="#008dd2"
-                    strokeWidth={2.5}
-                    fill="url(#shipDropArea)"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
+            <div className="mt-4 grid gap-1 sm:grid-cols-2">
+              {statusRows.map((status) => (
+                <StatusRow
+                  key={status}
+                  status={status}
+                  count={
+                    counts[status] || 0
+                  }
+                  total={totalOrders}
+                  onClick={() =>
+                    navigate(
+                      STATUS_CONFIG[status]
+                        .path
+                    )
+                  }
+                />
+              ))}
             </div>
           </div>
 
-          {/* DELIVERY */}
+          {/* DELIVERY PERFORMANCE */}
 
-          <div className="bg-white border border-slate-200 rounded-2xl p-5">
-            <div className="flex items-start justify-between">
-              <div>
-                <h2 className="text-sm font-bold text-slate-900">
-                  Delivery Performance
-                </h2>
-
-                <p className="text-[11px] text-slate-400 mt-1">
-                  Delivered shipments
-                </p>
-              </div>
-
-              <div className="h-8 w-8 rounded-lg bg-[#008dd2]/10 flex items-center justify-center text-[#008dd2]">
-                <HiOutlineCheckCircle size={17} />
-              </div>
-            </div>
-
-            <div className="relative h-[205px] flex items-center justify-center">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={pieData}
-                    cx="50%"
-                    cy="58%"
-                    startAngle={180}
-                    endAngle={0}
-                    innerRadius={68}
-                    outerRadius={88}
-                    dataKey="value"
-                    stroke="none"
-                  >
-                    <Cell fill="#008dd2" />
-
-                    <Cell fill="#e8eef3" />
-                  </Pie>
-                </PieChart>
-              </ResponsiveContainer>
-
-              <div className="absolute top-[102px] text-center">
-                <p className="text-[30px] font-bold tracking-tight text-slate-900">
-                  {deliveryRate}%
-                </p>
-
-                <p className="text-[10px] text-slate-400">Delivery Rate</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 border-t border-slate-100 pt-4">
-              <div>
-                <p className="text-[10px] text-slate-400">Delivered</p>
-
-                <p className="mt-1 text-lg font-bold text-slate-900">
-                  {number(delivered)}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-[10px] text-slate-400">Remaining</p>
-
-                <p className="mt-1 text-lg font-bold text-slate-900">
-                  {number(Math.max(0, totalOrders - delivered))}
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* =================================================
-            RECENT ORDERS
-        ================================================= */}
-
-        <section className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
-          <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_2px_12px_rgba(15,23,42,0.04)]">
             <div>
               <h2 className="text-sm font-bold text-slate-900">
-                Recent Orders
+                Delivery Performance
               </h2>
 
-              <p className="text-[11px] text-slate-400 mt-1">
-                Latest shipment activity
+              <p className="mt-0.5 text-[11px] text-slate-400">
+                Delivered orders against total orders
               </p>
             </div>
 
+            <div className="mt-7 flex justify-center">
+              <div
+                className="relative flex h-44 w-44 items-center justify-center rounded-full"
+                style={{
+                  background: `conic-gradient(
+                    #008dd2 ${deliveryPercentage * 3.6}deg,
+                    #e9eef5 ${deliveryPercentage * 3.6}deg
+                  )`,
+                }}
+              >
+                <div className="flex h-36 w-36 flex-col items-center justify-center rounded-full bg-white">
+                  <span className="text-4xl font-bold tracking-tight text-slate-900">
+                    {deliveryPercentage}%
+                  </span>
+
+                  <span className="mt-1 text-[11px] font-medium text-slate-400">
+                    Delivered
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() =>
+                  navigate("/delivered")
+                }
+                className="rounded-xl bg-emerald-50 p-3 text-left transition hover:bg-emerald-100"
+              >
+                <p className="text-[10px] font-medium text-emerald-600">
+                  Delivered
+                </p>
+
+                <p className="mt-1 text-lg font-bold text-emerald-700">
+                  {formatNumber(delivered)}
+                </p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  navigate("/in-transit")
+                }
+                className="rounded-xl bg-violet-50 p-3 text-left transition hover:bg-violet-100"
+              >
+                <p className="text-[10px] font-medium text-violet-600">
+                  In Transit
+                </p>
+
+                <p className="mt-1 text-lg font-bold text-violet-700">
+                  {formatNumber(inTransit)}
+                </p>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* =================================================
+            RECENT ORDERS + TICKETS
+        ================================================= */}
+
+        <div className="grid gap-5 xl:grid-cols-3">
+
+          {/* RECENT ORDERS */}
+
+          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_2px_12px_rgba(15,23,42,0.04)] xl:col-span-2">
+            <div className="flex items-center justify-between border-b border-slate-100 px-4 py-4">
+              <div>
+                <h2 className="text-sm font-bold text-slate-900">
+                  Recent Orders
+                </h2>
+
+                <p className="mt-0.5 text-[11px] text-slate-400">
+                  Latest shipments created in ParcelDrop
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() =>
+                  navigate("/all-orders")
+                }
+                className="
+                  inline-flex items-center gap-1
+                  rounded-lg px-2.5 py-1.5
+                  text-[11px] font-semibold
+                  text-[#008dd2]
+                  transition hover:bg-[#008dd2]/5
+                "
+              >
+                View all
+                <HiOutlineArrowRight size={13} />
+              </button>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[700px]">
+                <thead>
+                  <tr className="border-b border-slate-100 bg-slate-50/60">
+                    <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                      Order
+                    </th>
+
+                    <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                      Customer
+                    </th>
+
+                    <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                      AWB
+                    </th>
+
+                    <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                      Status
+                    </th>
+
+                    <th className="px-4 py-3 text-right text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                      Charge
+                    </th>
+
+                    <th className="px-4 py-3 text-right text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                      Date
+                    </th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {recentOrders.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={6}
+                        className="px-4 py-12 text-center"
+                      >
+                        <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-400">
+                          <HiOutlineCube size={20} />
+                        </div>
+
+                        <p className="mt-3 text-xs font-medium text-slate-500">
+                          No recent orders found
+                        </p>
+                      </td>
+                    </tr>
+                  ) : (
+                    recentOrders.map(
+                      (order, index) => (
+                        <tr
+                          key={
+                            order.id ||
+                            order.order_id ||
+                            index
+                          }
+                          onClick={() =>
+                            navigate(
+                              "/all-orders"
+                            )
+                          }
+                          className="
+                            cursor-pointer
+                            border-b border-slate-50
+                            transition hover:bg-slate-50/70
+                          "
+                        >
+                          <td className="px-4 py-3">
+                            <p className="text-xs font-semibold text-slate-900">
+                              #
+                              {order.order_id ||
+                                order.id ||
+                                "-"}
+                            </p>
+
+                            <p className="mt-0.5 text-[10px] text-slate-400">
+                              {order.payment_type ||
+                                "-"}
+                            </p>
+                          </td>
+
+                          <td className="px-4 py-3">
+                            <p className="max-w-[170px] truncate text-xs font-medium text-slate-700">
+                              {order.customer_name ||
+                                order.customer_company ||
+                                order.consignee_name ||
+                                "Customer"}
+                            </p>
+
+                            {order.customer_email && (
+                              <p className="mt-0.5 max-w-[170px] truncate text-[10px] text-slate-400">
+                                {
+                                  order.customer_email
+                                }
+                              </p>
+                            )}
+                          </td>
+
+                          <td className="px-4 py-3">
+                            <span className="font-mono text-[11px] text-slate-600">
+                              {order.awb || "-"}
+                            </span>
+                          </td>
+
+                          <td className="px-4 py-3">
+                            <StatusBadge
+                              status={
+                                order.status
+                              }
+                            />
+                          </td>
+
+                          <td className="px-4 py-3 text-right">
+                            <span className="text-xs font-semibold text-slate-700">
+                              {formatCurrency(
+                                order.charge
+                              )}
+                            </span>
+                          </td>
+
+                          <td className="px-4 py-3 text-right">
+                            <span className="whitespace-nowrap text-[11px] text-slate-500">
+                              {formatDate(
+                                order.created_at
+                              )}
+                            </span>
+                          </td>
+                        </tr>
+                      )
+                    )
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* TICKETS */}
+
+          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_2px_12px_rgba(15,23,42,0.04)]">
+            <div className="flex items-center justify-between border-b border-slate-100 px-4 py-4">
+              <div>
+                <h2 className="text-sm font-bold text-slate-900">
+                  Recent Tickets
+                </h2>
+
+                <p className="mt-0.5 text-[11px] text-slate-400">
+                  Latest support activity
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() =>
+                  navigate("/tickets")
+                }
+                className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-[#008dd2] transition hover:bg-[#008dd2]/5"
+              >
+                View all
+                <HiOutlineArrowRight size={13} />
+              </button>
+            </div>
+
+            <div className="divide-y divide-slate-100">
+              {recentTickets.length === 0 ? (
+                <div className="px-5 py-12 text-center">
+                  <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-400">
+                    <HiOutlineTicket size={20} />
+                  </div>
+
+                  <p className="mt-3 text-xs font-medium text-slate-500">
+                    No recent tickets
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      navigate("/tickets")
+                    }
+                    className="mt-3 text-[11px] font-semibold text-[#008dd2] hover:underline"
+                  >
+                    Open Tickets
+                  </button>
+                </div>
+              ) : (
+                recentTickets.map(
+                  (ticket, index) => (
+                    <button
+                      key={
+                        ticket.id ||
+                        index
+                      }
+                      type="button"
+                      onClick={() =>
+                        navigate(
+                          "/tickets"
+                        )
+                      }
+                      className="group flex w-full items-start gap-3 px-4 py-3 text-left transition hover:bg-slate-50"
+                    >
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#008dd2]/10 text-[#008dd2]">
+                        <HiOutlineTicket
+                          size={15}
+                        />
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-xs font-semibold text-slate-700">
+                          {ticket.subject ||
+                            ticket.title ||
+                            ticket.ticket_subject ||
+                            `Ticket #${
+                              ticket.id ||
+                              "-"
+                            }`}
+                        </p>
+
+                        <p className="mt-1 text-[10px] text-slate-400">
+                          {ticket.status ||
+                            ticket.ticket_status ||
+                            "Open"}
+                        </p>
+                      </div>
+
+                      <HiOutlineExternalLink
+                        size={14}
+                        className="mt-1 shrink-0 text-slate-300 transition group-hover:text-[#008dd2]"
+                      />
+                    </button>
+                  )
+                )
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* =================================================
+            QUICK ACTIONS
+        ================================================= */}
+
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_2px_12px_rgba(15,23,42,0.04)]">
+          <div className="mb-3">
+            <h2 className="text-sm font-bold text-slate-900">
+              Quick Navigation
+            </h2>
+
+            <p className="mt-0.5 text-[11px] text-slate-400">
+              Jump directly to important operations
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-6">
             <button
               type="button"
-              onClick={() => navigate("/orders")}
-              className="
-                flex
-                items-center
-                gap-1.5
-                text-[11px]
-                font-bold
-                text-[#008dd2]
-                hover:gap-2.5
-                transition-all
-              "
+              onClick={() =>
+                navigate("/all-orders")
+              }
+              className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-3 text-left transition hover:border-[#008dd2]/30 hover:bg-[#008dd2]/5"
             >
-              View All
-              <HiOutlineArrowRight size={14} />
+              <HiOutlineCube
+                size={17}
+                className="text-[#008dd2]"
+              />
+              <span className="text-[11px] font-semibold text-slate-700">
+                All Orders
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() =>
+                navigate(
+                  "/processing-orders"
+                )
+              }
+              className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-3 text-left transition hover:border-indigo-200 hover:bg-indigo-50"
+            >
+              <HiOutlineClock
+                size={17}
+                className="text-indigo-600"
+              />
+              <span className="text-[11px] font-semibold text-slate-700">
+                Processing
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() =>
+                navigate("/manifested")
+              }
+              className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-3 text-left transition hover:border-blue-200 hover:bg-blue-50"
+            >
+              <HiOutlineClipboardList
+                size={17}
+                className="text-blue-600"
+              />
+              <span className="text-[11px] font-semibold text-slate-700">
+                Manifested
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() =>
+                navigate("/in-transit")
+              }
+              className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-3 text-left transition hover:border-violet-200 hover:bg-violet-50"
+            >
+              <HiOutlineTruck
+                size={17}
+                className="text-violet-600"
+              />
+              <span className="text-[11px] font-semibold text-slate-700">
+                In Transit
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() =>
+                navigate("/delivered")
+              }
+              className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-3 text-left transition hover:border-emerald-200 hover:bg-emerald-50"
+            >
+              <HiOutlineCheckCircle
+                size={17}
+                className="text-emerald-600"
+              />
+              <span className="text-[11px] font-semibold text-slate-700">
+                Delivered
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() =>
+                navigate("/tickets")
+              }
+              className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-3 text-left transition hover:border-[#008dd2]/30 hover:bg-[#008dd2]/5"
+            >
+              <HiOutlineTicket
+                size={17}
+                className="text-[#008dd2]"
+              />
+              <span className="text-[11px] font-semibold text-slate-700">
+                Tickets
+              </span>
             </button>
           </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[760px]">
-              <thead>
-                <tr className="bg-slate-50/70 border-b border-slate-100">
-                  <th className="px-5 py-3 text-left text-[9px] uppercase tracking-wider font-bold text-slate-400">
-                    Order ID
-                  </th>
-
-                  <th className="px-4 py-3 text-left text-[9px] uppercase tracking-wider font-bold text-slate-400">
-                    Customer
-                  </th>
-
-                  <th className="px-4 py-3 text-left text-[9px] uppercase tracking-wider font-bold text-slate-400">
-                    Date
-                  </th>
-
-                  <th className="px-4 py-3 text-left text-[9px] uppercase tracking-wider font-bold text-slate-400">
-                    Status
-                  </th>
-
-                  <th className="px-4 py-3 text-right text-[9px] uppercase tracking-wider font-bold text-slate-400">
-                    Charge
-                  </th>
-
-                  <th className="px-5 py-3 text-right text-[9px] uppercase tracking-wider font-bold text-slate-400">
-                    Action
-                  </th>
-                </tr>
-              </thead>
-
-              <tbody className="divide-y divide-slate-100">
-                {filteredOrders.length === 0 ? (
-                  <tr>
-                    <td colSpan="6" className="py-12 text-center">
-                      <HiOutlineCube
-                        size={28}
-                        className="mx-auto text-slate-300"
-                      />
-
-                      <p className="mt-2 text-xs font-semibold text-slate-500">
-                        No recent orders
-                      </p>
-                    </td>
-                  </tr>
-                ) : (
-                  filteredOrders.map((order, index) => {
-                    const orderId =
-                      order?.order_id || order?.orderId || order?.id || "-";
-
-                    const customer =
-                      order?.customer_name ||
-                      order?.customerName ||
-                      order?.consignee_name ||
-                      order?.name ||
-                      "Customer";
-
-                    const status = normalizeStatus(
-                      order?.tracking_status || order?.status,
-                    );
-
-                    const charge =
-                      order?.charge ??
-                      order?.shipping_charge ??
-                      order?.shippingCharge ??
-                      0;
-
-                    return (
-                      <tr
-                        key={order?.id || order?.order_id || index}
-                        className="hover:bg-slate-50/60 transition"
-                      >
-                        <td className="px-5 py-3.5">
-                          <span className="text-xs font-bold text-slate-800">
-                            #{orderId}
-                          </span>
-                        </td>
-
-                        <td className="px-4 py-3.5">
-                          <span className="text-xs text-slate-600">
-                            {customer}
-                          </span>
-                        </td>
-
-                        <td className="px-4 py-3.5">
-                          <span className="text-[11px] text-slate-400">
-                            {dateFormat(
-                              order?.created_at ||
-                                order?.createdAt ||
-                                order?.order_date,
-                            )}
-                          </span>
-                        </td>
-
-                        <td className="px-4 py-3.5">
-                          <span
-                            className={`
-                                inline-flex
-                                items-center
-                                px-2.5
-                                py-1
-                                rounded-lg
-                                border
-                                text-[9px]
-                                font-bold
-                                ${statusClass(status)}
-                              `}
-                          >
-                            {status}
-                          </span>
-                        </td>
-
-                        <td className="px-4 py-3.5 text-right">
-                          <span className="text-xs font-semibold text-slate-700">
-                            {money(charge)}
-                          </span>
-                        </td>
-
-                        <td className="px-5 py-3.5 text-right">
-                          <button
-                            type="button"
-                            onClick={() => navigate("/orders")}
-                            title="View order"
-                            className="
-                                h-8
-                                w-8
-                                inline-flex
-                                items-center
-                                justify-center
-                                rounded-lg
-                                text-slate-400
-                                hover:text-[#008dd2]
-                                hover:bg-[#008dd2]/10
-                                transition
-                              "
-                          >
-                            <HiOutlineEye size={16} />
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        {/* =================================================
-            LOWER SECTION
-        ================================================= */}
-
-        <section className="grid lg:grid-cols-2 gap-5">
-          {/* SHIPMENT STATUS */}
-
-          <div className="bg-white border border-slate-200 rounded-2xl p-5">
-            <div className="flex items-center justify-between mb-5">
-              <div>
-                <h2 className="text-sm font-bold text-slate-900">
-                  Shipment Status
-                </h2>
-
-                <p className="text-[11px] text-slate-400 mt-1">
-                  Current order distribution
-                </p>
-              </div>
-
-              <HiOutlineTruck size={19} className="text-[#008dd2]" />
-            </div>
-
-            <div className="space-y-4">
-              {[
-                ["Processing", processing],
-                ["Manifested", manifested],
-                ["In Transit", inTransit],
-                ["Out For Delivery", outForDelivery],
-                ["Delivered", delivered],
-                ["RTO", rto],
-              ].map(([name, value]) => {
-                const percentage =
-                  totalOrders > 0
-                    ? Math.min(100, Math.round((value / totalOrders) * 100))
-                    : 0;
-
-                return (
-                  <div key={name}>
-                    <div className="flex justify-between mb-1.5">
-                      <span className="text-[11px] font-medium text-slate-500">
-                        {name}
-                      </span>
-
-                      <span className="text-[11px] font-bold text-slate-800">
-                        {number(value)}
-                      </span>
-                    </div>
-
-                    <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden">
-                      <div
-                        className="h-full rounded-full bg-[#008dd2] transition-all"
-                        style={{
-                          width: `${percentage}%`,
-                        }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* ATTENTION */}
-
-          <div className="bg-white border border-slate-200 rounded-2xl p-5">
-            <div className="flex items-center justify-between mb-5">
-              <div>
-                <h2 className="text-sm font-bold text-slate-900">
-                  Attention Required
-                </h2>
-
-                <p className="text-[11px] text-slate-400 mt-1">
-                  Shipments and issues needing attention
-                </p>
-              </div>
-
-              <HiOutlineExclamation size={19} className="text-amber-500" />
-            </div>
-
-            <div className="space-y-2.5">
-              {/* NOT PICKED */}
-
-              <button
-                type="button"
-                onClick={() => navigate("/orders")}
-                className="
-                  w-full
-                  flex
-                  items-center
-                  justify-between
-                  p-3
-                  rounded-xl
-                  bg-amber-50/60
-                  border border-amber-100
-                  hover:bg-amber-50
-                  transition
-                "
-              >
-                <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-lg bg-amber-100 flex items-center justify-center text-amber-600">
-                    <HiOutlineClock size={17} />
-                  </div>
-
-                  <div className="text-left">
-                    <p className="text-xs font-bold text-slate-800">
-                      Not Picked
-                    </p>
-
-                    <p className="text-[10px] text-slate-400">
-                      Pickup requires attention
-                    </p>
-                  </div>
-                </div>
-
-                <span className="text-sm font-bold text-amber-600">
-                  {number(notPicked)}
-                </span>
-              </button>
-
-              {/* PENDING */}
-
-              <button
-                type="button"
-                onClick={() => navigate("/orders")}
-                className="
-                  w-full
-                  flex
-                  items-center
-                  justify-between
-                  p-3
-                  rounded-xl
-                  bg-slate-50
-                  border border-slate-100
-                  hover:bg-slate-100
-                  transition
-                "
-              >
-                <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-lg bg-white border border-slate-100 flex items-center justify-center text-slate-500">
-                    <HiOutlineClock size={17} />
-                  </div>
-
-                  <div className="text-left">
-                    <p className="text-xs font-bold text-slate-800">Pending</p>
-
-                    <p className="text-[10px] text-slate-400">
-                      Orders waiting for action
-                    </p>
-                  </div>
-                </div>
-
-                <span className="text-sm font-bold text-slate-700">
-                  {number(pending)}
-                </span>
-              </button>
-
-              {/* NDR */}
-
-              <button
-                type="button"
-                onClick={() => navigate("/orders")}
-                className="
-                  w-full
-                  flex
-                  items-center
-                  justify-between
-                  p-3
-                  rounded-xl
-                  bg-red-50/60
-                  border border-red-100
-                  hover:bg-red-50
-                  transition
-                "
-              >
-                <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-lg bg-red-100 flex items-center justify-center text-red-600">
-                    <HiOutlineExclamation size={17} />
-                  </div>
-
-                  <div className="text-left">
-                    <p className="text-xs font-bold text-slate-800">NDR</p>
-
-                    <p className="text-[10px] text-slate-400">
-                      Delivery exceptions
-                    </p>
-                  </div>
-                </div>
-
-                <span className="text-sm font-bold text-red-600">
-                  {number(ndr)}
-                </span>
-              </button>
-
-              {/* TICKETS */}
-
-              <button
-                type="button"
-                onClick={() => navigate("/tickets")}
-                className="
-                  w-full
-                  flex
-                  items-center
-                  justify-between
-                  p-3
-                  rounded-xl
-                  bg-blue-50/60
-                  border border-blue-100
-                  hover:bg-blue-50
-                  transition
-                "
-              >
-                <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600">
-                    <HiOutlineTicket size={17} />
-                  </div>
-
-                  <div className="text-left">
-                    <p className="text-xs font-bold text-slate-800">
-                      Support Tickets
-                    </p>
-
-                    <p className="text-[10px] text-slate-400">
-                      Recent customer issues
-                    </p>
-                  </div>
-                </div>
-
-                <span className="text-sm font-bold text-blue-600">
-                  {number(data.recentTickets.length)}
-                </span>
-              </button>
-            </div>
-          </div>
-        </section>
-
-        {/* =================================================
-            FOOTER
-        ================================================= */}
-
-        <div className="flex items-center justify-between px-1 pb-2">
-          <p className="text-[10px] text-slate-400">ShipDrop Admin</p>
-
-          <p className="text-[10px] text-slate-400">
-            Shipping operations overview
-          </p>
         </div>
-      </main>
+
+      </div>
     </div>
   );
 }
 
-export default Dashboard;
+export default AdminDashboard;
