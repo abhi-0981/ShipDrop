@@ -123,27 +123,27 @@ function StatCard({
     <button
       type="button"
       onClick={onClick}
-      className="group w-full rounded-2xl border border-slate-200/80 bg-white p-5 text-left shadow-[0_4px_20px_rgba(15,23,42,0.04)] transition-all duration-200 hover:-translate-y-[2px] hover:border-[#008dd2]/20 hover:shadow-[0_10px_30px_rgba(15,23,42,0.07)]"
+      className="group w-full rounded-2xl border border-slate-200/80 bg-white p-4.5 sm:p-5 text-left shadow-[0_4px_20px_rgba(15,23,42,0.04)] transition-all duration-200 hover:-translate-y-[2px] hover:border-[#008dd2]/20 hover:shadow-[0_10px_30px_rgba(15,23,42,0.07)] active:scale-[0.99]"
     >
-      <div className="flex items-start justify-between">
+      <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="text-[12px] font-medium text-slate-500">{title}</p>
 
-          <p className="mt-2 text-[25px] font-bold tracking-tight text-slate-900">
+          <p className="mt-1.5 sm:mt-2 text-[22px] sm:text-[25px] font-bold tracking-tight text-slate-900 truncate">
             {value}
           </p>
 
-          <p className="mt-1 text-[11px] text-slate-400">{subtitle}</p>
+          <p className="mt-1 text-[11px] text-slate-400 truncate">{subtitle}</p>
         </div>
 
         <div
-          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${iconClass}`}
+          className={`flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-xl ${iconClass}`}
         >
-          <Icon size={21} />
+          <Icon size={20} />
         </div>
       </div>
 
-      <div className="mt-4 flex items-center gap-1 text-[11px] font-semibold text-slate-400 transition-colors group-hover:text-[#008dd2]">
+      <div className="mt-3.5 sm:mt-4 flex items-center gap-1 text-[11px] font-semibold text-slate-400 transition-colors group-hover:text-[#008dd2]">
         View details
         <HiOutlineArrowRight
           size={13}
@@ -164,7 +164,7 @@ function ProgressRow({ label, value, total }) {
       : 0;
 
   return (
-    <div className="mb-4 last:mb-0">
+    <div className="mb-3.5 sm:mb-4 last:mb-0">
       <div className="mb-1.5 flex items-center justify-between">
         <span className="text-[12px] font-medium text-slate-600">
           {label}
@@ -338,22 +338,22 @@ function Dashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-[calc(100vh-72px)] bg-[#f7fbfe] p-6">
-        <div className="mx-auto max-w-[1500px] animate-pulse space-y-5">
-          <div className="h-28 rounded-2xl bg-white" />
+      <div className="min-h-[calc(100vh-72px)] bg-[#f7fbfe] p-4 sm:p-6">
+        <div className="mx-auto max-w-[1500px] animate-pulse space-y-4 sm:space-y-5">
+          <div className="h-24 sm:h-28 rounded-2xl bg-white" />
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 xl:grid-cols-4">
             {[1, 2, 3, 4].map((item) => (
               <div
                 key={item}
-                className="h-36 rounded-2xl bg-white"
+                className="h-32 sm:h-36 rounded-2xl bg-white"
               />
             ))}
           </div>
 
-          <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
-            <div className="h-96 rounded-2xl bg-white xl:col-span-2" />
-            <div className="h-96 rounded-2xl bg-white" />
+          <div className="grid grid-cols-1 gap-4 sm:gap-5 xl:grid-cols-3">
+            <div className="h-80 sm:h-96 rounded-2xl bg-white xl:col-span-2" />
+            <div className="h-80 sm:h-96 rounded-2xl bg-white" />
           </div>
         </div>
       </div>
@@ -362,13 +362,13 @@ function Dashboard() {
 
   return (
     <div className="min-h-[calc(100vh-72px)] bg-[#f7fbfe]">
-      <div className="mx-auto max-w-[1500px] p-5 md:p-6">
+      <div className="mx-auto max-w-[1500px] p-3.5 sm:p-5 md:p-6 pb-24 lg:pb-8">
 
         {/* ================================================= */}
         {/* HEADER */}
         {/* ================================================= */}
 
-        <div className="mb-5 flex flex-col gap-4 rounded-2xl border border-slate-200/70 bg-white px-5 py-5 shadow-[0_4px_20px_rgba(15,23,42,0.035)] sm:flex-row sm:items-center sm:justify-between">
+        <div className="mb-4 sm:mb-5 flex flex-col gap-3.5 rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 shadow-[0_4px_20px_rgba(15,23,42,0.035)] sm:flex-row sm:items-center sm:justify-between">
           <div>
             <div className="flex items-center gap-2">
               <div className="h-2 w-2 rounded-full bg-emerald-500" />
@@ -378,11 +378,11 @@ function Dashboard() {
               </span>
             </div>
 
-            <h1 className="mt-1 text-[25px] font-bold tracking-tight text-slate-900">
+            <h1 className="mt-1 text-xl sm:text-[25px] font-bold tracking-tight text-slate-900">
               Dashboard
             </h1>
 
-            <p className="mt-1 text-[12px] text-slate-500">
+            <p className="mt-0.5 sm:mt-1 text-xs text-slate-500">
               Monitor your shipping operations, orders and delivery
               performance.
             </p>
@@ -392,7 +392,7 @@ function Dashboard() {
             type="button"
             onClick={refreshDashboard}
             disabled={refreshing}
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-[12px] font-semibold text-slate-600 transition hover:border-[#008dd2]/30 hover:bg-[#008dd2]/5 hover:text-[#008dd2] disabled:cursor-not-allowed disabled:opacity-60"
+            className="self-start sm:self-auto inline-flex h-9.5 sm:h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 sm:px-4 text-xs font-semibold text-slate-600 transition hover:border-[#008dd2]/30 hover:bg-[#008dd2]/5 hover:text-[#008dd2] active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <HiOutlineRefresh
               size={17}
@@ -408,8 +408,8 @@ function Dashboard() {
         {/* ================================================= */}
 
         {error && (
-          <div className="mb-5 flex items-center justify-between gap-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3">
-            <div className="flex items-center gap-2 text-[12px] text-red-600">
+          <div className="mb-4 sm:mb-5 flex items-center justify-between gap-4 rounded-xl border border-red-100 bg-red-50 p-3.5 sm:px-4 sm:py-3">
+            <div className="flex items-center gap-2 text-xs text-red-600">
               <HiOutlineExclamationCircle size={18} />
 
               <span>{error}</span>
@@ -426,10 +426,10 @@ function Dashboard() {
         )}
 
         {/* ================================================= */}
-        {/* KPI CARDS */}
+        {/* KPI CARDS (ROW 1) */}
         {/* ================================================= */}
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-4">
 
           <StatCard
             title="Total Orders"
@@ -468,9 +468,11 @@ function Dashboard() {
           />
         </div>
 
-        {/* SECOND KPI ROW */}
+        {/* ================================================= */}
+        {/* KPI CARDS (ROW 2) */}
+        {/* ================================================= */}
 
-        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="mt-3 sm:mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-4">
 
           <StatCard
             title="Processing"
@@ -510,26 +512,26 @@ function Dashboard() {
         </div>
 
         {/* ================================================= */}
-        {/* ANALYTICS */}
+        {/* ANALYTICS SECTION */}
         {/* ================================================= */}
 
-        <div className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-3">
+        <div className="mt-4 sm:mt-5 grid grid-cols-1 gap-4 sm:gap-5 xl:grid-cols-3">
 
           {/* STATUS OVERVIEW */}
 
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_4px_20px_rgba(15,23,42,0.04)] xl:col-span-2">
-            <div className="mb-5 flex items-center justify-between">
+          <div className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-[0_4px_20px_rgba(15,23,42,0.04)] xl:col-span-2">
+            <div className="mb-4 sm:mb-5 flex items-center justify-between">
               <div>
-                <h2 className="text-[15px] font-bold text-slate-900">
+                <h2 className="text-sm sm:text-[15px] font-bold text-slate-900">
                   Order Status Overview
                 </h2>
 
-                <p className="mt-1 text-[11px] text-slate-400">
+                <p className="mt-0.5 text-[11px] text-slate-400">
                   Current shipment distribution
                 </p>
               </div>
 
-              <span className="rounded-lg bg-slate-50 px-3 py-1.5 text-[11px] font-semibold text-slate-500">
+              <span className="rounded-lg bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-500">
                 {formatNumber(totalOrders)} Orders
               </span>
             </div>
@@ -548,19 +550,19 @@ function Dashboard() {
 
           {/* DELIVERY PERFORMANCE */}
 
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_4px_20px_rgba(15,23,42,0.04)]">
+          <div className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-[0_4px_20px_rgba(15,23,42,0.04)]">
             <div>
-              <h2 className="text-[15px] font-bold text-slate-900">
+              <h2 className="text-sm sm:text-[15px] font-bold text-slate-900">
                 Delivery Performance
               </h2>
 
-              <p className="mt-1 text-[11px] text-slate-400">
+              <p className="mt-0.5 text-[11px] text-slate-400">
                 Overall shipment health
               </p>
             </div>
 
-            <div className="mt-7 flex justify-center">
-              <div className="relative flex h-44 w-44 items-center justify-center rounded-full bg-slate-100">
+            <div className="mt-5 sm:mt-7 flex justify-center">
+              <div className="relative flex h-36 w-36 sm:h-44 sm:w-44 items-center justify-center rounded-full bg-slate-100">
                 <div
                   className="absolute inset-0 rounded-full"
                   style={{
@@ -570,20 +572,20 @@ function Dashboard() {
                   }}
                 />
 
-                <div className="absolute inset-[11px] flex flex-col items-center justify-center rounded-full bg-white">
-                  <span className="text-[30px] font-bold text-slate-900">
+                <div className="absolute inset-[9px] sm:inset-[11px] flex flex-col items-center justify-center rounded-full bg-white">
+                  <span className="text-2xl sm:text-[30px] font-bold text-slate-900">
                     {deliveryPercentage}%
                   </span>
 
-                  <span className="text-[11px] font-medium text-slate-400">
+                  <span className="text-[10px] sm:text-[11px] font-medium text-slate-400">
                     Delivered
                   </span>
                 </div>
               </div>
             </div>
 
-            <div className="mt-7 space-y-3">
-              <div className="flex items-center justify-between rounded-xl bg-emerald-50 px-3 py-2.5">
+            <div className="mt-5 sm:mt-7 space-y-2.5 sm:space-y-3">
+              <div className="flex items-center justify-between rounded-xl bg-emerald-50 px-3 py-2 sm:py-2.5">
                 <span className="text-[11px] font-medium text-emerald-700">
                   Delivered
                 </span>
@@ -593,7 +595,7 @@ function Dashboard() {
                 </span>
               </div>
 
-              <div className="flex items-center justify-between rounded-xl bg-blue-50 px-3 py-2.5">
+              <div className="flex items-center justify-between rounded-xl bg-blue-50 px-3 py-2 sm:py-2.5">
                 <span className="text-[11px] font-medium text-blue-700">
                   In Transit
                 </span>
@@ -603,7 +605,7 @@ function Dashboard() {
                 </span>
               </div>
 
-              <div className="flex items-center justify-between rounded-xl bg-orange-50 px-3 py-2.5">
+              <div className="flex items-center justify-between rounded-xl bg-orange-50 px-3 py-2 sm:py-2.5">
                 <span className="text-[11px] font-medium text-orange-700">
                   RTO
                 </span>
@@ -617,17 +619,17 @@ function Dashboard() {
         </div>
 
         {/* ================================================= */}
-        {/* RECENT ORDERS */}
+        {/* RECENT ORDERS (RESPONSIVE CARDS + TABLE) */}
         {/* ================================================= */}
 
-        <div className="mt-5 rounded-2xl border border-slate-200/80 bg-white shadow-[0_4px_20px_rgba(15,23,42,0.04)]">
-          <div className="flex flex-col gap-3 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-4 sm:mt-5 rounded-2xl border border-slate-200/80 bg-white shadow-[0_4px_20px_rgba(15,23,42,0.04)] overflow-hidden">
+          <div className="flex flex-row items-center justify-between border-b border-slate-100 p-4 sm:px-5 sm:py-4">
             <div>
-              <h2 className="text-[15px] font-bold text-slate-900">
+              <h2 className="text-sm sm:text-[15px] font-bold text-slate-900">
                 Recent Orders
               </h2>
 
-              <p className="mt-1 text-[11px] text-slate-400">
+              <p className="mt-0.5 text-[11px] text-slate-400">
                 Latest shipment activity
               </p>
             </div>
@@ -635,61 +637,93 @@ function Dashboard() {
             <button
               type="button"
               onClick={openOrders}
-              className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#008dd2] hover:underline"
+              className="inline-flex items-center gap-1 text-xs font-semibold text-[#008dd2] hover:underline"
             >
               View all
               <HiOutlineArrowRight size={14} />
             </button>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[850px]">
+          {/* 1. MOBILE VIEW: APPLIKE RECENT ORDERS CARDS */}
+          <div className="space-y-2 p-3 sm:hidden">
+            {displayedOrders.length === 0 ? (
+              <div className="py-10 text-center">
+                <HiOutlineClipboardList
+                  size={26}
+                  className="mx-auto text-slate-300"
+                />
+                <p className="mt-2 text-xs font-semibold text-slate-500">
+                  No orders found
+                </p>
+              </div>
+            ) : (
+              displayedOrders.map((order, index) => (
+                <div
+                  key={
+                    order.id ||
+                    order.order_id ||
+                    `order-mobile-${index}`
+                  }
+                  onClick={openOrders}
+                  className="rounded-xl border border-slate-100 bg-slate-50/50 p-3 space-y-1.5 active:scale-[0.99] transition cursor-pointer"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-900">
+                      #{order.order_id || order.id || "-"}
+                    </span>
+                    <StatusBadge status={order.status} />
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs text-slate-600">
+                    <span className="truncate max-w-[170px] font-medium">
+                      {order.customer_name ||
+                        order.customer_company ||
+                        order.consignee_name ||
+                        "-"}
+                    </span>
+                    <span className="font-bold text-slate-900">
+                      {formatMoney(order.charge)}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between text-[10px] text-slate-400 border-t border-slate-100 pt-1">
+                    <span className="font-mono">
+                      AWB: {order.awb || "Not assigned"}
+                    </span>
+                    <span>{formatDate(order.created_at)}</span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* 2. TABLET & DESKTOP: CLEAN HORIZONTAL SCROLL TABLE */}
+          <div className="hidden sm:block overflow-x-auto">
+            <table className="w-full min-w-[760px]">
               <thead>
-                <tr className="border-b border-slate-100 bg-slate-50/60">
-                  <th className="px-5 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                    Order
-                  </th>
-
-                  <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                    Customer
-                  </th>
-
-                  <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                    AWB
-                  </th>
-
-                  <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                    Status
-                  </th>
-
-                  <th className="px-4 py-3 text-right text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                    Charge
-                  </th>
-
-                  <th className="px-5 py-3 text-right text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                    Date
-                  </th>
+                <tr className="border-b border-slate-100 bg-slate-50/60 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  <th className="px-5 py-3 text-left">Order</th>
+                  <th className="px-4 py-3 text-left">Customer</th>
+                  <th className="px-4 py-3 text-left">AWB</th>
+                  <th className="px-4 py-3 text-left">Status</th>
+                  <th className="px-4 py-3 text-right">Charge</th>
+                  <th className="px-5 py-3 text-right">Date</th>
                 </tr>
               </thead>
 
-              <tbody>
+              <tbody className="divide-y divide-slate-50 text-xs">
                 {displayedOrders.length === 0 ? (
                   <tr>
-                    <td
-                      colSpan="6"
-                      className="px-5 py-14 text-center"
-                    >
+                    <td colSpan="6" className="px-5 py-14 text-center">
                       <div className="flex flex-col items-center">
                         <HiOutlineClipboardList
                           size={30}
                           className="text-slate-300"
                         />
-
-                        <p className="mt-3 text-[13px] font-semibold text-slate-500">
+                        <p className="mt-3 text-xs font-semibold text-slate-500">
                           No orders found
                         </p>
-
-                        <p className="mt-1 text-[11px] text-slate-400">
+                        <p className="mt-0.5 text-[11px] text-slate-400">
                           New orders will appear here.
                         </p>
                       </div>
@@ -703,53 +737,47 @@ function Dashboard() {
                         order.order_id ||
                         `order-${index}`
                       }
-                      className="border-b border-slate-50 transition hover:bg-slate-50/60"
+                      className="transition hover:bg-slate-50/60"
                     >
-                      <td className="px-5 py-4">
-                        <p className="text-[12px] font-bold text-slate-800">
+                      <td className="px-5 py-3.5">
+                        <p className="font-bold text-slate-800">
                           #{order.order_id || order.id || "-"}
                         </p>
-
-                        <p className="mt-0.5 text-[10px] text-slate-400">
+                        <p className="text-[10px] text-slate-400">
                           ID: {order.id || "-"}
                         </p>
                       </td>
 
-                      <td className="px-4 py-4">
-                        <p className="max-w-[180px] truncate text-[12px] font-semibold text-slate-700">
+                      <td className="px-4 py-3.5">
+                        <p className="max-w-[170px] truncate font-semibold text-slate-700">
                           {order.customer_name ||
                             order.customer_company ||
                             order.consignee_name ||
                             "-"}
                         </p>
-
-                        <p className="mt-0.5 max-w-[180px] truncate text-[10px] text-slate-400">
+                        <p className="max-w-[170px] truncate text-[10px] text-slate-400">
                           {order.customer_email ||
                             order.email ||
                             "-"}
                         </p>
                       </td>
 
-                      <td className="px-4 py-4">
+                      <td className="px-4 py-3.5">
                         <span className="font-mono text-[11px] text-slate-600">
                           {order.awb || "Not assigned"}
                         </span>
                       </td>
 
-                      <td className="px-4 py-4">
+                      <td className="px-4 py-3.5">
                         <StatusBadge status={order.status} />
                       </td>
 
-                      <td className="px-4 py-4 text-right">
-                        <span className="text-[12px] font-semibold text-slate-700">
-                          {formatMoney(order.charge)}
-                        </span>
+                      <td className="px-4 py-3.5 text-right font-bold text-slate-700">
+                        {formatMoney(order.charge)}
                       </td>
 
-                      <td className="px-5 py-4 text-right">
-                        <span className="text-[11px] text-slate-500">
-                          {formatDate(order.created_at)}
-                        </span>
+                      <td className="px-5 py-3.5 text-right text-[11px] text-slate-500">
+                        {formatDate(order.created_at)}
                       </td>
                     </tr>
                   ))
@@ -763,31 +791,31 @@ function Dashboard() {
         {/* QUICK ACTIONS + TICKETS */}
         {/* ================================================= */}
 
-        <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-3">
+        <div className="mt-4 sm:mt-5 grid grid-cols-1 gap-4 sm:gap-5 lg:grid-cols-3">
 
           {/* QUICK ACTIONS */}
 
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_4px_20px_rgba(15,23,42,0.04)]">
-            <h2 className="text-[15px] font-bold text-slate-900">
+          <div className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-[0_4px_20px_rgba(15,23,42,0.04)]">
+            <h2 className="text-sm sm:text-[15px] font-bold text-slate-900">
               Quick Actions
             </h2>
 
-            <p className="mt-1 text-[11px] text-slate-400">
+            <p className="mt-0.5 text-[11px] text-slate-400">
               Frequently used admin sections
             </p>
 
-            <div className="mt-5 space-y-2">
+            <div className="mt-4 sm:mt-5 space-y-2">
               <button
                 type="button"
                 onClick={openOrders}
-                className="flex w-full items-center justify-between rounded-xl border border-slate-100 px-3.5 py-3 text-left transition hover:border-[#008dd2]/20 hover:bg-[#008dd2]/5"
+                className="flex w-full items-center justify-between rounded-xl border border-slate-100 p-3 sm:px-3.5 text-left transition hover:border-[#008dd2]/20 hover:bg-[#008dd2]/5 active:scale-[0.99]"
               >
                 <div className="flex items-center gap-3">
                   <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#008dd2]/10 text-[#008dd2]">
                     <HiOutlineClipboardList size={18} />
                   </div>
 
-                  <span className="text-[12px] font-semibold text-slate-700">
+                  <span className="text-xs font-semibold text-slate-700">
                     Manage Orders
                   </span>
                 </div>
@@ -801,14 +829,14 @@ function Dashboard() {
               <button
                 type="button"
                 onClick={openUsers}
-                className="flex w-full items-center justify-between rounded-xl border border-slate-100 px-3.5 py-3 text-left transition hover:border-violet-200 hover:bg-violet-50"
+                className="flex w-full items-center justify-between rounded-xl border border-slate-100 p-3 sm:px-3.5 text-left transition hover:border-violet-200 hover:bg-violet-50 active:scale-[0.99]"
               >
                 <div className="flex items-center gap-3">
                   <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-50 text-violet-600">
                     <HiOutlineUsers size={18} />
                   </div>
 
-                  <span className="text-[12px] font-semibold text-slate-700">
+                  <span className="text-xs font-semibold text-slate-700">
                     Manage Users
                   </span>
                 </div>
@@ -822,14 +850,14 @@ function Dashboard() {
               <button
                 type="button"
                 onClick={openTickets}
-                className="flex w-full items-center justify-between rounded-xl border border-slate-100 px-3.5 py-3 text-left transition hover:border-amber-200 hover:bg-amber-50"
+                className="flex w-full items-center justify-between rounded-xl border border-slate-100 p-3 sm:px-3.5 text-left transition hover:border-amber-200 hover:bg-amber-50 active:scale-[0.99]"
               >
                 <div className="flex items-center gap-3">
                   <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
                     <HiOutlineTicket size={18} />
                   </div>
 
-                  <span className="text-[12px] font-semibold text-slate-700">
+                  <span className="text-xs font-semibold text-slate-700">
                     Support Tickets
                   </span>
                 </div>
@@ -844,14 +872,14 @@ function Dashboard() {
 
           {/* TICKETS */}
 
-          <div className="rounded-2xl border border-slate-200/80 bg-white shadow-[0_4px_20px_rgba(15,23,42,0.04)] lg:col-span-2">
-            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+          <div className="rounded-2xl border border-slate-200/80 bg-white shadow-[0_4px_20px_rgba(15,23,42,0.04)] lg:col-span-2 overflow-hidden">
+            <div className="flex items-center justify-between border-b border-slate-100 p-4 sm:px-5 sm:py-4">
               <div>
-                <h2 className="text-[15px] font-bold text-slate-900">
+                <h2 className="text-sm sm:text-[15px] font-bold text-slate-900">
                   Recent Tickets
                 </h2>
 
-                <p className="mt-1 text-[11px] text-slate-400">
+                <p className="mt-0.5 text-[11px] text-slate-400">
                   Latest support activity
                 </p>
               </div>
@@ -859,7 +887,7 @@ function Dashboard() {
               <button
                 type="button"
                 onClick={openTickets}
-                className="text-[11px] font-semibold text-[#008dd2] hover:underline"
+                className="text-xs font-semibold text-[#008dd2] hover:underline"
               >
                 View all
               </button>
@@ -867,13 +895,13 @@ function Dashboard() {
 
             <div className="divide-y divide-slate-50">
               {data.recentTickets.length === 0 ? (
-                <div className="flex flex-col items-center px-5 py-12">
+                <div className="flex flex-col items-center p-8 sm:py-12">
                   <HiOutlineTicket
-                    size={29}
+                    size={28}
                     className="text-slate-300"
                   />
 
-                  <p className="mt-3 text-[12px] font-semibold text-slate-500">
+                  <p className="mt-2 text-xs font-semibold text-slate-500">
                     No recent tickets
                   </p>
                 </div>
@@ -885,16 +913,16 @@ function Dashboard() {
                       ticket.ticket_id ||
                       `ticket-${index}`
                     }
-                    className="flex items-center justify-between gap-4 px-5 py-3.5"
+                    className="flex items-center justify-between gap-3 p-3.5 sm:px-5 sm:py-3.5 hover:bg-slate-50/50 transition"
                   >
                     <div className="min-w-0">
-                      <p className="truncate text-[12px] font-semibold text-slate-700">
+                      <p className="truncate text-xs font-semibold text-slate-700">
                         {ticket.subject ||
                           ticket.title ||
                           `Ticket #${ticket.id || "-"}`}
                       </p>
 
-                      <p className="mt-1 text-[10px] text-slate-400">
+                      <p className="mt-0.5 text-[10px] text-slate-400">
                         {ticket.ticket_id
                           ? `#${ticket.ticket_id}`
                           : `Ticket #${ticket.id || "-"}`}
@@ -904,7 +932,7 @@ function Dashboard() {
                       </p>
                     </div>
 
-                    <div className="flex shrink-0 items-center gap-3">
+                    <div className="flex shrink-0 items-center gap-2 sm:gap-3">
                       <StatusBadge status={ticket.status} />
 
                       <button
@@ -925,14 +953,9 @@ function Dashboard() {
 
         {/* FOOTER */}
 
-        <div className="mt-5 flex items-center justify-between px-1">
-          <p className="text-[10px] text-slate-400">
-            ShipDrop Admin Dashboard
-          </p>
-
-          <p className="text-[10px] text-slate-400">
-            Live operational data
-          </p>
+        <div className="mt-4 sm:mt-5 flex items-center justify-between px-1 text-[10px] text-slate-400">
+          <p>ShipDrop Admin Dashboard</p>
+          <p>Live operational data</p>
         </div>
       </div>
     </div>
