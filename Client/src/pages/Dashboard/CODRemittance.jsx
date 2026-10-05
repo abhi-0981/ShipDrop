@@ -10,34 +10,20 @@ const CODRemittance = () => {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
 
-  // ========================================
-  // LOAD USER
-  // ========================================
-
   const getUserId = () => {
     try {
-      const savedUser = JSON.parse(
-        localStorage.getItem("user")
-      );
-
+      const savedUser = JSON.parse(localStorage.getItem("user"));
       return savedUser?.id || null;
-    } catch (error) {
-      console.error("User parse error:", error);
+    } catch (err) {
+      console.error("User parse error:", err);
       return null;
     }
   };
 
-  // ========================================
-  // FETCH COD REMITTANCE
-  // ========================================
-
-  const fetchCODRemittances = async (
-    showRefreshLoader = false
-  ) => {
+  const fetchCODRemittances = async (showRefreshLoader = false) => {
     const userId = getUserId();
-
     if (!userId) {
-      setError("User not found. Please login again.");
+      setError("Session expired or user not found. Please log in again.");
       setLoading(false);
       return;
     }
@@ -48,31 +34,19 @@ const CODRemittance = () => {
       } else {
         setLoading(true);
       }
-
       setError("");
 
-      const response = await api.get(
-        `/payments/cod-remittance?user_id=${userId}`
-      );
-
-      const data = Array.isArray(
-        response.data?.remittances
-      )
+      const response = await api.get(`/payments/cod-remittance?user_id=${userId}`);
+      const data = Array.isArray(response.data?.remittances)
         ? response.data.remittances
         : [];
-
       setRemittances(data);
-    } catch (error) {
-      console.error(
-        "COD remittance error:",
-        error
-      );
-
+    } catch (err) {
+      console.error("COD remittance fetch error:", err);
       setError(
-        error.response?.data?.message ||
-          "Unable to load COD remittance"
+        err.response?.data?.message ||
+          "Unable to fetch remittance records. Please try again."
       );
-
       setRemittances([]);
     } finally {
       setLoading(false);
@@ -80,39 +54,18 @@ const CODRemittance = () => {
     }
   };
 
-  // ========================================
-  // INITIAL LOAD
-  // ========================================
-
   useEffect(() => {
     fetchCODRemittances();
   }, []);
 
-  // ========================================
-  // FILTERED DATA
-  // ========================================
-
+  // Filtered dataset
   const filteredRemittances = useMemo(() => {
-    const query = search
-      .trim()
-      .toLowerCase();
-
+    const query = search.trim().toLowerCase();
     return remittances.filter((item) => {
-      const orderId = String(
-        item.order_id || ""
-      ).toLowerCase();
-
-      const buyer = String(
-        item.buyer || ""
-      ).toLowerCase();
-
-      const awb = String(
-        item.awb || ""
-      ).toLowerCase();
-
-      const status = String(
-        item.status || ""
-      ).toUpperCase();
+      const orderId = String(item.order_id || "").toLowerCase();
+      const buyer = String(item.buyer || "").toLowerCase();
+      const awb = String(item.awb || "").toLowerCase();
+      const status = String(item.status || "").toUpperCase();
 
       const searchMatch =
         !query ||
@@ -120,1029 +73,405 @@ const CODRemittance = () => {
         buyer.includes(query) ||
         awb.includes(query);
 
-      const statusMatch =
-        statusFilter === "ALL" ||
-        status === statusFilter;
-
+      const statusMatch = statusFilter === "ALL" || status === statusFilter;
       return searchMatch && statusMatch;
     });
-  }, [
-    remittances,
-    search,
-    statusFilter,
-  ]);
+  }, [remittances, search, statusFilter]);
 
-  // ========================================
-  // SUMMARY
-  // ========================================
+  // Analytics
+  const metrics = useMemo(() => {
+    let pendingCount = 0;
+    let successfulCount = 0;
+    let totalAmt = 0;
+    let pendingAmt = 0;
 
-  const totalRecords = remittances.length;
+    remittances.forEach((item) => {
+      const amt = Number(item.cod_amount) || 0;
+      const st = String(item.status || "").toUpperCase();
+      totalAmt += amt;
+      if (st === "SUCCESSFUL") {
+        successfulCount += 1;
+      } else {
+        pendingCount += 1;
+        pendingAmt += amt;
+      }
+    });
 
-  const pendingCount = remittances.filter(
-    (item) =>
-      String(item.status || "").toUpperCase() ===
-      "PENDING"
-  ).length;
-
-  const successfulCount = remittances.filter(
-    (item) =>
-      String(item.status || "").toUpperCase() ===
-      "SUCCESSFUL"
-  ).length;
-
-  // ========================================
-  // FORMAT AMOUNT
-  // ========================================
+    return {
+      totalRecords: remittances.length,
+      pendingCount,
+      successfulCount,
+      totalAmt,
+      pendingAmt,
+    };
+  }, [remittances]);
 
   const formatAmount = (amount) => {
-    return `₹${Number(
-      amount || 0
-    ).toLocaleString("en-IN", {
-      minimumFractionDigits: 2,
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
       maximumFractionDigits: 2,
-    })}`;
+    }).format(Number(amount) || 0);
   };
-
-  // ========================================
-  // FORMAT DATE
-  // ========================================
 
   const formatDate = (date) => {
     if (!date) return "—";
-
-    const parsedDate = new Date(date);
-
-    if (
-      Number.isNaN(
-        parsedDate.getTime()
-      )
-    ) {
-      return "—";
-    }
-
-    return parsedDate.toLocaleString(
-      "en-IN",
-      {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: true,
-      }
-    );
+    const parsed = new Date(date);
+    if (Number.isNaN(parsed.getTime())) return "—";
+    return parsed.toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
   };
-
-  // ========================================
-  // STATUS
-  // ========================================
-
-  const getStatus = (status) => {
-    return String(
-      status || "PENDING"
-    ).toUpperCase();
-  };
-
-  // ========================================
-  // CLEAR FILTERS
-  // ========================================
 
   const clearFilters = () => {
     setSearch("");
     setStatusFilter("ALL");
   };
 
-  const hasFilters =
-    search.trim() !== "" ||
-    statusFilter !== "ALL";
+  const hasFilters = search.trim() !== "" || statusFilter !== "ALL";
 
   return (
-    <div className="min-h-full w-full max-w-full overflow-x-hidden bg-[#f6f8fb] px-3 py-4 sm:px-4 lg:px-5">
-
-      {/* =====================================================
-          PAGE HEADER
-      ===================================================== */}
-
-      <div className="mb-4 flex items-center justify-between gap-3">
-
-        <div className="flex min-w-0 items-center gap-3">
-
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#008dd2]/10 text-[#008dd2]">
-
-            <svg
-              width="19"
-              height="19"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.8"
-            >
-              <path d="M12 2v20" />
-              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7H14a3.5 3.5 0 0 1 0 7H6" />
-            </svg>
-
-          </div>
-
-          <div className="min-w-0">
-
-            <h1 className="truncate text-[17px] font-bold tracking-tight text-slate-900">
+    <div className="min-h-screen w-full bg-slate-50/60 p-4 sm:p-6 lg:p-8">
+      <div className="mx-auto max-w-7xl space-y-6">
+        
+        {/* ================= HEADER ================= */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
               COD Remittance
             </h1>
-
-            <p className="mt-0.5 truncate text-[11px] text-slate-400">
-              Track delivered COD orders and remittance status
+            <p className="mt-1 text-xs text-slate-500 sm:text-sm">
+              Real-time settlement status of delivered Cash-on-Delivery shipments.
             </p>
-
           </div>
 
+          <div className="flex items-center gap-2.5">
+            <button
+              type="button"
+              onClick={() => fetchCODRemittances(true)}
+              disabled={refreshing || loading}
+              className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <svg
+                className={`h-3.5 w-3.5 text-slate-500 ${refreshing ? "animate-spin" : ""}`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth="2.2"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                />
+              </svg>
+              <span>{refreshing ? "Syncing..." : "Refresh"}</span>
+            </button>
+          </div>
         </div>
 
-
-        {/* REFRESH */}
-
-        <button
-          type="button"
-          onClick={() =>
-            fetchCODRemittances(true)
-          }
-          disabled={refreshing}
-          title="Refresh"
-          className="flex h-9 shrink-0 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-[11px] font-semibold text-slate-600 shadow-sm transition hover:border-[#008dd2]/30 hover:bg-[#008dd2]/5 hover:text-[#008dd2] disabled:cursor-not-allowed disabled:opacity-60"
-        >
-
-          <svg
-            className={
-              refreshing
-                ? "animate-spin"
-                : ""
-            }
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <path d="M20 11a8.1 8.1 0 0 0-14.9-4" />
-            <path d="M4 4v5h5" />
-            <path d="M4 13a8.1 8.1 0 0 0 14.9 4" />
-            <path d="M20 20v-5h-5" />
-          </svg>
-
-          <span className="hidden sm:inline">
-            {refreshing
-              ? "Refreshing..."
-              : "Refresh"}
-          </span>
-
-        </button>
-
-      </div>
-
-
-      {/* =====================================================
-          SUMMARY CARDS
-      ===================================================== */}
-
-      <div className="mb-4 grid grid-cols-3 gap-2 sm:gap-3">
-
-        {/* TOTAL */}
-
-        <div className="rounded-xl border border-slate-200/80 bg-white px-3 py-3 shadow-sm sm:px-4">
-
-          <div className="flex items-center justify-between gap-2">
-
-            <div className="min-w-0">
-
-              <p className="truncate text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+        {/* ================= STATS CARDS ================= */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="rounded-xl border border-slate-200/90 bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
                 Total Orders
-              </p>
-
-              <p className="mt-1 text-lg font-bold text-slate-800">
-                {totalRecords}
-              </p>
-
+              </span>
+              <span className="rounded-md bg-slate-100 p-1.5 text-slate-600">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+              </span>
             </div>
-
-            <div className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500 sm:flex">
-
-              <svg
-                width="15"
-                height="15"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-              >
-                <rect
-                  x="4"
-                  y="4"
-                  width="16"
-                  height="16"
-                  rx="2"
-                />
-                <path d="M8 9h8" />
-                <path d="M8 13h6" />
-                <path d="M8 17h4" />
-              </svg>
-
-            </div>
-
+            <p className="mt-3 text-2xl font-bold text-slate-900">{metrics.totalRecords}</p>
+            <p className="mt-1 text-xs text-slate-400">
+              Value: <span className="font-semibold text-slate-700">{formatAmount(metrics.totalAmt)}</span>
+            </p>
           </div>
 
-        </div>
-
-
-        {/* PENDING */}
-
-        <div className="rounded-xl border border-amber-100 bg-white px-3 py-3 shadow-sm sm:px-4">
-
-          <div className="flex items-center justify-between gap-2">
-
-            <div className="min-w-0">
-
-              <p className="truncate text-[10px] font-semibold uppercase tracking-wide text-amber-500">
-                Pending
-              </p>
-
-              <p className="mt-1 text-lg font-bold text-slate-800">
-                {pendingCount}
-              </p>
-
+          <div className="rounded-xl border border-slate-200/90 bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold uppercase tracking-wider text-amber-600">
+                Pending Settlement
+              </span>
+              <span className="rounded-md bg-amber-50 p-1.5 text-amber-600">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </span>
             </div>
-
-            <div className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-500 sm:flex">
-
-              <svg
-                width="15"
-                height="15"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-              >
-                <circle
-                  cx="12"
-                  cy="12"
-                  r="9"
-                />
-                <path d="M12 7v5l3 2" />
-              </svg>
-
-            </div>
-
+            <p className="mt-3 text-2xl font-bold text-slate-900">{metrics.pendingCount}</p>
+            <p className="mt-1 text-xs text-amber-600 font-medium">
+              Due: {formatAmount(metrics.pendingAmt)}
+            </p>
           </div>
 
-        </div>
-
-
-        {/* SUCCESSFUL */}
-
-        <div className="rounded-xl border border-emerald-100 bg-white px-3 py-3 shadow-sm sm:px-4">
-
-          <div className="flex items-center justify-between gap-2">
-
-            <div className="min-w-0">
-
-              <p className="truncate text-[10px] font-semibold uppercase tracking-wide text-emerald-500">
-                Successful
-              </p>
-
-              <p className="mt-1 text-lg font-bold text-slate-800">
-                {successfulCount}
-              </p>
-
+          <div className="rounded-xl border border-slate-200/90 bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold uppercase tracking-wider text-emerald-600">
+                Settled / Successful
+              </span>
+              <span className="rounded-md bg-emerald-50 p-1.5 text-emerald-600">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </span>
             </div>
-
-            <div className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-500 sm:flex">
-
-              <svg
-                width="15"
-                height="15"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-              >
-                <circle
-                  cx="12"
-                  cy="12"
-                  r="9"
-                />
-                <path d="m8 12 2.5 2.5L16 9" />
-              </svg>
-
-            </div>
-
+            <p className="mt-3 text-2xl font-bold text-slate-900">{metrics.successfulCount}</p>
+            <p className="mt-1 text-xs text-slate-400">
+              Completed payout cycles
+            </p>
           </div>
 
+          <div className="rounded-xl border border-slate-200/90 bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold uppercase tracking-wider text-sky-600">
+                Clearance Rate
+              </span>
+              <span className="rounded-md bg-sky-50 p-1.5 text-sky-600">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                </svg>
+              </span>
+            </div>
+            <p className="mt-3 text-2xl font-bold text-slate-900">
+              {metrics.totalRecords > 0
+                ? `${Math.round((metrics.successfulCount / metrics.totalRecords) * 100)}%`
+                : "0%"}
+            </p>
+            <p className="mt-1 text-xs text-slate-400">Successful remittance ratio</p>
+          </div>
         </div>
 
-      </div>
-
-
-      {/* =====================================================
-          FILTER BAR
-      ===================================================== */}
-
-      <div className="mb-3 rounded-xl border border-slate-200/80 bg-white p-2.5 shadow-sm">
-
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-
-          {/* SEARCH */}
-
-          <div className="relative min-w-0 flex-1">
-
-            <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-
-              <svg
-                width="15"
-                height="15"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <circle
-                  cx="11"
-                  cy="11"
-                  r="7"
-                />
-                <path d="m20 20-3.5-3.5" />
-              </svg>
-
-            </div>
-
+        {/* ================= CONTROLS & FILTERS ================= */}
+        <div className="flex flex-col gap-3 rounded-xl border border-slate-200/90 bg-white p-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative flex-1">
+            <svg
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
             <input
               type="text"
               value={search}
-              onChange={(e) =>
-                setSearch(e.target.value)
-              }
-              placeholder="Search Order ID, Buyer or AWB..."
-              className="h-9 w-full rounded-lg border border-slate-200 bg-slate-50/50 pl-9 pr-3 text-[11px] text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by Order ID, Buyer, or AWB number..."
+              className="h-9 w-full rounded-lg border border-slate-200 bg-slate-50/50 pl-9 pr-8 text-xs text-slate-800 placeholder:text-slate-400 focus:border-sky-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-sky-500"
             />
-
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch("")}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              >
+                ✕
+              </button>
+            )}
           </div>
 
-
-          {/* STATUS */}
-
-          <select
-            value={statusFilter}
-            onChange={(e) =>
-              setStatusFilter(e.target.value)
-            }
-            className="h-9 rounded-lg border border-slate-200 bg-slate-50/50 px-3 text-[11px] font-medium text-slate-600 outline-none transition focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10 sm:w-[135px]"
-          >
-
-            <option value="ALL">
-              All Status
-            </option>
-
-            <option value="PENDING">
-              Pending
-            </option>
-
-            <option value="SUCCESSFUL">
-              Successful
-            </option>
-
-          </select>
-
-
-          {/* CLEAR */}
-
-          {hasFilters && (
-            <button
-              type="button"
-              onClick={clearFilters}
-              className="h-9 rounded-lg px-3 text-[11px] font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
+          <div className="flex items-center gap-2">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
             >
-              Clear
-            </button>
-          )}
+              <option value="ALL">All Status</option>
+              <option value="PENDING">Pending Only</option>
+              <option value="SUCCESSFUL">Successful Only</option>
+            </select>
 
+            {hasFilters && (
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="h-9 rounded-lg border border-transparent px-3 text-xs font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition"
+              >
+                Reset
+              </button>
+            )}
+          </div>
         </div>
 
-      </div>
-
-
-      {/* =====================================================
-          TABLE
-      ===================================================== */}
-
-      <div className="w-full max-w-full overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm">
-
-        {/* TABLE HEADER */}
-
-        <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-
-          <div>
-
-            <h2 className="text-[13px] font-bold text-slate-800">
-              Remittance History
-            </h2>
-
-            <p className="mt-0.5 text-[10px] text-slate-400">
-              {filteredRemittances.length}{" "}
-              {filteredRemittances.length === 1
-                ? "record"
-                : "records"}{" "}
-              found
-            </p>
-
-          </div>
-
-          <div className="rounded-md bg-slate-50 px-2 py-1 text-[10px] font-semibold text-slate-500">
-            COD
-          </div>
-
-        </div>
-
-
-        {/* DESKTOP TABLE */}
-
-        <div className="hidden w-full md:block">
-
-          <table className="w-full table-fixed">
-
-            <colgroup>
-              <col className="w-[12%]" />
-              <col className="w-[14%]" />
-              <col className="w-[13%]" />
-              <col className="w-[12%]" />
-              <col className="w-[15%]" />
-              <col className="w-[11%]" />
-              <col className="w-[15%]" />
-              <col className="w-[8%]" />
-            </colgroup>
-
-            <thead>
-
-              <tr className="border-b border-slate-100 bg-slate-50/70">
-
-                <th className="px-3 py-2.5 text-left text-[9px] font-bold uppercase tracking-wider text-slate-400">
-                  Order ID
-                </th>
-
-                <th className="px-3 py-2.5 text-left text-[9px] font-bold uppercase tracking-wider text-slate-400">
-                  Buyer
-                </th>
-
-                <th className="px-3 py-2.5 text-left text-[9px] font-bold uppercase tracking-wider text-slate-400">
-                  AWB No
-                </th>
-
-                <th className="px-3 py-2.5 text-right text-[9px] font-bold uppercase tracking-wider text-slate-400">
-                  COD Amount
-                </th>
-
-                <th className="px-3 py-2.5 text-left text-[9px] font-bold uppercase tracking-wider text-slate-400">
-                  Created On
-                </th>
-
-                <th className="px-3 py-2.5 text-left text-[9px] font-bold uppercase tracking-wider text-slate-400">
-                  Status
-                </th>
-
-                <th className="px-3 py-2.5 text-left text-[9px] font-bold uppercase tracking-wider text-slate-400">
-                  Transferred On
-                </th>
-
-                <th className="px-3 py-2.5 text-left text-[9px] font-bold uppercase tracking-wider text-slate-400">
-                  Description
-                </th>
-
-              </tr>
-
-            </thead>
-
-
-            <tbody>
-
-              {loading ? (
-
+        {/* ================= DATA TABLE CONTAINER ================= */}
+        <div className="overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-sm">
+          {/* Table View (Desktop) */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="border-b border-slate-200/70 bg-slate-50/80 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
                 <tr>
-
-                  <td
-                    colSpan="8"
-                    className="px-5 py-14 text-center"
-                  >
-
-                    <div className="flex flex-col items-center">
-
-                      <div className="h-7 w-7 animate-spin rounded-full border-2 border-slate-200 border-t-[#008dd2]" />
-
-                      <p className="mt-3 text-[11px] font-medium text-slate-500">
-                        Loading remittance...
-                      </p>
-
-                    </div>
-
-                  </td>
-
+                  <th className="px-4 py-3">Order Info</th>
+                  <th className="px-4 py-3">Buyer</th>
+                  <th className="px-4 py-3">AWB No</th>
+                  <th className="px-4 py-3 text-right">COD Amount</th>
+                  <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3">Created On</th>
+                  <th className="px-4 py-3">Transferred On</th>
+                  <th className="px-4 py-3">Remarks</th>
                 </tr>
-
-              ) : error ? (
-
-                <tr>
-
-                  <td
-                    colSpan="8"
-                    className="px-5 py-14 text-center"
-                  >
-
-                    <div className="mx-auto max-w-sm">
-
-                      <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-red-50 text-red-500">
-
-                        <svg
-                          width="18"
-                          height="18"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        >
-                          <circle
-                            cx="12"
-                            cy="12"
-                            r="9"
-                          />
-                          <path d="M12 8v5" />
-                          <path d="M12 16h.01" />
-                        </svg>
-
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-slate-600">
+                {loading ? (
+                  <tr>
+                    <td colSpan="8" className="py-20 text-center">
+                      <div className="inline-flex flex-col items-center">
+                        <div className="h-7 w-7 animate-spin rounded-full border-2 border-slate-200 border-t-sky-500" />
+                        <span className="mt-3 text-xs font-medium text-slate-400">Loading records...</span>
                       </div>
-
-                      <p className="mt-3 text-[12px] font-semibold text-slate-700">
-                        Unable to load remittance
-                      </p>
-
-                      <p className="mt-1 text-[10px] text-slate-400">
-                        {error}
-                      </p>
-
+                    </td>
+                  </tr>
+                ) : error ? (
+                  <tr>
+                    <td colSpan="8" className="py-16 text-center">
+                      <p className="text-xs font-semibold text-rose-500">{error}</p>
                       <button
                         type="button"
-                        onClick={() =>
-                          fetchCODRemittances()
-                        }
-                        className="mt-3 rounded-lg bg-[#008dd2] px-3 py-2 text-[10px] font-semibold text-white transition hover:bg-[#007dbb]"
+                        onClick={() => fetchCODRemittances()}
+                        className="mt-2.5 inline-flex items-center rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-sky-700"
                       >
                         Try Again
                       </button>
-
-                    </div>
-
-                  </td>
-
-                </tr>
-
-              ) : filteredRemittances.length === 0 ? (
-
-                <tr>
-
-                  <td
-                    colSpan="8"
-                    className="px-5 py-14 text-center"
-                  >
-
-                    <div className="mx-auto flex max-w-sm flex-col items-center">
-
-                      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-slate-400">
-
-                        <svg
-                          width="20"
-                          height="20"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="1.7"
-                        >
-                          <path d="M6 2h9l3 3v17H6z" />
-                          <path d="M15 2v4h4" />
-                          <path d="M9 12h6" />
-                          <path d="M9 16h6" />
-                        </svg>
-
-                      </div>
-
-                      <p className="mt-3 text-[12px] font-bold text-slate-700">
-                        {hasFilters
-                          ? "No matching records"
-                          : "No COD remittance records"}
+                    </td>
+                  </tr>
+                ) : filteredRemittances.length === 0 ? (
+                  <tr>
+                    <td colSpan="8" className="py-16 text-center text-slate-400">
+                      <p className="text-sm font-semibold text-slate-600">No records found</p>
+                      <p className="mt-1 text-xs">
+                        {hasFilters ? "Try adjusting your search criteria" : "Delivered COD orders will be listed here"}
                       </p>
-
-                      <p className="mt-1 text-[10px] text-slate-400">
-                        {hasFilters
-                          ? "Try changing your search or filter."
-                          : "Delivered COD orders will appear here."}
-                      </p>
-
-                    </div>
-
-                  </td>
-
-                </tr>
-
-              ) : (
-
-                filteredRemittances.map(
-                  (item, index) => {
-
-                    const status =
-                      getStatus(
-                        item.status
-                      );
+                    </td>
+                  </tr>
+                ) : (
+                  filteredRemittances.map((item, index) => {
+                    const status = String(item.status || "PENDING").toUpperCase();
+                    const isSuccess = status === "SUCCESSFUL";
 
                     return (
-                      <tr
-                        key={
-                          item.id ||
-                          item.order_id ||
-                          index
-                        }
-                        className="border-b border-slate-100 last:border-b-0 transition hover:bg-slate-50/60"
-                      >
-
-                        {/* ORDER */}
-
-                        <td className="px-3 py-3">
-
-                          <span className="block truncate text-[11px] font-bold text-slate-800">
-                            #{item.order_id || "—"}
-                          </span>
-
+                      <tr key={item.id || item.order_id || index} className="transition-colors hover:bg-slate-50/80">
+                        <td className="px-4 py-3 font-mono font-semibold text-slate-900">
+                          #{item.order_id || "—"}
                         </td>
-
-
-                        {/* BUYER */}
-
-                        <td className="px-3 py-3">
-
-                          <span className="block truncate text-[11px] font-medium text-slate-700">
-                            {item.buyer || "—"}
-                          </span>
-
+                        <td className="px-4 py-3 font-medium text-slate-800">
+                          {item.buyer || "—"}
                         </td>
-
-
-                        {/* AWB */}
-
-                        <td className="px-3 py-3">
-
-                          <span className="block truncate text-[10px] font-medium text-slate-500">
-                            {item.awb || "—"}
-                          </span>
-
+                        <td className="px-4 py-3 font-mono text-slate-500">
+                          {item.awb || "—"}
                         </td>
-
-
-                        {/* AMOUNT */}
-
-                        <td className="px-3 py-3 text-right">
-
-                          <span className="text-[11px] font-bold text-slate-800">
-                            {formatAmount(
-                              item.cod_amount
-                            )}
-                          </span>
-
+                        <td className="px-4 py-3 text-right font-semibold text-slate-900">
+                          {formatAmount(item.cod_amount)}
                         </td>
-
-
-                        {/* CREATED */}
-
-                        <td className="px-3 py-3">
-
-                          <span className="block truncate text-[10px] text-slate-500">
-                            {formatDate(
-                              item.created_at
-                            )}
-                          </span>
-
-                        </td>
-
-
-                        {/* STATUS */}
-
-                        <td className="px-3 py-3">
-
+                        <td className="px-4 py-3">
                           <span
-                            className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[9px] font-bold ${
-                              status ===
-                              "SUCCESSFUL"
-                                ? "bg-emerald-50 text-emerald-600"
-                                : "bg-amber-50 text-amber-600"
+                            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
+                              isSuccess
+                                ? "bg-emerald-50 text-emerald-700 border border-emerald-200/60"
+                                : "bg-amber-50 text-amber-700 border border-amber-200/60"
                             }`}
                           >
-
                             <span
                               className={`h-1.5 w-1.5 rounded-full ${
-                                status ===
-                                "SUCCESSFUL"
-                                  ? "bg-emerald-500"
-                                  : "bg-amber-500"
+                                isSuccess ? "bg-emerald-500" : "bg-amber-500"
                               }`}
                             />
-
-                            {status ===
-                            "SUCCESSFUL"
-                              ? "Successful"
-                              : "Pending"}
-
+                            {isSuccess ? "Successful" : "Pending"}
                           </span>
-
                         </td>
-
-
-                        {/* TRANSFERRED */}
-
-                        <td className="px-3 py-3">
-
-                          <span className="block truncate text-[10px] text-slate-500">
-                            {formatDate(
-                              item.transferred_on
-                            )}
-                          </span>
-
+                        <td className="px-4 py-3 text-slate-500">
+                          {formatDate(item.created_at)}
                         </td>
-
-
-                        {/* DESCRIPTION */}
-
-                        <td className="px-3 py-3">
-
-                          <span
-                            title={
-                              item.description ||
-                              ""
-                            }
-                            className="block truncate text-[10px] text-slate-500"
-                          >
-                            {item.description ||
-                              "—"}
-                          </span>
-
+                        <td className="px-4 py-3 text-slate-500">
+                          {formatDate(item.transferred_on)}
                         </td>
-
+                        <td className="px-4 py-3 max-w-[180px] truncate text-slate-400" title={item.description || ""}>
+                          {item.description || "—"}
+                        </td>
                       </tr>
                     );
-                  }
-                )
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
 
-              )}
-
-            </tbody>
-
-          </table>
-
-        </div>
-
-
-        {/* =================================================
-            MOBILE CARD VIEW
-        ================================================= */}
-
-        <div className="md:hidden">
-
-          {loading ? (
-
-            <div className="flex flex-col items-center px-5 py-14">
-
-              <div className="h-7 w-7 animate-spin rounded-full border-2 border-slate-200 border-t-[#008dd2]" />
-
-              <p className="mt-3 text-[11px] text-slate-500">
-                Loading remittance...
-              </p>
-
-            </div>
-
-          ) : error ? (
-
-            <div className="px-5 py-12 text-center">
-
-              <p className="text-[12px] font-semibold text-red-500">
-                {error}
-              </p>
-
-              <button
-                type="button"
-                onClick={() =>
-                  fetchCODRemittances()
-                }
-                className="mt-3 rounded-lg bg-[#008dd2] px-3 py-2 text-[10px] font-semibold text-white"
-              >
-                Try Again
-              </button>
-
-            </div>
-
-          ) : filteredRemittances.length === 0 ? (
-
-            <div className="px-5 py-14 text-center">
-
-              <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-slate-400">
-
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.7"
-                >
-                  <path d="M6 2h9l3 3v17H6z" />
-                  <path d="M15 2v4h4" />
-                  <path d="M9 12h6" />
-                  <path d="M9 16h6" />
-                </svg>
-
+          {/* Card View (Mobile) */}
+          <div className="block md:hidden divide-y divide-slate-100">
+            {loading ? (
+              <div className="py-16 text-center">
+                <div className="mx-auto h-6 w-6 animate-spin rounded-full border-2 border-slate-200 border-t-sky-500" />
+                <p className="mt-3 text-xs text-slate-400">Loading records...</p>
               </div>
+            ) : filteredRemittances.length === 0 ? (
+              <div className="py-12 text-center text-xs text-slate-400">
+                No remittance records found.
+              </div>
+            ) : (
+              filteredRemittances.map((item, idx) => {
+                const status = String(item.status || "PENDING").toUpperCase();
+                const isSuccess = status === "SUCCESSFUL";
 
-              <p className="mt-3 text-[12px] font-bold text-slate-700">
-                {hasFilters
-                  ? "No matching records"
-                  : "No COD remittance records"}
-              </p>
-
-              <p className="mt-1 text-[10px] text-slate-400">
-                {hasFilters
-                  ? "Try changing your search or filter."
-                  : "Delivered COD orders will appear here."}
-              </p>
-
-            </div>
-
-          ) : (
-
-            <div className="divide-y divide-slate-100">
-
-              {filteredRemittances.map(
-                (item, index) => {
-
-                  const status =
-                    getStatus(
-                      item.status
-                    );
-
-                  return (
-                    <div
-                      key={
-                        item.id ||
-                        item.order_id ||
-                        index
-                      }
-                      className="p-4"
-                    >
-
-                      <div className="flex items-start justify-between gap-3">
-
-                        <div className="min-w-0">
-
-                          <p className="truncate text-[12px] font-bold text-slate-800">
-                            #{item.order_id || "—"}
-                          </p>
-
-                          <p className="mt-0.5 truncate text-[10px] text-slate-500">
-                            {item.buyer || "—"}
-                          </p>
-
-                        </div>
-
-                        <span
-                          className={`shrink-0 rounded-md px-2 py-1 text-[9px] font-bold ${
-                            status ===
-                            "SUCCESSFUL"
-                              ? "bg-emerald-50 text-emerald-600"
-                              : "bg-amber-50 text-amber-600"
-                          }`}
-                        >
-                          {status ===
-                          "SUCCESSFUL"
-                            ? "Successful"
-                            : "Pending"}
+                return (
+                  <div key={item.id || item.order_id || idx} className="p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="font-mono text-xs font-bold text-slate-900">
+                          #{item.order_id || "—"}
                         </span>
-
+                        <p className="text-xs text-slate-500 mt-0.5">{item.buyer || "—"}</p>
                       </div>
-
-
-                      <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3">
-
-                        <div>
-
-                          <p className="text-[9px] font-semibold uppercase tracking-wide text-slate-400">
-                            AWB
-                          </p>
-
-                          <p className="mt-0.5 truncate text-[10px] font-medium text-slate-600">
-                            {item.awb || "—"}
-                          </p>
-
-                        </div>
-
-
-                        <div>
-
-                          <p className="text-[9px] font-semibold uppercase tracking-wide text-slate-400">
-                            COD Amount
-                          </p>
-
-                          <p className="mt-0.5 text-[11px] font-bold text-slate-800">
-                            {formatAmount(
-                              item.cod_amount
-                            )}
-                          </p>
-
-                        </div>
-
-
-                        <div>
-
-                          <p className="text-[9px] font-semibold uppercase tracking-wide text-slate-400">
-                            Created On
-                          </p>
-
-                          <p className="mt-0.5 text-[10px] text-slate-500">
-                            {formatDate(
-                              item.created_at
-                            )}
-                          </p>
-
-                        </div>
-
-
-                        <div>
-
-                          <p className="text-[9px] font-semibold uppercase tracking-wide text-slate-400">
-                            Transferred On
-                          </p>
-
-                          <p className="mt-0.5 text-[10px] text-slate-500">
-                            {formatDate(
-                              item.transferred_on
-                            )}
-                          </p>
-
-                        </div>
-
-                      </div>
-
-
-                      {item.description && (
-                        <div className="mt-3 rounded-lg bg-slate-50 px-3 py-2">
-
-                          <p className="text-[9px] font-semibold uppercase tracking-wide text-slate-400">
-                            Description
-                          </p>
-
-                          <p className="mt-0.5 text-[10px] text-slate-600">
-                            {item.description}
-                          </p>
-
-                        </div>
-                      )}
-
+                      <span
+                        className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                          isSuccess
+                            ? "bg-emerald-50 text-emerald-700"
+                            : "bg-amber-50 text-amber-700"
+                        }`}
+                      >
+                        <span className={`h-1.5 w-1.5 rounded-full ${isSuccess ? "bg-emerald-500" : "bg-amber-500"}`} />
+                        {isSuccess ? "Successful" : "Pending"}
+                      </span>
                     </div>
-                  );
-                }
-              )}
 
+                    <div className="grid grid-cols-2 gap-2 text-xs border-t border-slate-100 pt-2.5">
+                      <div>
+                        <span className="text-[10px] uppercase font-semibold text-slate-400">AWB</span>
+                        <p className="font-mono text-slate-700">{item.awb || "—"}</p>
+                      </div>
+                      <div>
+                        <span className="text-[10px] uppercase font-semibold text-slate-400">Amount</span>
+                        <p className="font-semibold text-slate-900">{formatAmount(item.cod_amount)}</p>
+                      </div>
+                      <div>
+                        <span className="text-[10px] uppercase font-semibold text-slate-400">Created</span>
+                        <p className="text-slate-600">{formatDate(item.created_at)}</p>
+                      </div>
+                      <div>
+                        <span className="text-[10px] uppercase font-semibold text-slate-400">Transferred</span>
+                        <p className="text-slate-600">{formatDate(item.transferred_on)}</p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* Table Footer */}
+          {!loading && !error && filteredRemittances.length > 0 && (
+            <div className="flex items-center justify-between border-t border-slate-200/70 bg-slate-50/50 px-4 py-3 text-xs text-slate-500">
+              <span>
+                Showing <strong className="font-semibold text-slate-800">{filteredRemittances.length}</strong> of{" "}
+                <strong className="font-semibold text-slate-800">{remittances.length}</strong> entries
+              </span>
             </div>
-
           )}
-
         </div>
-
-
-        {/* =================================================
-            FOOTER
-        ================================================= */}
-
-        {!loading &&
-          !error &&
-          filteredRemittances.length > 0 && (
-            <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/50 px-4 py-2.5">
-
-              <p className="text-[10px] text-slate-400">
-                Showing{" "}
-                <span className="font-bold text-slate-700">
-                  {filteredRemittances.length}
-                </span>{" "}
-                of{" "}
-                <span className="font-bold text-slate-700">
-                  {totalRecords}
-                </span>{" "}
-                records
-              </p>
-
-            </div>
-          )}
 
       </div>
-
     </div>
   );
 };
