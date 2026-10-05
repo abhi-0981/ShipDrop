@@ -7,6 +7,7 @@ const {
   createPaymentOrder,
   verifyPayment,
   getWalletHistory,
+  getCODRemittanceHistory,
 } = require("../controllers/paymentController");
 
 
@@ -29,6 +30,15 @@ router.get(
   getWalletHistory
 );
 
+
+// ========================================
+// GET COD REMITTANCE HISTORY
+// ========================================
+
+router.get(
+  "/cod-remittance",
+  getCODRemittanceHistory
+);
 
 // ========================================
 // CREATE RAZORPAY PAYMENT ORDER

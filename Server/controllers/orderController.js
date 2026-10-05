@@ -17,18 +17,12 @@ const {
   getTrackingForWaybills,
 } = require("../services/delhiveryTrackingService");
 
-
 // ======================================================
 // CREATE ORDER
 // ======================================================
 
-const createOrderController = async (
-  req,
-  res
-) => {
-
+const createOrderController = async (req, res) => {
   try {
-
     // ==================================================
     // REQUEST BODY
     // ==================================================
@@ -77,35 +71,24 @@ const createOrderController = async (
       packages,
     } = body;
 
-
     // ==================================================
     // USER ID
     // ==================================================
 
     if (!user_id) {
-
       return res.status(400).json({
-
         success: false,
 
-        message:
-          "User ID is required",
-
+        message: "User ID is required",
       });
-
     }
-
 
     // ==================================================
     // NORMALIZE NESTED ORDER DATA
     // ==================================================
 
     const nestedOrderData =
-      orderData &&
-      typeof orderData === "object"
-        ? orderData
-        : {};
-
+      orderData && typeof orderData === "object" ? orderData : {};
 
     // ==================================================
     // MERGE ORDER DATA
@@ -117,159 +100,87 @@ const createOrderController = async (
     // by orderModel.createOrder().
 
     const finalOrderData = {
-
       ...nestedOrderData,
 
-      user_id:
-        user_id,
+      user_id: user_id,
 
       // ----------------------------------------------
       // PICKUP ADDRESS ID
       // ----------------------------------------------
 
-      pickup_address_id:
-        pickup_address_id ||
-        null,
+      pickup_address_id: pickup_address_id || null,
 
       // ----------------------------------------------
       // WAREHOUSE
       // ----------------------------------------------
 
-      warehouse_id:
-        warehouse_id ||
-        nestedOrderData.warehouse_id ||
-        null,
+      warehouse_id: warehouse_id || nestedOrderData.warehouse_id || null,
 
       // ----------------------------------------------
       // PICKUP DETAILS
       // ----------------------------------------------
 
-      pickup_address:
-        pickup_address ||
-        nestedOrderData.pickup_address ||
-        null,
+      pickup_address: pickup_address || nestedOrderData.pickup_address || null,
 
-      pickup_pincode:
-        pickup_pincode ||
-        nestedOrderData.pickup_pincode ||
-        null,
+      pickup_pincode: pickup_pincode || nestedOrderData.pickup_pincode || null,
 
-      pickup_city:
-        pickup_city ||
-        nestedOrderData.pickup_city ||
-        null,
+      pickup_city: pickup_city || nestedOrderData.pickup_city || null,
 
       // ----------------------------------------------
       // CONSIGNEE
       // ----------------------------------------------
 
       consignee_name:
-        nestedOrderData.consignee_name ||
-        body.consignee_name ||
-        null,
+        nestedOrderData.consignee_name || body.consignee_name || null,
 
-      mobile:
-        nestedOrderData.mobile ||
-        body.mobile ||
-        null,
+      mobile: nestedOrderData.mobile || body.mobile || null,
 
       alternate_mobile:
-        nestedOrderData.alternate_mobile ||
-        body.alternate_mobile ||
-        null,
+        nestedOrderData.alternate_mobile || body.alternate_mobile || null,
 
-      email:
-        nestedOrderData.email ||
-        body.email ||
-        null,
+      email: nestedOrderData.email || body.email || null,
 
-      gstin:
-        nestedOrderData.gstin ||
-        body.gstin ||
-        null,
+      gstin: nestedOrderData.gstin || body.gstin || null,
 
-      company_name:
-        nestedOrderData.company_name ||
-        body.company_name ||
-        null,
+      company_name: nestedOrderData.company_name || body.company_name || null,
 
-      floor_no:
-        nestedOrderData.floor_no ||
-        body.floor_no ||
-        null,
+      floor_no: nestedOrderData.floor_no || body.floor_no || null,
 
-      landmark:
-        nestedOrderData.landmark ||
-        body.landmark ||
-        null,
+      landmark: nestedOrderData.landmark || body.landmark || null,
 
       address_line1:
-        nestedOrderData.address_line1 ||
-        body.address_line1 ||
-        null,
+        nestedOrderData.address_line1 || body.address_line1 || null,
 
       address_line2:
-        nestedOrderData.address_line2 ||
-        body.address_line2 ||
-        null,
+        nestedOrderData.address_line2 || body.address_line2 || null,
 
-      pincode:
-        nestedOrderData.pincode ||
-        body.pincode ||
-        null,
+      pincode: nestedOrderData.pincode || body.pincode || null,
 
-      city:
-        nestedOrderData.city ||
-        body.city ||
-        null,
+      city: nestedOrderData.city || body.city || null,
 
-      state:
-        nestedOrderData.state ||
-        body.state ||
-        null,
+      state: nestedOrderData.state || body.state || null,
 
-      country:
-        nestedOrderData.country ||
-        body.country ||
-        "India",
+      country: nestedOrderData.country || body.country || "India",
 
       payment_type:
-        nestedOrderData.payment_type ||
-        body.payment_type ||
-        "Prepaid",
+        nestedOrderData.payment_type || body.payment_type || "Prepaid",
 
-      risk_type:
-        nestedOrderData.risk_type ||
-        body.risk_type ||
-        "Owner Risk",
-
+      risk_type: nestedOrderData.risk_type || body.risk_type || "Owner Risk",
     };
-
 
     // ==================================================
     // PICKUP ADDRESS VALIDATION
     // ==================================================
 
-    const finalPickupAddress =
-      String(
-        finalOrderData.pickup_address ||
-        ""
-      ).trim();
+    const finalPickupAddress = String(
+      finalOrderData.pickup_address || "",
+    ).trim();
 
+    const finalPickupPincode = String(
+      finalOrderData.pickup_pincode || "",
+    ).trim();
 
-    const finalPickupPincode =
-      String(
-        finalOrderData.pickup_pincode ||
-        ""
-      ).trim();
-
-
-    const finalPickupCity =
-      String(
-        finalOrderData.pickup_city ||
-        ""
-      ).trim();
-
+    const finalPickupCity = String(finalOrderData.pickup_city || "").trim();
 
     // ==================================================
     // PICKUP ADDRESS ID
@@ -282,1237 +193,616 @@ const createOrderController = async (
     // from the selected warehouse/pickup details.
     //
 
-    let finalPickupAddressId =
-      finalOrderData.pickup_address_id;
-
+    let finalPickupAddressId = finalOrderData.pickup_address_id;
 
     if (!finalPickupAddressId) {
-
       // ----------------------------------------------
       // PICKUP ADDRESS REQUIRED
       // ----------------------------------------------
 
       if (!finalPickupAddress) {
-
         return res.status(400).json({
-
           success: false,
 
-          message:
-            "Pickup address is required",
-
+          message: "Pickup address is required",
         });
-
       }
-
 
       // ----------------------------------------------
       // PICKUP PINCODE REQUIRED
       // ----------------------------------------------
 
-      if (
-        !/^\d{6}$/.test(
-          finalPickupPincode
-        )
-      ) {
-
+      if (!/^\d{6}$/.test(finalPickupPincode)) {
         return res.status(400).json({
-
           success: false,
 
-          message:
-            "Valid 6-digit pickup pincode is required",
-
+          message: "Valid 6-digit pickup pincode is required",
         });
-
       }
-
 
       // ----------------------------------------------
       // CREATE PICKUP ADDRESS
       // ----------------------------------------------
 
-      const pickupAddressResult =
-        await new Promise(
-          (
-            resolve,
-            reject
-          ) => {
+      const pickupAddressResult = await new Promise((resolve, reject) => {
+        createPickupAddress(
+          Number(user_id),
 
-            createPickupAddress(
+          finalPickupAddress,
 
-              Number(user_id),
+          finalPickupPincode,
 
-              finalPickupAddress,
+          finalPickupCity,
 
-              finalPickupPincode,
+          (error, result) => {
+            if (error) {
+              return reject(error);
+            }
 
-              finalPickupCity,
-
-              (
-                error,
-                result
-              ) => {
-
-                if (error) {
-
-                  return reject(
-                    error
-                  );
-
-                }
-
-                resolve(
-                  result
-                );
-
-              }
-
-            );
-
-          }
+            resolve(result);
+          },
         );
-
+      });
 
       // ----------------------------------------------
       // GET INSERTED ID
       // ----------------------------------------------
 
-      if (
-        !pickupAddressResult ||
-        !pickupAddressResult.insertId
-      ) {
-
-        throw new Error(
-          "Unable to create pickup address"
-        );
-
+      if (!pickupAddressResult || !pickupAddressResult.insertId) {
+        throw new Error("Unable to create pickup address");
       }
 
-
-      finalPickupAddressId =
-        pickupAddressResult.insertId;
-
+      finalPickupAddressId = pickupAddressResult.insertId;
     }
-
 
     // ==================================================
     // FINAL ORDER DATA
     // ==================================================
 
-    finalOrderData.pickup_address_id =
-      Number(
-        finalPickupAddressId
-      );
+    finalOrderData.pickup_address_id = Number(finalPickupAddressId);
 
+    finalOrderData.user_id = Number(user_id);
 
-    finalOrderData.user_id =
-      Number(
-        user_id
-      );
-
-
-    if (
-      finalOrderData.warehouse_id
-    ) {
-
-      finalOrderData.warehouse_id =
-        Number(
-          finalOrderData.warehouse_id
-        );
-
+    if (finalOrderData.warehouse_id) {
+      finalOrderData.warehouse_id = Number(finalOrderData.warehouse_id);
     }
-
 
     // ==================================================
     // REQUIRED CONSIGNEE VALIDATION
     // ==================================================
 
-    if (
-      !String(
-        finalOrderData.consignee_name ||
-        ""
-      ).trim()
-    ) {
-
+    if (!String(finalOrderData.consignee_name || "").trim()) {
       return res.status(400).json({
-
         success: false,
 
-        message:
-          "Consignee name is required",
-
+        message: "Consignee name is required",
       });
-
     }
-
 
     // ==================================================
     // MOBILE VALIDATION
     // ==================================================
 
-    if (
-      !/^\d{10}$/.test(
-        String(
-          finalOrderData.mobile ||
-          ""
-        ).trim()
-      )
-    ) {
-
+    if (!/^\d{10}$/.test(String(finalOrderData.mobile || "").trim())) {
       return res.status(400).json({
-
         success: false,
 
-        message:
-          "Valid 10-digit mobile number is required",
-
+        message: "Valid 10-digit mobile number is required",
       });
-
     }
-
 
     // ==================================================
     // DELIVERY PINCODE
     // ==================================================
 
-    if (
-      !/^\d{6}$/.test(
-        String(
-          finalOrderData.pincode ||
-          ""
-        ).trim()
-      )
-    ) {
-
+    if (!/^\d{6}$/.test(String(finalOrderData.pincode || "").trim())) {
       return res.status(400).json({
-
         success: false,
 
-        message:
-          "Valid 6-digit delivery pincode is required",
-
+        message: "Valid 6-digit delivery pincode is required",
       });
-
     }
-
 
     // ==================================================
     // DELIVERY ADDRESS
     // ==================================================
 
-    if (
-      !String(
-        finalOrderData.address_line1 ||
-        ""
-      ).trim()
-    ) {
-
+    if (!String(finalOrderData.address_line1 || "").trim()) {
       return res.status(400).json({
-
         success: false,
 
-        message:
-          "Delivery address is required",
-
+        message: "Delivery address is required",
       });
-
     }
-
 
     // ==================================================
     // CREATE ORDER
     // ==================================================
 
-    const createdOrder =
-      await new Promise(
-        (
-          resolve,
-          reject
-        ) => {
-
-          createOrder(
-            finalOrderData,
-            (
-              error,
-              result
-            ) => {
-
-              if (error) {
-
-                return reject(
-                  error
-                );
-
-              }
-
-              resolve(
-                result
-              );
-
-            }
-          );
-
+    const createdOrder = await new Promise((resolve, reject) => {
+      createOrder(finalOrderData, (error, result) => {
+        if (error) {
+          return reject(error);
         }
-      );
 
+        resolve(result);
+      });
+    });
 
     // ==================================================
     // ORDER CHECK
     // ==================================================
 
-    if (
-      !createdOrder ||
-      !createdOrder.id
-    ) {
-
-      throw new Error(
-        "Order could not be created"
-      );
-
+    if (!createdOrder || !createdOrder.id) {
+      throw new Error("Order could not be created");
     }
 
-
-    const internalOrderId =
-      Number(
-        createdOrder.id
-      );
-
+    const internalOrderId = Number(createdOrder.id);
 
     // ==================================================
     // CREATE PRODUCTS
     // ==================================================
 
-    if (
-      Array.isArray(products) &&
-      products.length > 0
-    ) {
+    if (Array.isArray(products) && products.length > 0) {
+      for (const product of products) {
+        await new Promise((resolve, reject) => {
+          createProduct(
+            {
+              order_id: internalOrderId,
 
-      for (
-        const product
-        of products
-      ) {
+              product_name: product.product_name,
 
-        await new Promise(
-          (
-            resolve,
-            reject
-          ) => {
+              sku: product.sku || null,
 
-            createProduct(
+              price: Number(product.price) || 0,
 
-              {
+              qty: Number(product.qty) || 1,
 
-                order_id:
-                  internalOrderId,
+              tax: Number(product.tax) || 0,
+            },
 
-                product_name:
-                  product.product_name,
-
-                sku:
-                  product.sku ||
-                  null,
-
-                price:
-                  Number(
-                    product.price
-                  ) || 0,
-
-                qty:
-                  Number(
-                    product.qty
-                  ) || 1,
-
-                tax:
-                  Number(
-                    product.tax
-                  ) || 0,
-
-              },
-
-              (
-                error,
-                result
-              ) => {
-
-                if (error) {
-
-                  return reject(
-                    error
-                  );
-
-                }
-
-                resolve(
-                  result
-                );
-
+            (error, result) => {
+              if (error) {
+                return reject(error);
               }
 
-            );
-
-          }
-        );
-
+              resolve(result);
+            },
+          );
+        });
       }
-
     }
-
 
     // ==================================================
     // CREATE PACKAGES
     // ==================================================
 
-    if (
-      Array.isArray(packages) &&
-      packages.length > 0
-    ) {
+    if (Array.isArray(packages) && packages.length > 0) {
+      for (const packageData of packages) {
+        await new Promise((resolve, reject) => {
+          createPackage(
+            {
+              order_id: internalOrderId,
 
-      for (
-        const packageData
-        of packages
-      ) {
+              length: Number(packageData.length) || 0,
 
-        await new Promise(
-          (
-            resolve,
-            reject
-          ) => {
+              width: Number(packageData.width) || 0,
 
-            createPackage(
+              height: Number(packageData.height) || 0,
 
-              {
+              weight: Number(packageData.weight) || 0,
 
-                order_id:
-                  internalOrderId,
+              package_count:
+                Number(packageData.package_count || packageData.count) || 1,
+            },
 
-                length:
-                  Number(
-                    packageData.length
-                  ) || 0,
-
-                width:
-                  Number(
-                    packageData.width
-                  ) || 0,
-
-                height:
-                  Number(
-                    packageData.height
-                  ) || 0,
-
-                weight:
-                  Number(
-                    packageData.weight
-                  ) || 0,
-
-                package_count:
-                  Number(
-                    packageData.package_count ||
-                    packageData.count
-                  ) || 1,
-
-              },
-
-              (
-                error,
-                result
-              ) => {
-
-                if (error) {
-
-                  return reject(
-                    error
-                  );
-
-                }
-
-                resolve(
-                  result
-                );
-
+            (error, result) => {
+              if (error) {
+                return reject(error);
               }
 
-            );
-
-          }
-        );
-
+              resolve(result);
+            },
+          );
+        });
       }
-
     }
-
 
     // ==================================================
     // SUCCESS RESPONSE
     // ==================================================
 
     return res.status(201).json({
+      success: true,
 
-      success:
-        true,
+      id: createdOrder.id,
 
-      id:
-        createdOrder.id,
+      order_id: createdOrder.order_id,
 
-      order_id:
-        createdOrder.order_id,
+      pickup_address_id: finalPickupAddressId,
 
-      pickup_address_id:
-        finalPickupAddressId,
+      warehouse_id: finalOrderData.warehouse_id || null,
 
-      warehouse_id:
-        finalOrderData.warehouse_id ||
-        null,
-
-      message:
-        "Order created successfully",
-
+      message: "Order created successfully",
     });
-
-
   } catch (error) {
-
-    console.log(
-      "Create order error:",
-      error
-    );
-
+    console.log("Create order error:", error);
 
     return res.status(500).json({
+      success: false,
 
-      success:
-        false,
-
-      message:
-        error.message ||
-        "Unable to create order",
-
+      message: error.message || "Unable to create order",
     });
-
   }
-
 };
-
 
 // ======================================================
 // GET PROCESSING ORDERS
 // ======================================================
 
-const getProcessingOrdersController =
-  async (
-    req,
-    res
-  ) => {
+const getProcessingOrdersController = async (req, res) => {
+  try {
+    const user_id = Number(req.query.user_id || req.body?.user_id);
 
-    try {
-
-      const user_id =
-        Number(
-          req.query.user_id ||
-          req.body?.user_id
-        );
-
-
-      if (
-        !user_id
-      ) {
-
-        return res.status(400).json({
-
-          success: false,
-
-          message:
-            "User ID is required",
-
-        });
-
-      }
-
-
-      getProcessingOrders(
-        user_id,
-        (
-          error,
-          rows
-        ) => {
-
-          if (error) {
-
-            console.log(
-              "Get processing orders error:",
-              error
-            );
-
-            return res.status(500).json({
-
-              success: false,
-
-              message:
-                error.message ||
-                "Unable to fetch processing orders",
-
-            });
-
-          }
-
-
-          return res.status(200).json({
-
-            success:
-              true,
-
-            orders:
-              rows || [],
-
-          });
-
-        }
-      );
-
-    } catch (error) {
-
-      return res.status(500).json({
-
+    if (!user_id) {
+      return res.status(400).json({
         success: false,
 
-        message:
-          error.message ||
-          "Unable to fetch processing orders",
-
+        message: "User ID is required",
       });
-
     }
 
-  };
+    getProcessingOrders(user_id, (error, rows) => {
+      if (error) {
+        console.log("Get processing orders error:", error);
 
+        return res.status(500).json({
+          success: false,
 
-  // ======================================================
+          message: error.message || "Unable to fetch processing orders",
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+
+        orders: rows || [],
+      });
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+
+      message: error.message || "Unable to fetch processing orders",
+    });
+  }
+};
+
+// ======================================================
 // GET ALL ORDERS
 // ======================================================
 
-const getAllOrdersController =
-  async (
-    req,
-    res
-  ) => {
+const getAllOrdersController = async (req, res) => {
+  try {
+    const requestStart = Date.now();
+    const user_id = Number(req.query.user_id || req.body?.user_id);
 
-    try {
-      const requestStart = Date.now();
-      const user_id =
-        Number(
-          req.query.user_id ||
-          req.body?.user_id
-        );
+    const page = Math.max(1, Number(req.query.page) || 1);
 
-        const page = Math.max(
-  1,
-  Number(req.query.page) || 1 
-);
+    const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 50));
+    const search = String(req.query.search || "").trim();
 
-const limit = Math.min(
-  100,
-  Math.max(
-    1,
-    Number(req.query.limit) || 50
-  )
-);
-const search = String(req.query.search || "").trim();
+    // ==================================================
+    // USER ID
+    // ==================================================
 
-
-      // ==================================================
-      // USER ID
-      // ==================================================
-
-      if (!user_id) {
-
-        return res.status(400).json({
-
-          success: false,
-
-          message:
-            "User ID is required",
-
-        });
-
-      }
-
-
-      // ==================================================
-      // GET ALL ORDERS
-      // ==================================================
-const dbStart = Date.now();
-
-getAllOrders(user_id, page, limit, search,
-async (error, rows, totalOrders) => {
-    console.log(
-      `GET ALL ORDERS DB TIME: ${
-        Date.now() - dbStart
-      } ms | ROWS: ${
-        rows?.length || 0
-      }`
-    );
-
-          if (error) {
-
-            console.log(
-              "Get all orders error:",
-              error
-            );
-
-
-            return res.status(500).json({
-
-              success: false,
-
-              message:
-                error.message ||
-                "Unable to fetch all orders",
-
-            });
-
-          }
-
-
-         // ==================================================
-// DELHIVERY TRACKING
-// ==================================================
-const includeTracking =
-  String(req.query.include_tracking || "true").toLowerCase() === "true";
-
-const trackingStart = Date.now();
-
-const ordersWithTracking = includeTracking
-  ? await attachTrackingToOrders(rows || [])
-  : (rows || []);
-
-console.log(
-  `GET ALL ORDERS TRACKING TIME: ${
-    Date.now() - trackingStart
-  } ms`
-);
-
-
-// ==================================================
-// SUCCESS RESPONSE
-// ==================================================
-
-
-console.log(
-  `GET ALL ORDERS TOTAL TIME: ${
-    Date.now() - requestStart
-  } ms`
-);
-
-return res.status(200).json({
-
-  success: true,
-
-  orders:
-    ordersWithTracking,
-
-  pagination: {
-    page,
-    limit,
-    totalOrders,
-    totalPages: Math.ceil(
-      totalOrders / limit
-    ),
-  },
-
-});
-
-        }
-
-      );
-
-    } catch (error) {
-
-      console.log(
-        "Get all orders controller error:",
-        error
-      );
-
-
-      return res.status(500).json({
-
+    if (!user_id) {
+      return res.status(400).json({
         success: false,
 
-        message:
-          error.message ||
-          "Unable to fetch all orders",
-
+        message: "User ID is required",
       });
-
     }
 
-  };
+    // ==================================================
+    // GET ALL ORDERS
+    // ==================================================
+    const dbStart = Date.now();
+
+    getAllOrders(
+      user_id,
+      page,
+      limit,
+      search,
+      async (error, rows, totalOrders) => {
+        console.log(
+          `GET ALL ORDERS DB TIME: ${Date.now() - dbStart} ms | ROWS: ${
+            rows?.length || 0
+          }`,
+        );
+
+        if (error) {
+          console.log("Get all orders error:", error);
+
+          return res.status(500).json({
+            success: false,
+
+            message: error.message || "Unable to fetch all orders",
+          });
+        }
+
+        // ==================================================
+        // DELHIVERY TRACKING
+        // ==================================================
+        const includeTracking =
+          String(req.query.include_tracking || "true").toLowerCase() === "true";
+
+        const trackingStart = Date.now();
+
+        const ordersWithTracking = includeTracking
+          ? await attachTrackingToOrders(rows || [])
+          : rows || [];
+
+        console.log(
+          `GET ALL ORDERS TRACKING TIME: ${Date.now() - trackingStart} ms`,
+        );
+
+        // ==================================================
+        // SUCCESS RESPONSE
+        // ==================================================
+
+        console.log(
+          `GET ALL ORDERS TOTAL TIME: ${Date.now() - requestStart} ms`,
+        );
+
+        return res.status(200).json({
+          success: true,
+
+          orders: ordersWithTracking,
+
+          pagination: {
+            page,
+            limit,
+            totalOrders,
+            totalPages: Math.ceil(totalOrders / limit),
+          },
+        });
+      },
+    );
+  } catch (error) {
+    console.log("Get all orders controller error:", error);
+
+    return res.status(500).json({
+      success: false,
+
+      message: error.message || "Unable to fetch all orders",
+    });
+  }
+};
 
 // ======================================================
 // GET ORDER BY ID
 // ======================================================
 
-const getOrderByIdController =
-  async (
-    req,
-    res
-  ) => {
+const getOrderByIdController = async (req, res) => {
+  try {
+    const orderId = Number(req.params.id);
 
-    try {
+    const userId = Number(req.query.user_id || req.body?.user_id);
 
-      const orderId =
-        Number(
-          req.params.id
-        );
+    if (!orderId) {
+      return res.status(400).json({
+        success: false,
 
-      const userId =
-        Number(
-          req.query.user_id ||
-          req.body?.user_id
-        );
-
-
-      if (
-        !orderId
-      ) {
-
-        return res.status(400).json({
-
-          success: false,
-
-          message:
-            "Order ID is required",
-
-        });
-
-      }
-
-
-      if (
-        !userId
-      ) {
-
-        return res.status(400).json({
-
-          success: false,
-
-          message:
-            "User ID is required",
-
-        });
-
-      }
-
-
-      const order =
-        await getOrderById(
-          orderId,
-          userId
-        );
-
-
-      return res.status(200).json({
-
-        success:
-          true,
-
-        order,
-
+        message: "Order ID is required",
       });
-
-    } catch (error) {
-
-      console.log(
-        "Get order error:",
-        error
-      );
-
-
-      const statusCode =
-        error.message ===
-        "Order not found"
-          ? 404
-          : 500;
-
-
-      return res.status(
-        statusCode
-      ).json({
-
-        success:
-          false,
-
-        message:
-          error.message ||
-          "Unable to fetch order",
-
-      });
-
     }
 
-  };
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
 
+        message: "User ID is required",
+      });
+    }
+
+    const order = await getOrderById(orderId, userId);
+
+    return res.status(200).json({
+      success: true,
+
+      order,
+    });
+  } catch (error) {
+    console.log("Get order error:", error);
+
+    const statusCode = error.message === "Order not found" ? 404 : 500;
+
+    return res.status(statusCode).json({
+      success: false,
+
+      message: error.message || "Unable to fetch order",
+    });
+  }
+};
 
 // ======================================================
 // UPDATE ORDER
 // ======================================================
 
-const updateOrderController =
-  async (
-    req,
-    res
-  ) => {
-
-    try {
-
-      const orderId =
-        Number(
-          req.params.id
-        );
-
-
-      const {
-        user_id,
-        warehouse_id,
-        pickup_address_id,
-        pickup_address,
-        pickup_pincode,
-        pickup_city,
-        orderData,
-        products,
-        packages,
-      } = req.body;
-
-
-      const userId =
-        Number(
-          user_id
-        );
-
-
-      if (
-        !orderId ||
-        !userId
-      ) {
-
-        return res.status(400).json({
-
-          success: false,
-
-          message:
-            "Valid order ID and user ID are required",
-
-        });
-
-      }
-
-
-      const nestedOrderData =
-        orderData &&
-        typeof orderData === "object"
-          ? orderData
-          : {};
-
-
-      // ==================================================
-      // CREATE PICKUP ADDRESS IF NEEDED
-      // ==================================================
-
-      let finalPickupAddressId =
-        pickup_address_id ||
-        nestedOrderData.pickup_address_id ||
-        null;
-
-
-      if (
-        !finalPickupAddressId &&
-        pickup_address
-      ) {
-
-        const pickupAddressResult =
-          await new Promise(
-            (
-              resolve,
-              reject
-            ) => {
-
-              createPickupAddress(
-
-                userId,
-
-                String(
-                  pickup_address
-                ).trim(),
-
-                String(
-                  pickup_pincode ||
-                  ""
-                ).trim(),
-
-                String(
-                  pickup_city ||
-                  ""
-                ).trim(),
-
-                (
-                  error,
-                  result
-                ) => {
-
-                  if (error) {
-
-                    return reject(
-                      error
-                    );
-
-                  }
-
-                  resolve(
-                    result
-                  );
-
-                }
-
-              );
-
-            }
-          );
-
-
-        finalPickupAddressId =
-          pickupAddressResult?.insertId ||
-          null;
-
-      }
-
-
-      // ==================================================
-      // FINAL ORDER DATA
-      // ==================================================
-
-      const finalOrderData = {
-
-        ...nestedOrderData,
-
-        user_id:
-          userId,
-
-        warehouse_id:
-          warehouse_id ||
-          nestedOrderData.warehouse_id ||
-          null,
-
-        pickup_address_id:
-          finalPickupAddressId,
-
-      };
-
-
-      // ==================================================
-      // UPDATE
-      // ==================================================
-
-      const result =
-        await updateOrder(
-
-          orderId,
-
-          userId,
-
-          finalOrderData,
-
-          {
-            pickup_address_id:
-              finalPickupAddressId,
-
-            pickup_address:
-              pickup_address,
-
-            pickup_pincode:
-              pickup_pincode,
-
-            pickup_city:
-              pickup_city,
-
-          },
-
-          Array.isArray(
-            products
-          )
-            ? products
-            : [],
-
-          Array.isArray(
-            packages
-          )
-            ? packages
-            : []
-
-        );
-
-
-      return res.status(200).json(
-        result
-      );
-
-
-    } catch (error) {
-
-      console.log(
-        "Update order error:",
-        error
-      );
-
-
-      return res.status(500).json({
-
-        success:
-          false,
-
-        message:
-          error.message ||
-          "Unable to update order",
-
+const updateOrderController = async (req, res) => {
+  try {
+    const orderId = Number(req.params.id);
+
+    const {
+      user_id,
+      warehouse_id,
+      pickup_address_id,
+      pickup_address,
+      pickup_pincode,
+      pickup_city,
+      orderData,
+      products,
+      packages,
+    } = req.body;
+
+    const userId = Number(user_id);
+
+    if (!orderId || !userId) {
+      return res.status(400).json({
+        success: false,
+
+        message: "Valid order ID and user ID are required",
       });
-
     }
 
-  };
+    const nestedOrderData =
+      orderData && typeof orderData === "object" ? orderData : {};
 
+    // ==================================================
+    // CREATE PICKUP ADDRESS IF NEEDED
+    // ==================================================
+
+    let finalPickupAddressId =
+      pickup_address_id || nestedOrderData.pickup_address_id || null;
+
+    if (!finalPickupAddressId && pickup_address) {
+      const pickupAddressResult = await new Promise((resolve, reject) => {
+        createPickupAddress(
+          userId,
+
+          String(pickup_address).trim(),
+
+          String(pickup_pincode || "").trim(),
+
+          String(pickup_city || "").trim(),
+
+          (error, result) => {
+            if (error) {
+              return reject(error);
+            }
+
+            resolve(result);
+          },
+        );
+      });
+
+      finalPickupAddressId = pickupAddressResult?.insertId || null;
+    }
+
+    // ==================================================
+    // FINAL ORDER DATA
+    // ==================================================
+
+    const finalOrderData = {
+      ...nestedOrderData,
+
+      user_id: userId,
+
+      warehouse_id: warehouse_id || nestedOrderData.warehouse_id || null,
+
+      pickup_address_id: finalPickupAddressId,
+    };
+
+    // ==================================================
+    // UPDATE
+    // ==================================================
+
+    const result = await updateOrder(
+      orderId,
+
+      userId,
+
+      finalOrderData,
+
+      {
+        pickup_address_id: finalPickupAddressId,
+
+        pickup_address: pickup_address,
+
+        pickup_pincode: pickup_pincode,
+
+        pickup_city: pickup_city,
+      },
+
+      Array.isArray(products) ? products : [],
+
+      Array.isArray(packages) ? packages : [],
+    );
+
+    return res.status(200).json(result);
+  } catch (error) {
+    console.log("Update order error:", error);
+
+    return res.status(500).json({
+      success: false,
+
+      message: error.message || "Unable to update order",
+    });
+  }
+};
 
 // ======================================================
 // DELETE PROCESSING ORDERS
 // ======================================================
 
-const deleteOrdersController =
-  async (
-    req,
-    res
-  ) => {
+const deleteOrdersController = async (req, res) => {
+  try {
+    const { user_id, order_ids } = req.body;
 
-    try {
+    const userId = Number(user_id);
 
-      const {
-        user_id,
-        order_ids,
-      } = req.body;
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
 
-
-      const userId =
-        Number(
-          user_id
-        );
-
-
-      if (
-        !userId
-      ) {
-
-        return res.status(400).json({
-
-          success: false,
-
-          message:
-            "User ID is required",
-
-        });
-
-      }
-
-
-      if (
-        !Array.isArray(
-          order_ids
-        ) ||
-        order_ids.length === 0
-      ) {
-
-        return res.status(400).json({
-
-          success: false,
-
-          message:
-            "Please select at least one order",
-
-        });
-
-      }
-
-
-      const cleanOrderIds =
-        [
-          ...new Set(
-
-            order_ids
-
-              .map(
-                (id) =>
-                  Number(id)
-              )
-
-              .filter(
-                (id) =>
-                  Number.isInteger(id) &&
-                  id > 0
-              )
-
-          ),
-        ];
-
-
-      if (
-        cleanOrderIds.length === 0
-      ) {
-
-        return res.status(400).json({
-
-          success: false,
-
-          message:
-            "Invalid order selection",
-
-        });
-
-      }
-
-
-      const result =
-        await deleteProcessingOrders(
-
-          userId,
-
-          cleanOrderIds
-
-        );
-
-
-      return res.status(200).json(
-        result
-      );
-
-
-    } catch (error) {
-
-      console.log(
-        "Delete orders error:",
-        error
-      );
-
-
-      return res.status(500).json({
-
-        success:
-          false,
-
-        message:
-          error.message ||
-          "Unable to delete orders",
-
+        message: "User ID is required",
       });
-
     }
 
-  };
+    if (!Array.isArray(order_ids) || order_ids.length === 0) {
+      return res.status(400).json({
+        success: false,
+
+        message: "Please select at least one order",
+      });
+    }
+
+    const cleanOrderIds = [
+      ...new Set(
+        order_ids
+
+          .map((id) => Number(id))
+
+          .filter((id) => Number.isInteger(id) && id > 0),
+      ),
+    ];
+
+    if (cleanOrderIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+
+        message: "Invalid order selection",
+      });
+    }
+
+    const result = await deleteProcessingOrders(
+      userId,
+
+      cleanOrderIds,
+    );
+
+    return res.status(200).json(result);
+  } catch (error) {
+    console.log("Delete orders error:", error);
+
+    return res.status(500).json({
+      success: false,
+
+      message: error.message || "Unable to delete orders",
+    });
+  }
+};
 
 // ======================================================
 // SEARCH PREVIOUS CUSTOMERS
@@ -1543,68 +833,35 @@ const searchPreviousCustomersController = async (req, res) => {
       });
     }
 
-    const customers = await searchPreviousCustomers(
-      userId,
-      search,
-    );
+    const customers = await searchPreviousCustomers(userId, search);
 
-    console.log(
-      "Previous customers found:",
-      customers?.length || 0,
-    );
+    console.log("Previous customers found:", customers?.length || 0);
 
     return res.status(200).json({
       success: true,
-      customers: Array.isArray(customers)
-        ? customers
-        : [],
+      customers: Array.isArray(customers) ? customers : [],
     });
-
   } catch (error) {
+    console.error("==========================================");
 
-    console.error(
-      "==========================================",
-    );
+    console.error("PREVIOUS CUSTOMER SEARCH ERRORRRRR:", error);
 
-    console.error(
-      "PREVIOUS CUSTOMER SEARCH ERRORRRRR:",
-      error,
-    );
+    console.error("MESSAGE:", error?.message);
 
-    console.error(
-      "MESSAGE:",
-      error?.message,
-    );
+    console.error("CODE:", error?.code);
 
-    console.error(
-      "CODE:",
-      error?.code,
-    );
+    console.error("SQL MESSAGE:", error?.sqlMessage);
 
-    console.error(
-      "SQL MESSAGE:",
-      error?.sqlMessage,
-    );
-
-    console.error(
-      "==========================================",
-    );
+    console.error("==========================================");
 
     return res.status(500).json({
       success: false,
-      message:
-        error?.message ||
-        "Unable to search previous customers",
-      code:
-        error?.code ||
-        null,
-      sqlMessage:
-        error?.sqlMessage ||
-        null,
+      message: error?.message || "Unable to search previous customers",
+      code: error?.code || null,
+      sqlMessage: error?.sqlMessage || null,
     });
   }
 };
-
 
 // ======================================================
 // TRACKING SEARCH
@@ -1612,16 +869,9 @@ const searchPreviousCustomersController = async (req, res) => {
 
 const searchTrackingController = async (req, res) => {
   try {
-    const userId = Number(
-      req.query?.user_id ||
-      req.body?.user_id
-    );
+    const userId = Number(req.query?.user_id || req.body?.user_id);
 
-    const search = String(
-      req.query?.search ||
-      req.body?.search ||
-      ""
-    ).trim();
+    const search = String(req.query?.search || req.body?.search || "").trim();
 
     if (!Number.isInteger(userId) || userId <= 0) {
       return res.status(400).json({
@@ -1637,10 +887,7 @@ const searchTrackingController = async (req, res) => {
       });
     }
 
-    const order = await searchOrderForTracking(
-      userId,
-      search
-    );
+    const order = await searchOrderForTracking(userId, search);
 
     // IMPORTANT:
     // Do not reveal whether the shipment belongs
@@ -1654,53 +901,40 @@ const searchTrackingController = async (req, res) => {
 
     const awb = String(order.awb || "").trim();
 
-if (awb) {
-  const trackingMap = await getTrackingForWaybills([awb]);
+    if (awb) {
+      const trackingMap = await getTrackingForWaybills([awb]);
 
-  const tracking = trackingMap?.[awb] || {};
+      const tracking = trackingMap?.[awb] || {};
 
-  order.tracking_status =
-    tracking.tracking_status || order.tracking_status;
+      order.tracking_status = tracking.tracking_status || order.tracking_status;
 
-  order.tracking_raw_status =
-    tracking.tracking_raw_status || null;
+      order.tracking_raw_status = tracking.tracking_raw_status || null;
 
-  order.tracking_status_code =
-    tracking.tracking_status_code || null;
+      order.tracking_status_code = tracking.tracking_status_code || null;
 
-  order.tracking_status_type =
-    tracking.tracking_status_type || null;
+      order.tracking_status_type = tracking.tracking_status_type || null;
 
-  order.tracking_status_datetime =
-    tracking.tracking_status_datetime || null;
+      order.tracking_status_datetime =
+        tracking.tracking_status_datetime || null;
 
-  order.tracking_location =
-    tracking.tracking_location || null;
+      order.tracking_location = tracking.tracking_location || null;
 
-  order.tracking_instructions =
-    tracking.tracking_instructions || null;
+      order.tracking_instructions = tracking.tracking_instructions || null;
 
-  order.tracking_scans =
-    tracking.tracking_scans || [];
+      order.tracking_scans = tracking.tracking_scans || [];
 
-  order.tracking_awb =
-    tracking.tracking_awb || awb;
+      order.tracking_awb = tracking.tracking_awb || awb;
 
-  order.tracking_expected_delivery =
-  tracking.tracking_expected_delivery || null;
-}
-
+      order.tracking_expected_delivery =
+        tracking.tracking_expected_delivery || null;
+    }
 
     return res.status(200).json({
       success: true,
       order,
     });
-
   } catch (error) {
-    console.error(
-      "Tracking search error:",
-      error
-    );
+    console.error("Tracking search error:", error);
 
     return res.status(500).json({
       success: false,
@@ -1714,28 +948,19 @@ if (awb) {
 // ======================================================
 
 module.exports = {
+  createOrder: createOrderController,
 
-  createOrder:
-    createOrderController,
+  getProcessingOrders: getProcessingOrdersController,
 
-  getProcessingOrders:
-    getProcessingOrdersController,
+  getAllOrders: getAllOrdersController,
 
-  getAllOrders:
-    getAllOrdersController,
+  getOrderById: getOrderByIdController,
 
-  getOrderById:
-    getOrderByIdController,
+  updateOrder: updateOrderController,
 
-  updateOrder:
-    updateOrderController,
+  deleteOrders: deleteOrdersController,
 
-  deleteOrders:
-    deleteOrdersController,
+  searchPreviousCustomers: searchPreviousCustomersController,
 
-  searchPreviousCustomers:
-    searchPreviousCustomersController,
-
-  searchTracking:
-    searchTrackingController,
+  searchTracking: searchTrackingController,
 };

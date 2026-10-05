@@ -415,6 +415,53 @@ const getWalletHistory = (req, res) => {
 };
 
 
+
+// ========================================
+// GET COD REMITTANCE HISTORY
+// ========================================
+
+const getCODRemittanceHistory = (req, res) => {
+  const { user_id } = req.query;
+
+  if (!user_id) {
+    return res.status(400).json({
+      message: "User ID is required",
+    });
+  }
+
+  // Pehle delivered COD orders ke liye
+  // missing remittance records create karo
+
+  paymentModel.createCODRemittancesForDeliveredOrders(
+    user_id,
+    (createError) => {
+      if (createError) {
+        return res.status(500).json({
+          message: createError.message,
+        });
+      }
+
+      // Ab remittance history fetch karo
+
+      paymentModel.getCODRemittances(
+        user_id,
+        (err, remittances) => {
+          if (err) {
+            return res.status(500).json({
+              message: err.message,
+            });
+          }
+
+          return res.status(200).json({
+            remittances,
+          });
+        }
+      );
+    }
+  );
+};
+
+
 // ========================================
 // EXPORT
 // ========================================
@@ -424,4 +471,5 @@ module.exports = {
   createPaymentOrder,
   verifyPayment,
   getWalletHistory,
+  getCODRemittanceHistory,
 };

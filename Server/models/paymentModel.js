@@ -337,6 +337,84 @@ const getWalletTransactions = (
   );
 };
 
+// ========================================
+// CREATE COD REMITTANCE FOR DELIVERED COD ORDERS
+// ========================================
+
+const createCODRemittancesForDeliveredOrders = (
+  user_id,
+  callback
+) => {
+  const query = `
+    INSERT INTO cod_remittances
+    (
+      order_id,
+      user_id,
+      cod_amount,
+      status
+    )
+    SELECT
+      o.id,
+      o.user_id,
+      COALESCE(SUM(
+        COALESCE(op.price, 0) * COALESCE(op.qty, 0)
+      ), 0.00),
+      'PENDING'
+    FROM orders o
+    INNER JOIN order_products op
+      ON op.order_id = o.id
+    LEFT JOIN cod_remittances cr
+      ON cr.order_id = o.id
+    WHERE o.user_id = ?
+      AND UPPER(TRIM(COALESCE(o.payment_type, ''))) = 'COD'
+      AND UPPER(TRIM(COALESCE(o.status, ''))) = 'DELIVERED'
+      AND cr.id IS NULL
+    GROUP BY
+      o.id,
+      o.user_id
+  `;
+
+  db.query(
+    query,
+    [user_id],
+    callback
+  );
+};
+
+
+// ========================================
+// GET COD REMITTANCE HISTORY
+// ========================================
+
+const getCODRemittances = (
+  user_id,
+  callback
+) => {
+  const query = `
+    SELECT
+      cr.id,
+      o.order_id,
+      o.consignee_name AS buyer,
+      o.awb,
+      cr.cod_amount,
+      o.created_at,
+      cr.status,
+      cr.transferred_on,
+      cr.description
+    FROM cod_remittances cr
+    INNER JOIN orders o
+      ON o.id = cr.order_id
+    WHERE cr.user_id = ?
+    ORDER BY o.created_at DESC, cr.id DESC
+  `;
+
+  db.query(
+    query,
+    [user_id],
+    callback
+  );
+};
+
 
 module.exports = {
   createWalletIfNotExists,
@@ -346,5 +424,7 @@ module.exports = {
   markTransactionSuccess,
   addMoneyToWallet,
   getTransactionByPaymentId,
-  getWalletTransactions
+  getWalletTransactions,
+  createCODRemittancesForDeliveredOrders,
+  getCODRemittances
 };

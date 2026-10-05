@@ -388,13 +388,7 @@ const getProcessingOrders = (user_id, callback) => {
 // GET ALL ORDERS
 // ======================================================
 
-const getAllOrders = (
-  user_id,
-  page = 1,
-  limit = 50,
-  search = "",
-  callback,
-) => {
+const getAllOrders = (user_id, page = 1, limit = 50, search = "", callback) => {
   const query = `
     SELECT
       o.id,
@@ -556,27 +550,17 @@ ORDER BY o.id DESC
 LIMIT ? OFFSET ?
   `;
 
-const safePage = Math.max(
-  1,
-  Number(page) || 1
-);
+  const safePage = Math.max(1, Number(page) || 1);
 
-const safeLimit = Math.min(
-  100,
-  Math.max(
-    1,
-    Number(limit) || 50
-  )
-);
+  const safeLimit = Math.min(100, Math.max(1, Number(limit) || 50));
 
-const offset =
-  (safePage - 1) * safeLimit;
+  const offset = (safePage - 1) * safeLimit;
 
-const searchTerm = String(search || "").trim();
+  const searchTerm = String(search || "").trim();
 
-const searchValue = `%${searchTerm}%`;
+  const searchValue = `%${searchTerm}%`;
 
-const countQuery = `
+  const countQuery = `
   SELECT COUNT(DISTINCT o.id) AS total
   FROM orders o
   WHERE
@@ -591,50 +575,45 @@ const countQuery = `
     )
 `;
 
-db.query(
-  query,
-  [
-  user_id,
-  searchTerm,
-  searchValue,
-  searchValue,
-  searchValue,
-  searchValue,
-  safeLimit,
-  offset,
-],
-  (error, rows) => {
-    if (error) {
-      return callback(error);
-    }
-
-    db.query(
-  countQuery,
-  [
-    user_id,
-    searchTerm,
-    searchValue,
-    searchValue,
-    searchValue,
-    searchValue,
-  ],
-      (countError, countRows) => {
-        if (countError) {
-          return callback(countError);
-        }
-
-        const totalOrders =
-          Number(countRows?.[0]?.total) || 0;
-
-        return callback(
-          null,
-          rows || [],
-          totalOrders
-        );
+  db.query(
+    query,
+    [
+      user_id,
+      searchTerm,
+      searchValue,
+      searchValue,
+      searchValue,
+      searchValue,
+      safeLimit,
+      offset,
+    ],
+    (error, rows) => {
+      if (error) {
+        return callback(error);
       }
-    );
-  }
-);
+
+      db.query(
+        countQuery,
+        [
+          user_id,
+          searchTerm,
+          searchValue,
+          searchValue,
+          searchValue,
+          searchValue,
+        ],
+        (countError, countRows) => {
+          if (countError) {
+            return callback(countError);
+          }
+
+          const totalOrders = Number(countRows?.[0]?.total) || 0;
+
+          return callback(null, rows || [], totalOrders);
+        },
+      );
+    },
+  );
 };
 
 // ======================================================
@@ -1289,7 +1268,6 @@ const deleteProcessingOrders = (userId, orderIds) => {
   });
 };
 
-
 // ======================================================
 // SEARCH PREVIOUS CUSTOMERS
 // ======================================================
@@ -1315,69 +1293,47 @@ const searchPreviousCustomers = (userId, search) => {
         LIMIT 30
       `;
 
-      db.query(
-        query,
-        [
-          Number(userId),
-          `%${term}%`,
-        ],
-        (error, rows) => {
-          if (error) {
-            console.error(
-              "PREVIOUS CUSTOMER SEARCH DB ERROR:",
-              error,
-            );
+      db.query(query, [Number(userId), `%${term}%`], (error, rows) => {
+        if (error) {
+          console.error("PREVIOUS CUSTOMER SEARCH DB ERROR:", error);
 
-            return reject(error);
+          return reject(error);
+        }
+
+        const seen = new Set();
+        const customers = [];
+
+        for (const row of rows || []) {
+          const name = String(row.consignee_name || "")
+            .trim()
+            .toLowerCase();
+
+          const mobile = String(row.mobile || "").trim();
+
+          const key = `${name}|${mobile}`;
+
+          if (seen.has(key)) {
+            continue;
           }
 
-          const seen = new Set();
-          const customers = [];
+          seen.add(key);
 
-          for (const row of rows || []) {
-            const name = String(
-              row.consignee_name || "",
-            )
-              .trim()
-              .toLowerCase();
+          customers.push(row);
 
-            const mobile = String(
-              row.mobile || "",
-            ).trim();
-
-            const key = `${name}|${mobile}`;
-
-            if (seen.has(key)) {
-              continue;
-            }
-
-            seen.add(key);
-
-            customers.push(row);
-
-            if (customers.length >= 10) {
-              break;
-            }
+          if (customers.length >= 10) {
+            break;
           }
+        }
 
-          return resolve(customers);
-        },
-      );
+        return resolve(customers);
+      });
     } catch (error) {
-      console.error(
-        "PREVIOUS CUSTOMER SEARCH ERROR:",
-        error,
-      );
+      console.error("PREVIOUS CUSTOMER SEARCH ERROR:", error);
 
       reject(error);
     }
   });
 };
-
-
-
-
-
 
 // ======================================================
 // SEARCH ORDER FOR TRACKING
@@ -1411,31 +1367,15 @@ const searchOrderForTracking = (userId, search) => {
       LIMIT 1
     `;
 
-    db.query(
-      query,
-      [
-        Number(userId),
-        term,
-        term,
-      ],
-      (error, rows) => {
-        if (error) {
-          return reject(error);
-        }
-
-        return resolve(rows?.[0] || null);
+    db.query(query, [Number(userId), term, term], (error, rows) => {
+      if (error) {
+        return reject(error);
       }
-    );
+
+      return resolve(rows?.[0] || null);
+    });
   });
 };
-
-
-
-
-
-
-
-
 
 // ======================================================
 // EXPORTS

@@ -31,6 +31,7 @@ import RTODelivered from "./pages/Dashboard/RTODelivered";
 import Cancelled from "./pages/Dashboard/Cancelled";
 import Returned from "./pages/Dashboard/Returned";
 import Pending from "./pages/Dashboard/Pending";
+import CODRemittance from "./pages/Dashboard/CODRemittance";
 
 function App() {
   return (
@@ -239,6 +240,11 @@ function App() {
             path="/wallet"
             element={<WalletHistory />}
           />
+
+          <Route
+  path="/cod-remittance"
+  element={<CODRemittance />}
+/>
 
           {/* Pickup Address */}
           <Route

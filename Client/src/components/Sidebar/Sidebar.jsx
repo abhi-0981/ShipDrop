@@ -38,7 +38,9 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
     if (typeof propSetCollapsed === "function") {
       propSetCollapsed(next);
     }
-    window.dispatchEvent(new CustomEvent("shipdrop:sidebarState", { detail: next }));
+    window.dispatchEvent(
+      new CustomEvent("shipdrop:sidebarState", { detail: next }),
+    );
   };
 
   // Sync prop changes
@@ -57,7 +59,8 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
       }
     };
     window.addEventListener("shipdrop:sidebarState", handleSync);
-    return () => window.removeEventListener("shipdrop:sidebarState", handleSync);
+    return () =>
+      window.removeEventListener("shipdrop:sidebarState", handleSync);
   }, [propSetCollapsed]);
 
   const isOrderPath = [
@@ -78,130 +81,122 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
 
   const [showOrders, setShowOrders] = useState(isOrderPath);
   const [showFinance, setShowFinance] = useState(
-    location.pathname === "/wallet" || location.pathname === "/weight-mismatch"
-  );
+  location.pathname === "/wallet" ||
+    location.pathname === "/weight-mismatch" ||
+    location.pathname === "/cod-remittance",
+);
   const [showSettings, setShowSettings] = useState(
-    location.pathname.startsWith("/settings")
+    location.pathname.startsWith("/settings"),
   );
 
   const [statusCounts, setStatusCounts] = useState({});
   // ================= SIDEBAR SEARCH =================
-const [sidebarSearch, setSidebarSearch] = useState("");
-const [selectedSearchIndex, setSelectedSearchIndex] = useState(0);
-const sidebarSearchRef = useRef(null);
+  const [sidebarSearch, setSidebarSearch] = useState("");
+  const [selectedSearchIndex, setSelectedSearchIndex] = useState(0);
+  const sidebarSearchRef = useRef(null);
 
-const sidebarSearchItems = [
-  { name: "Dashboard", path: "/dashboard" },
-  { name: "Create Order", path: "/create-order" },
-  { name: "Processing Orders", path: "/processing-orders" },
-  { name: "All Orders", path: "/all-orders" },
-  { name: "Manifested", path: "/manifested" },
-  { name: "Not Picked", path: "/not-picked" },
-  { name: "In Transit", path: "/in-transit" },
-  { name: "Out For Delivery", path: "/out-for-delivery" },
-  { name: "Delivered", path: "/delivered" },
-  { name: "RTO In Transit", path: "/rto-in-transit" },
-  { name: "RTO Delivered", path: "/rto-delivered" },
-  { name: "Returned", path: "/returned" },
-  { name: "Cancelled", path: "/cancelled" },
-  { name: "Pending", path: "/pending" },
-  { name: "Rate Calculator", path: "/rate-calculator" },
-  { name: "Serviceability", path: "/serviceability" },
-  { name: "Wallet", path: "/wallet" },
-  { name: "Weight Mismatch", path: "/weight-mismatch" },
-  { name: "Tickets", path: "/tickets" },
-  { name: "Pickup Address", path: "/settings/pickup-address" },
-  { name: "Return Addresses", path: "/settings/return-addresses" },
-  { name: "Label Settings", path: "/settings/label-settings" },
-];
+  const sidebarSearchItems = [
+    { name: "Dashboard", path: "/dashboard" },
+    { name: "Create Order", path: "/create-order" },
+    { name: "Processing Orders", path: "/processing-orders" },
+    { name: "All Orders", path: "/all-orders" },
+    { name: "Manifested", path: "/manifested" },
+    { name: "Not Picked", path: "/not-picked" },
+    { name: "In Transit", path: "/in-transit" },
+    { name: "Out For Delivery", path: "/out-for-delivery" },
+    { name: "Delivered", path: "/delivered" },
+    { name: "RTO In Transit", path: "/rto-in-transit" },
+    { name: "RTO Delivered", path: "/rto-delivered" },
+    { name: "Returned", path: "/returned" },
+    { name: "Cancelled", path: "/cancelled" },
+    { name: "Pending", path: "/pending" },
+    { name: "Rate Calculator", path: "/rate-calculator" },
+    { name: "Serviceability", path: "/serviceability" },
+    { name: "Wallet", path: "/wallet" },
+    { name: "Weight Mismatch", path: "/weight-mismatch" },
+    { name: "Tickets", path: "/tickets" },
+    { name: "Pickup Address", path: "/settings/pickup-address" },
+    { name: "Return Addresses", path: "/settings/return-addresses" },
+    { name: "Label Settings", path: "/settings/label-settings" },
+  ];
 
-const filteredSearchItems = sidebarSearch.trim()
-  ? sidebarSearchItems.filter((item) =>
-      item.name
-        .toLowerCase()
-        .includes(sidebarSearch.trim().toLowerCase())
-    )
-  : [];
+  const filteredSearchItems = sidebarSearch.trim()
+    ? sidebarSearchItems.filter((item) =>
+        item.name.toLowerCase().includes(sidebarSearch.trim().toLowerCase()),
+      )
+    : [];
 
-// Ctrl + Shift + F
-// Ctrl + F browser ka normal Find hi rahega.
-useEffect(() => {
-  const handleSidebarShortcut = (event) => {
-    if (event.key === "F4") {
+  // Ctrl + Shift + F
+  // Ctrl + F browser ka normal Find hi rahega.
+  useEffect(() => {
+    const handleSidebarShortcut = (event) => {
+      if (event.key === "F4") {
+        event.preventDefault();
+
+        if (collapsed) {
+          handleToggle(false);
+        }
+
+        setTimeout(() => {
+          sidebarSearchRef.current?.focus();
+          sidebarSearchRef.current?.select();
+        }, 0);
+      }
+    };
+
+    window.addEventListener("keydown", handleSidebarShortcut);
+
+    return () => {
+      window.removeEventListener("keydown", handleSidebarShortcut);
+    };
+  }, [collapsed]);
+
+  useEffect(() => {
+    setSelectedSearchIndex(0);
+  }, [sidebarSearch]);
+
+  const handleSidebarSearchKeyDown = (event) => {
+    // ESC
+    if (event.key === "Escape") {
+      event.preventDefault();
+      setSidebarSearch("");
+      sidebarSearchRef.current?.blur();
+      return;
+    }
+
+    if (!filteredSearchItems.length) return;
+
+    // DOWN
+    if (event.key === "ArrowDown") {
       event.preventDefault();
 
-      if (collapsed) {
-        handleToggle(false);
-      }
+      setSelectedSearchIndex((prev) =>
+        prev < filteredSearchItems.length - 1 ? prev + 1 : 0,
+      );
+    }
 
-      setTimeout(() => {
-        sidebarSearchRef.current?.focus();
-        sidebarSearchRef.current?.select();
-      }, 0);
+    // UP
+    else if (event.key === "ArrowUp") {
+      event.preventDefault();
+
+      setSelectedSearchIndex((prev) =>
+        prev > 0 ? prev - 1 : filteredSearchItems.length - 1,
+      );
+    }
+
+    // ENTER
+    else if (event.key === "Enter") {
+      event.preventDefault();
+
+      const selectedItem = filteredSearchItems[selectedSearchIndex];
+
+      if (!selectedItem) return;
+
+      window.location.href = selectedItem.path;
+
+      setSidebarSearch("");
     }
   };
-
-  window.addEventListener("keydown", handleSidebarShortcut);
-
-  return () => {
-    window.removeEventListener(
-      "keydown",
-      handleSidebarShortcut
-    );
-  };
-}, [collapsed]);
-
-useEffect(() => {
-  setSelectedSearchIndex(0);
-}, [sidebarSearch]);
-
-const handleSidebarSearchKeyDown = (event) => {
-  // ESC
-  if (event.key === "Escape") {
-    event.preventDefault();
-    setSidebarSearch("");
-    sidebarSearchRef.current?.blur();
-    return;
-  }
-
-  if (!filteredSearchItems.length) return;
-
-  // DOWN
-  if (event.key === "ArrowDown") {
-    event.preventDefault();
-
-    setSelectedSearchIndex((prev) =>
-      prev < filteredSearchItems.length - 1
-        ? prev + 1
-        : 0
-    );
-  }
-
-  // UP
-  else if (event.key === "ArrowUp") {
-    event.preventDefault();
-
-    setSelectedSearchIndex((prev) =>
-      prev > 0
-        ? prev - 1
-        : filteredSearchItems.length - 1
-    );
-  }
-
-  // ENTER
-  else if (event.key === "Enter") {
-    event.preventDefault();
-
-    const selectedItem =
-      filteredSearchItems[selectedSearchIndex];
-
-    if (!selectedItem) return;
-
-    window.location.href = selectedItem.path;
-
-    setSidebarSearch("");
-  }
-};
 
   const handleNavClick = () => {
     if (window.innerWidth < 1024) {
@@ -227,23 +222,20 @@ const handleSidebarSearchKeyDown = (event) => {
          * an order can have status=Manifested while its manifest
          * has already been cancelled/missing.
          */
-        const [ordersResponse, manifestsResponse] =
-          await Promise.all([
-            api.get("/orders/all", {
-              params: { user_id: userId },
-            }),
-            api.get("/manifests", {
-              params: { user_id: userId },
-            }),
-          ]);
+        const [ordersResponse, manifestsResponse] = await Promise.all([
+          api.get("/orders/all", {
+            params: { user_id: userId },
+          }),
+          api.get("/manifests", {
+            params: { user_id: userId },
+          }),
+        ]);
 
         const orders = Array.isArray(ordersResponse?.data?.orders)
           ? ordersResponse.data.orders
           : [];
 
-        const manifests = Array.isArray(
-          manifestsResponse?.data?.manifests
-        )
+        const manifests = Array.isArray(manifestsResponse?.data?.manifests)
           ? manifestsResponse.data.manifests
           : [];
 
@@ -265,10 +257,7 @@ const handleSidebarSearchKeyDown = (event) => {
         const seenOrderIds = new Set();
 
         orders.forEach((order) => {
-          const orderId =
-            order?.id ??
-            order?.order_id ??
-            order?.orderId;
+          const orderId = order?.id ?? order?.order_id ?? order?.orderId;
 
           const key =
             orderId !== undefined && orderId !== null
@@ -278,17 +267,13 @@ const handleSidebarSearchKeyDown = (event) => {
           if (seenOrderIds.has(key)) return;
           seenOrderIds.add(key);
 
-          const trackingStatus = String(
-            order?.tracking_status || ""
-          )
+          const trackingStatus = String(order?.tracking_status || "")
             .trim()
             .toUpperCase()
             .replace(/_/g, " ");
 
           const orderStatus = String(
-            order?.status ||
-              order?.order_status ||
-              "PROCESSING"
+            order?.status || order?.order_status || "PROCESSING",
           )
             .trim()
             .toUpperCase()
@@ -310,12 +295,7 @@ const handleSidebarSearchKeyDown = (event) => {
           // NDR is a tracking state and has no separate sidebar bucket.
           if (trackingStatus === "NDR") return;
 
-          if (
-            Object.prototype.hasOwnProperty.call(
-              counts,
-              orderStatus
-            )
-          ) {
+          if (Object.prototype.hasOwnProperty.call(counts, orderStatus)) {
             counts[orderStatus] += 1;
           }
         });
@@ -350,20 +330,14 @@ const handleSidebarSearchKeyDown = (event) => {
       }
     };
 
-    document.addEventListener(
-      "visibilitychange",
-      handleVisibilityChange
-    );
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
       updateEvents.forEach((eventName) => {
         window.removeEventListener(eventName, handleUpdate);
       });
 
-      document.removeEventListener(
-        "visibilitychange",
-        handleVisibilityChange
-      );
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, []);
 
@@ -383,14 +357,18 @@ const handleSidebarSearchKeyDown = (event) => {
       <div
         onClick={() => handleToggle(true)}
         className={`fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-xs transition-opacity duration-300 lg:hidden ${
-          !collapsed ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
+          !collapsed
+            ? "pointer-events-auto opacity-100"
+            : "pointer-events-none opacity-0"
         }`}
       />
 
       {/* SIDEBAR ASIDE: Closes completely off-screen on toggle */}
       <aside
         className={`fixed top-0 left-0 z-50 flex h-full w-[250px] flex-col border-r border-slate-200 bg-white transition-transform duration-300 ease-in-out ${
-          collapsed ? "-translate-x-full" : "translate-x-0 shadow-2xl lg:shadow-none"
+          collapsed
+            ? "-translate-x-full"
+            : "translate-x-0 shadow-2xl lg:shadow-none"
         }`}
       >
         {/* HEADER: LOGO + TOGGLE / CLOSE BUTTON */}
@@ -420,67 +398,55 @@ const handleSidebarSearchKeyDown = (event) => {
 
         {/* MENU LINKS */}
         <div className="flex-1 overflow-y-auto px-3 py-4 space-y-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pb-20 lg:pb-6">
-         {/* SIDEBAR SEARCH */}
-<div className="relative mb-2">
+          {/* SIDEBAR SEARCH */}
+          <div className="relative mb-2">
+            <input
+              ref={sidebarSearchRef}
+              type="text"
+              value={sidebarSearch}
+              onChange={(e) => setSidebarSearch(e.target.value)}
+              onKeyDown={handleSidebarSearchKeyDown}
+              placeholder="Press F4 to Search "
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 pr-14 text-[12px] text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
+              aria-label="Search sidebar menu"
+            />
 
-  <input
-    ref={sidebarSearchRef}
-    type="text"
-    value={sidebarSearch}
-    onChange={(e) => setSidebarSearch(e.target.value)}
-    onKeyDown={handleSidebarSearchKeyDown}
-    placeholder="Press F4 to Search "
-    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 pr-14 text-[12px] text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
-    aria-label="Search sidebar menu"
-  />
-
- 
-
-  {sidebarSearch.trim() && (
-    <div className="absolute left-0 right-0 top-full z-[60] mt-1 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl">
-
-      {filteredSearchItems.length > 0 ? (
-
-        <div className="max-h-64 overflow-y-auto py-1">
-
-          {filteredSearchItems.map((item, index) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              onClick={() => {
-                setSidebarSearch("");
-                handleNavClick();
-              }}
-              className={`block px-3 py-2.5 text-[13px] transition ${
-                index === selectedSearchIndex
-                  ? "bg-sky-50 text-[#008dd2] font-semibold"
-                  : "text-slate-600 hover:bg-slate-50"
-              }`}
-            >
-              {item.name}
-            </Link>
-          ))}
-
-        </div>
-
-      ) : (
-
-        <div className="px-3 py-3 text-[12px] text-slate-400">
-          No menu found
-        </div>
-
-      )}
-
-    </div>
-  )}
-
-</div>
+            {sidebarSearch.trim() && (
+              <div className="absolute left-0 right-0 top-full z-[60] mt-1 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl">
+                {filteredSearchItems.length > 0 ? (
+                  <div className="max-h-64 overflow-y-auto py-1">
+                    {filteredSearchItems.map((item, index) => (
+                      <Link
+                        key={item.path}
+                        to={item.path}
+                        onClick={() => {
+                          setSidebarSearch("");
+                          handleNavClick();
+                        }}
+                        className={`block px-3 py-2.5 text-[13px] transition ${
+                          index === selectedSearchIndex
+                            ? "bg-sky-50 text-[#008dd2] font-semibold"
+                            : "text-slate-600 hover:bg-slate-50"
+                        }`}
+                      >
+                        {item.name}
+                      </Link>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="px-3 py-3 text-[12px] text-slate-400">
+                    No menu found
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
           {/* DASHBOARD */}
           <Link
             to="/dashboard"
             onClick={handleNavClick}
             className={`flex items-center rounded-xl px-3 py-2.5 text-[14px] transition duration-150 ${activeClass(
-              "/dashboard"
+              "/dashboard",
             )}`}
           >
             <HiOutlineViewGrid size={20} />
@@ -492,7 +458,7 @@ const handleSidebarSearchKeyDown = (event) => {
             to="/create-order"
             onClick={handleNavClick}
             className={`flex items-center rounded-xl px-3 py-2.5 text-[14px] transition duration-150 ${activeClass(
-              "/create-order"
+              "/create-order",
             )}`}
           >
             <HiOutlinePlusCircle size={20} />
@@ -504,7 +470,7 @@ const handleSidebarSearchKeyDown = (event) => {
             to="/processing-orders"
             onClick={handleNavClick}
             className={`flex items-center rounded-xl px-3 py-2.5 text-[14px] transition duration-150 ${activeClass(
-              "/processing-orders"
+              "/processing-orders",
             )}`}
           >
             <HiOutlineClock size={20} />
@@ -519,31 +485,83 @@ const handleSidebarSearchKeyDown = (event) => {
             >
               <HiOutlineCube size={20} />
               <span className="ml-3 flex-1 text-left truncate">Orders</span>
-              {showOrders ? <HiChevronDown size={17} /> : <HiChevronRight size={17} />}
+              {showOrders ? (
+                <HiChevronDown size={17} />
+              ) : (
+                <HiChevronRight size={17} />
+              )}
             </button>
 
             {showOrders && (
               <div className="mt-1 ml-5 space-y-1 border-l-2 border-slate-100 pl-3">
                 {[
-                  { name: "Processing Orders", path: "/processing-orders", count: statusCounts.PROCESSING },
-                  { name: "All Orders", path: "/all-orders", count: statusCounts.ALL },
-                  { name: "Manifested", path: "/manifested", count: statusCounts.MANIFESTED },
-                  { name: "Not Picked", path: "/not-picked", count: statusCounts["NOT PICKED"] },
-                  { name: "In Transit", path: "/in-transit", count: statusCounts["IN TRANSIT"] },
-                  { name: "Out For Delivery", path: "/out-for-delivery", count: statusCounts["OUT FOR DELIVERY"] },
-                  { name: "Delivered", path: "/delivered", count: statusCounts.DELIVERED },
-                  { name: "RTO In Transit", path: "/rto-in-transit", count: statusCounts["RTO IN TRANSIT"] },
-                  { name: "RTO Delivered", path: "/rto-delivered", count: statusCounts["RTO DELIVERED"] },
-                  { name: "Returned", path: "/returned", count: statusCounts.RETURNED },
-                  { name: "Cancelled", path: "/cancelled", count: statusCounts.CANCELLED },
-                  { name: "Pending", path: "/pending", count: statusCounts.PENDING },
+                  {
+                    name: "Processing Orders",
+                    path: "/processing-orders",
+                    count: statusCounts.PROCESSING,
+                  },
+                  {
+                    name: "All Orders",
+                    path: "/all-orders",
+                    count: statusCounts.ALL,
+                  },
+                  {
+                    name: "Manifested",
+                    path: "/manifested",
+                    count: statusCounts.MANIFESTED,
+                  },
+                  {
+                    name: "Not Picked",
+                    path: "/not-picked",
+                    count: statusCounts["NOT PICKED"],
+                  },
+                  {
+                    name: "In Transit",
+                    path: "/in-transit",
+                    count: statusCounts["IN TRANSIT"],
+                  },
+                  {
+                    name: "Out For Delivery",
+                    path: "/out-for-delivery",
+                    count: statusCounts["OUT FOR DELIVERY"],
+                  },
+                  {
+                    name: "Delivered",
+                    path: "/delivered",
+                    count: statusCounts.DELIVERED,
+                  },
+                  {
+                    name: "RTO In Transit",
+                    path: "/rto-in-transit",
+                    count: statusCounts["RTO IN TRANSIT"],
+                  },
+                  {
+                    name: "RTO Delivered",
+                    path: "/rto-delivered",
+                    count: statusCounts["RTO DELIVERED"],
+                  },
+                  {
+                    name: "Returned",
+                    path: "/returned",
+                    count: statusCounts.RETURNED,
+                  },
+                  {
+                    name: "Cancelled",
+                    path: "/cancelled",
+                    count: statusCounts.CANCELLED,
+                  },
+                  {
+                    name: "Pending",
+                    path: "/pending",
+                    count: statusCounts.PENDING,
+                  },
                 ].map((item) => (
                   <Link
                     key={item.path}
                     to={item.path}
                     onClick={handleNavClick}
                     className={`flex items-center justify-between rounded-lg px-2.5 py-1.5 text-[13px] transition ${subActiveClass(
-                      item.path
+                      item.path,
                     )}`}
                   >
                     <span className="truncate">{item.name}</span>
@@ -561,26 +579,24 @@ const handleSidebarSearchKeyDown = (event) => {
             to="/rate-calculator"
             onClick={handleNavClick}
             className={`flex items-center rounded-xl px-3 py-2.5 text-[14px] transition duration-150 ${activeClass(
-              "/rate-calculator"
+              "/rate-calculator",
             )}`}
           >
             <HiOutlineCalculator size={20} />
             <span className="ml-3 truncate">Rate Calculator</span>
           </Link>
 
-
-
           {/* SERVICEABILITY */}
-<Link
-  to="/serviceability"
-  onClick={handleNavClick}
-  className={`flex items-center rounded-xl px-3 py-2.5 text-[14px] transition duration-150 ${activeClass(
-    "/serviceability"
-  )}`}
->
-  <HiOutlineLocationMarker size={20} />
-  <span className="ml-3 truncate">Serviceability</span>
-</Link>
+          <Link
+            to="/serviceability"
+            onClick={handleNavClick}
+            className={`flex items-center rounded-xl px-3 py-2.5 text-[14px] transition duration-150 ${activeClass(
+              "/serviceability",
+            )}`}
+          >
+            <HiOutlineLocationMarker size={20} />
+            <span className="ml-3 truncate">Serviceability</span>
+          </Link>
 
           {/* FINANCE */}
           <div>
@@ -590,7 +606,11 @@ const handleSidebarSearchKeyDown = (event) => {
             >
               <HiOutlineCash size={20} />
               <span className="ml-3 flex-1 text-left truncate">Finance</span>
-              {showFinance ? <HiChevronDown size={17} /> : <HiChevronRight size={17} />}
+              {showFinance ? (
+                <HiChevronDown size={17} />
+              ) : (
+                <HiChevronRight size={17} />
+              )}
             </button>
 
             {showFinance && (
@@ -599,7 +619,7 @@ const handleSidebarSearchKeyDown = (event) => {
                   to="/wallet"
                   onClick={handleNavClick}
                   className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[13px] transition ${subActiveClass(
-                    "/wallet"
+                    "/wallet",
                   )}`}
                 >
                   <HiOutlineCreditCard size={15} />
@@ -609,12 +629,23 @@ const handleSidebarSearchKeyDown = (event) => {
                   to="/weight-mismatch"
                   onClick={handleNavClick}
                   className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[13px] transition ${subActiveClass(
-                    "/weight-mismatch"
+                    "/weight-mismatch",
                   )}`}
                 >
                   <HiOutlineScale size={15} />
                   <span>Weight Mismatch</span>
                 </Link>
+
+                <Link
+  to="/cod-remittance"
+  onClick={handleNavClick}
+  className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[13px] transition ${subActiveClass(
+    "/cod-remittance",
+  )}`}
+>
+  <HiOutlineCash size={15} />
+  <span>COD Remittance</span>
+</Link>
               </div>
             )}
           </div>
@@ -624,7 +655,7 @@ const handleSidebarSearchKeyDown = (event) => {
             to="/tickets"
             onClick={handleNavClick}
             className={`flex items-center rounded-xl px-3 py-2.5 text-[14px] transition duration-150 ${activeClass(
-              "/tickets"
+              "/tickets",
             )}`}
           >
             <HiOutlineTicket size={20} />
@@ -643,7 +674,11 @@ const handleSidebarSearchKeyDown = (event) => {
             >
               <HiOutlineCog size={20} />
               <span className="ml-3 flex-1 text-left truncate">Settings</span>
-              {showSettings ? <HiChevronDown size={17} /> : <HiChevronRight size={17} />}
+              {showSettings ? (
+                <HiChevronDown size={17} />
+              ) : (
+                <HiChevronRight size={17} />
+              )}
             </button>
 
             {showSettings && (
@@ -652,26 +687,24 @@ const handleSidebarSearchKeyDown = (event) => {
                   to="/settings/pickup-address"
                   onClick={handleNavClick}
                   className={`block rounded-lg px-2.5 py-1.5 text-[13px] transition ${subActiveClass(
-                    "/settings/pickup-address"
+                    "/settings/pickup-address",
                   )}`}
                 >
                   Pickup Address
                 </Link>
                 <Link
-  to="/settings/return-addresses"
-  className={`block rounded-md px-3 py-1.5 text-[13px] whitespace-nowrap transition ${
-    subActiveClass(
-      "/settings/return-addresses"
-    )
-  }`}
->
-  Return Addresses
-</Link> 
+                  to="/settings/return-addresses"
+                  className={`block rounded-md px-3 py-1.5 text-[13px] whitespace-nowrap transition ${subActiveClass(
+                    "/settings/return-addresses",
+                  )}`}
+                >
+                  Return Addresses
+                </Link>
                 <Link
                   to="/settings/label-settings"
                   onClick={handleNavClick}
                   className={`block rounded-lg px-2.5 py-1.5 text-[13px] transition ${subActiveClass(
-                    "/settings/label-settings"
+                    "/settings/label-settings",
                   )}`}
                 >
                   Label Settings
@@ -697,7 +730,9 @@ const handleSidebarSearchKeyDown = (event) => {
         <Link
           to="/dashboard"
           className={`flex flex-col items-center justify-center gap-1 transition active:scale-95 ${
-            location.pathname === "/dashboard" ? "text-[#008dd2]" : "text-slate-500"
+            location.pathname === "/dashboard"
+              ? "text-[#008dd2]"
+              : "text-slate-500"
           }`}
         >
           <HiOutlineViewGrid size={21} />
@@ -724,7 +759,9 @@ const handleSidebarSearchKeyDown = (event) => {
         <Link
           to="/wallet"
           className={`flex flex-col items-center justify-center gap-1 transition active:scale-95 ${
-            location.pathname === "/wallet" ? "text-[#008dd2]" : "text-slate-500"
+            location.pathname === "/wallet"
+              ? "text-[#008dd2]"
+              : "text-slate-500"
           }`}
         >
           <HiOutlineCreditCard size={21} />
@@ -734,7 +771,9 @@ const handleSidebarSearchKeyDown = (event) => {
         <Link
           to="/tickets"
           className={`flex flex-col items-center justify-center gap-1 transition active:scale-95 ${
-            location.pathname === "/tickets" ? "text-[#008dd2]" : "text-slate-500"
+            location.pathname === "/tickets"
+              ? "text-[#008dd2]"
+              : "text-slate-500"
           }`}
         >
           <HiOutlineTicket size={21} />
