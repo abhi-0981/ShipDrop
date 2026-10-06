@@ -18,8 +18,8 @@ export const DEFAULT_LABEL_SETTINGS = {
   productName: true,
   productDetails: true,
   servicesTnc: false,
-  orderId: false,
-  orderWeight: false,
+  orderId: true,
+  orderWeight: true,
   returnAddress: true,
   contactLine: true,
   rightLogoMode: "delhivery",
@@ -28,11 +28,7 @@ export const DEFAULT_LABEL_SETTINGS = {
 };
 
 const text = (value, fallback = "—") => {
-  if (
-    value === null ||
-    value === undefined ||
-    String(value).trim() === ""
-  ) {
+  if (value === null || value === undefined || String(value).trim() === "") {
     return fallback;
   }
   return String(value).trim();
@@ -41,9 +37,7 @@ const text = (value, fallback = "—") => {
 const first = (...values) =>
   values.find(
     (value) =>
-      value !== undefined &&
-      value !== null &&
-      String(value).trim() !== ""
+      value !== undefined && value !== null && String(value).trim() !== ""
   );
 
 const escapeHtml = (value) =>
@@ -64,7 +58,7 @@ const getStoredUser = () => {
         return user;
       }
     } catch {
-      // Ignore invalid cached user data.
+      // Ignore invalid JSON
     }
   }
   return null;
@@ -165,6 +159,8 @@ const getWeight = (order) => {
       first(
         order?.total_weight,
         order?.totalWeight,
+        order?.billed_weight,
+        order?.billedWeight,
         order?.weight,
         order?.package_weight,
         order?.packageWeight,
@@ -197,8 +193,7 @@ const formatDate = (value) => {
       });
 };
 
-const money = (value) =>
-  `₹${(Number(value) || 0).toFixed(2)}`;
+const money = (value) => `₹${(Number(value) || 0).toFixed(2)}`;
 
 const getOrderValue = (order) =>
   Number(
@@ -234,14 +229,14 @@ const getSellerName = (order) => {
       order?.sellerFullName,
       order?.seller_company_name,
       order?.sellerCompanyName,
-      order?.account_name,
-      order?.accountName,
+      order?.pickup_name,
+      order?.pickupName,
       order?.business_name,
       order?.businessName,
       order?.company_name,
       order?.companyName,
-      user?.name,
-      user?.business_name
+      user?.business_name,
+      user?.name
     )
   );
 };
@@ -256,7 +251,18 @@ const getSellerGstin = (order) =>
       order?.gstin,
       order?.GSTIN
     ),
-    ""
+    "—"
+  );
+
+const getInvoiceNo = (order) =>
+  text(
+    first(
+      order?.invoice_number,
+      order?.invoiceNumber,
+      order?.invoice_no,
+      order?.invoiceNo
+    ),
+    "—"
   );
 
 const getFromName = (order) =>
@@ -302,7 +308,7 @@ const getAlternateFromMobile = (order) =>
 
 const getFromAddress = (order) => {
   const warehouse = order?.warehouse || {};
-  return [
+  const addr = [
     first(
       warehouse.address_line1,
       warehouse.addressLine1,
@@ -319,11 +325,6 @@ const getFromAddress = (order) => {
       order?.warehouse_address_line2,
       order?.pickup_address_line2,
       order?.pickupAddressLine2
-    ),
-    first(
-      warehouse.floor_no,
-      warehouse.floorNo,
-      order?.warehouse_floor_no
     ),
     first(
       warehouse.landmark,
@@ -351,19 +352,16 @@ const getFromAddress = (order) => {
       order?.pickup_pincode,
       order?.pickupPincode
     ),
-    first(
-      warehouse.country,
-      order?.warehouse_country,
-      order?.pickup_country,
-      "India"
-    ),
+    "India",
   ]
     .filter(Boolean)
     .join(", ");
+
+  return addr || "—";
 };
 
-const getBuyerAddress = (order) =>
-  [
+const getBuyerAddress = (order) => {
+  const addr = [
     first(
       order?.address_line1,
       order?.addressLine1,
@@ -396,13 +394,16 @@ const getBuyerAddress = (order) =>
       order?.deliveryPincode,
       order?.buyer_pincode
     ),
-    first(order?.country, order?.buyer_country, "India"),
+    "India",
   ]
     .filter(Boolean)
     .join(", ");
 
-const getReturnAddress = (order) =>
-  [
+  return addr || "—";
+};
+
+const getReturnAddress = (order) => {
+  const addr = [
     first(
       order?.return_address_line1,
       order?.returnAddressLine1,
@@ -417,14 +418,17 @@ const getReturnAddress = (order) =>
     first(order?.return_city, order?.returnCity),
     first(order?.return_state, order?.returnState),
     first(order?.return_pincode, order?.returnPincode),
-    first(order?.return_country, order?.returnCountry, "India"),
+    "India",
   ]
     .filter(Boolean)
     .join(", ");
 
+  return addr || getFromAddress(order);
+};
+
 const getReturnName = (order) =>
   text(
-    first(order?.return_name, order?.returnName, getSellerName(order))
+    first(order?.return_name, order?.returnName, getFromName(order), getSellerName(order))
   );
 
 const getProducts = (order) => {
@@ -546,19 +550,13 @@ const getLabelSize = (value) => {
 const normalizeSettings = (data = {}) => ({
   ...DEFAULT_LABEL_SETTINGS,
   orderValue: Boolean(
-    data.order_value ??
-      data.orderValue ??
-      DEFAULT_LABEL_SETTINGS.orderValue
+    data.order_value ?? data.orderValue ?? DEFAULT_LABEL_SETTINGS.orderValue
   ),
   codAmount: Boolean(
-    data.cod_amount ??
-      data.codAmount ??
-      DEFAULT_LABEL_SETTINGS.codAmount
+    data.cod_amount ?? data.codAmount ?? DEFAULT_LABEL_SETTINGS.codAmount
   ),
   buyerMobile: Boolean(
-    data.buyer_mobile ??
-      data.buyerMobile ??
-      DEFAULT_LABEL_SETTINGS.buyerMobile
+    data.buyer_mobile ?? data.buyerMobile ?? DEFAULT_LABEL_SETTINGS.buyerMobile
   ),
   shipperMobiles: Boolean(
     data.shipper_mobiles ??
@@ -571,24 +569,16 @@ const normalizeSettings = (data = {}) => ({
       DEFAULT_LABEL_SETTINGS.shipperAddress
   ),
   fromName: Boolean(
-    data.from_name ??
-      data.fromName ??
-      DEFAULT_LABEL_SETTINGS.fromName
+    data.from_name ?? data.fromName ?? DEFAULT_LABEL_SETTINGS.fromName
   ),
   fromAddress: Boolean(
-    data.from_address ??
-      data.fromAddress ??
-      DEFAULT_LABEL_SETTINGS.fromAddress
+    data.from_address ?? data.fromAddress ?? DEFAULT_LABEL_SETTINGS.fromAddress
   ),
   fromMobile: Boolean(
-    data.from_mobile ??
-      data.fromMobile ??
-      DEFAULT_LABEL_SETTINGS.fromMobile
+    data.from_mobile ?? data.fromMobile ?? DEFAULT_LABEL_SETTINGS.fromMobile
   ),
   productName: Boolean(
-    data.product_name ??
-      data.productName ??
-      DEFAULT_LABEL_SETTINGS.productName
+    data.product_name ?? data.productName ?? DEFAULT_LABEL_SETTINGS.productName
   ),
   productDetails: Boolean(
     data.product_details ??
@@ -596,19 +586,13 @@ const normalizeSettings = (data = {}) => ({
       DEFAULT_LABEL_SETTINGS.productDetails
   ),
   servicesTnc: Boolean(
-    data.services_tnc ??
-      data.servicesTnc ??
-      DEFAULT_LABEL_SETTINGS.servicesTnc
+    data.services_tnc ?? data.servicesTnc ?? DEFAULT_LABEL_SETTINGS.servicesTnc
   ),
   orderId: Boolean(
-    data.order_id ??
-      data.orderId ??
-      DEFAULT_LABEL_SETTINGS.orderId
+    data.order_id ?? data.orderId ?? DEFAULT_LABEL_SETTINGS.orderId
   ),
   orderWeight: Boolean(
-    data.order_weight ??
-      data.orderWeight ??
-      DEFAULT_LABEL_SETTINGS.orderWeight
+    data.order_weight ?? data.orderWeight ?? DEFAULT_LABEL_SETTINGS.orderWeight
   ),
   returnAddress: Boolean(
     data.return_address ??
@@ -616,39 +600,29 @@ const normalizeSettings = (data = {}) => ({
       DEFAULT_LABEL_SETTINGS.returnAddress
   ),
   contactLine: Boolean(
-    data.contact_line ??
-      data.contactLine ??
-      DEFAULT_LABEL_SETTINGS.contactLine
+    data.contact_line ?? data.contactLine ?? DEFAULT_LABEL_SETTINGS.contactLine
   ),
   rightLogoMode:
     data.right_logo_mode ||
     data.rightLogoMode ||
     DEFAULT_LABEL_SETTINGS.rightLogoMode,
   labelSize:
-    data.label_size ||
-    data.labelSize ||
-    DEFAULT_LABEL_SETTINGS.labelSize,
+    data.label_size || data.labelSize || DEFAULT_LABEL_SETTINGS.labelSize,
   customLogo: data.custom_logo || data.customLogo || null,
 });
 
 const getLabelSettings = async () => {
   const userId = getUserId();
-
-  if (!userId) {
-    return { ...DEFAULT_LABEL_SETTINGS };
-  }
+  if (!userId) return { ...DEFAULT_LABEL_SETTINGS };
 
   try {
     const response = await api.get("/label-settings", {
       params: { user_id: userId },
     });
-
     const data = response.data?.settings;
-
     if (!response.data?.success || !data) {
       return { ...DEFAULT_LABEL_SETTINGS };
     }
-
     return normalizeSettings(data);
   } catch (error) {
     console.error("Label settings fetch error:", error);
@@ -658,20 +632,17 @@ const getLabelSettings = async () => {
 
 const getDetailedOrders = async (orders) => {
   const userId = getUserId();
-
   if (!userId) return orders;
 
   return Promise.all(
     orders.map(async (order) => {
       const id = order?.order_id || order?.id;
-
       if (!id) return order;
 
       try {
         const response = await api.get(`/orders/${id}`, {
           params: { user_id: userId },
         });
-
         const full =
           response.data?.order ||
           response.data?.result?.order ||
@@ -687,11 +658,7 @@ const getDetailedOrders = async (orders) => {
             }
           : order;
       } catch (error) {
-        console.warn(
-          "Could not fetch full order details:",
-          id,
-          error
-        );
+        console.warn("Could not fetch full order details:", id, error);
         return order;
       }
     })
@@ -699,40 +666,28 @@ const getDetailedOrders = async (orders) => {
 };
 
 const barcodeSvg = (value, compact = false) => {
-  const svg = document.createElementNS(
-    "http://www.w3.org/2000/svg",
-    "svg"
-  );
-
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   JsBarcode(svg, String(value || "AWB"), {
     format: "CODE128",
     displayValue: false,
-    height: compact ? 28 : 42,
-    width: compact ? 1.1 : 1.5,
+    height: compact ? 26 : 40,
+    width: compact ? 1.2 : 1.7,
     margin: 0,
     background: "#ffffff",
-    lineColor: "#111827",
+    lineColor: "#000000",
   });
-
   return svg.outerHTML;
 };
+
 const buildLabelHtml = (order, settings, rightLogo, size) => {
   const awb = getAWB(order);
   const payment = getPaymentType(order);
   const isA4 = size.key === "A4";
   const compact = size.heightIn <= 2.5;
 
-  // Keep small thermal labels compact; give 4x6/A4 labels readable type.
-  const pad = isA4 ? 12 : compact ? 2.5 : 5;
-  const font = isA4 ? 11 : compact ? 5.2 : 8.2;
-  const small = isA4 ? 8.5 : compact ? 4.2 : 6.5;
-  const big = isA4 ? 15 : compact ? 7 : 11;
-  const sectionPad = isA4 ? 8 : compact ? 2 : 5;
-
   const fromAddress = getFromAddress(order);
   const buyerAddress = getBuyerAddress(order);
   const fromName = getFromName(order);
-
   const fromMobiles = [
     getFromMobile(order),
     getAlternateFromMobile(order),
@@ -741,251 +696,188 @@ const buildLabelHtml = (order, settings, rightLogo, size) => {
     .join(" / ");
 
   const products = getProducts(order);
-
   const showFromName = settings.fromName !== false;
-  const showFromAddress =
-    settings.fromAddress !== false &&
-    settings.shipperAddress !== false;
-
-  const showFromMobile =
-    settings.fromMobile !== false &&
-    settings.shipperMobiles !== false;
-
-  const showBuyerMobile =
-    settings.buyerMobile !== false &&
-    Boolean(getMobile(order));
-
-  const showWeight = settings.orderWeight === true;
-  const showOrderId = settings.orderId === true;
+  const showFromAddress = settings.fromAddress !== false && settings.shipperAddress !== false;
+  const showFromMobile = settings.fromMobile !== false && settings.shipperMobiles !== false;
+  const showBuyerMobile = settings.buyerMobile !== false && Boolean(getMobile(order));
+  const showWeight = settings.orderWeight !== false;
+  const showOrderId = settings.orderId !== false;
   const showOrderValue = settings.orderValue !== false;
-
-  const showCod =
-    settings.codAmount !== false &&
-    payment === "COD";
-
-  const showProducts =
-    settings.productDetails !== false &&
-    settings.productName !== false;
-
-  const returnAddress =
-    getReturnAddress(order) || getFromAddress(order);
+  const showCod = settings.codAmount !== false && payment === "COD";
+  const showProducts = settings.productDetails !== false && settings.productName !== false;
+  const returnAddress = getReturnAddress(order);
 
   const contactText =
     "For complaints & queries please contact 8766066070, 0141-4797120";
 
   const productRows = showProducts
     ? products
-        .slice(0, isA4 ? 10 : compact ? 1 : 5)
+        .slice(0, isA4 ? 10 : compact ? 1 : 4)
         .map(
           (product) => `
             <tr>
               <td class="pname">${escapeHtml(product.name)}</td>
-              <td>${escapeHtml(product.rate.toFixed(2))}</td>
-              <td>${escapeHtml(product.qty)}</td>
-              <td>${escapeHtml(product.total.toFixed(2))}</td>
+              <td class="num">${escapeHtml(product.rate.toFixed(2))}</td>
+              <td class="num">${escapeHtml(product.qty)}</td>
+              <td class="num">${escapeHtml(product.total.toFixed(2))}</td>
             </tr>
           `
         )
         .join("")
     : "";
 
-  const productSection = showProducts
-    ? `
-      <section class="products">
-        <div class="section-title">PRODUCT DETAILS</div>
-        <table>
-          <thead>
-            <tr>
-              <th>Product</th>
-              <th>Rate (₹)</th>
-              <th>Qty</th>
-              <th>Total (₹)</th>
-            </tr>
-          </thead>
-          <tbody>${productRows}</tbody>
-        </table>
-      </section>
-    `
-    : "";
-
-  const logoHtml = rightLogo
-    ? `<img src="${escapeHtml(rightLogo)}" alt="Carrier logo" />`
-    : "";
-
-  const orderInfo = `
-    ${
-      showOrderId
-        ? `
-          <div class="mini-cell">
-            <span>ORDER ID</span>
-            <b>${escapeHtml(getOrderId(order))}</b>
-          </div>
-        `
-        : ""
-    }
-
-    ${
-      showOrderValue
-        ? `
-          <div class="mini-cell">
-            <span>ORDER VALUE</span>
-            <b>${money(getOrderValue(order))}</b>
-          </div>
-        `
-        : ""
-    }
-  `;
-
   return `
     <article
       class="shipping-label ${compact ? "compact" : ""} ${isA4 ? "a4" : ""}"
-      style="
-        width:${size.widthIn}in;
-        height:${size.heightIn}in;
-        --pad:${pad}px;
-        --font:${font}px;
-        --small:${small}px;
-        --big:${big}px;
-        --section-pad:${sectionPad}px;
-      "
+      style="width:${size.widthIn}in; height:${size.heightIn}in;"
     >
       <div class="label-border">
-        <header class="logos">
-          <div class="logo left">
-            <img src="${escapeHtml(shipdropLogo)}" alt="ParcelDrop" />
+        <!-- LOGO HEADER -->
+        <header class="row logos">
+          <div class="logo-box left">
+            <img src="${escapeHtml(shipdropLogo)}" alt="ShipDrop" />
           </div>
-          <div class="logo right">${logoHtml}</div>
+          <div class="logo-box right">
+            ${rightLogo ? `<img src="${escapeHtml(rightLogo)}" alt="Carrier" />` : ""}
+          </div>
         </header>
 
-        <section class="awb">
-          <div class="eyebrow">AWB NUMBER</div>
-          <div class="awb-number">${escapeHtml(awb)}</div>
+        <!-- AWB BARCODE -->
+        <section class="awb-box">
           <div class="barcode">${barcodeSvg(awb, compact)}</div>
+          <div class="awb-label">AWB No: <b>${escapeHtml(awb)}</b></div>
         </section>
 
-        <section class="addresses">
-          <div class="address-block">
-            <div class="eyebrow">FROM / SHIPPER</div>
-
-            ${
-              showFromName
-                ? `<b class="person">${escapeHtml(fromName)}</b>`
-                : ""
-            }
-
-            ${
-              showFromAddress && fromAddress
-                ? `<div class="address">${escapeHtml(fromAddress)}</div>`
-                : ""
-            }
-
-            ${
-              showFromMobile && fromMobiles
-                ? `<div class="phone">☎ ${escapeHtml(fromMobiles)}</div>`
-                : ""
-            }
+        <!-- ADDRESSES: FROM & TO -->
+        <section class="row addresses">
+          <div class="col-half from-box">
+            <div class="field-title">FROM:</div>
+            ${showFromName ? `<div class="name-bold">${escapeHtml(fromName)}</div>` : ""}
+            ${showFromAddress ? `<div class="addr-text">${escapeHtml(fromAddress)}</div>` : ""}
+            ${showFromMobile && fromMobiles ? `<div class="phone-text">Mobile: ${escapeHtml(fromMobiles)}</div>` : ""}
           </div>
 
-          <div class="address-block">
-            <div class="eyebrow">SHIP TO / CONSIGNEE</div>
-
-            <b class="person">${escapeHtml(getCustomerName(order))}</b>
-
-            <div class="address">
-              ${escapeHtml(buyerAddress || "—")}
+          <div class="col-half to-box">
+            <div class="field-title">TO / CONSIGNEE:</div>
+            <div class="name-bold">
+              ${escapeHtml(getCustomerName(order))}
+              ${showBuyerMobile ? ` <span class="buyer-mobile">(${escapeHtml(getMobile(order))})</span>` : ""}
             </div>
-
-            ${
-              showBuyerMobile
-                ? `<div class="phone">☎ ${escapeHtml(getMobile(order))}</div>`
-                : ""
-            }
+            <div class="addr-text">${escapeHtml(buyerAddress)}</div>
           </div>
         </section>
 
-        <section class="summary">
-          <div>
-            <span>PAYMENT</span>
-            <b class="summary-value">${payment}</b>
+        <!-- METRICS ROW: PAYMENT, ORDER, WEIGHT -->
+        <section class="row info-row">
+          <div class="info-cell">
+            <div class="field-title">PAYMENT</div>
+            <div class="cell-val bold ${payment === "COD" ? "cod-badge" : ""}">${payment}</div>
           </div>
 
-          <div>
-            <span>SERVICE</span>
-            <b class="summary-value">
-              ${getServiceType(order).includes("AIR") ? "BY AIR" : "BY ROAD"}
-            </b>
-          </div>
+          ${
+            showOrderId
+              ? `
+              <div class="info-cell">
+                <div class="field-title">ORDER ID</div>
+                <div class="cell-val">#${escapeHtml(getOrderId(order))}</div>
+              </div>
+              `
+              : ""
+          }
 
           ${
             showWeight
               ? `
-                <div>
-                  <span>WEIGHT</span>
-                  <b class="summary-value">${getWeight(order).toFixed(2)} KG</b>
-                </div>
+              <div class="info-cell">
+                <div class="field-title">BILLED WEIGHT</div>
+                <div class="cell-val">${getWeight(order).toFixed(2)} Kg</div>
+              </div>
               `
               : ""
           }
+
+          <div class="info-cell">
+            <div class="field-title">SERVICE</div>
+            <div class="cell-val">${getServiceType(order).includes("AIR") ? "AIR" : "ROAD"}</div>
+          </div>
         </section>
 
-        ${
-          orderInfo.trim()
-            ? `<section class="order-info">${orderInfo}</section>`
-            : ""
-        }
-
+        <!-- COD OR ORDER VALUE BAR -->
         ${
           showCod
             ? `
-              <section class="cod">
-                <b>CASH ON DELIVERY</b>
-                <strong>${money(getCodAmount(order))}</strong>
-              </section>
+            <section class="row cod-row">
+              <div class="cod-title">CASH ON DELIVERY (COLLECT)</div>
+              <div class="cod-val">${money(getCodAmount(order))}</div>
+            </section>
+            `
+            : showOrderValue
+            ? `
+            <section class="row cod-row prepaid-info">
+              <div class="cod-title">TOTAL ORDER VALUE</div>
+              <div class="cod-val">${money(getOrderValue(order))}</div>
+            </section>
             `
             : ""
         }
 
-        ${productSection}
-
-        <section class="seller">
-          <div>
-            <span>SELLER</span>
-            <b>${escapeHtml(getSellerName(order))}</b>
+        <!-- SELLER DETAILS -->
+        <section class="row seller-row">
+          <div class="seller-cell">
+            <div class="field-title">SELLER</div>
+            <div class="cell-val bold">${escapeHtml(getSellerName(order))}</div>
           </div>
-
-          <div>
-            <span>GSTIN</span>
-            <b>${escapeHtml(getSellerGstin(order) || " ")}</b>
+          <div class="seller-cell">
+            <div class="field-title">GSTIN</div>
+            <div class="cell-val">${escapeHtml(getSellerGstin(order))}</div>
           </div>
-
-          <div>
-            <span>INVOICE NO.</span>
-            <b>&nbsp;</b>
+          <div class="seller-cell">
+            <div class="field-title">INVOICE NO</div>
+            <div class="cell-val">${escapeHtml(getInvoiceNo(order))}</div>
           </div>
-
-          <div>
-            <span>DATE</span>
-            <b>${escapeHtml(formatDate(getDate(order)))}</b>
+          <div class="seller-cell">
+            <div class="field-title">DATE</div>
+            <div class="cell-val">${escapeHtml(formatDate(getDate(order)))}</div>
           </div>
         </section>
 
+        <!-- PRODUCT TABLE -->
         ${
-          settings.returnAddress !== false
+          showProducts
             ? `
-              <section class="return">
-                <b>RETURN ADDRESS</b>
-                <div>
-                  ${escapeHtml(getReturnName(order))}
-                  ${returnAddress ? `, ${escapeHtml(returnAddress)}` : ""}
-                </div>
-              </section>
+            <section class="product-section">
+              <table class="product-table">
+                <thead>
+                  <tr>
+                    <th style="width: 50%;">Product Name</th>
+                    <th style="width: 15%; text-align: right;">Rate</th>
+                    <th style="width: 15%; text-align: center;">Qty</th>
+                    <th style="width: 20%; text-align: right;">Total</th>
+                  </tr>
+                </thead>
+                <tbody>${productRows}</tbody>
+              </table>
+            </section>
             `
             : ""
         }
 
+        <!-- RETURN ADDRESS -->
+        ${
+          settings.returnAddress !== false
+            ? `
+            <section class="return-box">
+              <span class="return-tag">NOTE: If undelivered, return to:</span>
+              <span class="return-addr">${escapeHtml(getReturnName(order))},${escapeHtml(returnAddress)}</span>
+            </section>
+            `
+            : ""
+        }
+
+        <!-- FOOTER CONTACT -->
         ${
           settings.contactLine !== false
-            ? `<footer class="contact">${escapeHtml(contactText)}</footer>`
+            ? `<footer class="contact-footer">${escapeHtml(contactText)}</footer>`
             : ""
         }
       </div>
@@ -993,21 +885,22 @@ const buildLabelHtml = (order, settings, rightLogo, size) => {
       <style>
         * {
           box-sizing: border-box;
+          margin: 0;
+          padding: 0;
         }
 
         .shipping-label {
-          margin: 0;
-          padding: var(--pad);
-          background: #fff;
-          color: #111827;
-          font-family: Arial, Helvetica, sans-serif;
-          font-size: var(--font);
-          line-height: 1.25;
-          overflow: hidden;
+          background: #ffffff;
+          color: #000000;
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+          font-size: 7.5pt;
+          line-height: 1.2;
+          padding: 3mm;
           page-break-after: always;
           break-after: page;
           -webkit-print-color-adjust: exact;
           print-color-adjust: exact;
+          display: flex;
         }
 
         .shipping-label:last-child {
@@ -1018,306 +911,260 @@ const buildLabelHtml = (order, settings, rightLogo, size) => {
         .label-border {
           width: 100%;
           height: 100%;
-          border: 1.4px solid #111827;
-          overflow: hidden;
+          border: 1.5px solid #000000;
           display: flex;
           flex-direction: column;
-          justify-content: space-between;
-          background: #fff;
+          background: #ffffff;
         }
 
-        .logos {
-          min-height: ${compact ? 16 : isA4 ? 48 : 34}px;
-          height: ${compact ? 16 : isA4 ? 48 : 34}px;
-          flex: 0 0 auto;
+        .row {
           display: flex;
+          width: 100%;
+          border-bottom: 1px solid #000000;
+        }
+
+        /* Logos */
+        .logos {
+          height: 38px;
+          min-height: 38px;
           align-items: center;
           justify-content: space-between;
-          padding: 4px 7px;
-          border-bottom: 1.4px solid #111827;
-          gap: 8px;
+          padding: 2px 8px;
         }
 
-        .logo {
-          width: 47%;
+        .logo-box {
           height: 100%;
           display: flex;
           align-items: center;
         }
 
-        .logo.left {
-          justify-content: flex-start;
-        }
+        .logo-box.left { justify-content: flex-start; }
+        .logo-box.right { justify-content: flex-end; }
 
-        .logo.right {
-          justify-content: flex-end;
-        }
-
-        .logo img {
-          max-width: 100%;
-          max-height: 100%;
+        .logo-box img {
+          max-height: 32px;
+          max-width: 120px;
           object-fit: contain;
-          display: block;
         }
 
-        .awb {
-          flex: 0 0 auto;
+        /* AWB Section */
+        .awb-box {
           text-align: center;
-          padding: ${compact ? 2 : isA4 ? 8 : 6}px 6px;
-          border-bottom: 1.4px solid #111827;
+          padding: 4px 6px 2px;
+          border-bottom: 1px solid #000000;
         }
 
-        .eyebrow {
-          font-size: var(--small);
-          font-weight: 800;
-          letter-spacing: 0.35px;
-          color: #374151;
+        .awb-box .barcode {
+          display: flex;
+          justify-content: center;
         }
 
-        .awb-number {
-          font-size: var(--big);
-          font-weight: 900;
-          letter-spacing: 0.7px;
-          margin: 2px 0 3px;
-          overflow-wrap: anywhere;
+        .awb-box .barcode svg {
+          height: 36px;
+          max-width: 95%;
         }
 
-        .barcode {
-          line-height: 0;
+        .awb-label {
+          font-size: 8.5pt;
+          margin-top: 1px;
+          font-weight: 600;
+          letter-spacing: 0.5px;
         }
 
-        .barcode svg {
-          display: block;
-          margin: 0 auto;
-          max-width: 100%;
-          height: auto;
-          max-height: ${compact ? 15 : isA4 ? 44 : 32}px;
-        }
-
+        /* Addresses */
         .addresses {
           flex: 0 0 auto;
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          border-bottom: 1.4px solid #111827;
         }
 
-        .address-block {
-          min-width: 0;
-          padding: ${compact ? 3 : isA4 ? 9 : 7}px 7px;
+        .col-half {
+          width: 50%;
+          padding: 4px 6px;
+          min-height: 70px;
           overflow: hidden;
         }
 
-        .address-block + .address-block {
-          border-left: 1.4px solid #111827;
+        .col-half.from-box {
+          border-right: 1px solid #000000;
         }
 
-        .person {
-          display: block;
-          font-size: ${isA4 ? 13 : compact ? 5.5 : 9}px;
-          line-height: 1.2;
-          margin-top: 3px;
-          font-weight: 800;
-          overflow-wrap: anywhere;
+        .field-title {
+          font-size: 6pt;
+          font-weight: 700;
+          color: #4b5563;
+          text-transform: uppercase;
+          margin-bottom: 1px;
         }
 
-        .address {
-          font-size: ${isA4 ? 9.5 : compact ? 4.3 : 7.5}px;
-          line-height: 1.28;
-          margin-top: 3px;
-          overflow-wrap: anywhere;
-        }
-
-        .phone {
-          font-size: ${isA4 ? 9 : compact ? 4.2 : 7.2}px;
-          font-weight: 800;
-          margin-top: 3px;
-          overflow-wrap: anywhere;
-        }
-
-        .summary {
-          flex: 0 0 auto;
-          display: grid;
-          grid-template-columns: repeat(${showWeight ? 3 : 2}, minmax(0, 1fr));
-          border-bottom: 1.4px solid #111827;
-        }
-
-        .summary > div {
-          padding: ${compact ? 3 : isA4 ? 7 : 6}px 7px;
-          min-width: 0;
-        }
-
-        .summary > div + div {
-          border-left: 1px solid #9ca3af;
-        }
-
-        .summary span,
-        .mini-cell span,
-        .seller span {
-          display: block;
-          font-size: var(--small);
-          font-weight: 800;
-          color: #374151;
+        .name-bold {
+          font-size: 7.5pt;
+          font-weight: 700;
           margin-bottom: 2px;
+          word-break: break-word;
         }
 
-        .summary-value {
-          display: block;
-          font-size: ${isA4 ? 12 : compact ? 5.2 : 9}px;
-          font-weight: 900;
-          overflow-wrap: anywhere;
+        .buyer-mobile {
+          font-weight: 600;
+          font-size: 7pt;
         }
 
-        .order-info {
-          flex: 0 0 auto;
-          display: grid;
-          grid-template-columns: repeat(
-            ${(showOrderId && showOrderValue) ? 2 : 1},
-            minmax(0, 1fr)
-          );
-          border-bottom: 1.4px solid #111827;
+        .addr-text {
+          font-size: 6.8pt;
+          line-height: 1.18;
+          color: #111827;
+          word-break: break-word;
         }
 
-        .mini-cell {
-          padding: ${compact ? 2 : 5}px 7px;
+        .phone-text {
+          font-size: 6.8pt;
+          font-weight: 600;
+          margin-top: 2px;
+        }
+
+        /* Info Cells (Payment, Weight, etc.) */
+        .info-row {
+          background: #f9fafb;
+        }
+
+        .info-cell {
+          flex: 1;
+          padding: 3px 5px;
+          border-right: 1px solid #000000;
           min-width: 0;
         }
 
-        .mini-cell + .mini-cell {
-          border-left: 1px solid #9ca3af;
+        .info-cell:last-child {
+          border-right: none;
         }
 
-        .mini-cell b {
-          display: block;
-          font-size: var(--font);
+        .cell-val {
+          font-size: 7.5pt;
+          font-weight: 600;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .cell-val.bold {
           font-weight: 800;
-          overflow-wrap: anywhere;
         }
 
-        .cod {
-          flex: 0 0 auto;
+        .cod-badge {
+          color: #dc2626;
+          font-weight: 900;
+        }
+
+        /* COD Row */
+        .cod-row {
+          padding: 4px 8px;
+          background: #000000;
+          color: #ffffff;
           display: flex;
-          align-items: center;
           justify-content: space-between;
-          gap: 8px;
-          padding: ${compact ? 3 : 6}px 7px;
-          border-bottom: 1.4px solid #111827;
-          font-size: var(--font);
+          align-items: center;
         }
 
-        .cod strong {
-          font-size: var(--big);
-          font-weight: 900;
-        }
-
-        .products {
-          flex: 0 0 auto;
-          padding: ${compact ? 2 : isA4 ? 7 : 5}px 7px;
-          border-bottom: 1.4px solid #111827;
-          min-height: 0;
-        }
-
-        .section-title {
-          font-size: var(--small);
-          font-weight: 900;
-          letter-spacing: 0.3px;
-          margin-bottom: 4px;
-        }
-
-        table {
-          border-collapse: collapse;
-          width: 100%;
-          table-layout: fixed;
-          font-size: ${compact ? 4.2 : isA4 ? 8.5 : 7}px;
-        }
-
-        th,
-        td {
-          border: 1px solid #9ca3af;
-          padding: ${compact ? 1 : 3}px 4px;
-          text-align: right;
-          overflow-wrap: anywhere;
-        }
-
-        th {
-          font-weight: 800;
+        .cod-row.prepaid-info {
           background: #f3f4f6;
+          color: #000000;
         }
 
-        th:first-child,
-        td:first-child {
-          text-align: left;
-          width: 46%;
+        .cod-title {
+          font-size: 7pt;
+          font-weight: 800;
+          letter-spacing: 0.5px;
         }
 
-        .pname {
-          text-align: left;
+        .cod-val {
+          font-size: 10pt;
+          font-weight: 900;
         }
 
-        .seller {
-          flex: 0 0 auto;
-          display: grid;
-          grid-template-columns: 1.35fr 1fr 1fr 0.85fr;
-          border-bottom: 1.4px solid #111827;
+        /* Seller Row */
+        .seller-row {
+          background: #ffffff;
         }
 
-        .seller > div {
-          padding: ${compact ? 2 : isA4 ? 6 : 5}px 5px;
-          min-width: 0;
+        .seller-cell {
+          flex: 1;
+          padding: 3px 5px;
+          border-right: 1px solid #d1d5db;
           overflow: hidden;
         }
 
-        .seller > div + div {
-          border-left: 1px solid #9ca3af;
+        .seller-cell:last-child {
+          border-right: none;
         }
 
-        .seller b {
-          display: block;
-          font-size: ${compact ? 4.1 : isA4 ? 8.5 : 6.8}px;
-          font-weight: 800;
-          overflow-wrap: anywhere;
+        /* Product Table */
+        .product-section {
+          flex: 1 1 auto;
+          overflow: hidden;
+          border-bottom: 1px solid #000000;
         }
 
-        .return {
-          flex: 0 0 auto;
-          padding: ${compact ? 2 : isA4 ? 6 : 5}px 7px;
-          border-bottom: 1px solid #9ca3af;
-          font-size: ${compact ? 4.2 : isA4 ? 8.5 : 6.8}px;
-          line-height: 1.25;
-          overflow-wrap: anywhere;
+        .product-table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 6.8pt;
         }
 
-        .return b {
-          display: block;
-          font-size: var(--small);
-          letter-spacing: 0.3px;
-          margin-bottom: 2px;
+        .product-table th,
+        .product-table td {
+          padding: 2.5px 5px;
+          border-bottom: 0.5px solid #e5e7eb;
         }
 
-        .contact {
-          flex: 0 0 auto;
-          padding: ${compact ? 2 : isA4 ? 6 : 5}px 7px;
-          font-size: ${compact ? 3.8 : isA4 ? 8 : 6.3}px;
+        .product-table th {
+          background: #f3f4f6;
+          font-weight: 700;
+          font-size: 6.2pt;
+          border-bottom: 1px solid #000000;
+        }
+
+        .product-table .num {
+          text-align: right;
+        }
+
+        .product-table .pname {
+          font-weight: 600;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        /* Return & Footer */
+        .return-box {
+          padding: 3px 6px;
+          font-size: 6.2pt;
+          border-bottom: 1px solid #000000;
           line-height: 1.2;
-          text-align: center;
+          background: #ffffff;
+        }
+
+        .return-tag {
           font-weight: 800;
-          overflow-wrap: anywhere;
+          display: inline;
         }
 
-        .compact .label-border {
-          justify-content: flex-start;
+        .return-addr {
+          display: inline;
+          color: #374151;
         }
 
-        .compact .logos,
-        .compact .awb,
-        .compact .addresses,
-        .compact .summary,
-        .compact .order-info,
-        .compact .products,
-        .compact .seller,
-        .compact .return,
-        .compact .contact {
-          flex-shrink: 0;
+        .contact-footer {
+          padding: 2.5px 6px;
+          font-size: 5.8pt;
+          font-weight: 700;
+          text-align: center;
+          background: #ffffff;
         }
+
+        /* Compact overrides for 3x2, 4x2 */
+        .compact .logos { height: 24px; min-height: 24px; }
+        .compact .logo-box img { max-height: 20px; }
+        .compact .awb-box .barcode svg { height: 24px; }
+        .compact .col-half { min-height: 48px; padding: 2px 4px; }
+        .compact .product-section { display: none; }
       </style>
     </article>
   `;
@@ -1340,9 +1187,10 @@ const prepareLabels = async (orders) => {
     rightLogo,
   };
 };
+
 export const printShippingLabels = async (
   orders,
-  title = "ParcelDrop Shipping Labels"
+  title = "ShipDrop Shipping Labels"
 ) => {
   if (!Array.isArray(orders) || orders.length === 0) {
     toast.error("Please select at least one shipment");
@@ -1422,13 +1270,11 @@ export const printShippingLabels = async (
       win.print();
     };
 
-    // Wait for the document and its images before printing.
     const images = Array.from(win.document.images);
 
     await Promise.all(
       images.map((img) => {
         if (img.complete) return Promise.resolve();
-
         return new Promise((resolve) => {
           img.onload = resolve;
           img.onerror = resolve;
@@ -1555,14 +1401,14 @@ export const downloadShippingLabels = async (orders) => {
     }
 
     const firstAwb = getAWB(detailedOrders[0]).replace(
-      /[^a-zA-Z0-9\_-]/g,
+      /[^a-zA-Z0-9_-]/g,
       "-"
     );
 
     const filename =
       detailedOrders.length === 1
-        ? `parceldrop-label-${firstAwb}.pdf`
-        : `parceldrop-labels-${new Date()
+        ? `shipdrop-label-${firstAwb}.pdf`
+        : `shipdrop-labels-${new Date()
             .toISOString()
             .slice(0, 10)}.pdf`;
 
