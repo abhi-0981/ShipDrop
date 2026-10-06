@@ -1,3 +1,4 @@
+
 const db = require("../config/db");
 
 // ========================================
@@ -337,6 +338,7 @@ const getWalletTransactions = (
   );
 };
 
+
 // ========================================
 // CREATE COD REMITTANCE FOR DELIVERED COD ORDERS
 // ========================================
@@ -398,6 +400,7 @@ const getCODRemittances = (
       o.awb,
       cr.cod_amount,
       o.created_at,
+      o.tracking_updated_at,
       cr.status,
       cr.transferred_on,
       cr.description
