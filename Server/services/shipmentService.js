@@ -1338,11 +1338,7 @@ const buildDelhiveryShipment = ({
 
     name: order.consignee_name,
 
-    order: String(
-      delhiveryOrderId ||
-        `SD-${order.id}-${order.order_id}`
-    ),
-
+  order: String(order.order_id),
     phone: order.mobile,
 
     add: deliveryAddress,
@@ -1415,11 +1411,11 @@ const buildDelhiveryShipment = ({
     // SELLER DETAILS
     // ----------------------------------------------------
 
-    seller_name:
-      warehouse.warehouse_name,
+   seller_name:
+  order.seller_full_name,
 
-    seller_add:
-      sellerAddress,
+seller_add:
+  sellerAddress,
 
     // ----------------------------------------------------
     // RETURN DETAILS
@@ -1776,6 +1772,12 @@ const confirmShipment = async ({
             order_id,
             user_id,
             warehouse_id,
+            (
+  SELECT u.full_name
+  FROM users u
+  WHERE u.id = orders.user_id
+  LIMIT 1
+) AS seller_full_name,
 
             return_address_id,
             return_name,
@@ -2652,6 +2654,9 @@ const bulkConfirmShipments = async ({
           SELECT
             o.*,
 
+              u.full_name AS seller_full_name,
+
+
             w.id AS warehouse_db_id,
 
             w.warehouse_name,
@@ -2684,15 +2689,14 @@ const bulkConfirmShipments = async ({
 
             w.status AS warehouse_status
 
-          FROM orders o
+         FROM orders o
 
-          LEFT JOIN warehouses w
+LEFT JOIN users u
+  ON u.id = o.user_id
 
-            ON w.id =
-              o.warehouse_id
-
-            AND w.user_id =
-              o.user_id
+LEFT JOIN warehouses w
+  ON w.id = o.warehouse_id
+  AND w.user_id = o.user_id
 
           WHERE
             o.id = ?
