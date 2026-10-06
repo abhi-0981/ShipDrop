@@ -29,18 +29,20 @@ export const DEFAULT_LABEL_SETTINGS = {
 
 const first = (...values) =>
   values.find(
-    (value) =>
-      value !== undefined &&
-      value !== null &&
-      String(value).trim() !== ""
+    (v) =>
+      v !== undefined &&
+      v !== null &&
+      String(v).trim() !== ""
   );
 
-const text = (value, fallback = "—") => {
-  const result = first(value);
-  return result === undefined ? fallback : String(result).trim();
-};
+const txt = (value, fallback = "—") =>
+  value === undefined ||
+  value === null ||
+  String(value).trim() === ""
+    ? fallback
+    : String(value).trim();
 
-const escapeHtml = (value) =>
+const esc = (value) =>
   String(value ?? "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
@@ -57,7 +59,7 @@ const getStoredUser = () => {
       const user = JSON.parse(raw);
       if (user && typeof user === "object") return user;
     } catch {
-      // Ignore invalid cached data.
+      // Ignore invalid local storage.
     }
   }
 
@@ -76,72 +78,84 @@ const getUserId = () => {
   );
 };
 
-const getAWB = (order) =>
-  text(
+const getAWB = (o) =>
+  txt(
     first(
-      order.awb,
-      order.waybill,
-      order.awb_number,
-      order.awbNumber,
-      order.tracking_number,
-      order.trackingNumber
+      o.awb,
+      o.waybill,
+      o.awb_number,
+      o.awbNumber,
+      o.tracking_number,
+      o.trackingNumber
     ),
     "AWB unavailable"
   );
 
-const getOrderId = (order) =>
-  text(
+const getOrderId = (o) =>
+  txt(
     first(
-      order.display_order_id,
-      order.displayOrderId,
-      order.order_id,
-      order.orderId,
-      order.order_number,
-      order.orderNumber,
-      order.id
+      o.display_order_id,
+      o.displayOrderId,
+      o.order_id,
+      o.orderId,
+      o.order_number,
+      o.orderNumber,
+      o.id
     )
   );
 
-const getCustomerName = (order) =>
-  text(
+const getCustomerName = (o) => {
+  const customer = o.customer || o.buyer || {};
+
+  return txt(
     first(
-      order.consignee_name,
-      order.customer_name,
-      order.customerName,
-      order.buyer_name,
-      order.buyerName,
-      order.delivery_name,
-      order.deliveryName,
-      order.name
+      o.consignee_name,
+      o.customer_name,
+      o.customerName,
+      o.buyer_name,
+      o.buyerName,
+      o.delivery_name,
+      o.deliveryName,
+      customer.name,
+      customer.full_name,
+      customer.fullName,
+      typeof o.customer === "string" ? o.customer : null,
+      o.name
     )
   );
+};
 
-const getBuyerMobile = (order) =>
-  text(
+const getMobile = (o) => {
+  const customer = o.customer || o.buyer || {};
+
+  return txt(
     first(
-      order.consignee_phone,
-      order.consigneePhone,
-      order.customer_mobile,
-      order.customerMobile,
-      order.buyer_mobile,
-      order.buyerMobile,
-      order.delivery_mobile,
-      order.deliveryMobile,
-      order.mobile,
-      order.phone
+      o.consignee_phone,
+      o.consigneePhone,
+      o.customer_mobile,
+      o.customerMobile,
+      o.buyer_mobile,
+      o.buyerMobile,
+      o.delivery_mobile,
+      o.deliveryMobile,
+      customer.mobile,
+      customer.phone,
+      o.mobile,
+      o.phone
     ),
     ""
   );
+};
 
-const getPaymentType = (order) => {
+const getPaymentType = (o) => {
   const value = String(
     first(
-      order.payment_type,
-      order.paymentType,
-      order.payment_method,
-      order.paymentMethod,
-      order.payment_mode,
-      order.paymentMode,
+      o.payment_type,
+      o.paymentType,
+      o.payment_method,
+      o.paymentMethod,
+      o.payment_mode,
+      o.paymentMode,
       "PREPAID"
     )
   ).toUpperCase();
@@ -149,14 +163,14 @@ const getPaymentType = (order) => {
   return value.includes("COD") ? "COD" : "PREPAID";
 };
 
-const getServiceType = (order) => {
+const getServiceType = (o) => {
   const value = String(
     first(
-      order.service_type,
-      order.serviceType,
-      order.shipment_type,
-      order.shipmentType,
-      order.mode,
+      o.service_type,
+      o.serviceType,
+      o.shipment_type,
+      o.shipmentType,
+      o.mode,
       "ROAD"
     )
   ).toUpperCase();
@@ -164,13 +178,13 @@ const getServiceType = (order) => {
   return value.includes("AIR") ? "BY AIR" : "BY ROAD";
 };
 
-const getWeight = (order) => {
-  const packageWeight = Array.isArray(order.packages)
-    ? order.packages.reduce(
-        (total, item) =>
-          total +
-          (Number(item.weight) || 0) *
-            (Number(item.package_count) || 1),
+const getWeight = (o) => {
+  const packages = Array.isArray(o.packages)
+    ? o.packages.reduce(
+        (sum, p) =>
+          sum +
+          (Number(p.weight) || 0) *
+            (Number(p.package_count) || 1),
         0
       )
     : 0;
@@ -178,415 +192,415 @@ const getWeight = (order) => {
   return (
     Number(
       first(
-        order.total_weight,
-        order.totalWeight,
-        order.package_weight,
-        order.packageWeight,
-        order.weight,
-        packageWeight,
+        o.total_weight,
+        o.totalWeight,
+        o.package_weight,
+        o.packageWeight,
+        o.weight,
+        packages,
         0
       )
     ) || 0
   );
 };
 
-const getOrderValue = (order) =>
+const getOrderValue = (o) =>
   Number(
     first(
-      order.order_value,
-      order.orderValue,
-      order.product_value,
-      order.productValue,
-      order.total_amount,
-      order.totalAmount,
-      order.order_amount,
-      order.orderAmount,
-      order.amount,
-      order.total_value,
+      o.order_value,
+      o.orderValue,
+      o.product_value,
+      o.productValue,
+      o.total_amount,
+      o.totalAmount,
+      o.order_amount,
+      o.orderAmount,
+      o.total_value,
+      o.amount,
       0
     )
   ) || 0;
 
-const getCodAmount = (order) =>
+const getCodAmount = (o) =>
   Number(
     first(
-      order.cod_amount,
-      order.codAmount,
-      order.cod_value,
-      order.codValue,
-      order.collectable_amount,
-      order.collectableAmount,
-      order.amount_to_collect,
-      order.amountToCollect,
+      o.cod_amount,
+      o.codAmount,
+      o.cod_value,
+      o.codValue,
+      o.collectable_amount,
+      o.collectableAmount,
+      o.amount_to_collect,
+      o.amountToCollect,
       0
     )
   ) || 0;
 
-const getDate = (order) =>
+const money = (v) => `₹${(Number(v) || 0).toFixed(2)}`;
+
+const getDate = (o) =>
   first(
-    order.invoice_date,
-    order.invoiceDate,
-    order.manifest_created_at,
-    order.manifestCreatedAt,
-    order.created_at,
-    order.createdAt,
+    o.invoice_date,
+    o.invoiceDate,
+    o.manifest_created_at,
+    o.manifestCreatedAt,
+    o.created_at,
+    o.createdAt,
     new Date()
   );
 
 const formatDate = (value) => {
-  const date = new Date(value);
+  const d = new Date(value);
 
-  return Number.isNaN(date.getTime())
+  return Number.isNaN(d.getTime())
     ? "—"
-    : date.toLocaleDateString("en-IN", {
+    : d.toLocaleDateString("en-IN", {
         day: "2-digit",
         month: "short",
         year: "numeric",
       });
 };
 
-const money = (value) => `₹${(Number(value) || 0).toFixed(2)}`;
+const getFromName = (o) => {
+  const warehouse = o.warehouse || {};
+  const pickup = o.pickup_address_details || {};
 
-const getSellerName = (order) => {
-  const user = getStoredUser();
-
-  return text(
+  return txt(
     first(
-      order.seller_name,
-      order.sellerName,
-      order.seller_full_name,
-      order.sellerFullName,
-      order.seller_company_name,
-      order.sellerCompanyName,
-      order.company_name,
-      order.companyName,
-      order.business_name,
-      order.businessName,
-      order.account_name,
-      order.accountName,
-      order.user?.business_name,
-      order.user?.company_name,
-      order.user?.name,
-      order.seller?.business_name,
-      order.seller?.company_name,
-      order.seller?.name,
+      o.pickup_name,
+      o.pickupName,
+      o.pickup_contact_name,
+      o.pickupContactName,
+      warehouse.contact_name,
+      warehouse.contactName,
+      warehouse.name,
+      o.warehouse_contact_name,
+      o.warehouseContactName,
+      o.shipper_name,
+      o.shipperName,
+      o.seller_name,
+      o.sellerName
+    )
+  );
+};
+
+const getFromMobile = (o) => {
+  const warehouse = o.warehouse || {};
+
+  return txt(
+    first(
+      o.shipper_mobile,
+      o.shipperMobile,
+      o.pickup_mobile,
+      o.pickupMobile,
+      o.pickup_phone,
+      o.pickupPhone,
+      o.seller_mobile,
+      o.sellerMobile,
+      warehouse.mobile,
+      warehouse.phone
+    ),
+    ""
+  );
+};
+
+const getAlternateFromMobile = (o) =>
+  txt(
+    first(
+      o.shipper_alternate_mobile,
+      o.alternate_mobile,
+      o.pickup_alternate_mobile,
+      o.seller_alternate_mobile
+    ),
+    ""
+  );
+
+const getFromAddress = (o) => {
+  const w = o.warehouse || {};
+  const p = o.pickup_address_details || {};
+
+  return [
+    first(
+      w.address_line1,
+      w.addressLine1,
+      w.address,
+      o.warehouse_address_line1,
+      o.warehouseAddressLine1,
+      o.pickup_address,
+      o.pickupAddress,
+      o.shipper_address,
+      o.shipperAddress,
+      p.address_line1,
+      p.address
+    ),
+    first(
+      w.address_line2,
+      w.addressLine2,
+      o.warehouse_address_line2,
+      o.pickup_address_line2,
+      p.address_line2
+    ),
+    first(w.landmark, o.warehouse_landmark, o.pickup_landmark, p.landmark),
+    first(w.city, o.warehouse_city, o.pickup_city, p.city),
+    first(w.state, o.warehouse_state, o.pickup_state, p.state),
+    first(w.pincode, o.warehouse_pincode, o.pickup_pincode, p.pincode),
+    first(w.country, o.pickup_country, "India"),
+  ]
+    .filter(Boolean)
+    .join(", ");
+};
+
+const getBuyerAddress = (o) => {
+  const customer = o.customer || o.buyer || {};
+
+  return [
+    first(
+      o.address_line1,
+      o.addressLine1,
+      o.delivery_address,
+      o.deliveryAddress,
+      o.address,
+      o.buyer_address1,
+      customer.address_line1,
+      customer.address
+    ),
+    first(
+      o.address_line2,
+      o.addressLine2,
+      o.buyer_address2,
+      customer.address_line2
+    ),
+    first(o.landmark, o.buyer_landmark, customer.landmark),
+    first(o.city, o.delivery_city, o.deliveryCity, o.buyer_city, customer.city),
+    first(o.state, o.delivery_state, o.deliveryState, o.buyer_state, customer.state),
+    first(
+      o.pincode,
+      o.delivery_pincode,
+      o.deliveryPincode,
+      o.buyer_pincode,
+      customer.pincode
+    ),
+    first(o.country, o.buyer_country, customer.country, "India"),
+  ]
+    .filter(Boolean)
+    .join(", ");
+};
+
+const getSellerName = (o) => {
+  const user = getStoredUser();
+  const seller = o.seller || {};
+  const profile = o.seller_profile || o.sellerProfile || {};
+  const account = o.user || {};
+
+  return txt(
+    first(
+      o.seller_name,
+      o.sellerName,
+      o.seller_full_name,
+      o.sellerFullName,
+      o.seller_company_name,
+      o.sellerCompanyName,
+      o.company_name,
+      o.companyName,
+      o.business_name,
+      o.businessName,
+      profile.business_name,
+      profile.company_name,
+      profile.name,
+      seller.business_name,
+      seller.company_name,
+      seller.name,
+      account.business_name,
+      account.company_name,
+      account.name,
       user.business_name,
-      user.businessName,
       user.company_name,
-      user.companyName,
       user.name
     )
   );
 };
 
-const getSellerGstin = (order) => {
+const getSellerGstin = (o) => {
   const user = getStoredUser();
+  const seller = o.seller || {};
+  const profile = o.seller_profile || o.sellerProfile || {};
+  const account = o.user || {};
 
-  return text(
+  return txt(
     first(
-      order.seller_gstin,
-      order.sellerGstin,
-      order.seller_gst,
-      order.sellerGSTIN,
-      order.gstin,
-      order.GSTIN,
-      order.gst_number,
-      order.gstNumber,
-      order.user?.gstin,
-      order.user?.gst_number,
-      order.seller?.gstin,
-      order.seller?.gst_number,
+      o.seller_gstin,
+      o.sellerGstin,
+      o.seller_gst,
+      o.sellerGSTIN,
+      o.gstin,
+      o.GSTIN,
+      o.gst_number,
+      o.gstNumber,
+      profile.gstin,
+      profile.gst_number,
+      seller.gstin,
+      seller.gst_number,
+      account.gstin,
+      account.gst_number,
       user.gstin,
       user.GSTIN,
-      user.gst_number,
-      user.gstNumber
+      user.gst_number
     ),
     ""
   );
 };
 
-const getFromName = (order) =>
-  text(
-    first(
-      order.pickup_name,
-      order.pickupName,
-      order.pickup_contact_name,
-      order.pickupContactName,
-      order.warehouse?.contact_name,
-      order.warehouse?.contactName,
-      order.warehouse?.name,
-      order.warehouse_contact_name,
-      order.warehouseContactName,
-      order.shipper_name,
-      order.shipperName,
-      order.seller_name,
-      order.sellerName
-    )
-  );
-
-const getFromMobile = (order) =>
-  text(
-    first(
-      order.shipper_mobile,
-      order.shipperMobile,
-      order.pickup_mobile,
-      order.pickupMobile,
-      order.pickup_phone,
-      order.pickupPhone,
-      order.seller_mobile,
-      order.sellerMobile,
-      order.warehouse?.mobile,
-      order.warehouse?.phone
-    ),
-    ""
-  );
-
-const getFromAddress = (order) => {
-  const warehouse = order.warehouse || {};
-  const pickup = order.pickup_address_details || {};
-
-  return [
-    first(
-      warehouse.address_line1,
-      warehouse.addressLine1,
-      warehouse.address,
-      order.warehouse_address_line1,
-      order.warehouseAddressLine1,
-      order.pickup_address,
-      order.pickupAddress,
-      order.shipper_address,
-      order.shipperAddress,
-      pickup.address_line1,
-      pickup.address
-    ),
-    first(
-      warehouse.address_line2,
-      warehouse.addressLine2,
-      order.warehouse_address_line2,
-      order.pickup_address_line2,
-      order.pickupAddressLine2,
-      pickup.address_line2
-    ),
-    first(
-      warehouse.landmark,
-      order.warehouse_landmark,
-      order.pickup_landmark,
-      pickup.landmark
-    ),
-    first(
-      warehouse.city,
-      order.warehouse_city,
-      order.warehouseCity,
-      order.pickup_city,
-      order.pickupCity,
-      pickup.city
-    ),
-    first(
-      warehouse.state,
-      order.warehouse_state,
-      order.warehouseState,
-      order.pickup_state,
-      order.pickupState,
-      pickup.state
-    ),
-    first(
-      warehouse.pincode,
-      order.warehouse_pincode,
-      order.warehousePincode,
-      order.pickup_pincode,
-      order.pickupPincode,
-      pickup.pincode
-    ),
-    first(warehouse.country, order.pickup_country, "India"),
-  ]
-    .filter(Boolean)
-    .join(", ");
-};
-
-const getBuyerAddress = (order) => {
-  const buyer = order.buyer || order.customer || {};
-
-  return [
-    first(
-      order.address_line1,
-      order.addressLine1,
-      order.delivery_address,
-      order.deliveryAddress,
-      order.address,
-      order.buyer_address1,
-      buyer.address_line1,
-      buyer.address
-    ),
-    first(
-      order.address_line2,
-      order.addressLine2,
-      order.buyer_address2,
-      buyer.address_line2
-    ),
-    first(order.landmark, order.buyer_landmark, buyer.landmark),
-    first(
-      order.city,
-      order.delivery_city,
-      order.deliveryCity,
-      order.buyer_city,
-      buyer.city
-    ),
-    first(
-      order.state,
-      order.delivery_state,
-      order.deliveryState,
-      order.buyer_state,
-      buyer.state
-    ),
-    first(
-      order.pincode,
-      order.delivery_pincode,
-      order.deliveryPincode,
-      order.buyer_pincode,
-      buyer.pincode
-    ),
-    first(order.country, order.buyer_country, buyer.country, "India"),
-  ]
-    .filter(Boolean)
-    .join(", ");
-};
-
-const getReturnAddress = (order) =>
+const getReturnAddress = (o) =>
   [
-    first(
-      order.return_address_line1,
-      order.returnAddressLine1,
-      order.return_address,
-      order.returnAddress
-    ),
-    first(order.return_address_line2, order.returnAddressLine2),
-    first(order.return_landmark, order.returnLandmark),
-    first(order.return_city, order.returnCity),
-    first(order.return_state, order.returnState),
-    first(order.return_pincode, order.returnPincode),
-    first(order.return_country, order.returnCountry, "India"),
+    first(o.return_address_line1, o.returnAddressLine1, o.return_address, o.returnAddress),
+    first(o.return_address_line2, o.returnAddressLine2),
+    first(o.return_landmark, o.returnLandmark),
+    first(o.return_city, o.returnCity),
+    first(o.return_state, o.returnState),
+    first(o.return_pincode, o.returnPincode),
+    first(o.return_country, o.returnCountry, "India"),
   ]
     .filter(Boolean)
     .join(", ");
 
-const getProducts = (order) => {
-  const products =
-    Array.isArray(order.products) && order.products.length
-      ? order.products
-      : Array.isArray(order.order_products) && order.order_products.length
-        ? order.order_products
+const getProducts = (o) => {
+  const list =
+    Array.isArray(o.products) && o.products.length
+      ? o.products
+      : Array.isArray(o.order_products) && o.order_products.length
+        ? o.order_products
         : [
             {
               product_name: first(
-                order.product_name,
-                order.productName,
-                order.product,
+                o.product_name,
+                o.productName,
+                o.shipment,
                 "Product"
               ),
-              quantity: first(order.quantity, order.qty, 1),
+              quantity: first(o.quantity, o.qty, 1),
               price: first(
-                order.product_value,
-                order.productValue,
-                order.order_value,
-                order.orderValue,
-                order.total_amount,
+                o.product_value,
+                o.productValue,
+                o.order_value,
+                o.orderValue,
+                o.total_amount,
                 0
               ),
             },
           ];
 
-  return products.map((product) => {
+  return list.map((p) => {
     const qty =
       Number(
         first(
-          product.quantity,
-          product.qty,
-          product.product_quantity,
-          product.productQuantity,
+          p.quantity,
+          p.qty,
+          p.product_quantity,
+          p.productQuantity,
           1
         )
       ) || 1;
 
-    const total = Number(
-      first(
-        product.total,
-        product.total_price,
-        product.totalPrice,
-        product.amount,
-        product.line_total,
-        product.lineTotal
-      )
+    const totalValue = first(
+      p.total,
+      p.total_price,
+      p.totalPrice,
+      p.line_total,
+      p.lineTotal,
+      p.amount
     );
 
     const rate =
       Number(
         first(
-          product.rate,
-          product.price,
-          product.unit_price,
-          product.unitPrice,
-          product.product_price,
-          product.productPrice,
-          total ? total / qty : 0
+          p.rate,
+          p.price,
+          p.unit_price,
+          p.unitPrice,
+          p.product_price,
+          p.productPrice,
+          totalValue !== undefined ? Number(totalValue) / qty : 0
         )
       ) || 0;
 
     return {
-      name: text(
-        first(
-          product.product_name,
-          product.productName,
-          product.name,
-          product.product
-        ),
+      name: txt(
+        first(p.product_name, p.productName, p.name, p.product),
         "Product"
       ),
       qty,
       rate,
-      total: Number.isFinite(total) ? total : rate * qty,
+      total:
+        Number(totalValue) || rate * qty,
     };
   });
 };
 
 const getLabelSize = (value) => {
   const sizes = {
-    "4x6": { key: "4x6", widthIn: 4, heightIn: 6, widthMm: 101.6, heightMm: 152.4 },
-    A4: { key: "A4", widthIn: 8.27, heightIn: 11.69, widthMm: 210, heightMm: 297 },
-    "4x2": { key: "4x2", widthIn: 4, heightIn: 2, widthMm: 101.6, heightMm: 50.8 },
-    "4x2.5": { key: "4x2.5", widthIn: 4, heightIn: 2.5, widthMm: 101.6, heightMm: 63.5 },
-    "3x2": { key: "3x2", widthIn: 3, heightIn: 2, widthMm: 76.2, heightMm: 50.8 },
+    "4x6": {
+      key: "4x6",
+      widthIn: 4,
+      heightIn: 6,
+      widthMm: 101.6,
+      heightMm: 152.4,
+    },
+    A4: {
+      key: "A4",
+      widthIn: 8.27,
+      heightIn: 11.69,
+      widthMm: 210,
+      heightMm: 297,
+    },
+    "4x2": {
+      key: "4x2",
+      widthIn: 4,
+      heightIn: 2,
+      widthMm: 101.6,
+      heightMm: 50.8,
+    },
+    "4x2.5": {
+      key: "4x2.5",
+      widthIn: 4,
+      heightIn: 2.5,
+      widthMm: 101.6,
+      heightMm: 63.5,
+    },
+    "3x2": {
+      key: "3x2",
+      widthIn: 3,
+      heightIn: 2,
+      widthMm: 76.2,
+      heightMm: 50.8,
+    },
   };
 
   return sizes[value] || sizes["4x6"];
 };
 
-const normalizeSettings = (data = {}) => {
-  const bool = (snake, camel, fallback) =>
-    data[snake] ?? data[camel] ?? fallback;
+const normalizeSettings = (d = {}) => ({
+  ...DEFAULT_LABEL_SETTINGS,
 
-  return {
-    ...DEFAULT_LABEL_SETTINGS,
-    orderValue: Boolean(bool("order_value", "orderValue", true)),
-    codAmount: Boolean(bool("cod_amount", "codAmount", true)),
-    buyerMobile: Boolean(bool("buyer_mobile", "buyerMobile", true)),
-    shipperMobiles: Boolean(bool("shipper_mobiles", "shipperMobiles", true)),
-    shipperAddress: Boolean(bool("shipper_address", "shipperAddress", true)),
-    fromName: Boolean(bool("from_name", "fromName", true)),
-    fromAddress: Boolean(bool("from_address", "fromAddress", true)),
-    fromMobile: Boolean(bool("from_mobile", "fromMobile", true)),
-    productName: Boolean(bool("product_name", "productName", true)),
-    productDetails: Boolean(bool("product_details", "productDetails", true)),
-    servicesTnc: Boolean(bool("services_tnc", "servicesTnc", false)),
-    orderId: Boolean(bool("order_id", "orderId", false)),
-    orderWeight: Boolean(bool("order_weight", "orderWeight", false)),
-    returnAddress: Boolean(bool("return_address", "returnAddress", true)),
-    contactLine: Boolean(bool("contact_line", "contactLine", true)),
-    rightLogoMode:
-      data.right_logo_mode || data.rightLogoMode || "delhivery",
-    labelSize: data.label_size || data.labelSize || "4x6",
-    customLogo: data.custom_logo || data.customLogo || null,
-  };
-};
+  orderValue: Boolean(d.order_value ?? d.orderValue ?? true),
+  codAmount: Boolean(d.cod_amount ?? d.codAmount ?? true),
+  buyerMobile: Boolean(d.buyer_mobile ?? d.buyerMobile ?? true),
+  shipperMobiles: Boolean(d.shipper_mobiles ?? d.shipperMobiles ?? true),
+  shipperAddress: Boolean(d.shipper_address ?? d.shipperAddress ?? true),
+  fromName: Boolean(d.from_name ?? d.fromName ?? true),
+  fromAddress: Boolean(d.from_address ?? d.fromAddress ?? true),
+  fromMobile: Boolean(d.from_mobile ?? d.fromMobile ?? true),
+  productName: Boolean(d.product_name ?? d.productName ?? true),
+  productDetails: Boolean(d.product_details ?? d.productDetails ?? true),
+  servicesTnc: Boolean(d.services_tnc ?? d.servicesTnc ?? false),
+  orderId: Boolean(d.order_id ?? d.orderId ?? false),
+  orderWeight: Boolean(d.order_weight ?? d.orderWeight ?? false),
+  returnAddress: Boolean(d.return_address ?? d.returnAddress ?? true),
+  contactLine: Boolean(d.contact_line ?? d.contactLine ?? true),
+
+  rightLogoMode: d.right_logo_mode || d.rightLogoMode || "delhivery",
+  labelSize: d.label_size || d.labelSize || "4x6",
+  customLogo: d.custom_logo || d.customLogo || null,
+});
 
 const getLabelSettings = async () => {
   const userId = getUserId();
@@ -606,7 +620,7 @@ const getLabelSettings = async () => {
 
     return normalizeSettings(data);
   } catch (error) {
-    console.error("Label settings fetch error:", error);
+    console.error("Label settings error:", error);
     return { ...DEFAULT_LABEL_SETTINGS };
   }
 };
@@ -618,7 +632,7 @@ const getDetailedOrders = async (orders) => {
 
   return Promise.all(
     orders.map(async (order) => {
-      const id = first(order.order_id, order.orderId, order.id);
+      const id = first(order?.order_id, order?.orderId, order?.id);
 
       if (!id) return order;
 
@@ -633,27 +647,56 @@ const getDetailedOrders = async (orders) => {
           response.data?.result ||
           null;
 
-        return full ? { ...order, ...full } : order;
+        if (!full) return order;
+
+        return {
+          ...order,
+          ...full,
+          awb: first(order.awb, full.awb, full.waybill),
+          order_id: first(order.order_id, full.order_id),
+        };
       } catch (error) {
-        // Some applications don't have a single-order endpoint.
-        console.warn("Could not fetch full order details:", id, error);
+        console.warn("Could not fetch complete order:", id, error);
         return order;
       }
     })
   );
 };
 
-const barcodeSvg = (value, compact = false) => {
+const imageToDataUrl = async (source) => {
+  if (!source) return "";
+
+  if (String(source).startsWith("data:")) return source;
+
+  const response = await fetch(source);
+
+  if (!response.ok) {
+    throw new Error(`Unable to load logo: ${source}`);
+  }
+
+  const blob = await response.blob();
+
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onloadend = () => resolve(reader.result);
+    reader.onerror = reject;
+
+    reader.readAsDataURL(blob);
+  });
+};
+
+const createBarcode = (awb, compact = false) => {
   const svg = document.createElementNS(
     "http://www.w3.org/2000/svg",
     "svg"
   );
 
-  JsBarcode(svg, String(value || "AWB"), {
+  JsBarcode(svg, String(awb || "AWB"), {
     format: "CODE128",
     displayValue: false,
-    height: compact ? 18 : 35,
-    width: compact ? 1 : 1.4,
+    height: compact ? 22 : 32,
+    width: compact ? 1 : 1.3,
     margin: 0,
     background: "#ffffff",
     lineColor: "#111827",
@@ -662,49 +705,54 @@ const barcodeSvg = (value, compact = false) => {
   return svg.outerHTML;
 };
 
-const buildLabelHtml = (order, settings, rightLogo, size) => {
+const buildLabelHtml = (
+  order,
+  settings,
+  leftLogo,
+  rightLogo,
+  size
+) => {
   const compact = size.heightIn <= 2.5;
-  const a4 = size.key === "A4";
+  const isA4 = size.key === "A4";
 
   const awb = getAWB(order);
   const payment = getPaymentType(order);
-  const products = getProducts(order);
-
-  const fromName = getFromName(order);
   const fromAddress = getFromAddress(order);
-  const fromMobile = getFromMobile(order);
   const buyerAddress = getBuyerAddress(order);
-  const buyerMobile = getBuyerMobile(order);
+  const fromMobiles = [
+    getFromMobile(order),
+    getAlternateFromMobile(order),
+  ]
+    .filter(Boolean)
+    .join(" / ");
 
   const showFromName = settings.fromName !== false;
   const showFromAddress =
-    settings.fromAddress !== false && settings.shipperAddress !== false;
+    settings.fromAddress !== false &&
+    settings.shipperAddress !== false;
   const showFromMobile =
-    settings.fromMobile !== false && settings.shipperMobiles !== false;
+    settings.fromMobile !== false &&
+    settings.shipperMobiles !== false;
   const showBuyerMobile =
-    settings.buyerMobile !== false && Boolean(buyerMobile);
+    settings.buyerMobile !== false && Boolean(getMobile(order));
   const showWeight = settings.orderWeight === true;
   const showOrderId = settings.orderId === true;
   const showOrderValue = settings.orderValue !== false;
-  const showCod = settings.codAmount !== false && payment === "COD";
+  const showCod =
+    settings.codAmount !== false && payment === "COD";
   const showProducts =
-    settings.productDetails !== false && settings.productName !== false;
+    settings.productDetails !== false &&
+    settings.productName !== false;
 
-  const logo =
-    settings.rightLogoMode === "custom" && settings.customLogo
-      ? settings.customLogo
-      : rightLogo;
-
-  const contactLine =
-    "For complaints & queries please contact 8766066070, 0141-4797120";
+  const products = getProducts(order);
 
   const productRows = showProducts
     ? products
-        .slice(0, a4 ? 15 : compact ? 1 : 5)
+        .slice(0, isA4 ? 12 : compact ? 1 : 4)
         .map(
           (p) => `
             <tr>
-              <td class="product-name">${escapeHtml(p.name)}</td>
+              <td class="product-name">${esc(p.name)}</td>
               <td>${p.rate.toFixed(2)}</td>
               <td>${p.qty}</td>
               <td>${p.total.toFixed(2)}</td>
@@ -714,50 +762,84 @@ const buildLabelHtml = (order, settings, rightLogo, size) => {
         .join("")
     : "";
 
-  const orderInfo = [
+  const orderCells = [
     showOrderId
-      ? `<div class="info-cell"><span>ORDER ID</span><b>${escapeHtml(getOrderId(order))}</b></div>`
+      ? `<div class="info-cell"><span>ORDER ID</span><b>${esc(getOrderId(order))}</b></div>`
       : "",
     showOrderValue
       ? `<div class="info-cell"><span>ORDER VALUE</span><b>${money(getOrderValue(order))}</b></div>`
       : "",
   ].filter(Boolean);
 
+  const returnAddress =
+    getReturnAddress(order) || fromAddress;
+
+  const contactLine =
+    "For complaints & queries please contact 8766066070, 0141-4797120";
+
   return `
-    <article class="shipping-label ${compact ? "compact" : ""} ${a4 ? "a4" : ""}"
+    <article class="shipping-label ${compact ? "compact" : ""} ${isA4 ? "a4" : ""}"
       style="width:${size.widthIn}in;height:${size.heightIn}in">
 
       <div class="label-border">
 
         <header class="logos">
           <div class="logo left">
-            <img src="${escapeHtml(shipdropLogo)}" alt="ParcelDrop" />
+            <img src="${esc(leftLogo)}" alt="ParcelDrop" />
           </div>
           <div class="logo right">
-            <img src="${escapeHtml(logo || delhiveryLogo)}" alt="Carrier" />
+            <img src="${esc(rightLogo)}" alt="Delhivery" />
           </div>
         </header>
 
-        <section class="awb">
-          <div class="eyebrow">AWB NUMBER</div>
-          <div class="awb-number">${escapeHtml(awb)}</div>
-          <div class="barcode">${barcodeSvg(awb, compact)}</div>
-        </section>
+        <!-- FROM / TO FIRST -->
 
         <section class="addresses">
+
           <div class="address-block">
             <div class="eyebrow">FROM / SHIPPER</div>
-            ${showFromName ? `<b class="person">${escapeHtml(fromName)}</b>` : ""}
-            ${showFromAddress && fromAddress ? `<div class="address">${escapeHtml(fromAddress)}</div>` : ""}
-            ${showFromMobile && fromMobile ? `<div class="phone">☎ ${escapeHtml(fromMobile)}</div>` : ""}
+
+            ${
+              showFromName
+                ? `<b class="person">${esc(getFromName(order))}</b>`
+                : ""
+            }
+
+            ${
+              showFromAddress && fromAddress
+                ? `<div class="address">${esc(fromAddress)}</div>`
+                : ""
+            }
+
+            ${
+              showFromMobile && fromMobiles
+                ? `<div class="phone">☎ ${esc(fromMobiles)}</div>`
+                : ""
+            }
           </div>
 
           <div class="address-block">
             <div class="eyebrow">SHIP TO / CONSIGNEE</div>
-            <b class="person">${escapeHtml(getCustomerName(order))}</b>
-            <div class="address">${escapeHtml(buyerAddress || "—")}</div>
-            ${showBuyerMobile ? `<div class="phone">☎ ${escapeHtml(buyerMobile)}</div>` : ""}
+
+            <b class="person">${esc(getCustomerName(order))}</b>
+
+            <div class="address">${esc(buyerAddress || "—")}</div>
+
+            ${
+              showBuyerMobile
+                ? `<div class="phone">☎ ${esc(getMobile(order))}</div>`
+                : ""
+            }
           </div>
+
+        </section>
+
+        <!-- AWB AFTER ADDRESS -->
+
+        <section class="awb">
+          <div class="eyebrow">AWB NUMBER</div>
+          <div class="awb-number">${esc(awb)}</div>
+          <div class="barcode">${createBarcode(awb, compact)}</div>
         </section>
 
         <section class="summary ${showWeight ? "three-cols" : "two-cols"}">
@@ -765,16 +847,22 @@ const buildLabelHtml = (order, settings, rightLogo, size) => {
             <span>PAYMENT</span>
             <b>${payment}</b>
           </div>
+
           <div>
             <span>SERVICE</span>
             <b>${getServiceType(order)}</b>
           </div>
-          ${showWeight ? `<div><span>WEIGHT</span><b>${getWeight(order).toFixed(2)} KG</b></div>` : ""}
+
+          ${
+            showWeight
+              ? `<div><span>WEIGHT</span><b>${getWeight(order).toFixed(2)} KG</b></div>`
+              : ""
+          }
         </section>
 
         ${
-          orderInfo.length
-            ? `<section class="order-info" style="grid-template-columns:repeat(${orderInfo.length},minmax(0,1fr))">${orderInfo.join("")}</section>`
+          orderCells.length
+            ? `<section class="order-info" style="grid-template-columns:repeat(${orderCells.length},minmax(0,1fr))">${orderCells.join("")}</section>`
             : ""
         }
 
@@ -789,9 +877,15 @@ const buildLabelHtml = (order, settings, rightLogo, size) => {
             ? `
               <section class="products">
                 <div class="section-title">PRODUCT DETAILS</div>
+
                 <table>
                   <thead>
-                    <tr><th>Product</th><th>Rate (₹)</th><th>Qty</th><th>Total (₹)</th></tr>
+                    <tr>
+                      <th>Product</th>
+                      <th>Rate (₹)</th>
+                      <th>Qty</th>
+                      <th>Total (₹)</th>
+                    </tr>
                   </thead>
                   <tbody>${productRows}</tbody>
                 </table>
@@ -801,21 +895,41 @@ const buildLabelHtml = (order, settings, rightLogo, size) => {
         }
 
         <section class="seller">
-          <div><span>SELLER</span><b>${escapeHtml(getSellerName(order))}</b></div>
-          <div><span>GSTIN</span><b>${escapeHtml(getSellerGstin(order))}</b></div>
-          <div><span>INVOICE NO.</span><b>&nbsp;</b></div>
-          <div><span>DATE</span><b>${escapeHtml(formatDate(getDate(order)))}</b></div>
+          <div>
+            <span>SELLER</span>
+            <b>${esc(getSellerName(order))}</b>
+          </div>
+
+          <div>
+            <span>GSTIN</span>
+            <b>${esc(getSellerGstin(order) || " ")}</b>
+          </div>
+
+          <div>
+            <span>INVOICE NO.</span>
+            <b>&nbsp;</b>
+          </div>
+
+          <div>
+            <span>DATE</span>
+            <b>${esc(formatDate(getDate(order)))}</b>
+          </div>
         </section>
 
         ${
           settings.returnAddress !== false
-            ? `<section class="return"><b>RETURN ADDRESS</b><div>${escapeHtml(getReturnAddress(order) || fromAddress || "—")}</div></section>`
+            ? `
+              <section class="return">
+                <b>RETURN ADDRESS</b>
+                <div>${esc(returnAddress || "—")}</div>
+              </section>
+            `
             : ""
         }
 
         ${
           settings.contactLine !== false
-            ? `<footer class="contact">${escapeHtml(contactLine)}</footer>`
+            ? `<footer class="contact">${esc(contactLine)}</footer>`
             : ""
         }
 
@@ -827,11 +941,11 @@ const buildLabelHtml = (order, settings, rightLogo, size) => {
 
       .shipping-label {
         margin: 0;
-        padding: 3.5mm;
+        padding: ${compact ? "1.2mm" : isA4 ? "6mm" : "3mm"};
         background: #fff;
         color: #111827;
         font-family: Arial, Helvetica, sans-serif;
-        font-size: 8pt;
+        font-size: ${compact ? "5pt" : isA4 ? "10pt" : "7pt"};
         line-height: 1.25;
         overflow: hidden;
         page-break-after: always;
@@ -843,31 +957,29 @@ const buildLabelHtml = (order, settings, rightLogo, size) => {
       .label-border {
         width: 100%;
         height: 100%;
-        border: 1.2px solid #111827;
-        overflow: hidden;
-
-        /* IMPORTANT: Do not distribute spare height between sections. */
+        border: 1px solid #111827;
         display: flex;
         flex-direction: column;
         justify-content: flex-start;
         align-items: stretch;
+        overflow: hidden;
         background: #fff;
       }
 
       .logos {
-        flex: 0 0 9mm;
-        height: 9mm;
+        flex: 0 0 ${compact ? "5mm" : isA4 ? "15mm" : "9mm"};
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 1.2mm 2mm;
-        border-bottom: 1px solid #111827;
         gap: 3mm;
+        padding: 1mm 2mm;
+        border-bottom: 1px solid #111827;
       }
 
       .logo {
-        width: 48%;
+        width: 47%;
         height: 100%;
+        min-width: 0;
         display: flex;
         align-items: center;
       }
@@ -876,40 +988,10 @@ const buildLabelHtml = (order, settings, rightLogo, size) => {
       .logo.right { justify-content: flex-end; }
 
       .logo img {
+        display: block;
         max-width: 100%;
         max-height: 100%;
         object-fit: contain;
-        display: block;
-      }
-
-      .awb {
-        flex: 0 0 auto;
-        text-align: center;
-        padding: 2mm 2mm;
-        border-bottom: 1px solid #111827;
-      }
-
-      .eyebrow {
-        font-size: 6pt;
-        font-weight: 800;
-        letter-spacing: .25px;
-        color: #374151;
-      }
-
-      .awb-number {
-        font-size: 11pt;
-        font-weight: 900;
-        letter-spacing: .5px;
-        margin: 1mm 0;
-        overflow-wrap: anywhere;
-      }
-
-      .barcode svg {
-        display: block;
-        max-width: 100%;
-        max-height: 10mm;
-        height: auto;
-        margin: 0 auto;
       }
 
       .addresses {
@@ -921,7 +1003,7 @@ const buildLabelHtml = (order, settings, rightLogo, size) => {
 
       .address-block {
         min-width: 0;
-        padding: 2mm;
+        padding: ${compact ? "1mm" : isA4 ? "4mm" : "2mm"};
         overflow-wrap: anywhere;
       }
 
@@ -929,9 +1011,16 @@ const buildLabelHtml = (order, settings, rightLogo, size) => {
         border-left: 1px solid #111827;
       }
 
+      .eyebrow {
+        font-size: ${compact ? "4pt" : isA4 ? "8pt" : "5.5pt"};
+        font-weight: 800;
+        letter-spacing: .2px;
+        color: #374151;
+      }
+
       .person {
         display: block;
-        font-size: 8pt;
+        font-size: ${compact ? "5pt" : isA4 ? "12pt" : "7.5pt"};
         line-height: 1.2;
         margin-top: 1mm;
         font-weight: 800;
@@ -939,17 +1028,40 @@ const buildLabelHtml = (order, settings, rightLogo, size) => {
       }
 
       .address {
-        font-size: 7pt;
+        font-size: ${compact ? "4.2pt" : isA4 ? "9pt" : "5.5pt"};
         line-height: 1.3;
         margin-top: 1mm;
         overflow-wrap: anywhere;
       }
 
       .phone {
-        font-size: 7pt;
+        font-size: ${compact ? "4.2pt" : isA4 ? "8pt" : "5.5pt"};
         font-weight: 800;
         margin-top: 1mm;
         overflow-wrap: anywhere;
+      }
+
+      .awb {
+        flex: 0 0 auto;
+        text-align: center;
+        padding: ${compact ? "1mm" : isA4 ? "4mm" : "2mm"};
+        border-bottom: 1px solid #111827;
+      }
+
+      .awb-number {
+        font-size: ${compact ? "7pt" : isA4 ? "17pt" : "11pt"};
+        font-weight: 900;
+        letter-spacing: .4px;
+        margin: 1mm 0;
+        overflow-wrap: anywhere;
+      }
+
+      .barcode svg {
+        display: block;
+        max-width: 100%;
+        max-height: ${compact ? "4mm" : isA4 ? "14mm" : "9mm"};
+        height: auto;
+        margin: 0 auto;
       }
 
       .summary {
@@ -963,7 +1075,7 @@ const buildLabelHtml = (order, settings, rightLogo, size) => {
 
       .summary > div {
         min-width: 0;
-        padding: 2mm;
+        padding: ${compact ? "1mm" : isA4 ? "3mm" : "2mm"};
         overflow-wrap: anywhere;
       }
 
@@ -975,15 +1087,15 @@ const buildLabelHtml = (order, settings, rightLogo, size) => {
       .info-cell span,
       .seller span {
         display: block;
-        font-size: 6pt;
+        font-size: ${compact ? "4pt" : isA4 ? "8pt" : "5.5pt"};
         font-weight: 800;
         color: #374151;
-        margin-bottom: .7mm;
+        margin-bottom: .5mm;
       }
 
       .summary b {
         display: block;
-        font-size: 8pt;
+        font-size: ${compact ? "5pt" : isA4 ? "12pt" : "7.5pt"};
         font-weight: 900;
       }
 
@@ -995,7 +1107,7 @@ const buildLabelHtml = (order, settings, rightLogo, size) => {
 
       .info-cell {
         min-width: 0;
-        padding: 1.8mm 2mm;
+        padding: ${compact ? "1mm" : "2mm"};
         overflow-wrap: anywhere;
       }
 
@@ -1005,8 +1117,7 @@ const buildLabelHtml = (order, settings, rightLogo, size) => {
 
       .info-cell b {
         display: block;
-        font-size: 8pt;
-        font-weight: 800;
+        font-size: ${compact ? "5pt" : "7.5pt"};
       }
 
       .cod {
@@ -1015,23 +1126,22 @@ const buildLabelHtml = (order, settings, rightLogo, size) => {
         align-items: center;
         justify-content: space-between;
         gap: 2mm;
-        padding: 2mm;
+        padding: ${compact ? "1mm" : "2mm"};
         border-bottom: 1px solid #111827;
       }
 
-      .cod b { font-size: 8pt; }
-      .cod strong { font-size: 10pt; }
+      .cod b { font-size: ${compact ? "5pt" : "7.5pt"}; }
+      .cod strong { font-size: ${compact ? "5.5pt" : "9pt"}; }
 
       .products {
         flex: 0 0 auto;
-        padding: 1.8mm 2mm;
+        padding: ${compact ? "1mm" : "2mm"};
         border-bottom: 1px solid #111827;
       }
 
       .section-title {
-        font-size: 6.5pt;
+        font-size: ${compact ? "4pt" : "6pt"};
         font-weight: 900;
-        letter-spacing: .25px;
         margin-bottom: 1mm;
       }
 
@@ -1039,12 +1149,12 @@ const buildLabelHtml = (order, settings, rightLogo, size) => {
         border-collapse: collapse;
         width: 100%;
         table-layout: fixed;
-        font-size: 7pt;
+        font-size: ${compact ? "4pt" : isA4 ? "9pt" : "5.5pt"};
       }
 
       th, td {
         border: 1px solid #9ca3af;
-        padding: 1mm 1.2mm;
+        padding: ${compact ? ".5mm" : "1mm"};
         text-align: right;
         overflow-wrap: anywhere;
       }
@@ -1068,7 +1178,7 @@ const buildLabelHtml = (order, settings, rightLogo, size) => {
 
       .seller > div {
         min-width: 0;
-        padding: 1.8mm 1.5mm;
+        padding: ${compact ? "1mm" : "1.5mm"};
         overflow-wrap: anywhere;
       }
 
@@ -1078,83 +1188,35 @@ const buildLabelHtml = (order, settings, rightLogo, size) => {
 
       .seller b {
         display: block;
-        font-size: 6.5pt;
+        font-size: ${compact ? "4pt" : isA4 ? "8pt" : "5pt"};
         font-weight: 800;
         overflow-wrap: anywhere;
       }
 
       .return {
         flex: 0 0 auto;
-        padding: 1.8mm 2mm;
+        padding: ${compact ? "1mm" : "1.5mm 2mm"};
         border-bottom: 1px solid #9ca3af;
-        font-size: 6.5pt;
-        line-height: 1.3;
+        font-size: ${compact ? "4pt" : "5.5pt"};
+        line-height: 1.25;
         overflow-wrap: anywhere;
       }
 
       .return b {
         display: block;
-        font-size: 6pt;
-        margin-bottom: .8mm;
+        font-size: ${compact ? "4pt" : "5.5pt"};
+        margin-bottom: .5mm;
       }
 
       .contact {
         flex: 0 0 auto;
-        padding: 1.5mm 2mm;
-        font-size: 6pt;
+        padding: ${compact ? "1mm" : "1.5mm"};
+        font-size: ${compact ? "3.5pt" : isA4 ? "7pt" : "4.8pt"};
         line-height: 1.2;
         text-align: center;
         font-weight: 800;
         overflow-wrap: anywhere;
       }
-
-      .compact {
-        padding: 1.2mm;
-        font-size: 5pt;
-      }
-
-      .compact .label-border { justify-content: flex-start; }
-      .compact .logos { flex-basis: 5mm; height: 5mm; }
-      .compact .awb { padding: 1mm; }
-      .compact .awb-number { font-size: 7pt; margin: .5mm 0; }
-      .compact .barcode svg { max-height: 4mm; }
-      .compact .addresses .address-block { padding: 1mm; }
-      .compact .eyebrow,
-      .compact .summary span,
-      .compact .seller span { font-size: 4pt; }
-      .compact .person,
-      .compact .summary b { font-size: 5pt; }
-      .compact .address,
-      .compact .phone,
-      .compact .seller b,
-      .compact .return,
-      .compact .contact { font-size: 4pt; }
-      .compact .summary > div,
-      .compact .info-cell,
-      .compact .seller > div,
-      .compact .return,
-      .compact .contact { padding: 1mm; }
-      .compact .cod { padding: 1mm; }
-      .compact .cod b,
-      .compact .cod strong { font-size: 5pt; }
-      .compact .products { padding: 1mm; }
-      .compact .section-title,
-      .compact table { font-size: 4pt; }
-      .compact th, .compact td { padding: .5mm; }
-
-      .a4 { padding: 6mm; }
-      .a4 .logos { flex-basis: 15mm; height: 15mm; }
-      .a4 .awb { padding: 4mm; }
-      .a4 .awb-number { font-size: 17pt; }
-      .a4 .barcode svg { max-height: 16mm; }
-      .a4 .person { font-size: 12pt; }
-      .a4 .address, .a4 .phone { font-size: 10pt; }
-      .a4 .summary b { font-size: 12pt; }
-      .a4 .summary > div, .a4 .address-block { padding: 4mm; }
-      .a4 .seller b, .a4 .return { font-size: 9pt; }
-      .a4 .contact { font-size: 8pt; }
-      .a4 table { font-size: 10pt; }
-      .a4 th, .a4 td { padding: 2mm; }
     </style>
   `;
 };
@@ -1164,14 +1226,28 @@ const prepareLabels = async (orders) => {
   const detailedOrders = await getDetailedOrders(orders);
   const size = getLabelSize(settings.labelSize);
 
+  const leftLogoData = await imageToDataUrl(shipdropLogo);
+
+  let rightLogoSource =
+    settings.rightLogoMode === "custom" && settings.customLogo
+      ? settings.customLogo
+      : delhiveryLogo;
+
+  let rightLogoData;
+
+  try {
+    rightLogoData = await imageToDataUrl(rightLogoSource);
+  } catch (error) {
+    console.error("Carrier logo loading error:", error);
+    rightLogoData = await imageToDataUrl(delhiveryLogo);
+  }
+
   return {
     settings,
     detailedOrders,
     size,
-    rightLogo:
-      settings.rightLogoMode === "custom" && settings.customLogo
-        ? settings.customLogo
-        : delhiveryLogo,
+    leftLogoData,
+    rightLogoData,
   };
 };
 
@@ -1184,17 +1260,28 @@ export const printShippingLabels = async (
     return;
   }
 
-  let win;
-
   try {
-    const { settings, detailedOrders, size, rightLogo } =
-      await prepareLabels(orders);
+    const {
+      settings,
+      detailedOrders,
+      size,
+      leftLogoData,
+      rightLogoData,
+    } = await prepareLabels(orders);
 
     const html = detailedOrders
-      .map((order) => buildLabelHtml(order, settings, rightLogo, size))
+      .map((order) =>
+        buildLabelHtml(
+          order,
+          settings,
+          leftLogoData,
+          rightLogoData,
+          size
+        )
+      )
       .join("");
 
-    win = window.open("", "_blank", "width=900,height=700");
+    const win = window.open("", "_blank", "width=900,height=700");
 
     if (!win) {
       toast.error("Please allow pop-ups to print");
@@ -1206,16 +1293,16 @@ export const printShippingLabels = async (
       <!doctype html>
       <html>
         <head>
-          <meta charset="utf-8" />
-          <title>${escapeHtml(title)}</title>
+          <meta charset="utf-8">
+          <title>${esc(title)}</title>
           <style>
-            html, body { margin: 0; padding: 0; background: #fff; }
-            @page {
-              size: ${size.widthIn}in ${size.heightIn}in;
-              margin: 0;
-            }
-            @media print {
-              html, body { margin: 0 !important; padding: 0 !important; }
+            html,body{margin:0;padding:0;background:#fff}
+            *{box-sizing:border-box}
+            @page{size:${size.widthIn}in ${size.heightIn}in;margin:0}
+            @media print{
+              html,body{margin:0!important;padding:0!important}
+              .shipping-label{page-break-after:always}
+              .shipping-label:last-child{page-break-after:auto}
             }
           </style>
         </head>
@@ -1224,32 +1311,44 @@ export const printShippingLabels = async (
     `);
     win.document.close();
 
-    const images = Array.from(win.document.images);
+    const printWhenReady = async () => {
+      const images = Array.from(win.document.images);
 
-    await Promise.all(
-      images.map((img) => {
-        if (img.complete) return Promise.resolve();
+      await Promise.all(
+        images.map((img) => {
+          if (img.complete) return Promise.resolve();
 
-        return new Promise((resolve) => {
-          img.onload = resolve;
-          img.onerror = resolve;
-        });
-      })
-    );
+          return new Promise((resolve) => {
+            img.onload = resolve;
+            img.onerror = resolve;
+          });
+        })
+      );
 
-    win.setTimeout(() => {
+      if (win.closed) return;
+
+      win.focus();
+      win.print();
+    };
+
+    win.addEventListener("load", () => {
+      printWhenReady().catch((error) =>
+        console.error("Print readiness error:", error)
+      );
+    }, { once: true });
+
+    window.setTimeout(() => {
       if (!win.closed) {
-        win.focus();
-        win.print();
+        printWhenReady().catch((error) =>
+          console.error("Print readiness error:", error)
+        );
       }
-    }, 400);
+    }, 1000);
 
     toast.success(`${detailedOrders.length} label(s) ready to print`);
   } catch (error) {
     console.error("Print label error:", error);
     toast.error(error?.message || "Unable to print labels");
-
-    if (win && !win.closed) win.close();
   }
 };
 
@@ -1262,17 +1361,23 @@ export const downloadShippingLabels = async (orders) => {
   let staging;
 
   try {
-    const { settings, detailedOrders, size, rightLogo } =
-      await prepareLabels(orders);
+    const {
+      settings,
+      detailedOrders,
+      size,
+      leftLogoData,
+      rightLogoData,
+    } = await prepareLabels(orders);
 
     staging = document.createElement("div");
+
     staging.style.cssText = `
-      position: fixed;
-      left: -10000px;
-      top: 0;
-      width: ${size.widthIn}in;
-      background: #fff;
-      z-index: -1;
+      position:fixed;
+      left:-10000px;
+      top:0;
+      width:${size.widthIn}in;
+      background:#fff;
+      z-index:-1;
     `;
 
     document.body.appendChild(staging);
@@ -1285,26 +1390,25 @@ export const downloadShippingLabels = async (orders) => {
       holder.innerHTML = buildLabelHtml(
         order,
         settings,
-        rightLogo,
+        leftLogoData,
+        rightLogoData,
         size
       );
 
       const label = holder.querySelector(".shipping-label");
 
-      if (label) {
-        staging.appendChild(label);
-        labels.push(label);
-      }
+      if (!label) continue;
+
+      staging.appendChild(label);
+      labels.push(label);
     }
 
     if (!labels.length) {
-      throw new Error("No labels could be generated");
+      throw new Error("No shipping labels could be generated");
     }
 
-    const images = Array.from(staging.querySelectorAll("img"));
-
     await Promise.all(
-      images.map((img) => {
+      Array.from(staging.querySelectorAll("img")).map((img) => {
         if (img.complete && img.naturalWidth > 0) {
           return Promise.resolve();
         }
@@ -1324,8 +1428,8 @@ export const downloadShippingLabels = async (orders) => {
       compress: true,
     });
 
-    for (let index = 0; index < labels.length; index += 1) {
-      const canvas = await html2canvas(labels[index], {
+    for (let i = 0; i < labels.length; i += 1) {
+      const canvas = await html2canvas(labels[i], {
         scale: 3,
         backgroundColor: "#ffffff",
         useCORS: true,
@@ -1334,7 +1438,7 @@ export const downloadShippingLabels = async (orders) => {
 
       const image = canvas.toDataURL("image/jpeg", 0.96);
 
-      if (index > 0) {
+      if (i > 0) {
         pdf.addPage(
           [size.widthMm, size.heightMm],
           size.widthMm > size.heightMm ? "landscape" : "portrait"
@@ -1366,6 +1470,7 @@ export const downloadShippingLabels = async (orders) => {
             .slice(0, 10)}.pdf`;
 
     pdf.save(filename);
+
     toast.success(`${detailedOrders.length} label(s) downloaded`);
   } catch (error) {
     console.error("Download label error:", error);
