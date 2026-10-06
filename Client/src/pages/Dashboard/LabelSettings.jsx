@@ -1,319 +1,215 @@
+
 import { useEffect, useRef, useState } from "react";
 import api from "../../services/api";
-
 import delhiveryLogo from "../../assets/images/delhivery-logo.png";
 
+
 const DEFAULT_SETTINGS = {
-  orderValue: true,
-  codAmount: true,
+  rightLogoMode: "delhivery",
+  customLogo: null,
+
+  fromName: true,
+  fromAddress: true,
+  fromMobile: true,
   buyerMobile: true,
-  shipperMobiles: true,
-  shipperAddress: true,
-  productName: true,
-  servicesTnc: true,
+
   orderId: true,
   orderWeight: true,
+  productDetails: true,
+  returnAddress: true,
+  contactLine: true,
+
   labelSize: "4x6",
 };
 
-const toBool = (value) =>
-  value === true ||
-  value === 1 ||
-  value === "1" ||
-  String(value).toLowerCase() === "true";
-
-const DISPLAY_OPTIONS = [
-  {
-    key: "orderValue",
-    title: "Order value on labels",
-    description: "Shows order value in COD & Prepaid orders.",
-  },
-  {
-    key: "codAmount",
-    title: "COD amount on label",
-    description: "Displays COD amount on the label.",
-  },
-  {
-    key: "buyerMobile",
-    title: "Buyer mobile number",
-    description: "Shows buyer phone number on the label.",
-  },
-  {
-    key: "shipperMobiles",
-    title: "Shipper mobile numbers",
-    description: "Shows shipper mobile & alternate mobile numbers.",
-  },
-  {
-    key: "shipperAddress",
-    title: "Shipper address",
-    description: "Displays shipper address on the label.",
-  },
-  {
-    key: "productName",
-    title: "Product name",
-    description: "Shows product name on the label.",
-  },
-  {
-    key: "servicesTnc",
-    title: "Services T&C",
-    description: "Shows services T&C on the label.",
-  },
-  {
-    key: "orderId",
-    title: "Order ID",
-    description: "Displays order ID on the label.",
-  },
-  {
-    key: "orderWeight",
-    title: "Order weight",
-    description: "Displays total order weight on the label.",
-  },
-];
-
 const LABEL_SIZES = [
-  {
-    value: "4x6",
-    label: '4" × 6"',
-  },
-  {
-    value: "4x4",
-    label: '4" × 4"',
-  },
-  {
-    value: "A4",
-    label: "A4",
-  },
-  {
-    value: "always-ask",
-    label: "Always Ask",
-  },
+  { value: "4x6", label: '4" × 6"', description: "Standard shipping label" },
+  { value: "A4", label: "A4 Size", description: "Full-page printing" },
+  { value: "4x2", label: '4" × 2"', description: "Compact label" },
+  { value: "4x2.5", label: '4" × 2.5"', description: "Medium label" },
+  { value: "3x2", label: '3" × 2"', description: "Small label" },
 ];
-
-const Icon = ({ name, size = 18 }) => {
-  const common = {
-    width: size,
-    height: size,
-    viewBox: "0 0 24 24",
-    fill: "none",
-    stroke: "currentColor",
-    strokeWidth: 1.8,
-    strokeLinecap: "round",
-    strokeLinejoin: "round",
-  };
-
-  if (name === "tag") {
-    return (
-      <svg {...common}>
-        <path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0l-7.2-7.2a2 2 0 0 1 0-2.8l7.2-7.2A2 2 0 0 1 12 2.8h7.2a2 2 0 0 1 2 2V12a2 2 0 0 1-.6 1.4Z" />
-        <circle cx="16.5" cy="7.5" r="1.2" />
-      </svg>
-    );
-  }
-
-  if (name === "upload") {
-    return (
-      <svg {...common}>
-        <path d="M12 16V4" />
-        <path d="m7 9 5-5 5 5" />
-        <path d="M5 20h14" />
-      </svg>
-    );
-  }
-
-  if (name === "trash") {
-    return (
-      <svg {...common}>
-        <path d="M3 6h18" />
-        <path d="M8 6V4h8v2" />
-        <path d="m19 6-1 14H6L5 6" />
-        <path d="M10 11v5" />
-        <path d="M14 11v5" />
-      </svg>
-    );
-  }
-
-  if (name === "file") {
-    return (
-      <svg {...common}>
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
-        <path d="M14 2v6h6" />
-        <path d="M8 13h8" />
-        <path d="M8 17h5" />
-      </svg>
-    );
-  }
-
-  if (name === "save") {
-    return (
-      <svg {...common}>
-        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z" />
-        <path d="M17 21v-8H7v8" />
-        <path d="M7 3v5h8" />
-      </svg>
-    );
-  }
-
-  if (name === "check") {
-    return (
-      <svg {...common}>
-        <path d="m5 12 4 4L19 6" />
-      </svg>
-    );
-  }
-
-  if (name === "chevron") {
-    return (
-      <svg {...common}>
-        <path d="m6 9 6 6 6-6" />
-      </svg>
-    );
-  }
-
-  if (name === "alert") {
-    return (
-      <svg {...common}>
-        <path d="M12 9v4" />
-        <path d="M12 17h.01" />
-        <path d="M10.3 3.8 2.8 17a2 2 0 0 0 1.7 3h15a2 2 0 0 0 1.7-3L13.7 3.8a2 2 0 0 0-3.4 0Z" />
-      </svg>
-    );
-  }
-
-  return null;
-};
-
-const Toggle = ({ enabled, onChange }) => {
-  return (
-    <button
-      type="button"
-      onClick={onChange}
-      aria-pressed={enabled}
-      className={`relative h-[26px] w-[46px] shrink-0 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-100 ${
-        enabled ? "bg-emerald-500" : "bg-slate-200"
-      }`}
-    >
-      <span
-        className={`absolute top-[3px] h-5 w-5 rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,0.15)] transition-all duration-200 ${
-          enabled ? "left-[23px]" : "left-[3px]"
-        }`}
-      />
-    </button>
-  );
-};
 
 function getCurrentUser() {
-  const possibleKeys = [
-    "user",
-    "currentUser",
-    "loggedInUser",
-    "shipdrop_user",
-  ];
+  const keys = ["user", "currentUser", "loggedInUser", "shipdrop_user"];
 
-  for (const key of possibleKeys) {
+  for (const key of keys) {
     try {
       const raw = localStorage.getItem(key);
-
       if (!raw) continue;
 
       const parsed = JSON.parse(raw);
-
-      if (parsed?.id) {
-        return parsed;
-      }
-
-      if (parsed?.user?.id) {
-        return parsed.user;
-      }
-    } catch (error) {
-      // Ignore invalid localStorage values
+      if (parsed?.id) return parsed;
+      if (parsed?.user?.id) return parsed.user;
+    } catch {
+      // Ignore invalid localStorage values.
     }
   }
 
   return null;
 }
 
+function Toggle({ checked, onChange, disabled = false }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      disabled={disabled}
+      onClick={() => onChange(!checked)}
+      className={`relative h-6 w-11 shrink-0 rounded-full transition ${
+        checked ? "bg-blue-600" : "bg-slate-300"
+      } disabled:cursor-not-allowed disabled:opacity-50`}
+    >
+      <span
+        className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-all ${
+          checked ? "left-[22px]" : "left-0.5"
+        }`}
+      />
+    </button>
+  );
+}
+
+function SettingRow({ title, description, checked, onChange, disabled }) {
+  return (
+    <div className="flex items-center justify-between gap-4 border-b border-slate-100 py-3 last:border-b-0">
+      <div className="min-w-0">
+        <p className="text-sm font-medium text-slate-700">{title}</p>
+        {description && (
+          <p className="mt-1 text-xs leading-5 text-slate-400">
+            {description}
+          </p>
+        )}
+      </div>
+
+      <div className="flex shrink-0 items-center gap-3">
+        <span
+          className={`hidden text-xs sm:block ${
+            checked ? "text-blue-600" : "text-slate-400"
+          }`}
+        >
+          {checked ? "Visible" : "Hidden"}
+        </span>
+
+        <Toggle
+          checked={checked}
+          onChange={onChange}
+          disabled={disabled}
+        />
+      </div>
+    </div>
+  );
+}
+
+function Section({ title, description, children }) {
+  return (
+    <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div className="border-b border-slate-100 px-5 py-4">
+        <h2 className="text-sm font-semibold text-slate-800">{title}</h2>
+        {description && (
+          <p className="mt-1 text-xs leading-5 text-slate-400">
+            {description}
+          </p>
+        )}
+      </div>
+
+      <div className="px-5 py-1">{children}</div>
+    </section>
+  );
+}
+
 function LabelSettings() {
   const fileInputRef = useRef(null);
+  const objectUrlRef = useRef(null);
 
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
-  const [customLogo, setCustomLogo] = useState(null);
+  const [logoPreview, setLogoPreview] = useState(null);
+  const [logoData, setLogoData] = useState(null);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
 
-  /*
-   * Load settings from database
-   */
+  const updateSetting = (key, value) => {
+    setSettings((previous) => ({
+      ...previous,
+      [key]: value,
+    }));
+
+    setSaved(false);
+    setNotice("");
+    setError("");
+  };
+
+  const getUserId = () => {
+    const user = getCurrentUser();
+
+    if (!user?.id) {
+      throw new Error("User ID not found. Please log in again.");
+    }
+
+    return user.id;
+  };
+
   const loadSettings = async () => {
     try {
       setLoading(true);
       setError("");
+      setNotice("");
 
-      const user = getCurrentUser();
-      const userId = user?.id;
+      const userId = getUserId();
 
-      if (!userId) {
-        throw new Error("User ID not found. Please login again.");
-      }
+    const response = await api.get("/label-settings", {
+  params: { user_id: userId },
+});
 
-      const response = await api.get(
-        "/label-settings",
-        {
-          params: {
-            user_id: userId,
-          },
-        }
-      );
-
-      if (!response.data?.success || !response.data?.settings) {
+      if (response.data?.success === false) {
         throw new Error(
-          response.data?.message || "Unable to load label settings."
+          response.data.message || "Unable to load label settings."
         );
       }
 
-      const data = response.data.settings;
+      const data = response.data?.settings;
 
-     const toBool = (value) =>
-  value === true ||
-  value === 1 ||
-  value === "1" ||
-  String(value).toLowerCase() === "true";
-
-setSettings({
-  orderValue: toBool(data.order_value),
-  codAmount: toBool(data.cod_amount),
-  buyerMobile: toBool(data.buyer_mobile),
-  shipperMobiles: toBool(data.shipper_mobiles),
-  shipperAddress: toBool(data.shipper_address),
-  productName: toBool(data.product_name),
-  servicesTnc: toBool(data.services_tnc),
-  orderId: toBool(data.order_id),
-  orderWeight: toBool(data.order_weight),
-  labelSize: data.label_size || "4x6",
-});
-
-      if (data.custom_logo) {
-        setCustomLogo({
-          file: null,
-          preview: data.custom_logo,
-          dataUrl: data.custom_logo,
-          name: "Saved custom logo",
-          saved: true,
-        });
-      } else {
-        setCustomLogo(null);
+      if (!data) {
+        throw new Error("The server did not return label settings.");
       }
 
-      setSaved(false);
+      // Supports the new setting names and the old API field names.
+      setSettings({
+        ...DEFAULT_SETTINGS,
+        rightLogoMode:
+          data.rightLogoMode ||
+          (data.custom_logo || data.customLogo ? "custom" : "delhivery"),
+
+        fromName: data.fromName ?? data.from_name ?? true,
+        fromAddress:
+          data.fromAddress ?? data.from_address ?? data.shipper_address ?? true,
+        fromMobile:
+          data.fromMobile ?? data.from_mobile ?? data.shipper_mobiles ?? true,
+        buyerMobile:
+          data.buyerMobile ?? data.buyer_mobile ?? true,
+
+        orderId: data.orderId ?? data.order_id ?? true,
+        orderWeight: data.orderWeight ?? data.order_weight ?? true,
+        productDetails: data.productDetails ?? data.product_details ?? true,
+        returnAddress: data.returnAddress ?? data.return_address ?? true,
+        contactLine: data.contactLine ?? data.contact_line ?? true,
+
+        labelSize: data.labelSize ?? data.label_size ?? "4x6",
+      });
+
+      const storedLogo = data.customLogo ?? data.custom_logo ?? null;
+
+      setLogoData(storedLogo);
+      setLogoPreview(storedLogo);
     } catch (err) {
       console.error("Load label settings error:", err);
-
       setError(
-        err?.response?.data?.message ||
-          err?.message ||
+        err.response?.data?.message ||
+          err.message ||
           "Unable to load label settings."
       );
     } finally {
@@ -323,520 +219,559 @@ setSettings({
 
   useEffect(() => {
     loadSettings();
-  }, []);
 
-  /*
-   * Cleanup object URLs
-   */
-  useEffect(() => {
     return () => {
-      if (
-        customLogo?.preview &&
-        customLogo?.preview.startsWith("blob:")
-      ) {
-        URL.revokeObjectURL(customLogo.preview);
+      if (objectUrlRef.current) {
+        URL.revokeObjectURL(objectUrlRef.current);
       }
     };
-  }, [customLogo]);
+  }, []);
 
-  /*
-   * Update a setting
-   */
-  const updateSetting = (key, value) => {
-    setSettings((prev) => ({
-      ...prev,
-      [key]: value,
-    }));
-
-    setSaved(false);
-    setError("");
-  };
-
-  /*
-   * Toggle
-   */
-  const handleToggle = (key) => {
-    setSettings((prev) => ({
-      ...prev,
-      [key]: !prev[key],
-    }));
-
-    setSaved(false);
-    setError("");
-  };
-
-  /*
-   * Convert uploaded file to base64
-   * so it can be stored in DB.
-   */
-  const fileToDataUrl = (file) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = () =>
-        reject(new Error("Unable to read logo file."));
-
-      reader.readAsDataURL(file);
-    });
-  };
-
-  /*
-   * Upload custom logo
-   */
-  const handleLogoUpload = async (event) => {
+  const handleLogoUpload = (event) => {
     const file = event.target.files?.[0];
-
     if (!file) return;
 
-    const allowedTypes = [
-      "image/png",
-      "image/jpeg",
-      "image/jpg",
-      "image/webp",
-    ];
+    const allowedTypes = ["image/png", "image/jpeg", "image/webp"];
 
     if (!allowedTypes.includes(file.type)) {
-      alert("Please upload a PNG, JPG or WEBP image.");
+      setError("Please upload a PNG, JPG or WEBP image.");
       event.target.value = "";
       return;
     }
 
     if (file.size > 2 * 1024 * 1024) {
-      alert("Logo size must be less than 2 MB.");
+      setError("Logo size must not exceed 2 MB.");
       event.target.value = "";
       return;
     }
 
-    try {
-      if (
-        customLogo?.preview &&
-        customLogo.preview.startsWith("blob:")
-      ) {
-        URL.revokeObjectURL(customLogo.preview);
-      }
-
-      const preview = URL.createObjectURL(file);
-      const dataUrl = await fileToDataUrl(file);
-
-      setCustomLogo({
-        file,
-        preview,
-        dataUrl,
-        name: file.name,
-        saved: false,
-      });
-
-      setSaved(false);
-      setError("");
-    } catch (err) {
-      console.error("Logo upload error:", err);
-
-      alert("Unable to load this logo.");
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current);
     }
 
+    const preview = URL.createObjectURL(file);
+    objectUrlRef.current = preview;
+
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      setLogoData(reader.result);
+      setLogoPreview(preview);
+      updateSetting("rightLogoMode", "custom");
+      setError("");
+    };
+
+    reader.onerror = () => {
+      setError("Unable to read the selected logo.");
+    };
+
+    reader.readAsDataURL(file);
     event.target.value = "";
   };
 
-  /*
-   * Remove custom logo
-   */
-  const handleRemoveLogo = () => {
-    if (
-      customLogo?.preview &&
-      customLogo.preview.startsWith("blob:")
-    ) {
-      URL.revokeObjectURL(customLogo.preview);
+  const removeCustomLogo = () => {
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current);
+      objectUrlRef.current = null;
     }
 
-    setCustomLogo(null);
-    setSaved(false);
-    setError("");
+    setLogoPreview(null);
+    setLogoData(null);
+    updateSetting("rightLogoMode", "delhivery");
   };
 
-  /*
-   * Cancel changes
-   * Reload original values from DB.
-   */
   const handleCancel = () => {
     loadSettings();
   };
 
-  /*
-   * Save settings
-   */
   const handleSave = async () => {
     try {
       setSaving(true);
-      setError("");
       setSaved(false);
+      setError("");
+      setNotice("");
 
-      const user = getCurrentUser();
-      const userId = user?.id;
-
-      if (!userId) {
-        throw new Error("User ID not found. Please login again.");
-      }
+      const userId = getUserId();
 
       const payload = {
         user_id: userId,
 
-        order_value: settings.orderValue,
-        cod_amount: settings.codAmount,
-        buyer_mobile: settings.buyerMobile,
-        shipper_mobiles: settings.shipperMobiles,
-        shipper_address: settings.shipperAddress,
-        product_name: settings.productName,
-        services_tnc: settings.servicesTnc,
-        order_id: settings.orderId,
-        order_weight: settings.orderWeight,
+        rightLogoMode: settings.rightLogoMode,
+        customLogo: settings.rightLogoMode === "custom" ? logoData : null,
 
-        label_size: settings.labelSize,
+        fromName: settings.fromName,
+        fromAddress: settings.fromAddress,
+        fromMobile: settings.fromMobile,
+        buyerMobile: settings.buyerMobile,
 
-        custom_logo: customLogo?.dataUrl || null,
+        orderId: settings.orderId,
+        orderWeight: settings.orderWeight,
+        productDetails: settings.productDetails,
+        returnAddress: settings.returnAddress,
+        contactLine: settings.contactLine,
+
+        labelSize: settings.labelSize,
       };
 
-      const response = await api.put(
-        "/label-settings",
-        payload
-      );
-
-      if (!response.data?.success || !response.data?.settings) {
+    const response = await api.put("/label-settings", payload);
+    
+      if (response.data?.success === false) {
         throw new Error(
-          response.data?.message ||
-            "Unable to save label settings."
+          response.data.message || "Unable to save label settings."
         );
       }
 
-      const data = response.data.settings;
-
-      setSettings({
-  orderValue: toBool(data.order_value),
-  codAmount: toBool(data.cod_amount),
-  buyerMobile: toBool(data.buyer_mobile),
-  shipperMobiles: toBool(data.shipper_mobiles),
-  shipperAddress: toBool(data.shipper_address),
-  productName: toBool(data.product_name),
-  servicesTnc: toBool(data.services_tnc),
-  orderId: toBool(data.order_id),
-  orderWeight: toBool(data.order_weight),
-  labelSize: data.label_size || "4x6",
-});
-
-      if (data.custom_logo) {
-        setCustomLogo({
-          file: null,
-          preview: data.custom_logo,
-          dataUrl: data.custom_logo,
-          name: "Saved custom logo",
-          saved: true,
-        });
-      } else {
-        setCustomLogo(null);
-      }
-
       setSaved(true);
-
-      setTimeout(() => {
-        setSaved(false);
-      }, 3000);
+      setNotice("Settings saved successfully.");
     } catch (err) {
       console.error("Save label settings error:", err);
 
       setError(
-        err?.response?.data?.message ||
-          err?.message ||
-          "Unable to save label settings."
+        err.response?.data?.message ||
+          err.message ||
+          "Unable to save settings. The backend may need updating for the new fields."
       );
     } finally {
       setSaving(false);
     }
   };
 
-  /*
-   * Current logo:
-   * custom logo if uploaded,
-   * otherwise default Delhivery logo.
-   */
-  const currentLogo = customLogo?.preview || delhiveryLogo;
+  const isBusy = loading || saving;
 
   return (
-    <div className="w-full pb-24">
-      {/* ================= HEADER ================= */}
-      <div className="mb-5">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
-            <Icon name="tag" size={19} />
-          </div>
-
+    <div className="min-h-full w-full bg-slate-50/60 px-3 pb-24 pt-4 sm:px-6 sm:pt-6 lg:px-8">
+      <div className="mx-auto max-w-5xl">
+        {/* Page heading */}
+        <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
           <div>
-            <h1 className="text-[21px] font-semibold tracking-tight text-slate-800">
-              Label Settings
-            </h1>
-
-            <p className="mt-0.5 text-[12px] text-slate-400">
-              Customize the information shown on your shipping labels.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* ================= ERROR MESSAGE ================= */}
-      {error && (
-        <div className="mb-4 flex items-start gap-2 rounded-lg border border-rose-100 bg-rose-50 px-3.5 py-3 text-[11px] text-rose-600">
-          <span className="mt-0.5 shrink-0">
-            <Icon name="alert" size={14} />
-          </span>
-
-          <span>{error}</span>
-        </div>
-      )}
-
-      {/* ================= RIGHT SIDE LOGO ================= */}
-      <section className="mb-4 rounded-xl border border-slate-200 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.03)]">
-        <div className="border-b border-slate-100 px-4 py-3 sm:px-5">
-          <h2 className="text-[14px] font-semibold text-slate-800">
-            Right Side Logo
-          </h2>
-
-          <p className="mt-0.5 text-[11px] text-slate-400">
-            Delhivery logo by default. Upload your logo to replace it.
-          </p>
-        </div>
-
-        <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center">
-          {/* Logo Preview */}
-          <div className="flex h-[90px] w-full shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-50/40 px-4 sm:w-[250px]">
-            {loading ? (
-              <div className="text-[11px] text-slate-400">
-                Loading logo...
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm">
+                <svg
+                  width="22"
+                  height="22"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                >
+                  <path d="M3 7h18M5 7V4h14v3M5 7v13h14V7M9 11h6M9 15h6" />
+                </svg>
               </div>
-            ) : (
-              <img
-                src={currentLogo}
-                alt="Right side logo"
-                className="max-h-[48px] max-w-[75%] object-contain"
-              />
-            )}
-          </div>
 
-          {/* Logo Controls */}
-          <div className="min-w-0 flex-1">
-            <p className="text-[12px] font-medium text-slate-700">
-              {customLogo
-                ? "Custom logo"
-                : "Delhivery by default"}
-            </p>
-
-            <p className="mt-0.5 truncate text-[10.5px] text-slate-400">
-              {customLogo
-                ? customLogo.name
-                : "Default Delhivery logo will appear on the right side of your labels."}
-            </p>
-
-            <div className="mt-3 flex flex-wrap gap-2">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp"
-                className="hidden"
-                onChange={handleLogoUpload}
-              />
-
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={loading || saving}
-                className="inline-flex h-8 items-center gap-1.5 rounded-md border border-blue-200 bg-white px-3 text-[11px] font-medium text-blue-600 transition hover:border-blue-300 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <Icon name="upload" size={14} />
-
-                {customLogo ? "Change Logo" : "Upload Logo"}
-              </button>
-
-              {customLogo && (
-                <button
-                  type="button"
-                  onClick={handleRemoveLogo}
-                  disabled={saving}
-                  className="inline-flex h-8 items-center gap-1.5 rounded-md border border-rose-200 bg-white px-3 text-[11px] font-medium text-rose-600 transition hover:border-rose-300 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <Icon name="trash" size={13} />
-                  Remove
-                </button>
-              )}
+              <div>
+                <h1 className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
+                  Label Settings
+                </h1>
+                <p className="mt-1 text-xs text-slate-500 sm:text-sm">
+                  Customize your shipping label layout and information.
+                </p>
+              </div>
             </div>
+          </div>
 
-            <p className="mt-2 text-[10px] text-slate-400">
-              PNG, JPG or WEBP · Maximum 2 MB
-            </p>
+          <div className="hidden gap-2 sm:flex">
+            <button
+              type="button"
+              onClick={handleCancel}
+              disabled={isBusy}
+              className="rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+            >
+              Reset Changes
+            </button>
+
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={isBusy}
+              className="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:opacity-50"
+            >
+              {saving ? "Saving..." : "Save Settings"}
+            </button>
           </div>
         </div>
-      </section>
 
-      {/* ================= DISPLAY OPTIONS ================= */}
-      <section className="mb-4 rounded-xl border border-slate-200 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.03)]">
-        <div className="border-b border-slate-100 px-4 py-3.5 sm:px-5">
-          <h2 className="text-[14px] font-semibold text-slate-800">
-            Display Options
-          </h2>
+        {error && (
+          <div
+            role="alert"
+            className="mb-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+          >
+            {error}
+          </div>
+        )}
 
-          <p className="mt-0.5 text-[11px] text-slate-400">
-            Choose which information should appear on your labels.
-          </p>
-        </div>
+        {notice && !error && (
+          <div
+            role="status"
+            className="mb-5 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
+          >
+            {notice}
+          </div>
+        )}
 
-        <div className="p-3 sm:p-4">
-          <div className="space-y-2">
-            {DISPLAY_OPTIONS.map((option) => {
-              const enabled = Boolean(settings[option.key]);
+        {loading ? (
+          <div className="rounded-xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-500">
+            Loading label settings...
+          </div>
+        ) : (
+          <div className="space-y-5">
+            {/* Logo settings */}
+            <Section
+              title="Branding & Logos"
+              description="ParcelDrop branding stays fixed on the left. Customize the logo on the right."
+            >
+              <div className="grid gap-4 py-4 md:grid-cols-2">
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Left Side · Fixed Logo
+                  </p>
 
-              return (
-                <div
-                  key={option.key}
-                  className="flex min-h-[62px] items-center justify-between gap-4 rounded-lg border border-slate-200 px-3.5 py-2.5 transition hover:border-slate-300 hover:bg-slate-50/30 sm:px-4"
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[12px] font-medium text-slate-700 sm:text-[13px]">
-                      {option.title}
-                    </p>
-
-                    <p className="mt-0.5 text-[10.5px] leading-4 text-slate-400 sm:text-[11px]">
-                      {option.description}
-                    </p>
+                  <div className="flex h-24 items-center justify-center rounded-lg border border-slate-200 bg-white">
+                    <span className="text-2xl font-extrabold tracking-tight text-[#008dd2]">
+                      ParcelDrop
+                    </span>
                   </div>
 
-                  <div className="flex shrink-0 items-center gap-2.5">
-                    <span
-                      className={`hidden text-[10.5px] font-medium sm:block ${
-                        enabled
-                          ? "text-emerald-500"
-                          : "text-slate-400"
-                      }`}
-                    >
-                      {enabled ? "Active" : "Inactive"}
-                    </span>
+                  <p className="mt-2 text-xs text-slate-500">
+                    ParcelDrop branding is fixed and cannot be changed here.
+                  </p>
+                </div>
 
-                    <Toggle
-                      enabled={enabled}
-                      onChange={() => handleToggle(option.key)}
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Right Side · Customizable Logo
+                  </p>
+
+                  <div className="flex h-24 items-center justify-center rounded-lg border border-slate-200 bg-white p-3">
+                    <img
+                      src={
+                        settings.rightLogoMode === "custom" && logoPreview
+                          ? logoPreview
+                          : delhiveryLogo
+                      }
+                      alt="Selected right-side logo"
+                      className="max-h-16 max-w-full object-contain"
                     />
                   </div>
+
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-700"
+                    >
+                      Upload Custom Logo
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={removeCustomLogo}
+                      disabled={settings.rightLogoMode !== "custom"}
+                      className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      Use Delhivery Default
+                    </button>
+
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp"
+                      onChange={handleLogoUpload}
+                      className="hidden"
+                    />
+                  </div>
+
+                  <p className="mt-2 text-xs text-slate-400">
+                    PNG, JPG or WEBP · Maximum 2 MB
+                  </p>
                 </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
+              </div>
+            </Section>
 
-      {/* ================= DEFAULT LABEL SIZE ================= */}
-      <section className="mb-5 rounded-xl border border-slate-200 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.03)]">
-        <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
-          <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
-              <Icon name="file" size={17} />
-            </div>
-
-            <div className="min-w-0">
-              <h2 className="text-[13px] font-semibold text-slate-800">
-                Default Label Size
-              </h2>
-
-              <p className="mt-0.5 text-[10.5px] leading-4 text-slate-400">
-                Choose the default size used while printing labels.
-              </p>
-            </div>
-          </div>
-
-          <div className="relative w-full sm:w-[190px]">
-            <select
-              value={settings.labelSize}
-              onChange={(event) =>
-                updateSetting("labelSize", event.target.value)
-              }
-              disabled={loading || saving}
-              className="h-10 w-full appearance-none rounded-lg border border-slate-200 bg-white px-3 pr-9 text-[12px] font-medium text-slate-700 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-50"
+            {/* From / To */}
+            <Section
+              title="From & To Details"
+              description="Control sender details and buyer mobile visibility."
             >
-              {LABEL_SIZES.map((size) => (
-                <option key={size.value} value={size.value}>
-                  {size.label}
-                </option>
-              ))}
-            </select>
+              <div className="grid gap-6 py-3 md:grid-cols-2">
+                <div>
+                  <div className="mb-1 border-b border-slate-100 pb-3 pt-2">
+                    <h3 className="text-sm font-semibold text-slate-800">
+                      From · Sender
+                    </h3>
+                    <p className="mt-1 text-xs text-slate-400">
+                      Each sender field can be hidden separately.
+                    </p>
+                  </div>
 
-            <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
-              <Icon name="chevron" size={14} />
-            </div>
+                  <SettingRow
+                    title="Sender Name"
+                    checked={settings.fromName}
+                    onChange={(value) => updateSetting("fromName", value)}
+                  />
+
+                  <SettingRow
+                    title="Sender Address"
+                    checked={settings.fromAddress}
+                    onChange={(value) => updateSetting("fromAddress", value)}
+                  />
+
+                  <SettingRow
+                    title="Sender Mobile Number"
+                    checked={settings.fromMobile}
+                    onChange={(value) => updateSetting("fromMobile", value)}
+                  />
+                </div>
+
+                <div>
+                  <div className="mb-1 border-b border-slate-100 pb-3 pt-2">
+                    <h3 className="text-sm font-semibold text-slate-800">
+                      To · Buyer
+                    </h3>
+                    <p className="mt-1 text-xs text-slate-400">
+                      Buyer name and address are always visible.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-3 border-b border-slate-100 py-3">
+                    <div>
+                      <p className="text-sm font-medium text-slate-700">
+                        Buyer Name
+                      </p>
+                      <p className="mt-1 text-xs text-emerald-600">
+                        Always visible · Fixed
+                      </p>
+                    </div>
+                    <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
+                      Required
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-3 border-b border-slate-100 py-3">
+                    <div>
+                      <p className="text-sm font-medium text-slate-700">
+                        Buyer Address
+                      </p>
+                      <p className="mt-1 text-xs text-emerald-600">
+                        Always visible · Fixed
+                      </p>
+                    </div>
+                    <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
+                      Required
+                    </span>
+                  </div>
+
+                  <SettingRow
+                    title="Buyer Mobile Number"
+                    checked={settings.buyerMobile}
+                    onChange={(value) => updateSetting("buyerMobile", value)}
+                  />
+                </div>
+              </div>
+            </Section>
+
+            {/* AWB / order information */}
+            <Section
+              title="Shipment & Order Information"
+              description="AWB and barcode remain part of the label. PCS number is not included."
+            >
+              <div className="grid gap-4 py-4 md:grid-cols-2">
+                <div className="rounded-lg border border-slate-200 p-4">
+                  <p className="text-sm font-semibold text-slate-800">
+                    AWB Number
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Always shown with the shipment barcode.
+                  </p>
+                  <span className="mt-3 inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
+                    Always visible
+                  </span>
+                </div>
+
+                <div className="rounded-lg border border-slate-200 p-4">
+                  <p className="text-sm font-semibold text-slate-800">
+                    COD / Prepaid
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Payment type is always shown on the label.
+                  </p>
+                  <span className="mt-3 inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
+                    Always visible
+                  </span>
+                </div>
+              </div>
+
+              <SettingRow
+                title="Order ID"
+                description="Show or hide the seller's order reference."
+                checked={settings.orderId}
+                onChange={(value) => updateSetting("orderId", value)}
+              />
+
+              <SettingRow
+                title="Billed Weight"
+                description="Show or hide the shipment weight."
+                checked={settings.orderWeight}
+                onChange={(value) => updateSetting("orderWeight", value)}
+              />
+
+              <div className="flex items-center justify-between gap-3 border-t border-slate-100 py-3">
+                <div>
+                  <p className="text-sm font-medium text-slate-700">
+                    Seller Details
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Seller information and GSTIN stay visible.
+                  </p>
+                </div>
+                <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
+                  Always visible
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between gap-3 border-t border-slate-100 py-3">
+                <div>
+                  <p className="text-sm font-medium text-slate-700">
+                    Invoice Number
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Keep the invoice number value blank for now.
+                  </p>
+                </div>
+                <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
+                  Blank
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between gap-3 border-t border-slate-100 py-3">
+                <div>
+                  <p className="text-sm font-medium text-slate-700">
+                    Date
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    The label should display the appropriate date automatically.
+                  </p>
+                </div>
+                <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
+                  Automatic
+                </span>
+              </div>
+            </Section>
+
+            {/* Product details */}
+            <Section
+              title="Product Details"
+              description="Show or hide the entire product information section on the shipping label."
+            >
+              <SettingRow
+                title="Show Product Details"
+                description="Includes product name, rate, quantity and total."
+                checked={settings.productDetails}
+                onChange={(value) =>
+                  updateSetting("productDetails", value)
+                }
+              />
+            </Section>
+
+            {/* Return details */}
+            <Section
+              title="Return Address & Contact"
+              description="These two bottom sections can be controlled independently."
+            >
+              <SettingRow
+                title="Return Address"
+                description="Show or hide the return address at the bottom of the label."
+                checked={settings.returnAddress}
+                onChange={(value) => updateSetting("returnAddress", value)}
+              />
+
+              <SettingRow
+                title="Complaints & Queries Contact"
+                description="Show or hide: For complaints & queries please contact 8766066070, 0141-4797120"
+                checked={settings.contactLine}
+                onChange={(value) => updateSetting("contactLine", value)}
+              />
+            </Section>
+
+            {/* Label size */}
+            <Section
+              title="Label Size"
+              description="Choose the default paper size for label printing."
+            >
+              <div className="grid gap-3 py-4 sm:grid-cols-2 lg:grid-cols-3">
+                {LABEL_SIZES.map((size) => {
+                  const selected = settings.labelSize === size.value;
+
+                  return (
+                    <button
+                      type="button"
+                      key={size.value}
+                      onClick={() => updateSetting("labelSize", size.value)}
+                      aria-pressed={selected}
+                      className={`rounded-xl border p-4 text-left transition ${
+                        selected
+                          ? "border-blue-500 bg-blue-50/60 ring-1 ring-blue-500"
+                          : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <span className="text-base font-semibold text-slate-800">
+                          {size.label}
+                        </span>
+
+                        <span
+                          className={`flex h-5 w-5 items-center justify-center rounded-full border ${
+                            selected
+                              ? "border-blue-600 bg-blue-600 text-white"
+                              : "border-slate-300 text-transparent"
+                          }`}
+                        >
+                          <svg
+                            width="12"
+                            height="12"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="3"
+                          >
+                            <path d="m5 12 4 4L19 6" />
+                          </svg>
+                        </span>
+                      </div>
+
+                      <p className="mt-2 text-xs text-slate-500">
+                        {size.description}
+                      </p>
+                    </button>
+                  );
+                })}
+              </div>
+            </Section>
+          </div>
+        )}
+
+        {/* Mobile actions */}
+        <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-200 bg-white p-3 shadow-lg sm:hidden">
+          <div className="mx-auto flex max-w-5xl gap-2">
+            <button
+              type="button"
+              onClick={handleCancel}
+              disabled={isBusy}
+              className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-3 text-sm font-medium text-slate-600 disabled:opacity-50"
+            >
+              Reset
+            </button>
+
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={isBusy}
+              className="flex-1 rounded-lg bg-blue-600 px-3 py-3 text-sm font-semibold text-white disabled:opacity-50"
+            >
+              {saving ? "Saving..." : "Save Settings"}
+            </button>
           </div>
         </div>
-      </section>
-
-      {/* ================= DESKTOP ACTIONS ================= */}
-      <div className="hidden items-center justify-end gap-2 sm:flex">
-        <button
-          type="button"
-          onClick={handleCancel}
-          disabled={loading || saving}
-          className="h-9 rounded-lg border border-slate-200 bg-white px-4 text-[11px] font-medium text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          Cancel
-        </button>
-
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={loading || saving}
-          className="inline-flex h-9 items-center gap-2 rounded-lg bg-blue-600 px-4 text-[11px] font-semibold text-white shadow-sm transition hover:bg-blue-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          <Icon name="save" size={14} />
-
-          {saving
-            ? "Saving..."
-            : saved
-            ? "Saved"
-            : "Save Changes"}
-        </button>
       </div>
-
-      {/* ================= MOBILE ACTIONS ================= */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-200 bg-white px-3 py-3 shadow-[0_-3px_15px_rgba(15,23,42,0.06)] sm:hidden">
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={handleCancel}
-            disabled={loading || saving}
-            className="h-10 flex-1 rounded-lg border border-slate-200 bg-white text-[11px] font-medium text-slate-600 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Cancel
-          </button>
-
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={loading || saving}
-            className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-lg bg-blue-600 text-[11px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            <Icon name="save" size={14} />
-
-            {saving
-              ? "Saving..."
-              : saved
-              ? "Saved"
-              : "Save Changes"}
-          </button>
-        </div>
-      </div>
-
-      {/* ================= SAVED MESSAGE ================= */}
-      {saved && (
-        <div className="fixed right-5 top-24 z-[100] flex items-center gap-2 rounded-lg border border-emerald-100 bg-white px-3.5 py-2.5 text-[11px] font-medium text-slate-700 shadow-lg">
-          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-50 text-emerald-500">
-            <Icon name="check" size={12} />
-          </span>
-
-          Label settings saved.
-        </div>
-      )}
     </div>
   );
 }

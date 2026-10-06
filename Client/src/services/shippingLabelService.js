@@ -7,27 +7,26 @@ import api from "./api";
 import shipdropLogo from "../assets/images/shipdrop-logo.png";
 import delhiveryLogo from "../assets/images/delhivery-logo.png";
 
-/* =========================================================
-   DEFAULT LABEL SETTINGS
-========================================================= */
-
-const DEFAULT_LABEL_SETTINGS = {
+export const DEFAULT_LABEL_SETTINGS = {
   orderValue: true,
   codAmount: true,
   buyerMobile: true,
   shipperMobiles: true,
   shipperAddress: true,
+  fromName: true,
+  fromAddress: true,
+  fromMobile: true,
   productName: true,
-  servicesTnc: true,
-  orderId: true,
-  orderWeight: true,
+  productDetails: true,
+  servicesTnc: false,
+  orderId: false,
+  orderWeight: false,
+  returnAddress: true,
+  contactLine: true,
+  rightLogoMode: "delhivery",
   labelSize: "4x6",
   customLogo: null,
 };
-
-/* =========================================================
-   BASIC HELPERS
-========================================================= */
 
 const text = (value, fallback = "—") => {
   if (
@@ -38,8 +37,16 @@ const text = (value, fallback = "—") => {
     return fallback;
   }
 
-  return String(value);
+  return String(value).trim();
 };
+
+const first = (...values) =>
+  values.find(
+    (value) =>
+      value !== undefined &&
+      value !== null &&
+      String(value).trim() !== ""
+  );
 
 const escapeHtml = (value) =>
   String(value ?? "")
@@ -49,18 +56,8 @@ const escapeHtml = (value) =>
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
 
-/* =========================================================
-   STORED USER
-========================================================= */
-
 const getStoredUser = () => {
-  const keys = [
-    "user",
-    "currentUser",
-    "authUser",
-  ];
-
-  for (const key of keys) {
+  for (const key of ["user", "currentUser", "authUser"]) {
     const raw = localStorage.getItem(key);
 
     if (!raw) continue;
@@ -68,14 +65,11 @@ const getStoredUser = () => {
     try {
       const user = JSON.parse(raw);
 
-      if (
-        user &&
-        typeof user === "object"
-      ) {
+      if (user && typeof user === "object") {
         return user;
       }
     } catch {
-      // Ignore invalid localStorage value
+      // Ignore invalid cached user data.
     }
   }
 
@@ -85,2475 +79,1469 @@ const getStoredUser = () => {
 const getUserId = () => {
   const user = getStoredUser();
 
-  if (!user) {
-    return null;
-  }
-
-  return (
-    user?.id ||
-    user?.user_id ||
-    user?.userId ||
-    null
-  );
+  return user?.id || user?.user_id || user?.userId || null;
 };
-
-/* =========================================================
-   ACCOUNT / SELLER NAME
-========================================================= */
-
-const getAccountSellerName = () => {
-  const user = getStoredUser();
-
-  if (!user) {
-    return "";
-  }
-
-  return (
-    user?.name ||
-    user?.full_name ||
-    user?.fullName ||
-    user?.user_name ||
-    user?.username ||
-    user?.seller_name ||
-    user?.sellerName ||
-    user?.business_name ||
-    user?.businessName ||
-    user?.company_name ||
-    user?.companyName ||
-    ""
-  );
-};
-
-/* =========================================================
-   ORDER HELPERS
-========================================================= */
 
 const getAWB = (order) =>
   text(
-    order?.awb ||
-      order?.waybill ||
-      order?.awb_number ||
-      order?.awbNumber,
-    "AWB unavailable",
+    first(
+      order?.awb,
+      order?.waybill,
+      order?.awb_number,
+      order?.awbNumber
+    ),
+    "AWB unavailable"
   );
 
 const getOrderId = (order) =>
   text(
-    order?.display_order_id ||
-      order?.displayOrderId ||
-      order?.order_id ||
-      order?.orderId ||
-      order?.order_number ||
-      order?.orderNumber ||
-      order?.id,
+    first(
+      order?.display_order_id,
+      order?.displayOrderId,
+      order?.order_id,
+      order?.orderId,
+      order?.order_number,
+      order?.orderNumber,
+      order?.id
+    )
   );
 
 const getCustomerName = (order) =>
   text(
-    order?.consignee_name ||
-      order?.customer_name ||
-      order?.customerName ||
-      order?.customer ||
-      order?.buyer_name ||
-      order?.buyerName ||
-      order?.name,
+    first(
+      order?.consignee_name,
+      order?.customer_name,
+      order?.customerName,
+      order?.customer,
+      order?.buyer_name,
+      order?.buyerName,
+      order?.name
+    )
   );
 
 const getMobile = (order) =>
   text(
-    order?.mobile ||
-      order?.phone ||
-      order?.customer_mobile ||
-      order?.customerMobile ||
-      order?.consignee_phone ||
-      order?.consigneePhone ||
-      order?.buyer_mobile ||
-      order?.buyerMobile,
-    "",
+    first(
+      order?.mobile,
+      order?.phone,
+      order?.customer_mobile,
+      order?.customerMobile,
+      order?.consignee_phone,
+      order?.consigneePhone,
+      order?.buyer_mobile,
+      order?.buyerMobile
+    ),
+    ""
   );
 
-const getPaymentType = (order) =>
+const getPaymentType = (order) => {
+  const payment = String(
+    first(
+      order?.payment_type,
+      order?.paymentType,
+      order?.payment_method,
+      order?.paymentMethod,
+      "PREPAID"
+    )
+  ).toUpperCase();
+
+  return payment.includes("COD") ? "COD" : "PREPAID";
+};
+
+const getServiceType = (order) =>
   String(
-    order?.payment_type ||
-      order?.paymentType ||
-      order?.payment_method ||
-      order?.paymentMethod ||
-      "PREPAID",
+    first(
+      order?.service_type,
+      order?.serviceType,
+      order?.shipment_type,
+      "ROAD"
+    )
   ).toUpperCase();
 
 const getWeight = (order) => {
-  const packageWeight =
-    Array.isArray(order?.packages)
-      ? order.packages.reduce(
-          (total, pkg) =>
-            total +
-            (Number(pkg?.weight) || 0) *
-              (Number(pkg?.package_count) || 1),
-          0,
-        )
-      : 0;
+  const packageWeight = Array.isArray(order?.packages)
+    ? order.packages.reduce(
+        (sum, item) =>
+          sum +
+          (Number(item?.weight) || 0) *
+            (Number(item?.package_count) || 1),
+        0
+      )
+    : 0;
 
   return (
     Number(
-      order?.total_weight ??
-        order?.totalWeight ??
-        order?.weight ??
-        order?.package_weight ??
-        order?.packageWeight ??
+      first(
+        order?.total_weight,
+        order?.totalWeight,
+        order?.weight,
+        order?.package_weight,
+        order?.packageWeight,
         packageWeight,
+        0
+      )
     ) || 0
   );
 };
 
-const getCreatedAt = (order) =>
-  order?.invoice_date ||
-  order?.invoiceDate ||
-  order?.manifest_created_at ||
-  order?.manifestCreatedAt ||
-  order?.created_at ||
-  order?.createdAt ||
-  null;
+const getDate = (order) =>
+  first(
+    order?.invoice_date,
+    order?.invoiceDate,
+    order?.manifest_created_at,
+    order?.manifestCreatedAt,
+    order?.created_at,
+    order?.createdAt,
+    new Date()
+  );
 
-/* =========================================================
-   SELLER
-========================================================= */
+const formatDate = (value) => {
+  const date = new Date(value);
+
+  return Number.isNaN(date.getTime())
+    ? "—"
+    : date.toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      });
+};
+
+const money = (value) =>
+  `₹${(Number(value) || 0).toFixed(2)}`;
+
+const getOrderValue = (order) =>
+  Number(
+    first(
+      order?.order_value,
+      order?.product_value,
+      order?.total_amount,
+      order?.order_amount,
+      order?.amount,
+      order?.total_value,
+      0
+    )
+  ) || 0;
+
+const getCodAmount = (order) =>
+  Number(
+    first(
+      order?.cod_amount,
+      order?.cod_value,
+      order?.collectable_amount,
+      order?.codAmount,
+      0
+    )
+  ) || 0;
 
 const getSellerName = (order) => {
-  const accountName =
-    getAccountSellerName();
+  const user = getStoredUser();
 
   return text(
-    order?.seller_name ||
-      order?.sellerName ||
-      order?.seller_full_name ||
-      order?.sellerFullName ||
-      order?.seller_company_name ||
-      order?.sellerCompanyName ||
-      order?.seller_business_name ||
-      order?.sellerBusinessName ||
-      order?.account_name ||
-      order?.accountName ||
-      order?.user_name ||
-      order?.userName ||
-      order?.user_full_name ||
-      order?.userFullName ||
-      order?.business_name ||
-      order?.businessName ||
-      order?.company_name ||
-      order?.companyName ||
-      accountName,
-    "—",
+    first(
+      order?.seller_name,
+      order?.sellerName,
+      order?.seller_full_name,
+      order?.sellerFullName,
+      order?.seller_company_name,
+      order?.sellerCompanyName,
+      order?.account_name,
+      order?.accountName,
+      order?.business_name,
+      order?.businessName,
+      order?.company_name,
+      order?.companyName,
+      user?.name,
+      user?.business_name
+    )
   );
 };
 
 const getSellerGstin = (order) =>
   text(
-    order?.seller_gstin ||
-      order?.sellerGstin ||
-      order?.seller_gst ||
-      order?.sellerGSTIN ||
-      order?.gstin ||
-      order?.GSTIN,
-    "",
+    first(
+      order?.seller_gstin,
+      order?.sellerGstin,
+      order?.seller_gst,
+      order?.sellerGSTIN,
+      order?.gstin,
+      order?.GSTIN
+    ),
+    ""
   );
 
-const getInvoiceNumber = (order) =>
+const getFromName = (order) =>
   text(
-    order?.invoice_number ||
-      order?.invoiceNumber ||
-      order?.invoice_no ||
-      order?.invoiceNo,
-    "",
+    first(
+      order?.pickup_name,
+      order?.pickupName,
+      order?.pickup_contact_name,
+      order?.pickupContactName,
+      order?.warehouse?.contact_name,
+      order?.warehouse?.contactName,
+      order?.warehouse_contact_name,
+      order?.warehouseContactName,
+      order?.shipper_name,
+      order?.shipperName,
+      order?.seller_name
+    )
   );
 
-/* =========================================================
-   PICKUP / FROM
-========================================================= */
-
-const getPickupName = (order) =>
+const getFromMobile = (order) =>
   text(
-    order?.pickup_name ||
-      order?.pickupName ||
-      order?.pickup_contact_name ||
-      order?.pickupContactName ||
-      order?.warehouse?.contact_name ||
-      order?.warehouse?.contactName ||
-      order?.warehouse_contact_name ||
-      order?.warehouseContactName ||
-      order?.shipper_name ||
-      order?.shipperName ||
-      order?.pickup_person_name ||
-      order?.pickupPersonName,
-    "—",
+    first(
+      order?.shipper_mobile,
+      order?.pickup_mobile,
+      order?.seller_mobile,
+      order?.pickup_phone,
+      order?.warehouse?.mobile,
+      order?.warehouse?.phone
+    ),
+    ""
   );
 
-const getPickupAddress = (order) => {
-  const warehouse =
-    order?.warehouse || {};
-
-  return (
-    [
-      warehouse?.address_line1 ||
-        warehouse?.addressLine1 ||
-        order?.warehouse_address_line1 ||
-        order?.warehouseAddressLine1 ||
-        order?.pickup_address ||
-        order?.pickupAddress ||
-        order?.shipper_address ||
-        order?.shipperAddress,
-
-      warehouse?.address_line2 ||
-        warehouse?.addressLine2 ||
-        order?.warehouse_address_line2 ||
-        order?.warehouseAddressLine2 ||
-        order?.pickup_address_line2 ||
-        order?.pickupAddressLine2,
-
-      warehouse?.floor_no ||
-        warehouse?.floorNo ||
-        order?.warehouse_floor_no,
-
-      warehouse?.landmark ||
-        order?.warehouse_landmark ||
-        order?.pickup_landmark ||
-        order?.pickupLandmark,
-
-      warehouse?.city ||
-        order?.warehouse_city ||
-        order?.warehouseCity ||
-        order?.pickup_city ||
-        order?.pickupCity,
-
-      warehouse?.state ||
-        order?.warehouse_state ||
-        order?.warehouseState ||
-        order?.pickup_state ||
-        order?.pickupState,
-
-      warehouse?.pincode ||
-        order?.warehouse_pincode ||
-        order?.warehousePincode ||
-        order?.pickup_pincode ||
-        order?.pickupPincode,
-
-      warehouse?.country ||
-        order?.warehouse_country ||
-        order?.warehouseCountry ||
-        order?.pickup_country ||
-        order?.pickupCountry ||
-        "India",
-    ]
-      .filter(Boolean)
-      .join(", ") || "—"
+const getAlternateFromMobile = (order) =>
+  text(
+    first(
+      order?.shipper_alternate_mobile,
+      order?.alternate_mobile,
+      order?.pickup_alternate_mobile,
+      order?.seller_alternate_mobile
+    ),
+    ""
   );
-};
 
-/* =========================================================
-   CUSTOMER / TO
-========================================================= */
+const getFromAddress = (order) => {
+  const warehouse = order?.warehouse || {};
 
-const getCustomerAddress = (order) =>
-  [
-    order?.address_line1 ||
-      order?.addressLine1 ||
-      order?.address ||
-      order?.delivery_address ||
-      order?.deliveryAddress ||
-      order?.buyer_address1 ||
-      order?.buyerAddress1,
-
-    order?.address_line2 ||
-      order?.addressLine2 ||
-      order?.buyer_address2 ||
-      order?.buyerAddress2,
-
-    order?.landmark ||
-      order?.buyer_landmark ||
-      order?.buyerLandmark,
-
-    order?.city ||
-      order?.delivery_city ||
-      order?.deliveryCity ||
-      order?.buyer_city ||
-      order?.buyerCity,
-
-    order?.state ||
-      order?.delivery_state ||
-      order?.deliveryState ||
-      order?.buyer_state ||
-      order?.buyerState,
-
-    order?.pincode ||
-      order?.delivery_pincode ||
-      order?.deliveryPincode ||
-      order?.buyer_pincode ||
-      order?.buyerPincode,
-
-    order?.country ||
-      order?.buyer_country ||
-      order?.buyerCountry ||
-      "India",
+  return [
+    first(
+      warehouse.address_line1,
+      warehouse.addressLine1,
+      order?.warehouse_address_line1,
+      order?.warehouseAddressLine1,
+      order?.pickup_address,
+      order?.pickupAddress,
+      order?.shipper_address,
+      order?.shipperAddress
+    ),
+    first(
+      warehouse.address_line2,
+      warehouse.addressLine2,
+      order?.warehouse_address_line2,
+      order?.pickup_address_line2,
+      order?.pickupAddressLine2
+    ),
+    first(
+      warehouse.floor_no,
+      warehouse.floorNo,
+      order?.warehouse_floor_no
+    ),
+    first(
+      warehouse.landmark,
+      order?.warehouse_landmark,
+      order?.pickup_landmark
+    ),
+    first(
+      warehouse.city,
+      order?.warehouse_city,
+      order?.warehouseCity,
+      order?.pickup_city,
+      order?.pickupCity
+    ),
+    first(
+      warehouse.state,
+      order?.warehouse_state,
+      order?.warehouseState,
+      order?.pickup_state,
+      order?.pickupState
+    ),
+    first(
+      warehouse.pincode,
+      order?.warehouse_pincode,
+      order?.warehousePincode,
+      order?.pickup_pincode,
+      order?.pickupPincode
+    ),
+    first(
+      warehouse.country,
+      order?.warehouse_country,
+      order?.pickup_country,
+      "India"
+    ),
   ]
     .filter(Boolean)
-    .join(", ") || "—";
+    .join(", ");
+};
 
-/* =========================================================
-   RETURN ADDRESS
-========================================================= */
-
-const getReturnName = (order) =>
-  text(
-    order?.return_name ||
-      order?.returnName,
-    "",
-  );
-
-const getReturnPhone = (order) =>
-  text(
-    order?.return_phone ||
-      order?.returnPhone ||
-      order?.return_mobile ||
-      order?.returnMobile,
-    "",
-  );
+const getBuyerAddress = (order) =>
+  [
+    first(
+      order?.address_line1,
+      order?.addressLine1,
+      order?.address,
+      order?.delivery_address,
+      order?.deliveryAddress,
+      order?.buyer_address1
+    ),
+    first(
+      order?.address_line2,
+      order?.addressLine2,
+      order?.buyer_address2
+    ),
+    first(order?.landmark, order?.buyer_landmark),
+    first(
+      order?.city,
+      order?.delivery_city,
+      order?.deliveryCity,
+      order?.buyer_city
+    ),
+    first(
+      order?.state,
+      order?.delivery_state,
+      order?.deliveryState,
+      order?.buyer_state
+    ),
+    first(
+      order?.pincode,
+      order?.delivery_pincode,
+      order?.deliveryPincode,
+      order?.buyer_pincode
+    ),
+    first(order?.country, order?.buyer_country, "India"),
+  ]
+    .filter(Boolean)
+    .join(", ");
 
 const getReturnAddress = (order) =>
   [
-    order?.return_address_line1 ||
+    first(
+      order?.return_address_line1,
       order?.returnAddressLine1,
-
-    order?.return_address_line2 ||
-      order?.returnAddressLine2,
-
-    order?.return_landmark ||
-      order?.returnLandmark,
-
-    order?.return_city ||
-      order?.returnCity,
-
-    order?.return_state ||
-      order?.returnState,
-
-    order?.return_pincode ||
-      order?.returnPincode,
-
-    order?.return_country ||
-      order?.returnCountry ||
-      "India",
+      order?.return_address,
+      order?.returnAddress
+    ),
+    first(
+      order?.return_address_line2,
+      order?.returnAddressLine2
+    ),
+    first(order?.return_landmark, order?.returnLandmark),
+    first(order?.return_city, order?.returnCity),
+    first(order?.return_state, order?.returnState),
+    first(order?.return_pincode, order?.returnPincode),
+    first(order?.return_country, order?.returnCountry, "India"),
   ]
     .filter(Boolean)
-    .join(", ") || "—";
+    .join(", ");
 
-/* =========================================================
-   PRODUCTS
-========================================================= */
-
-const getProductRows = (order) => {
-  if (
-    Array.isArray(order?.products) &&
-    order.products.length > 0
-  ) {
-    return order.products;
-  }
-
-  return [
-    {
-      product_name:
-        order?.product_name ||
-        order?.productName ||
-        order?.shipment ||
-        "Product",
-
-      quantity:
-        order?.quantity ||
-        order?.qty ||
-        1,
-
-      price:
-        order?.product_value ||
-        order?.productValue ||
-        order?.order_value ||
-        order?.orderValue ||
-        order?.total_amount ||
-        order?.totalAmount ||
-        0,
-    },
-  ];
-};
-
-const normalizeProduct = (
-  product,
-) => {
-  const name = text(
-    product?.product_name ||
-      product?.productName ||
-      product?.name ||
-      product?.product,
-    "Product",
+const getReturnName = (order) =>
+  text(
+    first(order?.return_name, order?.returnName, getSellerName(order))
   );
 
-  const quantity =
-    Number(
-      product?.quantity ||
-        product?.qty ||
-        product?.product_quantity ||
-        product?.productQuantity ||
-        1,
-    ) || 1;
+const getProducts = (order) => {
+  const products =
+    Array.isArray(order?.products) && order.products.length
+      ? order.products
+      : [
+          {
+            product_name: first(
+              order?.product_name,
+              order?.productName,
+              order?.shipment,
+              "Product"
+            ),
+            quantity: first(order?.quantity, order?.qty, 1),
+            price: first(
+              order?.product_value,
+              order?.productValue,
+              order?.order_value,
+              order?.orderValue,
+              order?.total_amount,
+              0
+            ),
+          },
+        ];
 
-  const rate =
-    Number(
-      product?.rate ||
-        product?.price ||
-        product?.unit_price ||
-        product?.unitPrice ||
-        product?.product_rate ||
-        product?.productRate ||
-        0,
-    ) || 0;
+  return products.map((product) => {
+    const name = text(
+      first(
+        product?.product_name,
+        product?.productName,
+        product?.name,
+        product?.product
+      ),
+      "Product"
+    );
 
-  const total =
-    Number(
-      product?.total ||
-        product?.product_total ||
-        product?.productTotal ||
-        product?.line_total ||
-        product?.lineTotal ||
-        product?.total_price ||
-        product?.totalPrice,
-    ) || rate * quantity;
+    const qty =
+      Number(
+        first(
+          product?.quantity,
+          product?.qty,
+          product?.product_quantity,
+          product?.productQuantity,
+          1
+        )
+      ) || 1;
 
-  return {
-    name,
-    quantity,
-    rate,
-    total,
-  };
+    const rate =
+      Number(
+        first(
+          product?.rate,
+          product?.price,
+          product?.unit_price,
+          product?.unitPrice,
+          product?.product_price,
+          product?.productPrice,
+          0
+        )
+      ) || 0;
+
+    const total =
+      Number(
+        first(
+          product?.total,
+          product?.total_price,
+          product?.totalPrice,
+          product?.amount,
+          rate * qty
+        )
+      ) || rate * qty;
+
+    return { name, qty, rate, total };
+  });
 };
 
-/* =========================================================
-   DATE
-========================================================= */
-
-const formatDate = (
-  value,
-) => {
-  if (!value) {
-    return "—";
-  }
-
-  const date =
-    new Date(value);
-
-  if (
-    Number.isNaN(
-      date.getTime(),
-    )
-  ) {
-    return "—";
-  }
-
-  return date.toLocaleDateString(
-    "en-GB",
-    {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    },
-  );
-};
-
-/* =========================================================
-   LABEL SIZE
-========================================================= */
-
-const getLabelSize = (
-  value,
-) => {
-  if (value === "4x4") {
-    return {
-      key: "4x4",
+const getLabelSize = (value) => {
+  const sizes = {
+    "4x6": {
+      key: "4x6",
       widthIn: 4,
-      heightIn: 4,
+      heightIn: 6,
       widthMm: 101.6,
-      heightMm: 101.6,
-    };
-  }
-
-  if (value === "A4") {
-    return {
+      heightMm: 152.4,
+    },
+    A4: {
       key: "A4",
       widthIn: 8.27,
       heightIn: 11.69,
       widthMm: 210,
       heightMm: 297,
-    };
-  }
-
-  return {
-    key: "4x6",
-    widthIn: 4,
-    heightIn: 6,
-    widthMm: 101.6,
-    heightMm: 152.4,
+    },
+    "4x2": {
+      key: "4x2",
+      widthIn: 4,
+      heightIn: 2,
+      widthMm: 101.6,
+      heightMm: 50.8,
+    },
+    "4x2.5": {
+      key: "4x2.5",
+      widthIn: 4,
+      heightIn: 2.5,
+      widthMm: 101.6,
+      heightMm: 63.5,
+    },
+    "3x2": {
+      key: "3x2",
+      widthIn: 3,
+      heightIn: 2,
+      widthMm: 76.2,
+      heightMm: 50.8,
+    },
   };
+
+  return sizes[value] || sizes["4x6"];
 };
 
-/* =========================================================
-   FETCH DETAILED ORDERS
-========================================================= */
+const normalizeSettings = (data = {}) => ({
+  ...DEFAULT_LABEL_SETTINGS,
 
-const getDetailedOrders =
-  async (orders) => {
-    const userId =
-      getUserId();
+  orderValue: Boolean(
+    data.order_value ??
+      data.orderValue ??
+      DEFAULT_LABEL_SETTINGS.orderValue
+  ),
 
-    if (!userId) {
-      return orders;
-    }
+  codAmount: Boolean(
+    data.cod_amount ??
+      data.codAmount ??
+      DEFAULT_LABEL_SETTINGS.codAmount
+  ),
 
-    return Promise.all(
-      orders.map(
-        async (order) => {
-          try {
-            const orderDbId =
-              order?.order_id ||
-              order?.orderId ||
-              order?.id;
+  buyerMobile: Boolean(
+    data.buyer_mobile ??
+      data.buyerMobile ??
+      DEFAULT_LABEL_SETTINGS.buyerMobile
+  ),
 
-            if (!orderDbId) {
-              return order;
-            }
+  shipperMobiles: Boolean(
+    data.shipper_mobiles ??
+      data.shipperMobiles ??
+      DEFAULT_LABEL_SETTINGS.shipperMobiles
+  ),
 
-            const response =
-              await api.get(
-                `/orders/${orderDbId}`,
-                {
-                  params: {
-                    user_id:
-                      userId,
-                  },
-                },
-              );
+  shipperAddress: Boolean(
+    data.shipper_address ??
+      data.shipperAddress ??
+      DEFAULT_LABEL_SETTINGS.shipperAddress
+  ),
 
-            const fullOrder =
-              response.data?.order ||
-              response.data?.result?.order ||
-              response.data?.result ||
-              null;
+  fromName: Boolean(
+    data.from_name ??
+      data.fromName ??
+      DEFAULT_LABEL_SETTINGS.fromName
+  ),
 
-            if (!fullOrder) {
-              return order;
-            }
+  fromAddress: Boolean(
+    data.from_address ??
+      data.fromAddress ??
+      DEFAULT_LABEL_SETTINGS.fromAddress
+  ),
 
-            return {
-              ...order,
-              ...fullOrder,
+  fromMobile: Boolean(
+    data.from_mobile ??
+      data.fromMobile ??
+      DEFAULT_LABEL_SETTINGS.fromMobile
+  ),
 
-              awb:
-                order?.awb ||
-                order?.waybill ||
-                fullOrder?.awb ||
-                fullOrder?.waybill,
+  productName: Boolean(
+    data.product_name ??
+      data.productName ??
+      DEFAULT_LABEL_SETTINGS.productName
+  ),
 
-              order_id:
-                order?.order_id ||
-                fullOrder?.order_id,
+  productDetails: Boolean(
+    data.product_details ??
+      data.productDetails ??
+      DEFAULT_LABEL_SETTINGS.productDetails
+  ),
 
-              products:
-                fullOrder?.products ||
-                order?.products,
-            };
-          } catch (error) {
-            console.warn(
-              "Could not fetch full order:",
-              order?.order_id,
-              error,
-            );
+  servicesTnc: Boolean(
+    data.services_tnc ??
+      data.servicesTnc ??
+      DEFAULT_LABEL_SETTINGS.servicesTnc
+  ),
 
-            return order;
-          }
-        },
-      ),
-    );
-  };
+  orderId: Boolean(
+    data.order_id ??
+      data.orderId ??
+      DEFAULT_LABEL_SETTINGS.orderId
+  ),
 
-/* =========================================================
-   LABEL SETTINGS
-========================================================= */
+  orderWeight: Boolean(
+    data.order_weight ??
+      data.orderWeight ??
+      DEFAULT_LABEL_SETTINGS.orderWeight
+  ),
 
-const getLabelSettings =
-  async () => {
-    const userId =
-      getUserId();
+  returnAddress: Boolean(
+    data.return_address ??
+      data.returnAddress ??
+      DEFAULT_LABEL_SETTINGS.returnAddress
+  ),
 
-    if (!userId) {
-      return {
-        ...DEFAULT_LABEL_SETTINGS,
-      };
-    }
+  contactLine: Boolean(
+    data.contact_line ??
+      data.contactLine ??
+      DEFAULT_LABEL_SETTINGS.contactLine
+  ),
 
-    try {
-      const response =
-        await api.get(
-          "/label-settings",
-          {
-            params: {
-              user_id:
-                userId,
-            },
-          },
-        );
+  rightLogoMode:
+    data.right_logo_mode ||
+    data.rightLogoMode ||
+    DEFAULT_LABEL_SETTINGS.rightLogoMode,
 
-      const data =
-        response.data?.settings;
+  labelSize:
+    data.label_size ||
+    data.labelSize ||
+    DEFAULT_LABEL_SETTINGS.labelSize,
 
-      if (
-        !response.data?.success ||
-        !data
-      ) {
-        return {
-          ...DEFAULT_LABEL_SETTINGS,
-        };
-      }
+  customLogo: data.custom_logo || data.customLogo || null,
+});
 
-      return {
-        orderValue:
-          Boolean(
-            data.order_value,
-          ),
+const getLabelSettings = async () => {
+  const userId = getUserId();
 
-        codAmount:
-          Boolean(
-            data.cod_amount,
-          ),
-
-        buyerMobile:
-          Boolean(
-            data.buyer_mobile,
-          ),
-
-        shipperMobiles:
-          Boolean(
-            data.shipper_mobiles,
-          ),
-
-        shipperAddress:
-          Boolean(
-            data.shipper_address,
-          ),
-
-        productName:
-          Boolean(
-            data.product_name,
-          ),
-
-        servicesTnc:
-          Boolean(
-            data.services_tnc,
-          ),
-
-        orderId:
-          Boolean(
-            data.order_id,
-          ),
-
-        orderWeight:
-          Boolean(
-            data.order_weight,
-          ),
-
-        labelSize:
-          data.label_size ||
-          "4x6",
-
-        customLogo:
-          data.custom_logo ||
-          null,
-      };
-    } catch (error) {
-      console.error(
-        "Label settings error:",
-        error,
-      );
-
-      return {
-        ...DEFAULT_LABEL_SETTINGS,
-      };
-    }
-  };
-
-/* =========================================================
-   RESOLVE SETTINGS
-========================================================= */
-
-const resolveSettings =
-  async (
-    passedSettings = null,
-    passedCustomLogo = null,
-  ) => {
-    const fetchedSettings =
-      passedSettings &&
-      typeof passedSettings ===
-        "object"
-        ? passedSettings
-        : await getLabelSettings();
-
-    return {
-      ...DEFAULT_LABEL_SETTINGS,
-
-      ...fetchedSettings,
-
-      customLogo:
-        passedCustomLogo ||
-        fetchedSettings?.customLogo ||
-        null,
-    };
-  };
-
-/* =========================================================
-   RIGHT LOGO
-========================================================= */
-
-const getRightLogo = (
-  settings,
-) =>
-  settings?.customLogo ||
-  delhiveryLogo;
-
-/* =========================================================
-   SCANNABLE CODE128 BARCODE
-   IMPORTANT:
-   Barcode is generated directly on CANVAS.
-   Then converted to PNG data URL.
-   No SVG stretching.
-========================================================= */
-
-const createBarcodeDataUrl = (
-  value,
-) => {
-  const canvas =
-    document.createElement(
-      "canvas",
-    );
+  if (!userId) {
+    return { ...DEFAULT_LABEL_SETTINGS };
+  }
 
   try {
-    JsBarcode(
-      canvas,
-      String(
-        value || "",
-      ),
-      {
-        format: "CODE128",
+    const response = await api.get("/label-settings", {
+      params: { user_id: userId },
+    });
 
-        displayValue: false,
+    const data = response.data?.settings;
 
-        /*
-         * Proper module width.
-         * Do not make this too small.
-         */
-        width: 2,
+    if (!response.data?.success || !data) {
+      return { ...DEFAULT_LABEL_SETTINGS };
+    }
 
-        /*
-         * Barcode height.
-         */
-        height: 60,
-
-        /*
-         * Quiet zone.
-         */
-        margin: 12,
-
-        marginTop: 8,
-        marginBottom: 8,
-        marginLeft: 14,
-        marginRight: 14,
-
-        background: "#ffffff",
-
-        lineColor: "#000000",
-
-        flat: false,
-      },
-    );
-
-    return canvas.toDataURL(
-      "image/png",
-      1.0,
-    );
+    return normalizeSettings(data);
   } catch (error) {
-    console.error(
-      "Barcode generation error:",
-      error,
-    );
-
-    return "";
+    console.error("Label settings fetch error:", error);
+    return { ...DEFAULT_LABEL_SETTINGS };
   }
 };
 
-/* =========================================================
-   IMAGE -> DATA URL
-========================================================= */
+const getDetailedOrders = async (orders) => {
+  const userId = getUserId();
 
-const imageUrlToDataUrl =
-  async (url) => {
-    if (!url) {
-      return null;
-    }
+  if (!userId) return orders;
 
-    if (
-      String(url).startsWith(
-        "data:",
-      )
-    ) {
-      return url;
-    }
+  return Promise.all(
+    orders.map(async (order) => {
+      const id = order?.order_id || order?.id;
 
-    try {
-      const response =
-        await fetch(url);
+      if (!id) return order;
 
-      if (!response.ok) {
-        throw new Error(
-          "Image request failed",
+      try {
+        const response = await api.get(`/orders/${id}`, {
+          params: { user_id: userId },
+        });
+
+        const full =
+          response.data?.order ||
+          response.data?.result?.order ||
+          response.data?.result ||
+          null;
+
+        return full
+          ? {
+              ...order,
+              ...full,
+              awb: first(order?.awb, full?.awb, full?.waybill),
+              order_id: first(order?.order_id, full?.order_id),
+            }
+          : order;
+      } catch (error) {
+        console.warn(
+          "Could not fetch full order details:",
+          id,
+          error
         );
+
+        return order;
       }
+    })
+  );
+};
 
-      const blob =
-        await response.blob();
+const barcodeSvg = (value, compact = false) => {
+  const svg = document.createElementNS(
+    "http://www.w3.org/2000/svg",
+    "svg"
+  );
 
-      return await new Promise(
-        (
-          resolve,
-          reject,
-        ) => {
-          const reader =
-            new FileReader();
+  JsBarcode(svg, String(value || "AWB"), {
+    format: "CODE128",
+    displayValue: false,
+    height: compact ? 28 : 42,
+    width: compact ? 1.1 : 1.5,
+    margin: 0,
+    background: "#ffffff",
+    lineColor: "#111827",
+  });
 
-          reader.onloadend =
-            () =>
-              resolve(
-                reader.result,
-              );
+  return svg.outerHTML;
+};
 
-          reader.onerror =
-            reject;
+const buildLabelHtml = (order, settings, rightLogo, size) => {
+  const awb = getAWB(order);
+  const payment = getPaymentType(order);
+  const isA4 = size.key === "A4";
+  const compact = size.heightIn <= 2.5;
 
-          reader.readAsDataURL(
-            blob,
-          );
-        },
-      );
-    } catch (error) {
-      console.warn(
-        "Could not convert logo:",
-        error,
-      );
+  const pad = isA4 ? 18 : compact ? 3 : 8;
+  const font = isA4 ? 10 : compact ? 5.3 : 7.2;
+  const small = isA4 ? 8 : compact ? 4.5 : 5.8;
+  const big = isA4 ? 13 : compact ? 7.2 : 9.2;
 
-      return null;
-    }
-  };
+  const fromAddress = getFromAddress(order);
+  const buyerAddress = getBuyerAddress(order);
+  const fromName = getFromName(order);
 
-/* =========================================================
-   BUILD LABEL HTML
-========================================================= */
+  const fromMobiles = [
+    getFromMobile(order),
+    getAlternateFromMobile(order),
+  ]
+    .filter(Boolean)
+    .join(" / ");
 
-const buildLabelHtml = (
-  order,
-  settings,
-  rightLogo,
-  fixedLogo = shipdropLogo,
-) => {
-  const awb =
-    getAWB(order);
+  const products = getProducts(order);
 
-  const payment =
-    getPaymentType(order) ===
-    "COD"
-      ? "COD"
-      : "Prepaid";
+  const showFromName = settings.fromName !== false;
 
-  const weight =
-    getWeight(order);
+  const showFromAddress =
+    settings.fromAddress !== false &&
+    settings.shipperAddress !== false;
 
-  const orderId =
-    getOrderId(order);
+  const showFromMobile =
+    settings.fromMobile !== false &&
+    settings.shipperMobiles !== false;
 
-  const pickupName =
-    getPickupName(order);
+  const showBuyerMobile =
+    settings.buyerMobile !== false && Boolean(getMobile(order));
 
-  const pickupAddress =
-    getPickupAddress(order);
+  const showWeight = settings.orderWeight === true;
+  const showOrderId = settings.orderId === true;
+  const showOrderValue = settings.orderValue !== false;
 
-  const customerName =
-    getCustomerName(order);
+  const showCod =
+    settings.codAmount !== false && payment === "COD";
 
-  const customerMobile =
-    getMobile(order);
-
-  const customerAddress =
-    getCustomerAddress(
-      order,
-    );
-
-  const sellerName =
-    getSellerName(order);
-
-  const sellerGstin =
-    getSellerGstin(order);
-
-  const invoiceNumber =
-    getInvoiceNumber(order);
-
-  const invoiceDate =
-    formatDate(
-      getCreatedAt(order),
-    );
-
-  const returnName =
-    getReturnName(order);
-
-  const returnPhone =
-    getReturnPhone(order);
+  const showProducts =
+    settings.productDetails !== false &&
+    settings.productName !== false;
 
   const returnAddress =
-    getReturnAddress(order);
+    getReturnAddress(order) || getFromAddress(order);
 
-  const products =
-    getProductRows(
-      order,
-    ).map(
-      normalizeProduct,
-    );
+  const contactText =
+    "For complaints & queries please contact 8766066070, 0141-4797120";
 
-  const formatMoney =
-    (value) =>
-      Number(value || 0)
-        .toFixed(2)
-        .replace(
-          /\.00$/,
-          "",
-        );
+  const productRows = showProducts
+    ? products
+        .slice(0, isA4 ? 8 : compact ? 1 : 4)
+        .map(
+          (product) => `
+            <tr>
+              <td class="pname">${escapeHtml(product.name)}</td>
+              <td>${escapeHtml(product.rate.toFixed(2))}</td>
+              <td>${escapeHtml(product.qty)}</td>
+              <td>${escapeHtml(product.total.toFixed(2))}</td>
+            </tr>
+          `
+        )
+        .join("")
+    : "";
 
-  /*
-   * IMPORTANT:
-   * Generate barcode as PNG data URL.
-   */
-  const barcode =
-    createBarcodeDataUrl(
-      awb,
-    );
+  const productSection = showProducts
+    ? `
+      <section class="products">
+        <div class="section-title">PRODUCT DETAILS</div>
+        <table>
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Rate</th>
+              <th>Qty</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody>${productRows}</tbody>
+        </table>
+      </section>
+    `
+    : "";
 
-  const size =
-    getLabelSize(
-      settings.labelSize,
-    );
+  const logoHtml = rightLogo
+    ? `<img src="${escapeHtml(rightLogo)}" alt="Carrier logo" />`
+    : "";
+
+  const orderInfo = `
+    ${
+      showOrderId
+        ? `
+          <div class="mini-cell">
+            <span>ORDER ID</span>
+            <b>${escapeHtml(getOrderId(order))}</b>
+          </div>
+        `
+        : ""
+    }
+
+    ${
+      showOrderValue
+        ? `
+          <div class="mini-cell">
+            <span>ORDER VALUE</span>
+            <b>${money(getOrderValue(order))}</b>
+          </div>
+        `
+        : ""
+    }
+  `;
 
   return `
-    <div
-      class="shipdrop-label"
+    <article
+      class="shipping-label ${compact ? "compact" : ""}"
       style="
         width:${size.widthIn}in;
-        min-height:${size.heightIn}in;
+        height:${size.heightIn}in;
+        --pad:${pad}px;
+        --font:${font}px;
+        --small:${small}px;
+        --big:${big}px;
       "
     >
-
-      <div class="label-inner">
-
-        <!-- =========================================
-             HEADER
-        ========================================== -->
-
-        <div class="label-header">
-
-          <div class="logo-box left-logo">
-
-            <img
-              src="${fixedLogo}"
-              alt="ShipDrop"
-            />
-
+      <div class="label-border">
+        <header class="logos">
+          <div class="logo left">
+            <img src="${escapeHtml(shipdropLogo)}" alt="ParcelDrop" />
           </div>
+          <div class="logo right">${logoHtml}</div>
+        </header>
 
-          <div class="logo-box right-logo">
+        <section class="awb">
+          <div class="eyebrow">AWB NUMBER</div>
+          <div class="awb-number">${escapeHtml(awb)}</div>
+          <div class="barcode">${barcodeSvg(awb, compact)}</div>
+        </section>
 
-            <img
-              src="${
-                rightLogo ||
-                delhiveryLogo
-              }"
-              alt="Delhivery"
-            />
-
-          </div>
-
-        </div>
-
-
-        <!-- =========================================
-             FROM / TO
-        ========================================== -->
-
-        <div class="from-to">
-
-          <div class="address-cell">
-
-            <div class="section-title">
-              From
-            </div>
-
-            <div class="name">
-              ${escapeHtml(
-                pickupName,
-              )}
-            </div>
-
-            <div class="address">
-              ${escapeHtml(
-                pickupAddress,
-              )}
-            </div>
-
-          </div>
-
-
-          <div class="address-cell">
-
-            <div class="section-title">
-              To
-            </div>
-
-            <div class="name">
-              ${escapeHtml(
-                customerName,
-              )}
-            </div>
+        <section class="addresses">
+          <div class="address-block">
+            <div class="eyebrow">FROM</div>
 
             ${
-              customerMobile
-                ? `
-                  <div class="phone">
-                    Mobile No:
-                    ${escapeHtml(
-                      customerMobile,
-                    )}
-                  </div>
-                `
+              showFromName
+                ? `<b class="person">${escapeHtml(fromName)}</b>`
                 : ""
             }
 
-            <div class="address">
-              ${escapeHtml(
-                customerAddress,
-              )}
-            </div>
+            ${
+              showFromAddress && fromAddress
+                ? `<div class="address">${escapeHtml(fromAddress)}</div>`
+                : ""
+            }
 
+            ${
+              showFromMobile && fromMobiles
+                ? `<div class="phone">${escapeHtml(fromMobiles)}</div>`
+                : ""
+            }
           </div>
 
-        </div>
+          <div class="address-block">
+            <div class="eyebrow">TO</div>
+            <b class="person">${escapeHtml(getCustomerName(order))}</b>
+            <div class="address">${escapeHtml(buyerAddress || "—")}</div>
 
-
-        <!-- =========================================
-             AWB
-        ========================================== -->
-
-        <div class="awb-section">
-
-          <div class="awb-line">
-
-            <span class="awb-label">
-              AWB No:
-            </span>
-
-            <span class="awb-value">
-              ${escapeHtml(
-                awb,
-              )}
-            </span>
-
+            ${
+              showBuyerMobile
+                ? `<div class="phone">${escapeHtml(getMobile(order))}</div>`
+                : ""
+            }
           </div>
+        </section>
 
-          ${
-            barcode
-              ? `
-                <div class="barcode">
-
-                  <img
-                    src="${barcode}"
-                    alt="AWB Barcode"
-                  />
-
-                </div>
-              `
-              : ""
-          }
-
-        </div>
-
-
-        <!-- =========================================
-             PAYMENT / ORDER / WEIGHT
-        ========================================== -->
-
-        <div class="three-col">
-
-          <div class="info-cell">
-
-            <div class="value strong">
-              ${escapeHtml(
-                payment,
-              )}
-            </div>
-
+        <section class="summary">
+          <div>
+            <span>PAYMENT</span>
+            <b>${payment}</b>
           </div>
-
-
-          <div class="info-cell">
-
-            <div class="small-label">
-              Order:
-            </div>
-
-            <div class="value">
-              #${escapeHtml(
-                orderId,
-              )}
-            </div>
-
-          </div>
-
-
-          <div class="info-cell">
-
-            <div class="small-label">
-              Billed Weight:
-            </div>
-
-            <div class="value">
-              ${weight.toFixed(
-                2,
-              )}Kg
-            </div>
-
-          </div>
-
-        </div>
-
-
-        <!-- =========================================
-             SELLER
-        ========================================== -->
-
-        <div class="seller-table">
-
-          <div class="seller-head">
-
-            <div>
-              Seller
-            </div>
-
-            <div>
-              GSTIN
-            </div>
-
-            <div>
-              Invoice No
-            </div>
-
-            <div>
-              Date
-            </div>
-
-          </div>
-
-
-          <div class="seller-body">
-
-            <div>
-              ${escapeHtml(
-                sellerName,
-              )}
-            </div>
-
-            <div>
-              ${escapeHtml(
-                sellerGstin ||
-                  "—",
-              )}
-            </div>
-
-            <div>
-              ${escapeHtml(
-                invoiceNumber ||
-                  "—",
-              )}
-            </div>
-
-            <div>
-              ${escapeHtml(
-                invoiceDate,
-              )}
-            </div>
-
-          </div>
-
-        </div>
-
-
-        <!-- =========================================
-             PRODUCTS
-        ========================================== -->
-
-        <div class="product-table">
-
-          <div class="product-head">
-
-            <div>
-              Product Name
-            </div>
-
-            <div>
-              Rate
-            </div>
-
-            <div>
-              Qty
-            </div>
-
-            <div>
-              Total
-            </div>
-
-          </div>
-
-
-          ${products
-            .map(
-              (
-                product,
-              ) => `
-                <div class="product-body">
-
-                  <div>
-                    ${escapeHtml(
-                      product.name,
-                    )}
-                  </div>
-
-                  <div>
-                    ${formatMoney(
-                      product.rate,
-                    )}
-                  </div>
-
-                  <div>
-                    ${escapeHtml(
-                      product.quantity,
-                    )}
-                  </div>
-
-                  <div>
-                    ${formatMoney(
-                      product.total,
-                    )}
-                  </div>
-
-                </div>
-              `,
-            )
-            .join("")}
-
-        </div>
-
-
-        <!-- =========================================
-             RETURN
-        ========================================== -->
-
-        <div class="return-box">
 
           <div>
-            NOTE: If undelivered return to:
+            <span>SERVICE</span>
+            <b>${getServiceType(order).includes("AIR") ? "BY AIR" : "BY ROAD"}</b>
           </div>
 
           ${
-            returnName
+            showWeight
               ? `
                 <div>
-                  ${escapeHtml(
-                    returnName,
-                  )}
+                  <span>WEIGHT</span>
+                  <b>${getWeight(order).toFixed(2)} KG</b>
                 </div>
               `
               : ""
           }
+        </section>
 
+        ${
+          orderInfo.trim()
+            ? `<section class="order-info">${orderInfo}</section>`
+            : ""
+        }
+
+        ${
+          showCod
+            ? `
+              <section class="cod">
+                <b>CASH ON DELIVERY</b>
+                <strong>${money(getCodAmount(order))}</strong>
+              </section>
+            `
+            : ""
+        }
+
+        ${productSection}
+
+        <section class="seller">
           <div>
-            ${escapeHtml(
-              returnAddress,
-            )}
-
-            ${
-              returnPhone
-                ? `
-                  Mobile:
-                  ${escapeHtml(
-                    returnPhone,
-                  )}
-                `
-                : ""
-            }
+            <span>SELLER</span>
+            <b>${escapeHtml(getSellerName(order))}</b>
           </div>
 
           <div>
-            For complaints &amp; queries please contact
-            <strong>
-              8766066070, 0141-4797120
-            </strong>
+            <span>GSTIN</span>
+            <b>${escapeHtml(getSellerGstin(order) || " ")}</b>
           </div>
 
-        </div>
+          <div>
+            <span>INVOICE NO.</span>
+            <b>&nbsp;</b>
+          </div>
 
+          <div>
+            <span>DATE</span>
+            <b>${escapeHtml(formatDate(getDate(order)))}</b>
+          </div>
+        </section>
+
+        ${
+          settings.returnAddress !== false
+            ? `
+              <section class="return">
+                <b>RETURN ADDRESS</b>
+                <div>
+                  ${escapeHtml(getReturnName(order))}
+                  ${returnAddress ? `, ${escapeHtml(returnAddress)}` : ""}
+                </div>
+              </section>
+            `
+            : ""
+        }
+
+        ${
+          settings.contactLine !== false
+            ? `<footer class="contact">${escapeHtml(contactText)}</footer>`
+            : ""
+        }
       </div>
 
-    </div>
+      <style>
+        .shipping-label {
+          box-sizing: border-box;
+          padding: var(--pad);
+          margin: 0;
+          background: #fff;
+          color: #111827;
+          font-family: Arial, Helvetica, sans-serif;
+          page-break-after: always;
+          overflow: hidden;
+          break-after: page;
+        }
+
+        .shipping-label:last-child {
+          page-break-after: auto;
+          break-after: auto;
+        }
+
+        .label-border {
+          height: 100%;
+          width: 100%;
+          border: 1px solid #111827;
+          box-sizing: border-box;
+          overflow: hidden;
+          display: flex;
+          flex-direction: column;
+          background: #fff;
+        }
+
+        .logos {
+          height: ${compact ? 17 : isA4 ? 48 : 31}px;
+          min-height: ${compact ? 17 : isA4 ? 48 : 31}px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 3px 6px;
+          border-bottom: 1px solid #111827;
+          gap: 8px;
+        }
+
+        .logo {
+          width: 45%;
+          height: 100%;
+          display: flex;
+          align-items: center;
+        }
+
+        .logo.left { justify-content: flex-start; }
+        .logo.right { justify-content: flex-end; }
+
+        .logo img {
+          max-width: 100%;
+          max-height: 100%;
+          object-fit: contain;
+          display: block;
+        }
+
+        .awb {
+          text-align: center;
+          padding: ${compact ? 2 : isA4 ? 7 : 4}px 5px;
+          border-bottom: 1px solid #111827;
+        }
+
+        .eyebrow {
+          font-size: var(--small);
+          font-weight: 700;
+          letter-spacing: 0.25px;
+          color: #4b5563;
+        }
+
+        .awb-number {
+          font-size: var(--big);
+          font-weight: 800;
+          letter-spacing: 0.6px;
+          margin: 1px 0;
+          overflow-wrap: anywhere;
+        }
+
+        .barcode { line-height: 0; }
+
+        .barcode svg {
+          display: block;
+          margin: 0 auto;
+          max-width: 100%;
+          height: auto;
+          max-height: ${compact ? 17 : isA4 ? 42 : 30}px;
+        }
+
+        .addresses {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          border-bottom: 1px solid #111827;
+        }
+
+        .address-block {
+          min-width: 0;
+          padding: ${compact ? 3 : isA4 ? 8 : 5}px 6px;
+          overflow: hidden;
+        }
+
+        .address-block + .address-block {
+          border-left: 1px solid #111827;
+        }
+
+        .person {
+          display: block;
+          font-size: ${isA4 ? 12 : compact ? 5.8 : 8}px;
+          line-height: 1.15;
+          margin-top: 2px;
+          overflow-wrap: anywhere;
+        }
+
+        .address {
+          font-size: ${isA4 ? 8.5 : compact ? 4.5 : 5.8}px;
+          line-height: 1.2;
+          margin-top: 2px;
+          overflow-wrap: anywhere;
+        }
+
+        .phone {
+          font-size: ${isA4 ? 8 : compact ? 4.5 : 5.6}px;
+          font-weight: 700;
+          margin-top: 2px;
+          overflow-wrap: anywhere;
+        }
+
+        .summary {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          border-bottom: 1px solid #111827;
+        }
+
+        .summary > div {
+          padding: ${compact ? 2 : isA4 ? 6 : 4}px 5px;
+          min-width: 0;
+        }
+
+        .summary > div + div {
+          border-left: 1px solid #111827;
+        }
+
+        .summary span,
+        .mini-cell span,
+        .seller span {
+          display: block;
+          font-size: var(--small);
+          font-weight: 700;
+          color: #4b5563;
+        }
+
+        .summary b {
+          display: block;
+          font-size: var(--font);
+          margin-top: 1px;
+          overflow-wrap: anywhere;
+        }
+
+        .order-info {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          border-bottom: 1px solid #111827;
+        }
+
+        .mini-cell {
+          padding: 3px 5px;
+          min-width: 0;
+        }
+
+        .mini-cell + .mini-cell {
+          border-left: 1px solid #111827;
+        }
+
+        .mini-cell b {
+          display: block;
+          font-size: var(--font);
+          overflow-wrap: anywhere;
+        }
+
+        .cod {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 4px 6px;
+          border-bottom: 1px solid #111827;
+          font-size: var(--font);
+        }
+
+        .cod strong { font-size: var(--big); }
+
+        .products {
+          padding: ${compact ? 2 : isA4 ? 6 : 4}px 5px;
+          border-bottom: 1px solid #111827;
+          min-height: 0;
+        }
+
+        .section-title {
+          font-size: var(--small);
+          font-weight: 800;
+          margin-bottom: 2px;
+        }
+
+        table {
+          border-collapse: collapse;
+          width: 100%;
+          table-layout: fixed;
+          font-size: ${compact ? 4.2 : isA4 ? 7.5 : 5.2}px;
+        }
+
+        th, td {
+          border: 1px solid #d1d5db;
+          padding: 2px 3px;
+          text-align: right;
+          overflow: hidden;
+          overflow-wrap: anywhere;
+        }
+
+        th:first-child, td:first-child {
+          text-align: left;
+          width: 48%;
+        }
+
+        .pname { text-align: left; }
+
+        .seller {
+          display: grid;
+          grid-template-columns: 1.4fr 1fr 1fr 0.8fr;
+          border-bottom: 1px solid #111827;
+        }
+
+        .seller > div {
+          padding: ${compact ? 2 : 3}px 4px;
+          min-width: 0;
+          overflow: hidden;
+        }
+
+        .seller > div + div {
+          border-left: 1px solid #d1d5db;
+        }
+
+        .seller b {
+          display: block;
+          font-size: ${compact ? 4.3 : isA4 ? 7.5 : 5.2}px;
+          overflow-wrap: anywhere;
+        }
+
+        .return {
+          padding: ${compact ? 2 : 4}px 5px;
+          border-bottom: 1px solid #d1d5db;
+          font-size: ${compact ? 4.3 : isA4 ? 7 : 5.2}px;
+          line-height: 1.2;
+          overflow-wrap: anywhere;
+        }
+
+        .return b {
+          display: block;
+          font-size: var(--small);
+          margin-bottom: 1px;
+        }
+
+        .contact {
+          padding: ${compact ? 2 : 4}px 5px;
+          font-size: ${compact ? 4 : isA4 ? 7 : 5}px;
+          line-height: 1.15;
+          text-align: center;
+          font-weight: 700;
+          overflow-wrap: anywhere;
+        }
+      </style>
+    </article>
   `;
 };
 
-/* =========================================================
-   LABEL CSS
-========================================================= */
+const prepareLabels = async (orders) => {
+  const settings = await getLabelSettings();
+  const detailedOrders = await getDetailedOrders(orders);
+  const size = getLabelSize(settings.labelSize);
 
-const getLabelStyles =
-  (size) => `
-  * {
-    box-sizing: border-box;
+  const rightLogo =
+    settings.rightLogoMode === "custom" && settings.customLogo
+      ? settings.customLogo
+      : delhiveryLogo;
+
+  return {
+    settings,
+    detailedOrders,
+    size,
+    rightLogo,
+  };
+};
+
+export const printShippingLabels = async (
+  orders,
+  title = "ParcelDrop Shipping Labels"
+) => {
+  if (!Array.isArray(orders) || orders.length === 0) {
+    toast.error("Please select at least one shipment");
+    return;
   }
 
-  html,
-  body {
-    margin: 0;
-    padding: 0;
-    background: #fff;
-  }
+  let win;
 
-  body {
-    font-family:
-      Arial,
-      Helvetica,
-      sans-serif;
-  }
+  try {
+    const { settings, detailedOrders, size, rightLogo } =
+      await prepareLabels(orders);
 
-  .print-wrapper {
-    width: 100%;
-  }
+    const html = detailedOrders
+      .map((order) => buildLabelHtml(order, settings, rightLogo, size))
+      .join("");
 
-  .shipdrop-label {
-    box-sizing: border-box;
+    win = window.open("", "_blank", "width=900,height=700");
 
-    margin: 0 auto;
-
-    padding: 7px;
-
-    background: #fff;
-
-    color: #111827;
-
-    font-family:
-      Arial,
-      Helvetica,
-      sans-serif;
-
-    overflow: hidden;
-  }
-
-  .label-inner {
-    width: 100%;
-
-    border:
-      1.5px solid #111;
-
-    background: #fff;
-
-    overflow: hidden;
-  }
-
-
-  /* ==============================================
-     HEADER
-  ============================================== */
-
-  .label-header {
-    height: 58px;
-
-    padding: 5px 7px;
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: space-between;
-
-    border-bottom:
-      1.5px solid #111;
-  }
-
-  .logo-box {
-    width: 48%;
-
-    height: 44px;
-
-    display: flex;
-
-    align-items: center;
-  }
-
-  .left-logo {
-    justify-content: flex-start;
-  }
-
-  .right-logo {
-    justify-content: flex-end;
-  }
-
-  .logo-box img {
-    display: block;
-
-    max-width: 155px;
-
-    max-height: 38px;
-
-    object-fit: contain;
-  }
-
-
-  /* ==============================================
-     FROM / TO
-  ============================================== */
-
-  .from-to {
-    display: grid;
-
-    grid-template-columns:
-      1fr 1fr;
-
-    border-bottom:
-      1.5px solid #111;
-  }
-
-  .address-cell {
-    min-height: 128px;
-
-    padding: 9px 10px;
-
-    min-width: 0;
-  }
-
-  .address-cell
-    + .address-cell {
-    border-left:
-      1.5px solid #111;
-  }
-
-  .section-title {
-    font-size: 12px;
-
-    line-height: 16px;
-
-    font-weight: 700;
-  }
-
-  .name {
-    margin-top: 5px;
-
-    font-size: 16px;
-
-    line-height: 20px;
-
-    font-weight: 700;
-
-    overflow-wrap:
-      anywhere;
-  }
-
-  .address {
-    margin-top: 5px;
-
-    font-size: 12px;
-
-    line-height: 16px;
-
-    font-weight: 600;
-
-    overflow-wrap:
-      anywhere;
-  }
-
-  .phone {
-    margin-top: 5px;
-
-    font-size: 12px;
-
-    line-height: 16px;
-
-    font-weight: 700;
-
-    overflow-wrap:
-      anywhere;
-  }
-
-
-  /* ==============================================
-     AWB
-  ============================================== */
-
-  .awb-section {
-    text-align: center;
-
-    padding:
-      7px 9px 8px;
-
-    border-bottom:
-      1.5px solid #111;
-  }
-
-  .awb-line {
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-    gap: 7px;
-
-    white-space: nowrap;
-
-    min-height: 28px;
-  }
-
-  .awb-label {
-    font-size: 12px;
-
-    line-height: 20px;
-
-    font-weight: 700;
-  }
-
-  .awb-value {
-    font-size: 20px;
-
-    line-height: 24px;
-
-    font-weight: 800;
-
-    letter-spacing: 0.6px;
-  }
-
-  .barcode {
-    width: 100%;
-
-    margin-top: 5px;
-
-    display: flex;
-
-    justify-content: center;
-
-    align-items: center;
-
-    overflow: hidden;
-  }
-
-  /*
-   * IMPORTANT:
-   * Do not stretch the barcode.
-   *
-   * The barcode PNG is already generated
-   * at its correct dimensions by JsBarcode.
-   */
-
-  .barcode img {
-    display: block;
-
-    width: auto;
-
-    height: auto;
-
-    max-width: 285px;
-
-    max-height: 76px;
-
-    margin: 0 auto;
-
-    object-fit: contain;
-  }
-
-
-  /* ==============================================
-     PAYMENT / ORDER / WEIGHT
-  ============================================== */
-
-  .three-col {
-    display: grid;
-
-    grid-template-columns:
-      1fr 1fr 1.05fr;
-
-    border-bottom:
-      1.5px solid #111;
-  }
-
-  .info-cell {
-    min-height: 48px;
-
-    padding: 7px 8px;
-
-    display: flex;
-
-    flex-direction: column;
-
-    justify-content: center;
-  }
-
-  .info-cell
-    + .info-cell {
-    border-left:
-      1.5px solid #111;
-  }
-
-  .small-label {
-    font-size: 11px;
-
-    line-height: 15px;
-
-    font-weight: 700;
-  }
-
-  .value {
-    font-size: 14px;
-
-    line-height: 17px;
-
-    font-weight: 700;
-  }
-
-  .strong {
-    font-size: 12px;
-  }
-
-
-  /* ==============================================
-     SELLER TABLE
-  ============================================== */
-
-  .seller-table {
-    border-bottom:
-      1.5px solid #111;
-  }
-
-  .seller-head,
-  .seller-body {
-    display: grid;
-
-    grid-template-columns:
-      1.15fr
-      1.35fr
-      1fr
-      .9fr;
-
-    align-items: stretch;
-  }
-
-  .seller-head > div,
-  .seller-body > div {
-    padding:
-      6px 7px;
-
-    font-size: 11px;
-
-    line-height: 16px;
-
-    overflow-wrap:
-      anywhere;
-
-    display: flex;
-
-    align-items: center;
-  }
-
-  .seller-head {
-    min-height: 30px;
-
-    border-bottom:
-      1px solid #111;
-
-    font-weight: 700;
-  }
-
-  .seller-body {
-    min-height: 50px;
-
-    font-weight: 600;
-  }
-
-  .seller-head > div
-    + div,
-  .seller-body > div
-    + div {
-    border-left:
-      1px solid #111;
-  }
-
-
-  /* ==============================================
-     PRODUCT TABLE
-  ============================================== */
-
-  .product-table {
-    border-bottom:
-      1.5px solid #111;
-  }
-
-  .product-head,
-  .product-body {
-    display: grid;
-
-    grid-template-columns:
-      1.7fr
-      .8fr
-      .55fr
-      .9fr;
-
-    align-items: stretch;
-  }
-
-  .product-head {
-    min-height: 30px;
-
-    border-bottom:
-      1px solid #111;
-  }
-
-  .product-body {
-    min-height: 32px;
-  }
-
-  .product-head > div,
-  .product-body > div {
-    padding:
-      6px 7px;
-
-    font-size: 11px;
-
-    line-height: 16px;
-
-    overflow-wrap:
-      anywhere;
-
-    display: flex;
-
-    align-items: center;
-  }
-
-  .product-head > div {
-    font-weight: 700;
-  }
-
-  .product-body > div {
-    font-weight: 600;
-  }
-
-  .product-head > div
-    + div,
-  .product-body > div
-    + div {
-    border-left:
-      1px solid #111;
-  }
-
-  .product-head > div:nth-child(2),
-  .product-head > div:nth-child(4),
-  .product-body > div:nth-child(2),
-  .product-body > div:nth-child(4) {
-    justify-content: flex-end;
-
-    text-align: right;
-  }
-
-  .product-head > div:nth-child(3),
-  .product-body > div:nth-child(3) {
-    justify-content: center;
-
-    text-align: center;
-  }
-
-
-  /* ==============================================
-     RETURN
-  ============================================== */
-
-  .return-box {
-    padding:
-      8px 9px;
-
-    font-size: 10.5px;
-
-    line-height: 14px;
-
-    font-weight: 600;
-
-    overflow-wrap:
-      anywhere;
-  }
-
-  .return-box > div {
-    margin-bottom: 2px;
-  }
-
-  .return-box > div:last-child {
-    margin-bottom: 0;
-  }
-
-  .return-box > div:first-child {
-    font-weight: 700;
-  }
-
-
-  /* ==============================================
-     PRINT
-  ============================================== */
-
-  @page {
-    size:
-      ${size.widthIn}in
-      ${size.heightIn}in;
-
-    margin: 0;
-  }
-
-  @media print {
-
-    html,
-    body {
-      margin: 0 !important;
-
-      padding: 0 !important;
-
-      background:
-        #fff !important;
-    }
-
-    .shipdrop-label {
-      margin: 0 !important;
-    }
-  }
-`;
-
-/* =========================================================
-   PRINT SHIPPING LABELS
-========================================================= */
-
-export const printShippingLabels =
-  async (
-    orders,
-    passedSettings = null,
-    passedCustomLogo = null,
-    title =
-      "ShipDrop Shipping Labels",
-  ) => {
-    if (
-      !Array.isArray(orders) ||
-      !orders.length
-    ) {
-      toast.error(
-        "Please select at least one shipment",
-      );
-
+    if (!win) {
+      toast.error("Please allow pop-ups to print");
       return;
     }
 
-    try {
-      const settings =
-        await resolveSettings(
-          passedSettings,
-          passedCustomLogo,
-        );
+    win.document.open();
 
-      const detailedOrders =
-        await getDetailedOrders(
-          orders,
-        );
+    win.document.write(`
+      <!doctype html>
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <title>${escapeHtml(title)}</title>
 
-      const rightLogo =
-        getRightLogo(
-          settings,
-        );
+          <style>
+            html, body {
+              margin: 0;
+              padding: 0;
+              background: #fff;
+            }
 
-      const size =
-        getLabelSize(
-          settings.labelSize,
-        );
+            body {
+              font-family: Arial, Helvetica, sans-serif;
+            }
 
-      const html =
-        detailedOrders
-          .map(
-            (order) =>
-              buildLabelHtml(
-                order,
-                settings,
-                rightLogo,
-                shipdropLogo,
-              ),
-          )
-          .join("");
+            .shipping-label {
+              margin: 0 !important;
+            }
 
-      const win =
-        window.open(
-          "",
-          "_blank",
-          "width=900,height=700",
-        );
+            @page {
+              size: ${size.widthIn}in ${size.heightIn}in;
+              margin: 0;
+            }
 
-      if (!win) {
-        toast.error(
-          "Please allow pop-ups to print",
-        );
+            @media print {
+              html, body {
+                margin: 0 !important;
+                padding: 0 !important;
+              }
 
-        return;
-      }
+              .shipping-label {
+                page-break-after: always;
+              }
 
-      win.document.write(`
-        <!doctype html>
+              .shipping-label:last-child {
+                page-break-after: auto;
+              }
+            }
+          </style>
+        </head>
 
-        <html>
+        <body>${html}</body>
+      </html>
+    `);
 
-          <head>
+    win.document.close();
 
-            <title>
-              ${escapeHtml(
-                title,
-              )}
-            </title>
-
-            <style>
-              ${getLabelStyles(
-                size,
-              )}
-            </style>
-
-          </head>
-
-          <body>
-
-            <div class="print-wrapper">
-
-              ${html}
-
-            </div>
-
-          </body>
-
-        </html>
-      `);
-
-      win.document.close();
+    const printOnce = () => {
+      if (win.closed) return;
 
       win.focus();
+      win.print();
+    };
 
-      setTimeout(
-        () => {
-          win.print();
+    // Wait for the document and its images before printing.
+    const images = Array.from(win.document.images);
 
-          setTimeout(
-            () => {
-              win.close();
-            },
-            1000,
-          );
-        },
-        700,
-      );
-    } catch (error) {
-      console.error(
-        "Print label error:",
-        error,
-      );
+    await Promise.all(
+      images.map((img) => {
+        if (img.complete) return Promise.resolve();
 
-      toast.error(
-        error?.message ||
-          "Unable to print labels",
-      );
-
-      throw error;
-    }
-  };
-
-/* =========================================================
-   DOWNLOAD SHIPPING LABELS
-========================================================= */
-
-export const downloadShippingLabels =
-  async (
-    orders,
-    passedSettings = null,
-    passedCustomLogo = null,
-  ) => {
-    if (
-      !Array.isArray(orders) ||
-      !orders.length
-    ) {
-      toast.error(
-        "Please select at least one shipment",
-      );
-
-      return;
-    }
-
-    let renderContainer =
-      null;
-
-    try {
-      /* ---------------------------------------------
-         SETTINGS
-      --------------------------------------------- */
-
-      const settings =
-        await resolveSettings(
-          passedSettings,
-          passedCustomLogo,
-        );
-
-      const detailedOrders =
-        await getDetailedOrders(
-          orders,
-        );
-
-      const size =
-        getLabelSize(
-          settings.labelSize,
-        );
-
-      /* ---------------------------------------------
-         LOGOS
-      --------------------------------------------- */
-
-      const shipLogoData =
-        await imageUrlToDataUrl(
-          shipdropLogo,
-        );
-
-      const configuredLogo =
-        getRightLogo(
-          settings,
-        );
-
-      const rightLogoData =
-        await imageUrlToDataUrl(
-          configuredLogo,
-        );
-
-      let finalRightLogo =
-        rightLogoData;
-
-      if (!finalRightLogo) {
-        finalRightLogo =
-          await imageUrlToDataUrl(
-            delhiveryLogo,
-          );
-      }
-
-      const finalShipLogo =
-        shipLogoData ||
-        shipdropLogo;
-
-      /* ---------------------------------------------
-         HIDDEN RENDER CONTAINER
-      --------------------------------------------- */
-
-      renderContainer =
-        document.createElement(
-          "div",
-        );
-
-      renderContainer.style.position =
-        "fixed";
-
-      renderContainer.style.left =
-        "-100000px";
-
-      renderContainer.style.top =
-        "0";
-
-      renderContainer.style.width =
-        `${
-          size.widthIn * 96
-        }px`;
-
-      renderContainer.style.background =
-        "#ffffff";
-
-      renderContainer.style.zIndex =
-        "-999999";
-
-      renderContainer.style.visibility =
-        "visible";
-
-      document.body.appendChild(
-        renderContainer,
-      );
-
-      /* ---------------------------------------------
-         CSS
-      --------------------------------------------- */
-
-      const style =
-        document.createElement(
-          "style",
-        );
-
-      style.textContent = `
-        ${getLabelStyles(
-          size,
-        )}
-
-        html,
-        body {
-          margin: 0 !important;
-
-          padding: 0 !important;
-
-          background:
-            #ffffff !important;
-        }
-
-        .download-wrapper {
-          width:
-            ${
-              size.widthIn *
-              96
-            }px !important;
-
-          margin: 0 !important;
-
-          padding: 0 !important;
-
-          background:
-            #ffffff !important;
-        }
-
-        .download-wrapper
-        .shipdrop-label {
-          width:
-            ${size.widthIn}in !important;
-
-          min-height:
-            ${size.heightIn}in !important;
-
-          margin: 0 !important;
-
-          padding: 7px !important;
-
-          background:
-            #ffffff !important;
-        }
-
-        /*
-         * Barcode PNG should NOT be
-         * stretched or squeezed.
-         */
-
-        .download-wrapper
-        .barcode img {
-          width: auto !important;
-
-          height: auto !important;
-
-          max-width: 285px !important;
-
-          max-height: 76px !important;
-        }
-      `;
-
-      renderContainer.appendChild(
-        style,
-      );
-
-      const wrapper =
-        document.createElement(
-          "div",
-        );
-
-      wrapper.className =
-        "download-wrapper";
-
-      renderContainer.appendChild(
-        wrapper,
-      );
-
-      /* ---------------------------------------------
-         CREATE PDF
-      --------------------------------------------- */
-
-      const pdf =
-        new jsPDF({
-          orientation:
-            size.widthMm >
-            size.heightMm
-              ? "landscape"
-              : "portrait",
-
-          unit: "mm",
-
-          format: [
-            size.widthMm,
-            size.heightMm,
-          ],
-
-          compress: true,
+        return new Promise((resolve) => {
+          img.onload = resolve;
+          img.onerror = resolve;
         });
+      })
+    );
 
-      /* ---------------------------------------------
-         RENDER EVERY LABEL
-      --------------------------------------------- */
+    win.setTimeout(printOnce, 300);
 
-      for (
-        let index = 0;
-        index <
-        detailedOrders.length;
-        index += 1
-      ) {
-        const order =
-          detailedOrders[
-            index
-          ];
+    toast.success(
+      `${detailedOrders.length} ${
+        detailedOrders.length === 1 ? "label" : "labels"
+      } ready to print`
+    );
+  } catch (error) {
+    console.error("Print label error:", error);
+    toast.error(error?.message || "Unable to print labels");
 
-        wrapper.innerHTML =
-          buildLabelHtml(
-            order,
-            settings,
-            finalRightLogo,
-            finalShipLogo,
-          );
+    if (win && !win.closed) {
+      win.close();
+    }
+  }
+};
 
-        const label =
-          wrapper.querySelector(
-            ".shipdrop-label",
-          );
+export const downloadShippingLabels = async (orders) => {
+  if (!Array.isArray(orders) || orders.length === 0) {
+    toast.error("Please select at least one shipment");
+    return;
+  }
 
-        if (!label) {
-          throw new Error(
-            "Shipping label could not be rendered.",
-          );
-        }
+  let staging;
 
-        /* -----------------------------------------
-           WAIT FOR IMAGES
-        ----------------------------------------- */
+  try {
+    const { settings, detailedOrders, size, rightLogo } =
+      await prepareLabels(orders);
 
-        const images =
-          Array.from(
-            label.querySelectorAll(
-              "img",
-            ),
-          );
+    staging = document.createElement("div");
 
-        await Promise.all(
-          images.map(
-            (img) =>
-              new Promise(
-                (resolve) => {
-                  if (
-                    img.complete &&
-                    img.naturalWidth >
-                      0
-                  ) {
-                    resolve();
+    staging.style.cssText = `
+      position: fixed;
+      left: -10000px;
+      top: 0;
+      width: ${size.widthIn}in;
+      background: #fff;
+      z-index: -1;
+    `;
 
-                    return;
-                  }
+    document.body.appendChild(staging);
 
-                  img.onload =
-                    resolve;
+    const labels = [];
 
-                  img.onerror =
-                    resolve;
-                },
-              ),
-          ),
-        );
+    for (const order of detailedOrders) {
+      const holder = document.createElement("div");
 
-        /* -----------------------------------------
-           WAIT FOR FONTS
-        ----------------------------------------- */
-
-        if (
-          document.fonts &&
-          document.fonts.ready
-        ) {
-          await document.fonts.ready;
-        }
-
-        /* -----------------------------------------
-           WAIT FOR LAYOUT
-        ----------------------------------------- */
-
-        await new Promise(
-          (resolve) =>
-            requestAnimationFrame(
-              () =>
-                requestAnimationFrame(
-                  resolve,
-                ),
-            ),
-        );
-
-        /* -----------------------------------------
-           HTML -> CANVAS
-        ----------------------------------------- */
-
-        const rect =
-          label.getBoundingClientRect();
-
-        const canvas =
-          await html2canvas(
-            label,
-            {
-              backgroundColor:
-                "#ffffff",
-
-              /*
-               * High resolution.
-               */
-              scale: 4,
-
-              useCORS: false,
-
-              allowTaint: false,
-
-              logging: false,
-
-              imageTimeout:
-                15000,
-
-              removeContainer:
-                true,
-
-              foreignObjectRendering:
-                false,
-
-              width:
-                Math.ceil(
-                  rect.width,
-                ),
-
-              height:
-                Math.ceil(
-                  rect.height,
-                ),
-            },
-          );
-
-        /* -----------------------------------------
-           CANVAS -> PNG
-        ----------------------------------------- */
-
-        const imageData =
-          canvas.toDataURL(
-            "image/png",
-            1.0,
-          );
-
-        /* -----------------------------------------
-           ADD PDF PAGE
-        ----------------------------------------- */
-
-        if (index > 0) {
-          pdf.addPage(
-            [
-              size.widthMm,
-              size.heightMm,
-            ],
-            size.widthMm >
-              size.heightMm
-              ? "landscape"
-              : "portrait",
-          );
-        }
-
-        /* -----------------------------------------
-           ADD LABEL TO PAGE
-        ----------------------------------------- */
-
-        pdf.addImage(
-          imageData,
-          "PNG",
-          0,
-          0,
-          size.widthMm,
-          size.heightMm,
-          undefined,
-          "FAST",
-        );
-      }
-
-      /* ---------------------------------------------
-         FILE NAME
-      --------------------------------------------- */
-
-      const fileName =
-        detailedOrders.length ===
-        1
-          ? `shipdrop-label-${getAWB(
-              detailedOrders[0],
-            )}.pdf`
-          : `shipdrop-labels-${new Date()
-              .toISOString()
-              .slice(
-                0,
-                10,
-              )}.pdf`;
-
-      /* ---------------------------------------------
-         SAVE PDF
-      --------------------------------------------- */
-
-      pdf.save(
-        fileName,
+      holder.innerHTML = buildLabelHtml(
+        order,
+        settings,
+        rightLogo,
+        size
       );
 
-      toast.success(
-        `${detailedOrders.length} ${
-          detailedOrders.length ===
-          1
-            ? "label"
-            : "labels"
-        } downloaded`,
-      );
-    } catch (error) {
-      console.error(
-        "Download label error:",
-        error,
-      );
+      const label = holder.querySelector(".shipping-label");
 
-      toast.error(
-        error?.message ||
-          "Unable to download labels",
-      );
-
-      throw error;
-    } finally {
-      if (
-        renderContainer &&
-        renderContainer.parentNode
-      ) {
-        renderContainer.remove();
+      if (label) {
+        staging.appendChild(label);
+        labels.push(label);
       }
     }
-  };
 
-/* =========================================================
-   EXPORT
-========================================================= */
+    if (!labels.length) {
+      throw new Error("No labels could be generated");
+    }
 
-export {
-  DEFAULT_LABEL_SETTINGS,
+    const images = Array.from(staging.querySelectorAll("img"));
+
+    await Promise.all(
+      images.map((img) => {
+        if (img.complete && img.naturalWidth > 0) {
+          return Promise.resolve();
+        }
+
+        return new Promise((resolve) => {
+          img.onload = resolve;
+          img.onerror = resolve;
+        });
+      })
+    );
+
+    const pdf = new jsPDF({
+      orientation:
+        size.widthMm > size.heightMm ? "landscape" : "portrait",
+      unit: "mm",
+      format: [size.widthMm, size.heightMm],
+      compress: true,
+    });
+
+    for (let index = 0; index < labels.length; index += 1) {
+      const canvas = await html2canvas(labels[index], {
+        scale: 3,
+        backgroundColor: "#ffffff",
+        useCORS: true,
+        logging: false,
+      });
+
+      const image = canvas.toDataURL("image/jpeg", 0.96);
+
+      if (index > 0) {
+        pdf.addPage(
+          [size.widthMm, size.heightMm],
+          size.widthMm > size.heightMm ? "landscape" : "portrait"
+        );
+      }
+
+      pdf.addImage(
+        image,
+        "JPEG",
+        0,
+        0,
+        size.widthMm,
+        size.heightMm,
+        undefined,
+        "FAST"
+      );
+    }
+
+    const firstAwb = getAWB(detailedOrders[0]).replace(
+      /[^a-zA-Z0-9_-]/g,
+      "-"
+    );
+
+    const filename =
+      detailedOrders.length === 1
+        ? `parceldrop-label-${firstAwb}.pdf`
+        : `parceldrop-labels-${new Date()
+            .toISOString()
+            .slice(0, 10)}.pdf`;
+
+    pdf.save(filename);
+
+    toast.success(
+      `${detailedOrders.length} ${
+        detailedOrders.length === 1 ? "label" : "labels"
+      } downloaded`
+    );
+  } catch (error) {
+    console.error("Download label error:", error);
+    toast.error(error?.message || "Unable to download labels");
+  } finally {
+    staging?.remove();
+  }
 };
