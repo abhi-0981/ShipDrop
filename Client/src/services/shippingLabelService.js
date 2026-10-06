@@ -1,3 +1,4 @@
+
 import { jsPDF } from "jspdf";
 import JsBarcode from "jsbarcode";
 import html2canvas from "html2canvas";
@@ -57,9 +58,12 @@ const getStoredUser = () => {
       if (!raw) continue;
 
       const user = JSON.parse(raw);
-      if (user && typeof user === "object") return user;
+
+      if (user && typeof user === "object") {
+        return user;
+      }
     } catch {
-      // Ignore invalid local storage.
+      // Ignore invalid stored values.
     }
   }
 
@@ -236,7 +240,8 @@ const getCodAmount = (o) =>
     )
   ) || 0;
 
-const money = (v) => `₹${(Number(v) || 0).toFixed(2)}`;
+const money = (value) =>
+  `₹${(Number(value) || 0).toFixed(2)}`;
 
 const getDate = (o) =>
   first(
@@ -250,11 +255,11 @@ const getDate = (o) =>
   );
 
 const formatDate = (value) => {
-  const d = new Date(value);
+  const date = new Date(value);
 
-  return Number.isNaN(d.getTime())
+  return Number.isNaN(date.getTime())
     ? "—"
-    : d.toLocaleDateString("en-IN", {
+    : date.toLocaleDateString("en-IN", {
         day: "2-digit",
         month: "short",
         year: "numeric",
@@ -263,7 +268,6 @@ const formatDate = (value) => {
 
 const getFromName = (o) => {
   const warehouse = o.warehouse || {};
-  const pickup = o.pickup_address_details || {};
 
   return txt(
     first(
@@ -280,7 +284,8 @@ const getFromName = (o) => {
       o.shipperName,
       o.seller_name,
       o.sellerName
-    )
+    ),
+    ""
   );
 };
 
@@ -316,35 +321,59 @@ const getAlternateFromMobile = (o) =>
   );
 
 const getFromAddress = (o) => {
-  const w = o.warehouse || {};
-  const p = o.pickup_address_details || {};
+  const warehouse = o.warehouse || {};
+  const pickup = o.pickup_address_details || {};
 
   return [
     first(
-      w.address_line1,
-      w.addressLine1,
-      w.address,
+      warehouse.address_line1,
+      warehouse.addressLine1,
+      warehouse.address,
       o.warehouse_address_line1,
       o.warehouseAddressLine1,
       o.pickup_address,
       o.pickupAddress,
       o.shipper_address,
       o.shipperAddress,
-      p.address_line1,
-      p.address
+      pickup.address_line1,
+      pickup.address
     ),
     first(
-      w.address_line2,
-      w.addressLine2,
+      warehouse.address_line2,
+      warehouse.addressLine2,
       o.warehouse_address_line2,
       o.pickup_address_line2,
-      p.address_line2
+      pickup.address_line2
     ),
-    first(w.landmark, o.warehouse_landmark, o.pickup_landmark, p.landmark),
-    first(w.city, o.warehouse_city, o.pickup_city, p.city),
-    first(w.state, o.warehouse_state, o.pickup_state, p.state),
-    first(w.pincode, o.warehouse_pincode, o.pickup_pincode, p.pincode),
-    first(w.country, o.pickup_country, "India"),
+    first(
+      warehouse.landmark,
+      o.warehouse_landmark,
+      o.pickup_landmark,
+      pickup.landmark
+    ),
+    first(
+      warehouse.city,
+      o.warehouse_city,
+      o.pickup_city,
+      pickup.city
+    ),
+    first(
+      warehouse.state,
+      o.warehouse_state,
+      o.pickup_state,
+      pickup.state
+    ),
+    first(
+      warehouse.pincode,
+      o.warehouse_pincode,
+      o.pickup_pincode,
+      pickup.pincode
+    ),
+    first(
+      warehouse.country,
+      o.pickup_country,
+      "India"
+    ),
   ]
     .filter(Boolean)
     .join(", ");
@@ -370,9 +399,25 @@ const getBuyerAddress = (o) => {
       o.buyer_address2,
       customer.address_line2
     ),
-    first(o.landmark, o.buyer_landmark, customer.landmark),
-    first(o.city, o.delivery_city, o.deliveryCity, o.buyer_city, customer.city),
-    first(o.state, o.delivery_state, o.deliveryState, o.buyer_state, customer.state),
+    first(
+      o.landmark,
+      o.buyer_landmark,
+      customer.landmark
+    ),
+    first(
+      o.city,
+      o.delivery_city,
+      o.deliveryCity,
+      o.buyer_city,
+      customer.city
+    ),
+    first(
+      o.state,
+      o.delivery_state,
+      o.deliveryState,
+      o.buyer_state,
+      customer.state
+    ),
     first(
       o.pincode,
       o.delivery_pincode,
@@ -380,7 +425,12 @@ const getBuyerAddress = (o) => {
       o.buyer_pincode,
       customer.pincode
     ),
-    first(o.country, o.buyer_country, customer.country, "India"),
+    first(
+      o.country,
+      o.buyer_country,
+      customer.country,
+      "India"
+    ),
   ]
     .filter(Boolean)
     .join(", ");
@@ -452,13 +502,37 @@ const getSellerGstin = (o) => {
 
 const getReturnAddress = (o) =>
   [
-    first(o.return_address_line1, o.returnAddressLine1, o.return_address, o.returnAddress),
-    first(o.return_address_line2, o.returnAddressLine2),
-    first(o.return_landmark, o.returnLandmark),
-    first(o.return_city, o.returnCity),
-    first(o.return_state, o.returnState),
-    first(o.return_pincode, o.returnPincode),
-    first(o.return_country, o.returnCountry, "India"),
+    first(
+      o.return_address_line1,
+      o.returnAddressLine1,
+      o.return_address,
+      o.returnAddress
+    ),
+    first(
+      o.return_address_line2,
+      o.returnAddressLine2
+    ),
+    first(
+      o.return_landmark,
+      o.returnLandmark
+    ),
+    first(
+      o.return_city,
+      o.returnCity
+    ),
+    first(
+      o.return_state,
+      o.returnState
+    ),
+    first(
+      o.return_pincode,
+      o.returnPincode
+    ),
+    first(
+      o.return_country,
+      o.returnCountry,
+      "India"
+    ),
   ]
     .filter(Boolean)
     .join(", ");
@@ -467,7 +541,8 @@ const getProducts = (o) => {
   const list =
     Array.isArray(o.products) && o.products.length
       ? o.products
-      : Array.isArray(o.order_products) && o.order_products.length
+      : Array.isArray(o.order_products) &&
+          o.order_products.length
         ? o.order_products
         : [
             {
@@ -477,7 +552,11 @@ const getProducts = (o) => {
                 o.shipment,
                 "Product"
               ),
-              quantity: first(o.quantity, o.qty, 1),
+              quantity: first(
+                o.quantity,
+                o.qty,
+                1
+              ),
               price: first(
                 o.product_value,
                 o.productValue,
@@ -489,49 +568,55 @@ const getProducts = (o) => {
             },
           ];
 
-  return list.map((p) => {
-    const qty =
+  return list.map((product) => {
+    const quantity =
       Number(
         first(
-          p.quantity,
-          p.qty,
-          p.product_quantity,
-          p.productQuantity,
+          product.quantity,
+          product.qty,
+          product.product_quantity,
+          product.productQuantity,
           1
         )
       ) || 1;
 
     const totalValue = first(
-      p.total,
-      p.total_price,
-      p.totalPrice,
-      p.line_total,
-      p.lineTotal,
-      p.amount
+      product.total,
+      product.total_price,
+      product.totalPrice,
+      product.line_total,
+      product.lineTotal,
+      product.amount
     );
 
     const rate =
       Number(
         first(
-          p.rate,
-          p.price,
-          p.unit_price,
-          p.unitPrice,
-          p.product_price,
-          p.productPrice,
-          totalValue !== undefined ? Number(totalValue) / qty : 0
+          product.rate,
+          product.price,
+          product.unit_price,
+          product.unitPrice,
+          product.product_price,
+          product.productPrice,
+          totalValue !== undefined
+            ? Number(totalValue) / quantity
+            : 0
         )
       ) || 0;
 
     return {
       name: txt(
-        first(p.product_name, p.productName, p.name, p.product),
+        first(
+          product.product_name,
+          product.productName,
+          product.name,
+          product.product
+        ),
         "Product"
       ),
-      qty,
+      qty: quantity,
       rate,
-      total:
-        Number(totalValue) || rate * qty,
+      total: Number(totalValue) || rate * quantity,
     };
   });
 };
@@ -578,34 +663,77 @@ const getLabelSize = (value) => {
   return sizes[value] || sizes["4x6"];
 };
 
-const normalizeSettings = (d = {}) => ({
+const normalizeSettings = (data = {}) => ({
   ...DEFAULT_LABEL_SETTINGS,
 
-  orderValue: Boolean(d.order_value ?? d.orderValue ?? true),
-  codAmount: Boolean(d.cod_amount ?? d.codAmount ?? true),
-  buyerMobile: Boolean(d.buyer_mobile ?? d.buyerMobile ?? true),
-  shipperMobiles: Boolean(d.shipper_mobiles ?? d.shipperMobiles ?? true),
-  shipperAddress: Boolean(d.shipper_address ?? d.shipperAddress ?? true),
-  fromName: Boolean(d.from_name ?? d.fromName ?? true),
-  fromAddress: Boolean(d.from_address ?? d.fromAddress ?? true),
-  fromMobile: Boolean(d.from_mobile ?? d.fromMobile ?? true),
-  productName: Boolean(d.product_name ?? d.productName ?? true),
-  productDetails: Boolean(d.product_details ?? d.productDetails ?? true),
-  servicesTnc: Boolean(d.services_tnc ?? d.servicesTnc ?? false),
-  orderId: Boolean(d.order_id ?? d.orderId ?? false),
-  orderWeight: Boolean(d.order_weight ?? d.orderWeight ?? false),
-  returnAddress: Boolean(d.return_address ?? d.returnAddress ?? true),
-  contactLine: Boolean(d.contact_line ?? d.contactLine ?? true),
+  orderValue: Boolean(
+    data.order_value ?? data.orderValue ?? true
+  ),
+  codAmount: Boolean(
+    data.cod_amount ?? data.codAmount ?? true
+  ),
+  buyerMobile: Boolean(
+    data.buyer_mobile ?? data.buyerMobile ?? true
+  ),
+  shipperMobiles: Boolean(
+    data.shipper_mobiles ?? data.shipperMobiles ?? true
+  ),
+  shipperAddress: Boolean(
+    data.shipper_address ?? data.shipperAddress ?? true
+  ),
+  fromName: Boolean(
+    data.from_name ?? data.fromName ?? true
+  ),
+  fromAddress: Boolean(
+    data.from_address ?? data.fromAddress ?? true
+  ),
+  fromMobile: Boolean(
+    data.from_mobile ?? data.fromMobile ?? true
+  ),
+  productName: Boolean(
+    data.product_name ?? data.productName ?? true
+  ),
+  productDetails: Boolean(
+    data.product_details ?? data.productDetails ?? true
+  ),
+  servicesTnc: Boolean(
+    data.services_tnc ?? data.servicesTnc ?? false
+  ),
+  orderId: Boolean(
+    data.order_id ?? data.orderId ?? false
+  ),
+  orderWeight: Boolean(
+    data.order_weight ?? data.orderWeight ?? false
+  ),
+  returnAddress: Boolean(
+    data.return_address ?? data.returnAddress ?? true
+  ),
+  contactLine: Boolean(
+    data.contact_line ?? data.contactLine ?? true
+  ),
 
-  rightLogoMode: d.right_logo_mode || d.rightLogoMode || "delhivery",
-  labelSize: d.label_size || d.labelSize || "4x6",
-  customLogo: d.custom_logo || d.customLogo || null,
+  rightLogoMode:
+    data.right_logo_mode ||
+    data.rightLogoMode ||
+    "delhivery",
+
+  labelSize:
+    data.label_size ||
+    data.labelSize ||
+    "4x6",
+
+  customLogo:
+    data.custom_logo ||
+    data.customLogo ||
+    null,
 });
 
 const getLabelSettings = async () => {
   const userId = getUserId();
 
-  if (!userId) return { ...DEFAULT_LABEL_SETTINGS };
+  if (!userId) {
+    return { ...DEFAULT_LABEL_SETTINGS };
+  }
 
   try {
     const response = await api.get("/label-settings", {
@@ -632,7 +760,11 @@ const getDetailedOrders = async (orders) => {
 
   return Promise.all(
     orders.map(async (order) => {
-      const id = first(order?.order_id, order?.orderId, order?.id);
+      const id = first(
+        order?.order_id,
+        order?.orderId,
+        order?.id
+      );
 
       if (!id) return order;
 
@@ -652,11 +784,23 @@ const getDetailedOrders = async (orders) => {
         return {
           ...order,
           ...full,
-          awb: first(order.awb, full.awb, full.waybill),
-          order_id: first(order.order_id, full.order_id),
+          awb: first(
+            order.awb,
+            full.awb,
+            full.waybill
+          ),
+          order_id: first(
+            order.order_id,
+            full.order_id
+          ),
         };
       } catch (error) {
-        console.warn("Could not fetch complete order:", id, error);
+        console.warn(
+          "Could not fetch complete order:",
+          id,
+          error
+        );
+
         return order;
       }
     })
@@ -666,7 +810,9 @@ const getDetailedOrders = async (orders) => {
 const imageToDataUrl = async (source) => {
   if (!source) return "";
 
-  if (String(source).startsWith("data:")) return source;
+  if (String(source).startsWith("data:")) {
+    return source;
+  }
 
   const response = await fetch(source);
 
@@ -719,6 +865,7 @@ const buildLabelHtml = (
   const payment = getPaymentType(order);
   const fromAddress = getFromAddress(order);
   const buyerAddress = getBuyerAddress(order);
+
   const fromMobiles = [
     getFromMobile(order),
     getAlternateFromMobile(order),
@@ -727,22 +874,51 @@ const buildLabelHtml = (
     .join(" / ");
 
   const showFromName = settings.fromName !== false;
+
   const showFromAddress =
     settings.fromAddress !== false &&
     settings.shipperAddress !== false;
+
   const showFromMobile =
     settings.fromMobile !== false &&
     settings.shipperMobiles !== false;
+
   const showBuyerMobile =
-    settings.buyerMobile !== false && Boolean(getMobile(order));
+    settings.buyerMobile !== false &&
+    Boolean(getMobile(order));
+
   const showWeight = settings.orderWeight === true;
   const showOrderId = settings.orderId === true;
-  const showOrderValue = settings.orderValue !== false;
+
+  const showOrderValue =
+    settings.orderValue !== false;
+
   const showCod =
-    settings.codAmount !== false && payment === "COD";
+    settings.codAmount !== false &&
+    payment === "COD";
+
   const showProducts =
     settings.productDetails !== false &&
     settings.productName !== false;
+
+  // Only enabled, non-empty fields count as From details.
+  const fromName = showFromName
+    ? getFromName(order)
+    : "";
+
+  const fromAddressValue = showFromAddress
+    ? fromAddress
+    : "";
+
+  const fromMobileValue = showFromMobile
+    ? fromMobiles
+    : "";
+
+  const hasFromDetails = Boolean(
+    fromName.trim() ||
+    fromAddressValue.trim() ||
+    fromMobileValue.trim()
+  );
 
   const products = getProducts(order);
 
@@ -750,12 +926,12 @@ const buildLabelHtml = (
     ? products
         .slice(0, isA4 ? 12 : compact ? 1 : 4)
         .map(
-          (p) => `
+          (product) => `
             <tr>
-              <td class="product-name">${esc(p.name)}</td>
-              <td>${p.rate.toFixed(2)}</td>
-              <td>${p.qty}</td>
-              <td>${p.total.toFixed(2)}</td>
+              <td class="product-name">${esc(product.name)}</td>
+              <td>${product.rate.toFixed(2)}</td>
+              <td>${product.qty}</td>
+              <td>${product.total.toFixed(2)}</td>
             </tr>
           `
         )
@@ -764,10 +940,21 @@ const buildLabelHtml = (
 
   const orderCells = [
     showOrderId
-      ? `<div class="info-cell"><span>ORDER ID</span><b>${esc(getOrderId(order))}</b></div>`
+      ? `
+        <div class="info-cell">
+          <span>ORDER ID</span>
+          <b>${esc(getOrderId(order))}</b>
+        </div>
+      `
       : "",
+
     showOrderValue
-      ? `<div class="info-cell"><span>ORDER VALUE</span><b>${money(getOrderValue(order))}</b></div>`
+      ? `
+        <div class="info-cell">
+          <span>ORDER VALUE</span>
+          <b>${money(getOrderValue(order))}</b>
+        </div>
+      `
       : "",
   ].filter(Boolean);
 
@@ -778,47 +965,55 @@ const buildLabelHtml = (
     "For complaints & queries please contact 8766066070, 0141-4797120";
 
   return `
-    <article class="shipping-label ${compact ? "compact" : ""} ${isA4 ? "a4" : ""}"
-      style="width:${size.widthIn}in;height:${size.heightIn}in">
-
+    <article
+      class="shipping-label ${compact ? "compact" : ""} ${isA4 ? "a4" : ""}"
+      style="width:${size.widthIn}in;height:${size.heightIn}in"
+    >
       <div class="label-border">
 
         <header class="logos">
           <div class="logo left">
             <img src="${esc(leftLogo)}" alt="ParcelDrop" />
           </div>
+
           <div class="logo right">
-            <img src="${esc(rightLogo)}" alt="Delhivery" />
+            <img src="${esc(rightLogo)}" alt="Carrier" />
           </div>
         </header>
 
-        <!-- FROM / TO FIRST -->
+        <!-- ADDRESS SECTION -->
 
-        <section class="addresses">
+        <section class="addresses ${hasFromDetails ? "has-from" : "to-only"}">
 
-          <div class="address-block">
-            <div class="eyebrow">FROM / SHIPPER</div>
+          ${
+            hasFromDetails
+              ? `
+                <div class="address-block">
+                  <div class="eyebrow">FROM / SHIPPER</div>
 
-            ${
-              showFromName
-                ? `<b class="person">${esc(getFromName(order))}</b>`
-                : ""
-            }
+                  ${
+                    fromName
+                      ? `<b class="person">${esc(fromName)}</b>`
+                      : ""
+                  }
 
-            ${
-              showFromAddress && fromAddress
-                ? `<div class="address">${esc(fromAddress)}</div>`
-                : ""
-            }
+                  ${
+                    fromAddressValue
+                      ? `<div class="address">${esc(fromAddressValue)}</div>`
+                      : ""
+                  }
 
-            ${
-              showFromMobile && fromMobiles
-                ? `<div class="phone">☎ ${esc(fromMobiles)}</div>`
-                : ""
-            }
-          </div>
+                  ${
+                    fromMobileValue
+                      ? `<div class="phone">☎ ${esc(fromMobileValue)}</div>`
+                      : ""
+                  }
+                </div>
+              `
+              : ""
+          }
 
-          <div class="address-block">
+          <div class="address-block to-block">
             <div class="eyebrow">SHIP TO / CONSIGNEE</div>
 
             <b class="person">${esc(getCustomerName(order))}</b>
@@ -834,13 +1029,15 @@ const buildLabelHtml = (
 
         </section>
 
-        <!-- AWB AFTER ADDRESS -->
+        <!-- AWB AND BARCODE -->
 
         <section class="awb">
           <div class="eyebrow">AWB NUMBER</div>
           <div class="awb-number">${esc(awb)}</div>
           <div class="barcode">${createBarcode(awb, compact)}</div>
         </section>
+
+        <!-- PAYMENT / SERVICE / OPTIONAL WEIGHT -->
 
         <section class="summary ${showWeight ? "three-cols" : "two-cols"}">
           <div>
@@ -855,20 +1052,37 @@ const buildLabelHtml = (
 
           ${
             showWeight
-              ? `<div><span>WEIGHT</span><b>${getWeight(order).toFixed(2)} KG</b></div>`
+              ? `
+                <div>
+                  <span>WEIGHT</span>
+                  <b>${getWeight(order).toFixed(2)} KG</b>
+                </div>
+              `
               : ""
           }
         </section>
 
         ${
           orderCells.length
-            ? `<section class="order-info" style="grid-template-columns:repeat(${orderCells.length},minmax(0,1fr))">${orderCells.join("")}</section>`
+            ? `
+              <section
+                class="order-info"
+                style="grid-template-columns:repeat(${orderCells.length},minmax(0,1fr))"
+              >
+                ${orderCells.join("")}
+              </section>
+            `
             : ""
         }
 
         ${
           showCod
-            ? `<section class="cod"><b>CASH ON DELIVERY</b><strong>${money(getCodAmount(order))}</strong></section>`
+            ? `
+              <section class="cod">
+                <b>CASH ON DELIVERY</b>
+                <strong>${money(getCodAmount(order))}</strong>
+              </section>
+            `
             : ""
         }
 
@@ -887,6 +1101,7 @@ const buildLabelHtml = (
                       <th>Total (₹)</th>
                     </tr>
                   </thead>
+
                   <tbody>${productRows}</tbody>
                 </table>
               </section>
@@ -937,7 +1152,9 @@ const buildLabelHtml = (
     </article>
 
     <style>
-      * { box-sizing: border-box; }
+      * {
+        box-sizing: border-box;
+      }
 
       .shipping-label {
         margin: 0;
@@ -960,7 +1177,6 @@ const buildLabelHtml = (
         border: 1px solid #111827;
         display: flex;
         flex-direction: column;
-        justify-content: flex-start;
         align-items: stretch;
         overflow: hidden;
         background: #fff;
@@ -984,8 +1200,13 @@ const buildLabelHtml = (
         align-items: center;
       }
 
-      .logo.left { justify-content: flex-start; }
-      .logo.right { justify-content: flex-end; }
+      .logo.left {
+        justify-content: flex-start;
+      }
+
+      .logo.right {
+        justify-content: flex-end;
+      }
 
       .logo img {
         display: block;
@@ -1001,6 +1222,11 @@ const buildLabelHtml = (
         border-bottom: 1px solid #111827;
       }
 
+      /* When From has no enabled data, To takes the full width. */
+      .addresses.to-only {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
       .address-block {
         min-width: 0;
         padding: ${compact ? "1mm" : isA4 ? "4mm" : "2mm"};
@@ -1009,6 +1235,11 @@ const buildLabelHtml = (
 
       .address-block + .address-block {
         border-left: 1px solid #111827;
+      }
+
+      .addresses.to-only .address-block {
+        width: 100%;
+        border-left: none;
       }
 
       .eyebrow {
@@ -1070,8 +1301,13 @@ const buildLabelHtml = (
         border-bottom: 1px solid #111827;
       }
 
-      .summary.two-cols { grid-template-columns: 1fr 1fr; }
-      .summary.three-cols { grid-template-columns: 1fr 1fr 1fr; }
+      .summary.two-cols {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .summary.three-cols {
+        grid-template-columns: 1fr 1fr 1fr;
+      }
 
       .summary > div {
         min-width: 0;
@@ -1130,8 +1366,13 @@ const buildLabelHtml = (
         border-bottom: 1px solid #111827;
       }
 
-      .cod b { font-size: ${compact ? "5pt" : "7.5pt"}; }
-      .cod strong { font-size: ${compact ? "5.5pt" : "9pt"}; }
+      .cod b {
+        font-size: ${compact ? "5pt" : "7.5pt"};
+      }
+
+      .cod strong {
+        font-size: ${compact ? "5.5pt" : "9pt"};
+      }
 
       .products {
         flex: 0 0 auto;
@@ -1152,7 +1393,8 @@ const buildLabelHtml = (
         font-size: ${compact ? "4pt" : isA4 ? "9pt" : "5.5pt"};
       }
 
-      th, td {
+      th,
+      td {
         border: 1px solid #9ca3af;
         padding: ${compact ? ".5mm" : "1mm"};
         text-align: right;
@@ -1164,7 +1406,8 @@ const buildLabelHtml = (
         background: #f3f4f6;
       }
 
-      th:first-child, td:first-child {
+      th:first-child,
+      td:first-child {
         text-align: left;
         width: 46%;
       }
@@ -1228,8 +1471,9 @@ const prepareLabels = async (orders) => {
 
   const leftLogoData = await imageToDataUrl(shipdropLogo);
 
-  let rightLogoSource =
-    settings.rightLogoMode === "custom" && settings.customLogo
+  const rightLogoSource =
+    settings.rightLogoMode === "custom" &&
+    settings.customLogo
       ? settings.customLogo
       : delhiveryLogo;
 
@@ -1281,7 +1525,11 @@ export const printShippingLabels = async (
       )
       .join("");
 
-    const win = window.open("", "_blank", "width=900,height=700");
+    const win = window.open(
+      "",
+      "_blank",
+      "width=900,height=700"
+    );
 
     if (!win) {
       toast.error("Please allow pop-ups to print");
@@ -1289,6 +1537,7 @@ export const printShippingLabels = async (
     }
 
     win.document.open();
+
     win.document.write(`
       <!doctype html>
       <html>
@@ -1296,27 +1545,56 @@ export const printShippingLabels = async (
           <meta charset="utf-8">
           <title>${esc(title)}</title>
           <style>
-            html,body{margin:0;padding:0;background:#fff}
-            *{box-sizing:border-box}
-            @page{size:${size.widthIn}in ${size.heightIn}in;margin:0}
-            @media print{
-              html,body{margin:0!important;padding:0!important}
-              .shipping-label{page-break-after:always}
-              .shipping-label:last-child{page-break-after:auto}
+            html, body {
+              margin: 0;
+              padding: 0;
+              background: #fff;
+            }
+
+            * {
+              box-sizing: border-box;
+            }
+
+            @page {
+              size: ${size.widthIn}in ${size.heightIn}in;
+              margin: 0;
+            }
+
+            @media print {
+              html, body {
+                margin: 0 !important;
+                padding: 0 !important;
+              }
+
+              .shipping-label {
+                page-break-after: always;
+              }
+
+              .shipping-label:last-child {
+                page-break-after: auto;
+              }
             }
           </style>
         </head>
+
         <body>${html}</body>
       </html>
     `);
+
     win.document.close();
 
+    let printStarted = false;
+
     const printWhenReady = async () => {
+      if (printStarted || win.closed) return;
+
       const images = Array.from(win.document.images);
 
       await Promise.all(
         images.map((img) => {
-          if (img.complete) return Promise.resolve();
+          if (img.complete && img.naturalWidth > 0) {
+            return Promise.resolve();
+          }
 
           return new Promise((resolve) => {
             img.onload = resolve;
@@ -1325,30 +1603,38 @@ export const printShippingLabels = async (
         })
       );
 
-      if (win.closed) return;
+      if (win.closed || printStarted) return;
 
+      printStarted = true;
       win.focus();
       win.print();
     };
 
-    win.addEventListener("load", () => {
-      printWhenReady().catch((error) =>
-        console.error("Print readiness error:", error)
-      );
-    }, { once: true });
-
-    window.setTimeout(() => {
-      if (!win.closed) {
+    win.addEventListener(
+      "load",
+      () => {
         printWhenReady().catch((error) =>
           console.error("Print readiness error:", error)
         );
-      }
+      },
+      { once: true }
+    );
+
+    window.setTimeout(() => {
+      printWhenReady().catch((error) =>
+        console.error("Print readiness error:", error)
+      );
     }, 1000);
 
-    toast.success(`${detailedOrders.length} label(s) ready to print`);
+    toast.success(
+      `${detailedOrders.length} label(s) ready to print`
+    );
   } catch (error) {
     console.error("Print label error:", error);
-    toast.error(error?.message || "Unable to print labels");
+
+    toast.error(
+      error?.message || "Unable to print labels"
+    );
   }
 };
 
@@ -1372,12 +1658,12 @@ export const downloadShippingLabels = async (orders) => {
     staging = document.createElement("div");
 
     staging.style.cssText = `
-      position:fixed;
-      left:-10000px;
-      top:0;
-      width:${size.widthIn}in;
-      background:#fff;
-      z-index:-1;
+      position: fixed;
+      left: -10000px;
+      top: 0;
+      width: ${size.widthIn}in;
+      background: #fff;
+      z-index: -1;
     `;
 
     document.body.appendChild(staging);
@@ -1404,32 +1690,38 @@ export const downloadShippingLabels = async (orders) => {
     }
 
     if (!labels.length) {
-      throw new Error("No shipping labels could be generated");
+      throw new Error(
+        "No shipping labels could be generated"
+      );
     }
 
     await Promise.all(
-      Array.from(staging.querySelectorAll("img")).map((img) => {
-        if (img.complete && img.naturalWidth > 0) {
-          return Promise.resolve();
-        }
+      Array.from(staging.querySelectorAll("img")).map(
+        (img) => {
+          if (img.complete && img.naturalWidth > 0) {
+            return Promise.resolve();
+          }
 
-        return new Promise((resolve) => {
-          img.onload = resolve;
-          img.onerror = resolve;
-        });
-      })
+          return new Promise((resolve) => {
+            img.onload = resolve;
+            img.onerror = resolve;
+          });
+        }
+      )
     );
 
     const pdf = new jsPDF({
       orientation:
-        size.widthMm > size.heightMm ? "landscape" : "portrait",
+        size.widthMm > size.heightMm
+          ? "landscape"
+          : "portrait",
       unit: "mm",
       format: [size.widthMm, size.heightMm],
       compress: true,
     });
 
-    for (let i = 0; i < labels.length; i += 1) {
-      const canvas = await html2canvas(labels[i], {
+    for (let index = 0; index < labels.length; index += 1) {
+      const canvas = await html2canvas(labels[index], {
         scale: 3,
         backgroundColor: "#ffffff",
         useCORS: true,
@@ -1438,10 +1730,12 @@ export const downloadShippingLabels = async (orders) => {
 
       const image = canvas.toDataURL("image/jpeg", 0.96);
 
-      if (i > 0) {
+      if (index > 0) {
         pdf.addPage(
           [size.widthMm, size.heightMm],
-          size.widthMm > size.heightMm ? "landscape" : "portrait"
+          size.widthMm > size.heightMm
+            ? "landscape"
+            : "portrait"
         );
       }
 
@@ -1471,10 +1765,15 @@ export const downloadShippingLabels = async (orders) => {
 
     pdf.save(filename);
 
-    toast.success(`${detailedOrders.length} label(s) downloaded`);
+    toast.success(
+      `${detailedOrders.length} label(s) downloaded`
+    );
   } catch (error) {
     console.error("Download label error:", error);
-    toast.error(error?.message || "Unable to download labels");
+
+    toast.error(
+      error?.message || "Unable to download labels"
+    );
   } finally {
     staging?.remove();
   }
