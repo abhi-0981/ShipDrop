@@ -1,3 +1,4 @@
+
 import { Toaster } from "react-hot-toast";
 
 import {
@@ -19,11 +20,13 @@ import Users from "./pages/users/Users";
 
 import UserDetails from "./pages/users/UserDetails";
 
-import AdminTickets from "./pages/ticket/AdminTickets"; 
+import AdminTickets from "./pages/ticket/AdminTickets";
 
 import AdminLayout from "./components/AdminLayout";
 
 import AllOrders from "./pages/orders/AllOrders";
+
+import CODRemittance from "./pages/orders/CODRemittance";
 
 import WeightChecking from "./pages/weightcheck/WeightChecking";
 
@@ -33,20 +36,10 @@ import WeightChecking from "./pages/weightcheck/WeightChecking";
 // =====================================================
 
 function ProtectedRoute({ children }) {
-
-  const token =
-    localStorage.getItem(
-      "adminToken"
-    );
+  const token = localStorage.getItem("adminToken");
 
   if (!token) {
-
-    return (
-      <Navigate
-        to="/login"
-        replace
-      />
-    );
+    return <Navigate to="/login" replace />;
   }
 
   return children;
@@ -58,17 +51,11 @@ function ProtectedRoute({ children }) {
 // =====================================================
 
 function AdminPage({ children }) {
-
   return (
-
     <ProtectedRoute>
-
       <AdminLayout>
-
         {children}
-
       </AdminLayout>
-
     </ProtectedRoute>
   );
 }
@@ -79,14 +66,8 @@ function AdminPage({ children }) {
 // =====================================================
 
 function App() {
-
   return (
-
     <BrowserRouter>
-
-      {/* ================================================= */}
-      {/* GLOBAL TOASTER */}
-      {/* ================================================= */}
 
       <Toaster
         position="top-right"
@@ -95,26 +76,15 @@ function App() {
         }}
       />
 
-
       <Routes>
 
-
-        {/* ================================================= */}
         {/* LOGIN */}
-        {/* ================================================= */}
-
         <Route
           path="/login"
-          element={
-            <Login />
-          }
+          element={<Login />}
         />
 
-
-        {/* ================================================= */}
         {/* DASHBOARD */}
-        {/* ================================================= */}
-
         <Route
           path="/dashboard"
           element={
@@ -124,11 +94,7 @@ function App() {
           }
         />
 
-
-        {/* ================================================= */}
         {/* RATE CARD */}
-        {/* ================================================= */}
-
         <Route
           path="/rate-card"
           element={
@@ -138,13 +104,7 @@ function App() {
           }
         />
 
-        
-
-
-        {/* ================================================= */}
         {/* SET RATE */}
-        {/* ================================================= */}
-
         <Route
           path="/rate-card/:id/set-rate"
           element={
@@ -154,11 +114,7 @@ function App() {
           }
         />
 
-
-        {/* ================================================= */}
-        {/* USERS → ALL USERS */}
-        {/* ================================================= */}
-
+        {/* USERS */}
         <Route
           path="/users"
           element={
@@ -168,11 +124,7 @@ function App() {
           }
         />
 
-
-        {/* ================================================= */}
         {/* USER DETAILS */}
-        {/* ================================================= */}
-
         <Route
           path="/users/:id"
           element={
@@ -182,11 +134,7 @@ function App() {
           }
         />
 
-
-        {/* ================================================= */}
         {/* TICKETS */}
-        {/* ================================================= */}
-
         <Route
           path="/tickets"
           element={
@@ -196,59 +144,51 @@ function App() {
           }
         />
 
-
-          <Route
-  path="/orders"
-  element={
-    <AdminPage>
-      <AllOrders />
-    </AdminPage>
-  }
-/>
-
-<Route
-  path="/weight-checking"
-  element={
-    <AdminPage>
-      <WeightChecking />
-    </AdminPage>
-  }
-/>
-
-        {/* ================================================= */}
-        {/* DEFAULT */}
-        {/* ================================================= */}
-
+        {/* ALL ORDERS */}
         <Route
-          path="/"
+          path="/orders"
           element={
-            <Navigate
-              to="/login"
-              replace
-            />
+            <AdminPage>
+              <AllOrders />
+            </AdminPage>
           }
         />
 
+        {/* COD REMITTANCE */}
+        <Route
+          path="/cod-remittance"
+          element={
+            <AdminPage>
+              <CODRemittance />
+            </AdminPage>
+          }
+        />
 
-        {/* ================================================= */}
+        {/* WEIGHT CHECKING */}
+        <Route
+          path="/weight-checking"
+          element={
+            <AdminPage>
+              <WeightChecking />
+            </AdminPage>
+          }
+        />
+
+        {/* DEFAULT */}
+        <Route
+          path="/"
+          element={<Navigate to="/login" replace />}
+        />
+
         {/* UNKNOWN URL */}
-        {/* ================================================= */}
-
         <Route
           path="*"
-          element={
-            <Navigate
-              to="/login"
-              replace
-            />
-          }
+          element={<Navigate to="/login" replace />}
         />
 
       </Routes>
-
     </BrowserRouter>
   );
 }
-
 
 export default App;

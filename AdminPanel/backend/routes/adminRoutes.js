@@ -21,6 +21,11 @@ const {
   replyToTicketController,
 } = require("../controllers/ticketAdminController");
 
+const {
+  getAdminCODRemittances,
+  markCODRemittanceSuccessful,
+} = require("../controllers/codRemittanceAdminController");
+
 const router = express.Router();
 
 /* =========================================================
@@ -55,5 +60,17 @@ router.get(
 
 /* ORDERS */
 router.get("/orders", getAdminOrders);
+
+/* COD REMITTANCE */
+
+router.get(
+  "/cod-remittances",
+  getAdminCODRemittances
+);
+
+router.patch(
+  "/cod-remittances/:id/successful",
+  markCODRemittanceSuccessful
+);
 
 module.exports = router;

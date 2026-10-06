@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import {
@@ -11,6 +12,7 @@ import {
   HiOutlineScale,
   HiOutlineX,
   HiMenuAlt2,
+  HiOutlineCurrencyRupee,
 } from "react-icons/hi";
 
 function AdminLayout({ children }) {
@@ -26,6 +28,12 @@ function AdminLayout({ children }) {
 
   useEffect(() => {
     setMobileOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (location.pathname.startsWith("/users")) {
+      setUsersOpen(true);
+    }
   }, [location.pathname]);
 
   const logout = () => {
@@ -46,6 +54,11 @@ function AdminLayout({ children }) {
       name: "All Orders",
       path: "/orders",
       icon: HiOutlineClipboardList,
+    },
+    {
+      name: "COD Remittance",
+      path: "/cod-remittance",
+      icon: HiOutlineCurrencyRupee,
     },
     {
       name: "Weight Checking",
@@ -75,7 +88,9 @@ function AdminLayout({ children }) {
         title={isDesktopCollapsed ? item.name : ""}
         className={({ isActive }) =>
           `group relative flex items-center rounded-xl transition-all duration-150 ${
-            isDesktopCollapsed ? "h-11 justify-center px-0" : "h-11 px-3.5 gap-3"
+            isDesktopCollapsed
+              ? "h-11 justify-center px-0"
+              : "h-11 px-3.5 gap-3"
           } ${
             isActive
               ? "bg-[#008dd2]/10 text-[#008dd2] font-semibold"
@@ -92,7 +107,9 @@ function AdminLayout({ children }) {
             <Icon
               size={20}
               className={`shrink-0 transition-colors ${
-                isActive ? "text-[#008dd2]" : "text-slate-400 group-hover:text-slate-700"
+                isActive
+                  ? "text-[#008dd2]"
+                  : "text-slate-400 group-hover:text-slate-700"
               }`}
             />
 
@@ -120,6 +137,7 @@ function AdminLayout({ children }) {
           >
             <HiMenuAlt2 size={20} />
           </button>
+
           <span className="text-lg font-black tracking-tight text-[#008dd2]">
             ShipDrop
           </span>
@@ -133,23 +151,25 @@ function AdminLayout({ children }) {
       {/* MOBILE BACKDROP */}
       {mobileOpen && (
         <div
-          className="fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-xs lg:hidden transition-opacity"
+          className="fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-sm transition-opacity lg:hidden"
           onClick={() => setMobileOpen(false)}
         />
       )}
 
       {/* SIDEBAR */}
       <aside
-        className={`fixed top-0 bottom-0 left-0 z-50 flex flex-col border-r border-slate-200 bg-white shadow-xl lg:shadow-[2px_0_12px_rgba(15,23,42,0.03)] transition-all duration-300 ease-in-out ${
-          mobileOpen ? "translate-x-0 w-[260px]" : "-translate-x-full lg:translate-x-0"
-        } ${
-          collapsed ? "lg:w-[76px]" : "lg:w-[250px]"
-        }`}
+        className={`fixed top-0 bottom-0 left-0 z-50 flex flex-col border-r border-slate-200 bg-white shadow-xl transition-all duration-300 ease-in-out lg:shadow-[2px_0_12px_rgba(15,23,42,0.03)] ${
+          mobileOpen
+            ? "translate-x-0 w-[260px]"
+            : "-translate-x-full lg:translate-x-0"
+        } ${collapsed ? "lg:w-[76px]" : "lg:w-[250px]"}`}
       >
         {/* LOGO AREA */}
         <div
           className={`flex h-16 shrink-0 items-center border-b border-slate-100 px-4 ${
-            collapsed && !mobileOpen ? "justify-center" : "justify-between"
+            collapsed && !mobileOpen
+              ? "justify-center"
+              : "justify-between"
           }`}
         >
           {(!collapsed || mobileOpen) && (
@@ -161,8 +181,9 @@ function AdminLayout({ children }) {
           <button
             type="button"
             onClick={() => setCollapsed(!collapsed)}
-            className="hidden lg:flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition"
+            className="hidden h-9 w-9 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 lg:flex"
             title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             <HiMenuAlt2 size={20} />
           </button>
@@ -170,14 +191,15 @@ function AdminLayout({ children }) {
           <button
             type="button"
             onClick={() => setMobileOpen(false)}
-            className="flex lg:hidden h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 lg:hidden"
+            aria-label="Close sidebar"
           >
             <HiOutlineX size={20} />
           </button>
         </div>
 
         {/* NAVIGATION LIST */}
-        <nav className="flex-1 min-h-0 overflow-y-auto px-3 py-3 space-y-1 [scrollbar-width:thin]">
+        <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto px-3 py-3 [scrollbar-width:thin]">
           {menuItems.map((item) => renderNavItem(item))}
 
           {/* USERS DROPDOWN */}
@@ -190,18 +212,20 @@ function AdminLayout({ children }) {
                   setUsersOpen(true);
                   return;
                 }
-                setUsersOpen(!usersOpen);
+
+                setUsersOpen((previous) => !previous);
               }}
-              className={`group relative flex w-full items-center rounded-xl transition-all duration-150 ${
+              className={`group relative flex h-11 w-full items-center rounded-xl transition-all duration-150 ${
                 collapsed && !mobileOpen
-                  ? "h-11 justify-center px-0"
-                  : "h-11 px-3.5 gap-3"
+                  ? "justify-center px-0"
+                  : "gap-3 px-3.5"
               } ${
                 isUsersActive
                   ? "bg-[#008dd2]/10 text-[#008dd2] font-semibold"
                   : "text-slate-600 hover:bg-slate-100/70 hover:text-slate-900 font-medium"
               }`}
               title={collapsed && !mobileOpen ? "Users" : ""}
+              aria-expanded={usersOpen}
             >
               {isUsersActive && (
                 <span className="absolute left-0 top-2 bottom-2 w-1 rounded-r-md bg-[#008dd2]" />
@@ -221,6 +245,7 @@ function AdminLayout({ children }) {
                   <span className="flex-1 text-left text-[13px] tracking-tight">
                     Users
                   </span>
+
                   <HiOutlineChevronDown
                     size={15}
                     className={`text-slate-400 transition-transform duration-200 ${
@@ -232,7 +257,7 @@ function AdminLayout({ children }) {
             </button>
 
             {(!collapsed || mobileOpen) && usersOpen && (
-              <div className="ml-5 mt-1 border-l-2 border-slate-100 pl-3 space-y-1">
+              <div className="ml-5 mt-1 space-y-1 border-l-2 border-slate-100 pl-3">
                 <NavLink
                   to="/users"
                   className={({ isActive }) =>
@@ -251,18 +276,19 @@ function AdminLayout({ children }) {
         </nav>
 
         {/* LOGOUT BUTTON */}
-        <div className="shrink-0 border-t border-slate-100 p-3 bg-slate-50/50">
+        <div className="shrink-0 border-t border-slate-100 bg-slate-50/50 p-3">
           <button
             type="button"
             onClick={logout}
-            className={`flex w-full items-center rounded-xl text-rose-600 hover:bg-rose-50 transition-colors ${
+            className={`flex h-10 w-full items-center rounded-xl text-rose-600 transition-colors hover:bg-rose-50 ${
               collapsed && !mobileOpen
-                ? "h-10 justify-center px-0"
-                : "h-10 px-3.5 gap-2.5 text-xs font-bold"
+                ? "justify-center px-0"
+                : "gap-2.5 px-3.5 text-xs font-bold"
             }`}
             title="Logout"
           >
             <HiOutlineLogout size={19} className="shrink-0" />
+
             {(!collapsed || mobileOpen) && <span>Logout</span>}
           </button>
         </div>
@@ -270,7 +296,7 @@ function AdminLayout({ children }) {
 
       {/* MAIN CONTAINER */}
       <main
-        className={`min-h-[calc(100vh-56px)] lg:min-h-screen transition-all duration-300 ${
+        className={`min-h-[calc(100vh-56px)] transition-all duration-300 lg:min-h-screen ${
           collapsed ? "lg:ml-[76px]" : "lg:ml-[250px]"
         }`}
       >
