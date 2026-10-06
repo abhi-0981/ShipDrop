@@ -1,3 +1,4 @@
+
 const db = require("../config/db");
 
 // ========================================
@@ -44,6 +45,80 @@ const getAdminCODRemittances = async (req, res) => {
 };
 
 // ========================================
+// UPDATE COD REMITTANCE DESCRIPTION - ADMIN
+// ========================================
+
+const updateCODRemittanceDescription = async (req, res) => {
+  try {
+    const remittanceId = Number(req.params.id);
+    const { description } = req.body || {};
+
+    if (!Number.isInteger(remittanceId) || remittanceId <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid remittance ID",
+      });
+    }
+
+    if (typeof description !== "string") {
+      return res.status(400).json({
+        success: false,
+        message: "Description must be text",
+      });
+    }
+
+    const cleanDescription = description.trim();
+
+    if (cleanDescription.length > 1000) {
+      return res.status(400).json({
+        success: false,
+        message: "Description cannot exceed 1000 characters",
+      });
+    }
+
+    const [result] = await db.query(
+      `
+        UPDATE cod_remittances
+        SET description = ?
+        WHERE id = ?
+      `,
+      [cleanDescription || null, remittanceId]
+    );
+
+    if (result.affectedRows === 0) {
+      const [rows] = await db.query(
+        `
+          SELECT id
+          FROM cod_remittances
+          WHERE id = ?
+          LIMIT 1
+        `,
+        [remittanceId]
+      );
+
+      if (rows.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "COD remittance not found",
+        });
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Description saved successfully",
+    });
+  } catch (error) {
+    console.error("Update COD remittance description error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to save description",
+    });
+  }
+};
+
+// ========================================
 // MARK COD REMITTANCE AS SUCCESSFUL
 // ========================================
 
@@ -63,8 +138,7 @@ const markCODRemittanceSuccessful = async (req, res) => {
         UPDATE cod_remittances
         SET
           status = 'SUCCESSFUL',
-          transferred_on = NOW(),
-          description = 'Remittance marked successful by admin'
+          transferred_on = NOW()
         WHERE id = ?
           AND status = 'PENDING'
       `,
@@ -111,5 +185,6 @@ const markCODRemittanceSuccessful = async (req, res) => {
 
 module.exports = {
   getAdminCODRemittances,
+  updateCODRemittanceDescription,
   markCODRemittanceSuccessful,
 };

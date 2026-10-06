@@ -23,6 +23,7 @@ const {
 
 const {
   getAdminCODRemittances,
+  updateCODRemittanceDescription,
   markCODRemittanceSuccessful,
 } = require("../controllers/codRemittanceAdminController");
 
@@ -61,11 +62,18 @@ router.get(
 /* ORDERS */
 router.get("/orders", getAdminOrders);
 
-/* COD REMITTANCE */
+/* =========================================================
+   COD REMITTANCE
+========================================================= */
 
 router.get(
   "/cod-remittances",
   getAdminCODRemittances
+);
+
+router.patch(
+  "/cod-remittances/:id/description",
+  updateCODRemittanceDescription
 );
 
 router.patch(
