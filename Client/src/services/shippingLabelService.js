@@ -2,7 +2,6 @@ import { jsPDF } from "jspdf";
 import JsBarcode from "jsbarcode";
 import html2canvas from "html2canvas";
 import { toast } from "react-hot-toast";
-
 import api from "./api";
 import shipdropLogo from "../assets/images/shipdrop-logo.png";
 import delhiveryLogo from "../assets/images/delhivery-logo.png";
@@ -36,7 +35,6 @@ const text = (value, fallback = "—") => {
   ) {
     return fallback;
   }
-
   return String(value).trim();
 };
 
@@ -59,12 +57,9 @@ const escapeHtml = (value) =>
 const getStoredUser = () => {
   for (const key of ["user", "currentUser", "authUser"]) {
     const raw = localStorage.getItem(key);
-
     if (!raw) continue;
-
     try {
       const user = JSON.parse(raw);
-
       if (user && typeof user === "object") {
         return user;
       }
@@ -72,13 +67,11 @@ const getStoredUser = () => {
       // Ignore invalid cached user data.
     }
   }
-
   return null;
 };
 
 const getUserId = () => {
   const user = getStoredUser();
-
   return user?.id || user?.user_id || user?.userId || null;
 };
 
@@ -144,7 +137,6 @@ const getPaymentType = (order) => {
       "PREPAID"
     )
   ).toUpperCase();
-
   return payment.includes("COD") ? "COD" : "PREPAID";
 };
 
@@ -168,7 +160,6 @@ const getWeight = (order) => {
         0
       )
     : 0;
-
   return (
     Number(
       first(
@@ -197,7 +188,6 @@ const getDate = (order) =>
 
 const formatDate = (value) => {
   const date = new Date(value);
-
   return Number.isNaN(date.getTime())
     ? "—"
     : date.toLocaleDateString("en-IN", {
@@ -236,7 +226,6 @@ const getCodAmount = (order) =>
 
 const getSellerName = (order) => {
   const user = getStoredUser();
-
   return text(
     first(
       order?.seller_name,
@@ -313,7 +302,6 @@ const getAlternateFromMobile = (order) =>
 
 const getFromAddress = (order) => {
   const warehouse = order?.warehouse || {};
-
   return [
     first(
       warehouse.address_line1,
@@ -557,107 +545,89 @@ const getLabelSize = (value) => {
 
 const normalizeSettings = (data = {}) => ({
   ...DEFAULT_LABEL_SETTINGS,
-
   orderValue: Boolean(
     data.order_value ??
       data.orderValue ??
       DEFAULT_LABEL_SETTINGS.orderValue
   ),
-
   codAmount: Boolean(
     data.cod_amount ??
       data.codAmount ??
       DEFAULT_LABEL_SETTINGS.codAmount
   ),
-
   buyerMobile: Boolean(
     data.buyer_mobile ??
       data.buyerMobile ??
       DEFAULT_LABEL_SETTINGS.buyerMobile
   ),
-
   shipperMobiles: Boolean(
     data.shipper_mobiles ??
       data.shipperMobiles ??
       DEFAULT_LABEL_SETTINGS.shipperMobiles
   ),
-
   shipperAddress: Boolean(
     data.shipper_address ??
       data.shipperAddress ??
       DEFAULT_LABEL_SETTINGS.shipperAddress
   ),
-
   fromName: Boolean(
     data.from_name ??
       data.fromName ??
       DEFAULT_LABEL_SETTINGS.fromName
   ),
-
   fromAddress: Boolean(
     data.from_address ??
       data.fromAddress ??
       DEFAULT_LABEL_SETTINGS.fromAddress
   ),
-
   fromMobile: Boolean(
     data.from_mobile ??
       data.fromMobile ??
       DEFAULT_LABEL_SETTINGS.fromMobile
   ),
-
   productName: Boolean(
     data.product_name ??
       data.productName ??
       DEFAULT_LABEL_SETTINGS.productName
   ),
-
   productDetails: Boolean(
     data.product_details ??
       data.productDetails ??
       DEFAULT_LABEL_SETTINGS.productDetails
   ),
-
   servicesTnc: Boolean(
     data.services_tnc ??
       data.servicesTnc ??
       DEFAULT_LABEL_SETTINGS.servicesTnc
   ),
-
   orderId: Boolean(
     data.order_id ??
       data.orderId ??
       DEFAULT_LABEL_SETTINGS.orderId
   ),
-
   orderWeight: Boolean(
     data.order_weight ??
       data.orderWeight ??
       DEFAULT_LABEL_SETTINGS.orderWeight
   ),
-
   returnAddress: Boolean(
     data.return_address ??
       data.returnAddress ??
       DEFAULT_LABEL_SETTINGS.returnAddress
   ),
-
   contactLine: Boolean(
     data.contact_line ??
       data.contactLine ??
       DEFAULT_LABEL_SETTINGS.contactLine
   ),
-
   rightLogoMode:
     data.right_logo_mode ||
     data.rightLogoMode ||
     DEFAULT_LABEL_SETTINGS.rightLogoMode,
-
   labelSize:
     data.label_size ||
     data.labelSize ||
     DEFAULT_LABEL_SETTINGS.labelSize,
-
   customLogo: data.custom_logo || data.customLogo || null,
 });
 
@@ -722,7 +692,6 @@ const getDetailedOrders = async (orders) => {
           id,
           error
         );
-
         return order;
       }
     })
@@ -747,17 +716,18 @@ const barcodeSvg = (value, compact = false) => {
 
   return svg.outerHTML;
 };
-
 const buildLabelHtml = (order, settings, rightLogo, size) => {
   const awb = getAWB(order);
   const payment = getPaymentType(order);
   const isA4 = size.key === "A4";
   const compact = size.heightIn <= 2.5;
 
-  const pad = isA4 ? 18 : compact ? 3 : 8;
-  const font = isA4 ? 10 : compact ? 5.3 : 7.2;
-  const small = isA4 ? 8 : compact ? 4.5 : 5.8;
-  const big = isA4 ? 13 : compact ? 7.2 : 9.2;
+  // Keep small thermal labels compact; give 4x6/A4 labels readable type.
+  const pad = isA4 ? 12 : compact ? 2.5 : 5;
+  const font = isA4 ? 11 : compact ? 5.2 : 8.2;
+  const small = isA4 ? 8.5 : compact ? 4.2 : 6.5;
+  const big = isA4 ? 15 : compact ? 7 : 11;
+  const sectionPad = isA4 ? 8 : compact ? 2 : 5;
 
   const fromAddress = getFromAddress(order);
   const buyerAddress = getBuyerAddress(order);
@@ -773,7 +743,6 @@ const buildLabelHtml = (order, settings, rightLogo, size) => {
   const products = getProducts(order);
 
   const showFromName = settings.fromName !== false;
-
   const showFromAddress =
     settings.fromAddress !== false &&
     settings.shipperAddress !== false;
@@ -783,14 +752,16 @@ const buildLabelHtml = (order, settings, rightLogo, size) => {
     settings.shipperMobiles !== false;
 
   const showBuyerMobile =
-    settings.buyerMobile !== false && Boolean(getMobile(order));
+    settings.buyerMobile !== false &&
+    Boolean(getMobile(order));
 
   const showWeight = settings.orderWeight === true;
   const showOrderId = settings.orderId === true;
   const showOrderValue = settings.orderValue !== false;
 
   const showCod =
-    settings.codAmount !== false && payment === "COD";
+    settings.codAmount !== false &&
+    payment === "COD";
 
   const showProducts =
     settings.productDetails !== false &&
@@ -804,7 +775,7 @@ const buildLabelHtml = (order, settings, rightLogo, size) => {
 
   const productRows = showProducts
     ? products
-        .slice(0, isA4 ? 8 : compact ? 1 : 4)
+        .slice(0, isA4 ? 10 : compact ? 1 : 5)
         .map(
           (product) => `
             <tr>
@@ -826,9 +797,9 @@ const buildLabelHtml = (order, settings, rightLogo, size) => {
           <thead>
             <tr>
               <th>Product</th>
-              <th>Rate</th>
+              <th>Rate (₹)</th>
               <th>Qty</th>
-              <th>Total</th>
+              <th>Total (₹)</th>
             </tr>
           </thead>
           <tbody>${productRows}</tbody>
@@ -867,7 +838,7 @@ const buildLabelHtml = (order, settings, rightLogo, size) => {
 
   return `
     <article
-      class="shipping-label ${compact ? "compact" : ""}"
+      class="shipping-label ${compact ? "compact" : ""} ${isA4 ? "a4" : ""}"
       style="
         width:${size.widthIn}in;
         height:${size.heightIn}in;
@@ -875,6 +846,7 @@ const buildLabelHtml = (order, settings, rightLogo, size) => {
         --font:${font}px;
         --small:${small}px;
         --big:${big}px;
+        --section-pad:${sectionPad}px;
       "
     >
       <div class="label-border">
@@ -893,7 +865,7 @@ const buildLabelHtml = (order, settings, rightLogo, size) => {
 
         <section class="addresses">
           <div class="address-block">
-            <div class="eyebrow">FROM</div>
+            <div class="eyebrow">FROM / SHIPPER</div>
 
             ${
               showFromName
@@ -909,19 +881,23 @@ const buildLabelHtml = (order, settings, rightLogo, size) => {
 
             ${
               showFromMobile && fromMobiles
-                ? `<div class="phone">${escapeHtml(fromMobiles)}</div>`
+                ? `<div class="phone">☎ ${escapeHtml(fromMobiles)}</div>`
                 : ""
             }
           </div>
 
           <div class="address-block">
-            <div class="eyebrow">TO</div>
+            <div class="eyebrow">SHIP TO / CONSIGNEE</div>
+
             <b class="person">${escapeHtml(getCustomerName(order))}</b>
-            <div class="address">${escapeHtml(buyerAddress || "—")}</div>
+
+            <div class="address">
+              ${escapeHtml(buyerAddress || "—")}
+            </div>
 
             ${
               showBuyerMobile
-                ? `<div class="phone">${escapeHtml(getMobile(order))}</div>`
+                ? `<div class="phone">☎ ${escapeHtml(getMobile(order))}</div>`
                 : ""
             }
           </div>
@@ -930,12 +906,14 @@ const buildLabelHtml = (order, settings, rightLogo, size) => {
         <section class="summary">
           <div>
             <span>PAYMENT</span>
-            <b>${payment}</b>
+            <b class="summary-value">${payment}</b>
           </div>
 
           <div>
             <span>SERVICE</span>
-            <b>${getServiceType(order).includes("AIR") ? "BY AIR" : "BY ROAD"}</b>
+            <b class="summary-value">
+              ${getServiceType(order).includes("AIR") ? "BY AIR" : "BY ROAD"}
+            </b>
           </div>
 
           ${
@@ -943,7 +921,7 @@ const buildLabelHtml = (order, settings, rightLogo, size) => {
               ? `
                 <div>
                   <span>WEIGHT</span>
-                  <b>${getWeight(order).toFixed(2)} KG</b>
+                  <b class="summary-value">${getWeight(order).toFixed(2)} KG</b>
                 </div>
               `
               : ""
@@ -1013,16 +991,23 @@ const buildLabelHtml = (order, settings, rightLogo, size) => {
       </div>
 
       <style>
-        .shipping-label {
+        * {
           box-sizing: border-box;
-          padding: var(--pad);
+        }
+
+        .shipping-label {
           margin: 0;
+          padding: var(--pad);
           background: #fff;
           color: #111827;
           font-family: Arial, Helvetica, sans-serif;
-          page-break-after: always;
+          font-size: var(--font);
+          line-height: 1.25;
           overflow: hidden;
+          page-break-after: always;
           break-after: page;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
         }
 
         .shipping-label:last-child {
@@ -1031,36 +1016,42 @@ const buildLabelHtml = (order, settings, rightLogo, size) => {
         }
 
         .label-border {
-          height: 100%;
           width: 100%;
-          border: 1px solid #111827;
-          box-sizing: border-box;
+          height: 100%;
+          border: 1.4px solid #111827;
           overflow: hidden;
           display: flex;
           flex-direction: column;
+          justify-content: space-between;
           background: #fff;
         }
 
         .logos {
-          height: ${compact ? 17 : isA4 ? 48 : 31}px;
-          min-height: ${compact ? 17 : isA4 ? 48 : 31}px;
+          min-height: ${compact ? 16 : isA4 ? 48 : 34}px;
+          height: ${compact ? 16 : isA4 ? 48 : 34}px;
+          flex: 0 0 auto;
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 3px 6px;
-          border-bottom: 1px solid #111827;
+          padding: 4px 7px;
+          border-bottom: 1.4px solid #111827;
           gap: 8px;
         }
 
         .logo {
-          width: 45%;
+          width: 47%;
           height: 100%;
           display: flex;
           align-items: center;
         }
 
-        .logo.left { justify-content: flex-start; }
-        .logo.right { justify-content: flex-end; }
+        .logo.left {
+          justify-content: flex-start;
+        }
+
+        .logo.right {
+          justify-content: flex-end;
+        }
 
         .logo img {
           max-width: 100%;
@@ -1070,87 +1061,93 @@ const buildLabelHtml = (order, settings, rightLogo, size) => {
         }
 
         .awb {
+          flex: 0 0 auto;
           text-align: center;
-          padding: ${compact ? 2 : isA4 ? 7 : 4}px 5px;
-          border-bottom: 1px solid #111827;
+          padding: ${compact ? 2 : isA4 ? 8 : 6}px 6px;
+          border-bottom: 1.4px solid #111827;
         }
 
         .eyebrow {
           font-size: var(--small);
-          font-weight: 700;
-          letter-spacing: 0.25px;
-          color: #4b5563;
+          font-weight: 800;
+          letter-spacing: 0.35px;
+          color: #374151;
         }
 
         .awb-number {
           font-size: var(--big);
-          font-weight: 800;
-          letter-spacing: 0.6px;
-          margin: 1px 0;
+          font-weight: 900;
+          letter-spacing: 0.7px;
+          margin: 2px 0 3px;
           overflow-wrap: anywhere;
         }
 
-        .barcode { line-height: 0; }
+        .barcode {
+          line-height: 0;
+        }
 
         .barcode svg {
           display: block;
           margin: 0 auto;
           max-width: 100%;
           height: auto;
-          max-height: ${compact ? 17 : isA4 ? 42 : 30}px;
+          max-height: ${compact ? 15 : isA4 ? 44 : 32}px;
         }
 
         .addresses {
+          flex: 0 0 auto;
           display: grid;
           grid-template-columns: 1fr 1fr;
-          border-bottom: 1px solid #111827;
+          border-bottom: 1.4px solid #111827;
         }
 
         .address-block {
           min-width: 0;
-          padding: ${compact ? 3 : isA4 ? 8 : 5}px 6px;
+          padding: ${compact ? 3 : isA4 ? 9 : 7}px 7px;
           overflow: hidden;
         }
 
         .address-block + .address-block {
-          border-left: 1px solid #111827;
+          border-left: 1.4px solid #111827;
         }
 
         .person {
           display: block;
-          font-size: ${isA4 ? 12 : compact ? 5.8 : 8}px;
-          line-height: 1.15;
-          margin-top: 2px;
+          font-size: ${isA4 ? 13 : compact ? 5.5 : 9}px;
+          line-height: 1.2;
+          margin-top: 3px;
+          font-weight: 800;
           overflow-wrap: anywhere;
         }
 
         .address {
-          font-size: ${isA4 ? 8.5 : compact ? 4.5 : 5.8}px;
-          line-height: 1.2;
-          margin-top: 2px;
+          font-size: ${isA4 ? 9.5 : compact ? 4.3 : 7.5}px;
+          line-height: 1.28;
+          margin-top: 3px;
           overflow-wrap: anywhere;
         }
 
         .phone {
-          font-size: ${isA4 ? 8 : compact ? 4.5 : 5.6}px;
-          font-weight: 700;
-          margin-top: 2px;
+          font-size: ${isA4 ? 9 : compact ? 4.2 : 7.2}px;
+          font-weight: 800;
+          margin-top: 3px;
           overflow-wrap: anywhere;
         }
 
         .summary {
+          flex: 0 0 auto;
           display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          border-bottom: 1px solid #111827;
+          grid-template-columns: repeat(${showWeight ? 3 : 2}, minmax(0, 1fr));
+          border-bottom: 1.4px solid #111827;
         }
 
         .summary > div {
-          padding: ${compact ? 2 : isA4 ? 6 : 4}px 5px;
+          padding: ${compact ? 3 : isA4 ? 7 : 6}px 7px;
           min-width: 0;
         }
 
         .summary > div + div {
-          border-left: 1px solid #111827;
+          border-left: 1px solid #9ca3af;
         }
 
         .summary span,
@@ -1158,126 +1155,168 @@ const buildLabelHtml = (order, settings, rightLogo, size) => {
         .seller span {
           display: block;
           font-size: var(--small);
-          font-weight: 700;
-          color: #4b5563;
+          font-weight: 800;
+          color: #374151;
+          margin-bottom: 2px;
         }
 
-        .summary b {
+        .summary-value {
           display: block;
-          font-size: var(--font);
-          margin-top: 1px;
+          font-size: ${isA4 ? 12 : compact ? 5.2 : 9}px;
+          font-weight: 900;
           overflow-wrap: anywhere;
         }
 
         .order-info {
+          flex: 0 0 auto;
           display: grid;
-          grid-template-columns: repeat(2, 1fr);
-          border-bottom: 1px solid #111827;
+          grid-template-columns: repeat(
+            ${(showOrderId && showOrderValue) ? 2 : 1},
+            minmax(0, 1fr)
+          );
+          border-bottom: 1.4px solid #111827;
         }
 
         .mini-cell {
-          padding: 3px 5px;
+          padding: ${compact ? 2 : 5}px 7px;
           min-width: 0;
         }
 
         .mini-cell + .mini-cell {
-          border-left: 1px solid #111827;
+          border-left: 1px solid #9ca3af;
         }
 
         .mini-cell b {
           display: block;
           font-size: var(--font);
+          font-weight: 800;
           overflow-wrap: anywhere;
         }
 
         .cod {
+          flex: 0 0 auto;
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 4px 6px;
-          border-bottom: 1px solid #111827;
+          gap: 8px;
+          padding: ${compact ? 3 : 6}px 7px;
+          border-bottom: 1.4px solid #111827;
           font-size: var(--font);
         }
 
-        .cod strong { font-size: var(--big); }
+        .cod strong {
+          font-size: var(--big);
+          font-weight: 900;
+        }
 
         .products {
-          padding: ${compact ? 2 : isA4 ? 6 : 4}px 5px;
-          border-bottom: 1px solid #111827;
+          flex: 0 0 auto;
+          padding: ${compact ? 2 : isA4 ? 7 : 5}px 7px;
+          border-bottom: 1.4px solid #111827;
           min-height: 0;
         }
 
         .section-title {
           font-size: var(--small);
-          font-weight: 800;
-          margin-bottom: 2px;
+          font-weight: 900;
+          letter-spacing: 0.3px;
+          margin-bottom: 4px;
         }
 
         table {
           border-collapse: collapse;
           width: 100%;
           table-layout: fixed;
-          font-size: ${compact ? 4.2 : isA4 ? 7.5 : 5.2}px;
+          font-size: ${compact ? 4.2 : isA4 ? 8.5 : 7}px;
         }
 
-        th, td {
-          border: 1px solid #d1d5db;
-          padding: 2px 3px;
+        th,
+        td {
+          border: 1px solid #9ca3af;
+          padding: ${compact ? 1 : 3}px 4px;
           text-align: right;
-          overflow: hidden;
           overflow-wrap: anywhere;
         }
 
-        th:first-child, td:first-child {
-          text-align: left;
-          width: 48%;
+        th {
+          font-weight: 800;
+          background: #f3f4f6;
         }
 
-        .pname { text-align: left; }
+        th:first-child,
+        td:first-child {
+          text-align: left;
+          width: 46%;
+        }
+
+        .pname {
+          text-align: left;
+        }
 
         .seller {
+          flex: 0 0 auto;
           display: grid;
-          grid-template-columns: 1.4fr 1fr 1fr 0.8fr;
-          border-bottom: 1px solid #111827;
+          grid-template-columns: 1.35fr 1fr 1fr 0.85fr;
+          border-bottom: 1.4px solid #111827;
         }
 
         .seller > div {
-          padding: ${compact ? 2 : 3}px 4px;
+          padding: ${compact ? 2 : isA4 ? 6 : 5}px 5px;
           min-width: 0;
           overflow: hidden;
         }
 
         .seller > div + div {
-          border-left: 1px solid #d1d5db;
+          border-left: 1px solid #9ca3af;
         }
 
         .seller b {
           display: block;
-          font-size: ${compact ? 4.3 : isA4 ? 7.5 : 5.2}px;
+          font-size: ${compact ? 4.1 : isA4 ? 8.5 : 6.8}px;
+          font-weight: 800;
           overflow-wrap: anywhere;
         }
 
         .return {
-          padding: ${compact ? 2 : 4}px 5px;
-          border-bottom: 1px solid #d1d5db;
-          font-size: ${compact ? 4.3 : isA4 ? 7 : 5.2}px;
-          line-height: 1.2;
+          flex: 0 0 auto;
+          padding: ${compact ? 2 : isA4 ? 6 : 5}px 7px;
+          border-bottom: 1px solid #9ca3af;
+          font-size: ${compact ? 4.2 : isA4 ? 8.5 : 6.8}px;
+          line-height: 1.25;
           overflow-wrap: anywhere;
         }
 
         .return b {
           display: block;
           font-size: var(--small);
-          margin-bottom: 1px;
+          letter-spacing: 0.3px;
+          margin-bottom: 2px;
         }
 
         .contact {
-          padding: ${compact ? 2 : 4}px 5px;
-          font-size: ${compact ? 4 : isA4 ? 7 : 5}px;
-          line-height: 1.15;
+          flex: 0 0 auto;
+          padding: ${compact ? 2 : isA4 ? 6 : 5}px 7px;
+          font-size: ${compact ? 3.8 : isA4 ? 8 : 6.3}px;
+          line-height: 1.2;
           text-align: center;
-          font-weight: 700;
+          font-weight: 800;
           overflow-wrap: anywhere;
+        }
+
+        .compact .label-border {
+          justify-content: flex-start;
+        }
+
+        .compact .logos,
+        .compact .awb,
+        .compact .addresses,
+        .compact .summary,
+        .compact .order-info,
+        .compact .products,
+        .compact .seller,
+        .compact .return,
+        .compact .contact {
+          flex-shrink: 0;
         }
       </style>
     </article>
@@ -1301,7 +1340,6 @@ const prepareLabels = async (orders) => {
     rightLogo,
   };
 };
-
 export const printShippingLabels = async (
   orders,
   title = "ParcelDrop Shipping Labels"
@@ -1336,7 +1374,6 @@ export const printShippingLabels = async (
         <head>
           <meta charset="utf-8" />
           <title>${escapeHtml(title)}</title>
-
           <style>
             html, body {
               margin: 0;
@@ -1373,7 +1410,6 @@ export const printShippingLabels = async (
             }
           </style>
         </head>
-
         <body>${html}</body>
       </html>
     `);
@@ -1382,7 +1418,6 @@ export const printShippingLabels = async (
 
     const printOnce = () => {
       if (win.closed) return;
-
       win.focus();
       win.print();
     };
@@ -1520,7 +1555,7 @@ export const downloadShippingLabels = async (orders) => {
     }
 
     const firstAwb = getAWB(detailedOrders[0]).replace(
-      /[^a-zA-Z0-9_-]/g,
+      /[^a-zA-Z0-9\_-]/g,
       "-"
     );
 
