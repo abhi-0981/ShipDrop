@@ -18,8 +18,8 @@ export const DEFAULT_LABEL_SETTINGS = {
   productName: true,
   productDetails: true,
   servicesTnc: false,
-  orderId: true,
-  orderWeight: true,
+  orderId: false,
+  orderWeight: false,
   returnAddress: true,
   contactLine: true,
   rightLogoMode: "delhivery",
@@ -27,18 +27,18 @@ export const DEFAULT_LABEL_SETTINGS = {
   customLogo: null,
 };
 
-const text = (value, fallback = "—") => {
-  if (value === null || value === undefined || String(value).trim() === "") {
-    return fallback;
-  }
-  return String(value).trim();
-};
-
 const first = (...values) =>
   values.find(
     (value) =>
-      value !== undefined && value !== null && String(value).trim() !== ""
+      value !== undefined &&
+      value !== null &&
+      String(value).trim() !== ""
   );
+
+const text = (value, fallback = "—") => {
+  const result = first(value);
+  return result === undefined ? fallback : String(result).trim();
+};
 
 const escapeHtml = (value) =>
   String(value ?? "")
@@ -50,32 +50,41 @@ const escapeHtml = (value) =>
 
 const getStoredUser = () => {
   for (const key of ["user", "currentUser", "authUser"]) {
-    const raw = localStorage.getItem(key);
-    if (!raw) continue;
     try {
+      const raw = localStorage.getItem(key);
+      if (!raw) continue;
+
       const user = JSON.parse(raw);
-      if (user && typeof user === "object") {
-        return user;
-      }
+      if (user && typeof user === "object") return user;
     } catch {
-      // Ignore invalid JSON
+      // Ignore invalid cached data.
     }
   }
-  return null;
+
+  return {};
 };
 
 const getUserId = () => {
   const user = getStoredUser();
-  return user?.id || user?.user_id || user?.userId || null;
+
+  return first(
+    user.id,
+    user.user_id,
+    user.userId,
+    user.user?.id,
+    user.user?.user_id
+  );
 };
 
 const getAWB = (order) =>
   text(
     first(
-      order?.awb,
-      order?.waybill,
-      order?.awb_number,
-      order?.awbNumber
+      order.awb,
+      order.waybill,
+      order.awb_number,
+      order.awbNumber,
+      order.tracking_number,
+      order.trackingNumber
     ),
     "AWB unavailable"
   );
@@ -83,87 +92,97 @@ const getAWB = (order) =>
 const getOrderId = (order) =>
   text(
     first(
-      order?.display_order_id,
-      order?.displayOrderId,
-      order?.order_id,
-      order?.orderId,
-      order?.order_number,
-      order?.orderNumber,
-      order?.id
+      order.display_order_id,
+      order.displayOrderId,
+      order.order_id,
+      order.orderId,
+      order.order_number,
+      order.orderNumber,
+      order.id
     )
   );
 
 const getCustomerName = (order) =>
   text(
     first(
-      order?.consignee_name,
-      order?.customer_name,
-      order?.customerName,
-      order?.customer,
-      order?.buyer_name,
-      order?.buyerName,
-      order?.name
+      order.consignee_name,
+      order.customer_name,
+      order.customerName,
+      order.buyer_name,
+      order.buyerName,
+      order.delivery_name,
+      order.deliveryName,
+      order.name
     )
   );
 
-const getMobile = (order) =>
+const getBuyerMobile = (order) =>
   text(
     first(
-      order?.mobile,
-      order?.phone,
-      order?.customer_mobile,
-      order?.customerMobile,
-      order?.consignee_phone,
-      order?.consigneePhone,
-      order?.buyer_mobile,
-      order?.buyerMobile
+      order.consignee_phone,
+      order.consigneePhone,
+      order.customer_mobile,
+      order.customerMobile,
+      order.buyer_mobile,
+      order.buyerMobile,
+      order.delivery_mobile,
+      order.deliveryMobile,
+      order.mobile,
+      order.phone
     ),
     ""
   );
 
 const getPaymentType = (order) => {
-  const payment = String(
+  const value = String(
     first(
-      order?.payment_type,
-      order?.paymentType,
-      order?.payment_method,
-      order?.paymentMethod,
+      order.payment_type,
+      order.paymentType,
+      order.payment_method,
+      order.paymentMethod,
+      order.payment_mode,
+      order.paymentMode,
       "PREPAID"
     )
   ).toUpperCase();
-  return payment.includes("COD") ? "COD" : "PREPAID";
+
+  return value.includes("COD") ? "COD" : "PREPAID";
 };
 
-const getServiceType = (order) =>
-  String(
+const getServiceType = (order) => {
+  const value = String(
     first(
-      order?.service_type,
-      order?.serviceType,
-      order?.shipment_type,
+      order.service_type,
+      order.serviceType,
+      order.shipment_type,
+      order.shipmentType,
+      order.mode,
       "ROAD"
     )
   ).toUpperCase();
 
+  return value.includes("AIR") ? "BY AIR" : "BY ROAD";
+};
+
 const getWeight = (order) => {
-  const packageWeight = Array.isArray(order?.packages)
+  const packageWeight = Array.isArray(order.packages)
     ? order.packages.reduce(
-        (sum, item) =>
-          sum +
-          (Number(item?.weight) || 0) *
-            (Number(item?.package_count) || 1),
+        (total, item) =>
+          total +
+          (Number(item.weight) || 0) *
+            (Number(item.package_count) || 1),
         0
       )
     : 0;
+
   return (
     Number(
       first(
-        order?.total_weight,
-        order?.totalWeight,
-        order?.billed_weight,
-        order?.billedWeight,
-        order?.weight,
-        order?.package_weight,
-        order?.packageWeight,
+        order.total_weight,
+        order.totalWeight,
+        order.package_weight,
+        order.packageWeight,
+        order.weight,
         packageWeight,
         0
       )
@@ -171,19 +190,52 @@ const getWeight = (order) => {
   );
 };
 
+const getOrderValue = (order) =>
+  Number(
+    first(
+      order.order_value,
+      order.orderValue,
+      order.product_value,
+      order.productValue,
+      order.total_amount,
+      order.totalAmount,
+      order.order_amount,
+      order.orderAmount,
+      order.amount,
+      order.total_value,
+      0
+    )
+  ) || 0;
+
+const getCodAmount = (order) =>
+  Number(
+    first(
+      order.cod_amount,
+      order.codAmount,
+      order.cod_value,
+      order.codValue,
+      order.collectable_amount,
+      order.collectableAmount,
+      order.amount_to_collect,
+      order.amountToCollect,
+      0
+    )
+  ) || 0;
+
 const getDate = (order) =>
   first(
-    order?.invoice_date,
-    order?.invoiceDate,
-    order?.manifest_created_at,
-    order?.manifestCreatedAt,
-    order?.created_at,
-    order?.createdAt,
+    order.invoice_date,
+    order.invoiceDate,
+    order.manifest_created_at,
+    order.manifestCreatedAt,
+    order.created_at,
+    order.createdAt,
     new Date()
   );
 
 const formatDate = (value) => {
   const date = new Date(value);
+
   return Number.isNaN(date.getTime())
     ? "—"
     : date.toLocaleDateString("en-IN", {
@@ -195,434 +247,363 @@ const formatDate = (value) => {
 
 const money = (value) => `₹${(Number(value) || 0).toFixed(2)}`;
 
-const getOrderValue = (order) =>
-  Number(
-    first(
-      order?.order_value,
-      order?.product_value,
-      order?.total_amount,
-      order?.order_amount,
-      order?.amount,
-      order?.total_value,
-      0
-    )
-  ) || 0;
-
-const getCodAmount = (order) =>
-  Number(
-    first(
-      order?.cod_amount,
-      order?.cod_value,
-      order?.collectable_amount,
-      order?.codAmount,
-      0
-    )
-  ) || 0;
-
 const getSellerName = (order) => {
   const user = getStoredUser();
+
   return text(
     first(
-      order?.seller_name,
-      order?.sellerName,
-      order?.seller_full_name,
-      order?.sellerFullName,
-      order?.seller_company_name,
-      order?.sellerCompanyName,
-      order?.pickup_name,
-      order?.pickupName,
-      order?.business_name,
-      order?.businessName,
-      order?.company_name,
-      order?.companyName,
-      user?.business_name,
-      user?.name
+      order.seller_name,
+      order.sellerName,
+      order.seller_full_name,
+      order.sellerFullName,
+      order.seller_company_name,
+      order.sellerCompanyName,
+      order.company_name,
+      order.companyName,
+      order.business_name,
+      order.businessName,
+      order.account_name,
+      order.accountName,
+      order.user?.business_name,
+      order.user?.company_name,
+      order.user?.name,
+      order.seller?.business_name,
+      order.seller?.company_name,
+      order.seller?.name,
+      user.business_name,
+      user.businessName,
+      user.company_name,
+      user.companyName,
+      user.name
     )
   );
 };
 
-const getSellerGstin = (order) =>
-  text(
-    first(
-      order?.seller_gstin,
-      order?.sellerGstin,
-      order?.seller_gst,
-      order?.sellerGSTIN,
-      order?.gstin,
-      order?.GSTIN
-    ),
-    "—"
-  );
+const getSellerGstin = (order) => {
+  const user = getStoredUser();
 
-const getInvoiceNo = (order) =>
-  text(
+  return text(
     first(
-      order?.invoice_number,
-      order?.invoiceNumber,
-      order?.invoice_no,
-      order?.invoiceNo
+      order.seller_gstin,
+      order.sellerGstin,
+      order.seller_gst,
+      order.sellerGSTIN,
+      order.gstin,
+      order.GSTIN,
+      order.gst_number,
+      order.gstNumber,
+      order.user?.gstin,
+      order.user?.gst_number,
+      order.seller?.gstin,
+      order.seller?.gst_number,
+      user.gstin,
+      user.GSTIN,
+      user.gst_number,
+      user.gstNumber
     ),
-    "—"
+    ""
   );
+};
 
 const getFromName = (order) =>
   text(
     first(
-      order?.pickup_name,
-      order?.pickupName,
-      order?.pickup_contact_name,
-      order?.pickupContactName,
-      order?.warehouse?.contact_name,
-      order?.warehouse?.contactName,
-      order?.warehouse_contact_name,
-      order?.warehouseContactName,
-      order?.shipper_name,
-      order?.shipperName,
-      order?.seller_name
+      order.pickup_name,
+      order.pickupName,
+      order.pickup_contact_name,
+      order.pickupContactName,
+      order.warehouse?.contact_name,
+      order.warehouse?.contactName,
+      order.warehouse?.name,
+      order.warehouse_contact_name,
+      order.warehouseContactName,
+      order.shipper_name,
+      order.shipperName,
+      order.seller_name,
+      order.sellerName
     )
   );
 
 const getFromMobile = (order) =>
   text(
     first(
-      order?.shipper_mobile,
-      order?.pickup_mobile,
-      order?.seller_mobile,
-      order?.pickup_phone,
-      order?.warehouse?.mobile,
-      order?.warehouse?.phone
-    ),
-    ""
-  );
-
-const getAlternateFromMobile = (order) =>
-  text(
-    first(
-      order?.shipper_alternate_mobile,
-      order?.alternate_mobile,
-      order?.pickup_alternate_mobile,
-      order?.seller_alternate_mobile
+      order.shipper_mobile,
+      order.shipperMobile,
+      order.pickup_mobile,
+      order.pickupMobile,
+      order.pickup_phone,
+      order.pickupPhone,
+      order.seller_mobile,
+      order.sellerMobile,
+      order.warehouse?.mobile,
+      order.warehouse?.phone
     ),
     ""
   );
 
 const getFromAddress = (order) => {
-  const warehouse = order?.warehouse || {};
-  const addr = [
+  const warehouse = order.warehouse || {};
+  const pickup = order.pickup_address_details || {};
+
+  return [
     first(
       warehouse.address_line1,
       warehouse.addressLine1,
-      order?.warehouse_address_line1,
-      order?.warehouseAddressLine1,
-      order?.pickup_address,
-      order?.pickupAddress,
-      order?.shipper_address,
-      order?.shipperAddress
+      warehouse.address,
+      order.warehouse_address_line1,
+      order.warehouseAddressLine1,
+      order.pickup_address,
+      order.pickupAddress,
+      order.shipper_address,
+      order.shipperAddress,
+      pickup.address_line1,
+      pickup.address
     ),
     first(
       warehouse.address_line2,
       warehouse.addressLine2,
-      order?.warehouse_address_line2,
-      order?.pickup_address_line2,
-      order?.pickupAddressLine2
+      order.warehouse_address_line2,
+      order.pickup_address_line2,
+      order.pickupAddressLine2,
+      pickup.address_line2
     ),
     first(
       warehouse.landmark,
-      order?.warehouse_landmark,
-      order?.pickup_landmark
+      order.warehouse_landmark,
+      order.pickup_landmark,
+      pickup.landmark
     ),
     first(
       warehouse.city,
-      order?.warehouse_city,
-      order?.warehouseCity,
-      order?.pickup_city,
-      order?.pickupCity
+      order.warehouse_city,
+      order.warehouseCity,
+      order.pickup_city,
+      order.pickupCity,
+      pickup.city
     ),
     first(
       warehouse.state,
-      order?.warehouse_state,
-      order?.warehouseState,
-      order?.pickup_state,
-      order?.pickupState
+      order.warehouse_state,
+      order.warehouseState,
+      order.pickup_state,
+      order.pickupState,
+      pickup.state
     ),
     first(
       warehouse.pincode,
-      order?.warehouse_pincode,
-      order?.warehousePincode,
-      order?.pickup_pincode,
-      order?.pickupPincode
+      order.warehouse_pincode,
+      order.warehousePincode,
+      order.pickup_pincode,
+      order.pickupPincode,
+      pickup.pincode
     ),
-    "India",
+    first(warehouse.country, order.pickup_country, "India"),
   ]
     .filter(Boolean)
     .join(", ");
-
-  return addr || "—";
 };
 
 const getBuyerAddress = (order) => {
-  const addr = [
+  const buyer = order.buyer || order.customer || {};
+
+  return [
     first(
-      order?.address_line1,
-      order?.addressLine1,
-      order?.address,
-      order?.delivery_address,
-      order?.deliveryAddress,
-      order?.buyer_address1
+      order.address_line1,
+      order.addressLine1,
+      order.delivery_address,
+      order.deliveryAddress,
+      order.address,
+      order.buyer_address1,
+      buyer.address_line1,
+      buyer.address
     ),
     first(
-      order?.address_line2,
-      order?.addressLine2,
-      order?.buyer_address2
+      order.address_line2,
+      order.addressLine2,
+      order.buyer_address2,
+      buyer.address_line2
     ),
-    first(order?.landmark, order?.buyer_landmark),
+    first(order.landmark, order.buyer_landmark, buyer.landmark),
     first(
-      order?.city,
-      order?.delivery_city,
-      order?.deliveryCity,
-      order?.buyer_city
-    ),
-    first(
-      order?.state,
-      order?.delivery_state,
-      order?.deliveryState,
-      order?.buyer_state
+      order.city,
+      order.delivery_city,
+      order.deliveryCity,
+      order.buyer_city,
+      buyer.city
     ),
     first(
-      order?.pincode,
-      order?.delivery_pincode,
-      order?.deliveryPincode,
-      order?.buyer_pincode
+      order.state,
+      order.delivery_state,
+      order.deliveryState,
+      order.buyer_state,
+      buyer.state
     ),
-    "India",
+    first(
+      order.pincode,
+      order.delivery_pincode,
+      order.deliveryPincode,
+      order.buyer_pincode,
+      buyer.pincode
+    ),
+    first(order.country, order.buyer_country, buyer.country, "India"),
   ]
     .filter(Boolean)
     .join(", ");
-
-  return addr || "—";
 };
 
-const getReturnAddress = (order) => {
-  const addr = [
+const getReturnAddress = (order) =>
+  [
     first(
-      order?.return_address_line1,
-      order?.returnAddressLine1,
-      order?.return_address,
-      order?.returnAddress
+      order.return_address_line1,
+      order.returnAddressLine1,
+      order.return_address,
+      order.returnAddress
     ),
-    first(
-      order?.return_address_line2,
-      order?.returnAddressLine2
-    ),
-    first(order?.return_landmark, order?.returnLandmark),
-    first(order?.return_city, order?.returnCity),
-    first(order?.return_state, order?.returnState),
-    first(order?.return_pincode, order?.returnPincode),
-    "India",
+    first(order.return_address_line2, order.returnAddressLine2),
+    first(order.return_landmark, order.returnLandmark),
+    first(order.return_city, order.returnCity),
+    first(order.return_state, order.returnState),
+    first(order.return_pincode, order.returnPincode),
+    first(order.return_country, order.returnCountry, "India"),
   ]
     .filter(Boolean)
     .join(", ");
-
-  return addr || getFromAddress(order);
-};
-
-const getReturnName = (order) =>
-  text(
-    first(order?.return_name, order?.returnName, getFromName(order), getSellerName(order))
-  );
 
 const getProducts = (order) => {
   const products =
-    Array.isArray(order?.products) && order.products.length
+    Array.isArray(order.products) && order.products.length
       ? order.products
-      : [
-          {
-            product_name: first(
-              order?.product_name,
-              order?.productName,
-              order?.shipment,
-              "Product"
-            ),
-            quantity: first(order?.quantity, order?.qty, 1),
-            price: first(
-              order?.product_value,
-              order?.productValue,
-              order?.order_value,
-              order?.orderValue,
-              order?.total_amount,
-              0
-            ),
-          },
-        ];
+      : Array.isArray(order.order_products) && order.order_products.length
+        ? order.order_products
+        : [
+            {
+              product_name: first(
+                order.product_name,
+                order.productName,
+                order.product,
+                "Product"
+              ),
+              quantity: first(order.quantity, order.qty, 1),
+              price: first(
+                order.product_value,
+                order.productValue,
+                order.order_value,
+                order.orderValue,
+                order.total_amount,
+                0
+              ),
+            },
+          ];
 
   return products.map((product) => {
-    const name = text(
-      first(
-        product?.product_name,
-        product?.productName,
-        product?.name,
-        product?.product
-      ),
-      "Product"
-    );
-
     const qty =
       Number(
         first(
-          product?.quantity,
-          product?.qty,
-          product?.product_quantity,
-          product?.productQuantity,
+          product.quantity,
+          product.qty,
+          product.product_quantity,
+          product.productQuantity,
           1
         )
       ) || 1;
 
+    const total = Number(
+      first(
+        product.total,
+        product.total_price,
+        product.totalPrice,
+        product.amount,
+        product.line_total,
+        product.lineTotal
+      )
+    );
+
     const rate =
       Number(
         first(
-          product?.rate,
-          product?.price,
-          product?.unit_price,
-          product?.unitPrice,
-          product?.product_price,
-          product?.productPrice,
-          0
+          product.rate,
+          product.price,
+          product.unit_price,
+          product.unitPrice,
+          product.product_price,
+          product.productPrice,
+          total ? total / qty : 0
         )
       ) || 0;
 
-    const total =
-      Number(
+    return {
+      name: text(
         first(
-          product?.total,
-          product?.total_price,
-          product?.totalPrice,
-          product?.amount,
-          rate * qty
-        )
-      ) || rate * qty;
-
-    return { name, qty, rate, total };
+          product.product_name,
+          product.productName,
+          product.name,
+          product.product
+        ),
+        "Product"
+      ),
+      qty,
+      rate,
+      total: Number.isFinite(total) ? total : rate * qty,
+    };
   });
 };
 
 const getLabelSize = (value) => {
   const sizes = {
-    "4x6": {
-      key: "4x6",
-      widthIn: 4,
-      heightIn: 6,
-      widthMm: 101.6,
-      heightMm: 152.4,
-    },
-    A4: {
-      key: "A4",
-      widthIn: 8.27,
-      heightIn: 11.69,
-      widthMm: 210,
-      heightMm: 297,
-    },
-    "4x2": {
-      key: "4x2",
-      widthIn: 4,
-      heightIn: 2,
-      widthMm: 101.6,
-      heightMm: 50.8,
-    },
-    "4x2.5": {
-      key: "4x2.5",
-      widthIn: 4,
-      heightIn: 2.5,
-      widthMm: 101.6,
-      heightMm: 63.5,
-    },
-    "3x2": {
-      key: "3x2",
-      widthIn: 3,
-      heightIn: 2,
-      widthMm: 76.2,
-      heightMm: 50.8,
-    },
+    "4x6": { key: "4x6", widthIn: 4, heightIn: 6, widthMm: 101.6, heightMm: 152.4 },
+    A4: { key: "A4", widthIn: 8.27, heightIn: 11.69, widthMm: 210, heightMm: 297 },
+    "4x2": { key: "4x2", widthIn: 4, heightIn: 2, widthMm: 101.6, heightMm: 50.8 },
+    "4x2.5": { key: "4x2.5", widthIn: 4, heightIn: 2.5, widthMm: 101.6, heightMm: 63.5 },
+    "3x2": { key: "3x2", widthIn: 3, heightIn: 2, widthMm: 76.2, heightMm: 50.8 },
   };
 
   return sizes[value] || sizes["4x6"];
 };
 
-const normalizeSettings = (data = {}) => ({
-  ...DEFAULT_LABEL_SETTINGS,
-  orderValue: Boolean(
-    data.order_value ?? data.orderValue ?? DEFAULT_LABEL_SETTINGS.orderValue
-  ),
-  codAmount: Boolean(
-    data.cod_amount ?? data.codAmount ?? DEFAULT_LABEL_SETTINGS.codAmount
-  ),
-  buyerMobile: Boolean(
-    data.buyer_mobile ?? data.buyerMobile ?? DEFAULT_LABEL_SETTINGS.buyerMobile
-  ),
-  shipperMobiles: Boolean(
-    data.shipper_mobiles ??
-      data.shipperMobiles ??
-      DEFAULT_LABEL_SETTINGS.shipperMobiles
-  ),
-  shipperAddress: Boolean(
-    data.shipper_address ??
-      data.shipperAddress ??
-      DEFAULT_LABEL_SETTINGS.shipperAddress
-  ),
-  fromName: Boolean(
-    data.from_name ?? data.fromName ?? DEFAULT_LABEL_SETTINGS.fromName
-  ),
-  fromAddress: Boolean(
-    data.from_address ?? data.fromAddress ?? DEFAULT_LABEL_SETTINGS.fromAddress
-  ),
-  fromMobile: Boolean(
-    data.from_mobile ?? data.fromMobile ?? DEFAULT_LABEL_SETTINGS.fromMobile
-  ),
-  productName: Boolean(
-    data.product_name ?? data.productName ?? DEFAULT_LABEL_SETTINGS.productName
-  ),
-  productDetails: Boolean(
-    data.product_details ??
-      data.productDetails ??
-      DEFAULT_LABEL_SETTINGS.productDetails
-  ),
-  servicesTnc: Boolean(
-    data.services_tnc ?? data.servicesTnc ?? DEFAULT_LABEL_SETTINGS.servicesTnc
-  ),
-  orderId: Boolean(
-    data.order_id ?? data.orderId ?? DEFAULT_LABEL_SETTINGS.orderId
-  ),
-  orderWeight: Boolean(
-    data.order_weight ?? data.orderWeight ?? DEFAULT_LABEL_SETTINGS.orderWeight
-  ),
-  returnAddress: Boolean(
-    data.return_address ??
-      data.returnAddress ??
-      DEFAULT_LABEL_SETTINGS.returnAddress
-  ),
-  contactLine: Boolean(
-    data.contact_line ?? data.contactLine ?? DEFAULT_LABEL_SETTINGS.contactLine
-  ),
-  rightLogoMode:
-    data.right_logo_mode ||
-    data.rightLogoMode ||
-    DEFAULT_LABEL_SETTINGS.rightLogoMode,
-  labelSize:
-    data.label_size || data.labelSize || DEFAULT_LABEL_SETTINGS.labelSize,
-  customLogo: data.custom_logo || data.customLogo || null,
-});
+const normalizeSettings = (data = {}) => {
+  const bool = (snake, camel, fallback) =>
+    data[snake] ?? data[camel] ?? fallback;
+
+  return {
+    ...DEFAULT_LABEL_SETTINGS,
+    orderValue: Boolean(bool("order_value", "orderValue", true)),
+    codAmount: Boolean(bool("cod_amount", "codAmount", true)),
+    buyerMobile: Boolean(bool("buyer_mobile", "buyerMobile", true)),
+    shipperMobiles: Boolean(bool("shipper_mobiles", "shipperMobiles", true)),
+    shipperAddress: Boolean(bool("shipper_address", "shipperAddress", true)),
+    fromName: Boolean(bool("from_name", "fromName", true)),
+    fromAddress: Boolean(bool("from_address", "fromAddress", true)),
+    fromMobile: Boolean(bool("from_mobile", "fromMobile", true)),
+    productName: Boolean(bool("product_name", "productName", true)),
+    productDetails: Boolean(bool("product_details", "productDetails", true)),
+    servicesTnc: Boolean(bool("services_tnc", "servicesTnc", false)),
+    orderId: Boolean(bool("order_id", "orderId", false)),
+    orderWeight: Boolean(bool("order_weight", "orderWeight", false)),
+    returnAddress: Boolean(bool("return_address", "returnAddress", true)),
+    contactLine: Boolean(bool("contact_line", "contactLine", true)),
+    rightLogoMode:
+      data.right_logo_mode || data.rightLogoMode || "delhivery",
+    labelSize: data.label_size || data.labelSize || "4x6",
+    customLogo: data.custom_logo || data.customLogo || null,
+  };
+};
 
 const getLabelSettings = async () => {
   const userId = getUserId();
+
   if (!userId) return { ...DEFAULT_LABEL_SETTINGS };
 
   try {
     const response = await api.get("/label-settings", {
       params: { user_id: userId },
     });
+
     const data = response.data?.settings;
+
     if (!response.data?.success || !data) {
       return { ...DEFAULT_LABEL_SETTINGS };
     }
+
     return normalizeSettings(data);
   } catch (error) {
     console.error("Label settings fetch error:", error);
@@ -632,32 +613,29 @@ const getLabelSettings = async () => {
 
 const getDetailedOrders = async (orders) => {
   const userId = getUserId();
+
   if (!userId) return orders;
 
   return Promise.all(
     orders.map(async (order) => {
-      const id = order?.order_id || order?.id;
+      const id = first(order.order_id, order.orderId, order.id);
+
       if (!id) return order;
 
       try {
         const response = await api.get(`/orders/${id}`, {
           params: { user_id: userId },
         });
+
         const full =
           response.data?.order ||
           response.data?.result?.order ||
           response.data?.result ||
           null;
 
-        return full
-          ? {
-              ...order,
-              ...full,
-              awb: first(order?.awb, full?.awb, full?.waybill),
-              order_id: first(order?.order_id, full?.order_id),
-            }
-          : order;
+        return full ? { ...order, ...full } : order;
       } catch (error) {
+        // Some applications don't have a single-order endpoint.
         console.warn("Could not fetch full order details:", id, error);
         return order;
       }
@@ -666,507 +644,518 @@ const getDetailedOrders = async (orders) => {
 };
 
 const barcodeSvg = (value, compact = false) => {
-  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  const svg = document.createElementNS(
+    "http://www.w3.org/2000/svg",
+    "svg"
+  );
+
   JsBarcode(svg, String(value || "AWB"), {
     format: "CODE128",
     displayValue: false,
-    height: compact ? 26 : 40,
-    width: compact ? 1.2 : 1.7,
+    height: compact ? 18 : 35,
+    width: compact ? 1 : 1.4,
     margin: 0,
     background: "#ffffff",
-    lineColor: "#000000",
+    lineColor: "#111827",
   });
+
   return svg.outerHTML;
 };
 
 const buildLabelHtml = (order, settings, rightLogo, size) => {
+  const compact = size.heightIn <= 2.5;
+  const a4 = size.key === "A4";
+
   const awb = getAWB(order);
   const payment = getPaymentType(order);
-  const isA4 = size.key === "A4";
-  const compact = size.heightIn <= 2.5;
-
-  const fromAddress = getFromAddress(order);
-  const buyerAddress = getBuyerAddress(order);
-  const fromName = getFromName(order);
-  const fromMobiles = [
-    getFromMobile(order),
-    getAlternateFromMobile(order),
-  ]
-    .filter(Boolean)
-    .join(" / ");
-
   const products = getProducts(order);
+
+  const fromName = getFromName(order);
+  const fromAddress = getFromAddress(order);
+  const fromMobile = getFromMobile(order);
+  const buyerAddress = getBuyerAddress(order);
+  const buyerMobile = getBuyerMobile(order);
+
   const showFromName = settings.fromName !== false;
-  const showFromAddress = settings.fromAddress !== false && settings.shipperAddress !== false;
-  const showFromMobile = settings.fromMobile !== false && settings.shipperMobiles !== false;
-  const showBuyerMobile = settings.buyerMobile !== false && Boolean(getMobile(order));
-  const showWeight = settings.orderWeight !== false;
-  const showOrderId = settings.orderId !== false;
+  const showFromAddress =
+    settings.fromAddress !== false && settings.shipperAddress !== false;
+  const showFromMobile =
+    settings.fromMobile !== false && settings.shipperMobiles !== false;
+  const showBuyerMobile =
+    settings.buyerMobile !== false && Boolean(buyerMobile);
+  const showWeight = settings.orderWeight === true;
+  const showOrderId = settings.orderId === true;
   const showOrderValue = settings.orderValue !== false;
   const showCod = settings.codAmount !== false && payment === "COD";
-  const showProducts = settings.productDetails !== false && settings.productName !== false;
-  const returnAddress = getReturnAddress(order);
+  const showProducts =
+    settings.productDetails !== false && settings.productName !== false;
 
-  const contactText =
+  const logo =
+    settings.rightLogoMode === "custom" && settings.customLogo
+      ? settings.customLogo
+      : rightLogo;
+
+  const contactLine =
     "For complaints & queries please contact 8766066070, 0141-4797120";
 
   const productRows = showProducts
     ? products
-        .slice(0, isA4 ? 10 : compact ? 1 : 4)
+        .slice(0, a4 ? 15 : compact ? 1 : 5)
         .map(
-          (product) => `
+          (p) => `
             <tr>
-              <td class="pname">${escapeHtml(product.name)}</td>
-              <td class="num">${escapeHtml(product.rate.toFixed(2))}</td>
-              <td class="num">${escapeHtml(product.qty)}</td>
-              <td class="num">${escapeHtml(product.total.toFixed(2))}</td>
+              <td class="product-name">${escapeHtml(p.name)}</td>
+              <td>${p.rate.toFixed(2)}</td>
+              <td>${p.qty}</td>
+              <td>${p.total.toFixed(2)}</td>
             </tr>
           `
         )
         .join("")
     : "";
 
+  const orderInfo = [
+    showOrderId
+      ? `<div class="info-cell"><span>ORDER ID</span><b>${escapeHtml(getOrderId(order))}</b></div>`
+      : "",
+    showOrderValue
+      ? `<div class="info-cell"><span>ORDER VALUE</span><b>${money(getOrderValue(order))}</b></div>`
+      : "",
+  ].filter(Boolean);
+
   return `
-    <article
-      class="shipping-label ${compact ? "compact" : ""} ${isA4 ? "a4" : ""}"
-      style="width:${size.widthIn}in; height:${size.heightIn}in;"
-    >
+    <article class="shipping-label ${compact ? "compact" : ""} ${a4 ? "a4" : ""}"
+      style="width:${size.widthIn}in;height:${size.heightIn}in">
+
       <div class="label-border">
-        <!-- LOGO HEADER -->
-        <header class="row logos">
-          <div class="logo-box left">
-            <img src="${escapeHtml(shipdropLogo)}" alt="ShipDrop" />
+
+        <header class="logos">
+          <div class="logo left">
+            <img src="${escapeHtml(shipdropLogo)}" alt="ParcelDrop" />
           </div>
-          <div class="logo-box right">
-            ${rightLogo ? `<img src="${escapeHtml(rightLogo)}" alt="Carrier" />` : ""}
+          <div class="logo right">
+            <img src="${escapeHtml(logo || delhiveryLogo)}" alt="Carrier" />
           </div>
         </header>
 
-        <!-- AWB BARCODE -->
-        <section class="awb-box">
+        <section class="awb">
+          <div class="eyebrow">AWB NUMBER</div>
+          <div class="awb-number">${escapeHtml(awb)}</div>
           <div class="barcode">${barcodeSvg(awb, compact)}</div>
-          <div class="awb-label">AWB No: <b>${escapeHtml(awb)}</b></div>
         </section>
 
-        <!-- ADDRESSES: FROM & TO -->
-        <section class="row addresses">
-          <div class="col-half from-box">
-            <div class="field-title">FROM:</div>
-            ${showFromName ? `<div class="name-bold">${escapeHtml(fromName)}</div>` : ""}
-            ${showFromAddress ? `<div class="addr-text">${escapeHtml(fromAddress)}</div>` : ""}
-            ${showFromMobile && fromMobiles ? `<div class="phone-text">Mobile: ${escapeHtml(fromMobiles)}</div>` : ""}
+        <section class="addresses">
+          <div class="address-block">
+            <div class="eyebrow">FROM / SHIPPER</div>
+            ${showFromName ? `<b class="person">${escapeHtml(fromName)}</b>` : ""}
+            ${showFromAddress && fromAddress ? `<div class="address">${escapeHtml(fromAddress)}</div>` : ""}
+            ${showFromMobile && fromMobile ? `<div class="phone">☎ ${escapeHtml(fromMobile)}</div>` : ""}
           </div>
 
-          <div class="col-half to-box">
-            <div class="field-title">TO / CONSIGNEE:</div>
-            <div class="name-bold">
-              ${escapeHtml(getCustomerName(order))}
-              ${showBuyerMobile ? ` <span class="buyer-mobile">(${escapeHtml(getMobile(order))})</span>` : ""}
-            </div>
-            <div class="addr-text">${escapeHtml(buyerAddress)}</div>
+          <div class="address-block">
+            <div class="eyebrow">SHIP TO / CONSIGNEE</div>
+            <b class="person">${escapeHtml(getCustomerName(order))}</b>
+            <div class="address">${escapeHtml(buyerAddress || "—")}</div>
+            ${showBuyerMobile ? `<div class="phone">☎ ${escapeHtml(buyerMobile)}</div>` : ""}
           </div>
         </section>
 
-        <!-- METRICS ROW: PAYMENT, ORDER, WEIGHT -->
-        <section class="row info-row">
-          <div class="info-cell">
-            <div class="field-title">PAYMENT</div>
-            <div class="cell-val bold ${payment === "COD" ? "cod-badge" : ""}">${payment}</div>
+        <section class="summary ${showWeight ? "three-cols" : "two-cols"}">
+          <div>
+            <span>PAYMENT</span>
+            <b>${payment}</b>
           </div>
-
-          ${
-            showOrderId
-              ? `
-              <div class="info-cell">
-                <div class="field-title">ORDER ID</div>
-                <div class="cell-val">#${escapeHtml(getOrderId(order))}</div>
-              </div>
-              `
-              : ""
-          }
-
-          ${
-            showWeight
-              ? `
-              <div class="info-cell">
-                <div class="field-title">BILLED WEIGHT</div>
-                <div class="cell-val">${getWeight(order).toFixed(2)} Kg</div>
-              </div>
-              `
-              : ""
-          }
-
-          <div class="info-cell">
-            <div class="field-title">SERVICE</div>
-            <div class="cell-val">${getServiceType(order).includes("AIR") ? "AIR" : "ROAD"}</div>
+          <div>
+            <span>SERVICE</span>
+            <b>${getServiceType(order)}</b>
           </div>
+          ${showWeight ? `<div><span>WEIGHT</span><b>${getWeight(order).toFixed(2)} KG</b></div>` : ""}
         </section>
 
-        <!-- COD OR ORDER VALUE BAR -->
         ${
-          showCod
-            ? `
-            <section class="row cod-row">
-              <div class="cod-title">CASH ON DELIVERY (COLLECT)</div>
-              <div class="cod-val">${money(getCodAmount(order))}</div>
-            </section>
-            `
-            : showOrderValue
-            ? `
-            <section class="row cod-row prepaid-info">
-              <div class="cod-title">TOTAL ORDER VALUE</div>
-              <div class="cod-val">${money(getOrderValue(order))}</div>
-            </section>
-            `
+          orderInfo.length
+            ? `<section class="order-info" style="grid-template-columns:repeat(${orderInfo.length},minmax(0,1fr))">${orderInfo.join("")}</section>`
             : ""
         }
 
-        <!-- SELLER DETAILS -->
-        <section class="row seller-row">
-          <div class="seller-cell">
-            <div class="field-title">SELLER</div>
-            <div class="cell-val bold">${escapeHtml(getSellerName(order))}</div>
-          </div>
-          <div class="seller-cell">
-            <div class="field-title">GSTIN</div>
-            <div class="cell-val">${escapeHtml(getSellerGstin(order))}</div>
-          </div>
-          <div class="seller-cell">
-            <div class="field-title">INVOICE NO</div>
-            <div class="cell-val">${escapeHtml(getInvoiceNo(order))}</div>
-          </div>
-          <div class="seller-cell">
-            <div class="field-title">DATE</div>
-            <div class="cell-val">${escapeHtml(formatDate(getDate(order)))}</div>
-          </div>
-        </section>
+        ${
+          showCod
+            ? `<section class="cod"><b>CASH ON DELIVERY</b><strong>${money(getCodAmount(order))}</strong></section>`
+            : ""
+        }
 
-        <!-- PRODUCT TABLE -->
         ${
           showProducts
             ? `
-            <section class="product-section">
-              <table class="product-table">
-                <thead>
-                  <tr>
-                    <th style="width: 50%;">Product Name</th>
-                    <th style="width: 15%; text-align: right;">Rate</th>
-                    <th style="width: 15%; text-align: center;">Qty</th>
-                    <th style="width: 20%; text-align: right;">Total</th>
-                  </tr>
-                </thead>
-                <tbody>${productRows}</tbody>
-              </table>
-            </section>
+              <section class="products">
+                <div class="section-title">PRODUCT DETAILS</div>
+                <table>
+                  <thead>
+                    <tr><th>Product</th><th>Rate (₹)</th><th>Qty</th><th>Total (₹)</th></tr>
+                  </thead>
+                  <tbody>${productRows}</tbody>
+                </table>
+              </section>
             `
             : ""
         }
 
-        <!-- RETURN ADDRESS -->
+        <section class="seller">
+          <div><span>SELLER</span><b>${escapeHtml(getSellerName(order))}</b></div>
+          <div><span>GSTIN</span><b>${escapeHtml(getSellerGstin(order))}</b></div>
+          <div><span>INVOICE NO.</span><b>&nbsp;</b></div>
+          <div><span>DATE</span><b>${escapeHtml(formatDate(getDate(order)))}</b></div>
+        </section>
+
         ${
           settings.returnAddress !== false
-            ? `
-            <section class="return-box">
-              <span class="return-tag">NOTE: If undelivered, return to:</span>
-              <span class="return-addr">${escapeHtml(getReturnName(order))},${escapeHtml(returnAddress)}</span>
-            </section>
-            `
+            ? `<section class="return"><b>RETURN ADDRESS</b><div>${escapeHtml(getReturnAddress(order) || fromAddress || "—")}</div></section>`
             : ""
         }
 
-        <!-- FOOTER CONTACT -->
         ${
           settings.contactLine !== false
-            ? `<footer class="contact-footer">${escapeHtml(contactText)}</footer>`
+            ? `<footer class="contact">${escapeHtml(contactLine)}</footer>`
             : ""
         }
+
       </div>
-
-      <style>
-        * {
-          box-sizing: border-box;
-          margin: 0;
-          padding: 0;
-        }
-
-        .shipping-label {
-          background: #ffffff;
-          color: #000000;
-          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-          font-size: 7.5pt;
-          line-height: 1.2;
-          padding: 3mm;
-          page-break-after: always;
-          break-after: page;
-          -webkit-print-color-adjust: exact;
-          print-color-adjust: exact;
-          display: flex;
-        }
-
-        .shipping-label:last-child {
-          page-break-after: auto;
-          break-after: auto;
-        }
-
-        .label-border {
-          width: 100%;
-          height: 100%;
-          border: 1.5px solid #000000;
-          display: flex;
-          flex-direction: column;
-          background: #ffffff;
-        }
-
-        .row {
-          display: flex;
-          width: 100%;
-          border-bottom: 1px solid #000000;
-        }
-
-        /* Logos */
-        .logos {
-          height: 38px;
-          min-height: 38px;
-          align-items: center;
-          justify-content: space-between;
-          padding: 2px 8px;
-        }
-
-        .logo-box {
-          height: 100%;
-          display: flex;
-          align-items: center;
-        }
-
-        .logo-box.left { justify-content: flex-start; }
-        .logo-box.right { justify-content: flex-end; }
-
-        .logo-box img {
-          max-height: 32px;
-          max-width: 120px;
-          object-fit: contain;
-        }
-
-        /* AWB Section */
-        .awb-box {
-          text-align: center;
-          padding: 4px 6px 2px;
-          border-bottom: 1px solid #000000;
-        }
-
-        .awb-box .barcode {
-          display: flex;
-          justify-content: center;
-        }
-
-        .awb-box .barcode svg {
-          height: 36px;
-          max-width: 95%;
-        }
-
-        .awb-label {
-          font-size: 8.5pt;
-          margin-top: 1px;
-          font-weight: 600;
-          letter-spacing: 0.5px;
-        }
-
-        /* Addresses */
-        .addresses {
-          flex: 0 0 auto;
-        }
-
-        .col-half {
-          width: 50%;
-          padding: 4px 6px;
-          min-height: 70px;
-          overflow: hidden;
-        }
-
-        .col-half.from-box {
-          border-right: 1px solid #000000;
-        }
-
-        .field-title {
-          font-size: 6pt;
-          font-weight: 700;
-          color: #4b5563;
-          text-transform: uppercase;
-          margin-bottom: 1px;
-        }
-
-        .name-bold {
-          font-size: 7.5pt;
-          font-weight: 700;
-          margin-bottom: 2px;
-          word-break: break-word;
-        }
-
-        .buyer-mobile {
-          font-weight: 600;
-          font-size: 7pt;
-        }
-
-        .addr-text {
-          font-size: 6.8pt;
-          line-height: 1.18;
-          color: #111827;
-          word-break: break-word;
-        }
-
-        .phone-text {
-          font-size: 6.8pt;
-          font-weight: 600;
-          margin-top: 2px;
-        }
-
-        /* Info Cells (Payment, Weight, etc.) */
-        .info-row {
-          background: #f9fafb;
-        }
-
-        .info-cell {
-          flex: 1;
-          padding: 3px 5px;
-          border-right: 1px solid #000000;
-          min-width: 0;
-        }
-
-        .info-cell:last-child {
-          border-right: none;
-        }
-
-        .cell-val {
-          font-size: 7.5pt;
-          font-weight: 600;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-
-        .cell-val.bold {
-          font-weight: 800;
-        }
-
-        .cod-badge {
-          color: #dc2626;
-          font-weight: 900;
-        }
-
-        /* COD Row */
-        .cod-row {
-          padding: 4px 8px;
-          background: #000000;
-          color: #ffffff;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-
-        .cod-row.prepaid-info {
-          background: #f3f4f6;
-          color: #000000;
-        }
-
-        .cod-title {
-          font-size: 7pt;
-          font-weight: 800;
-          letter-spacing: 0.5px;
-        }
-
-        .cod-val {
-          font-size: 10pt;
-          font-weight: 900;
-        }
-
-        /* Seller Row */
-        .seller-row {
-          background: #ffffff;
-        }
-
-        .seller-cell {
-          flex: 1;
-          padding: 3px 5px;
-          border-right: 1px solid #d1d5db;
-          overflow: hidden;
-        }
-
-        .seller-cell:last-child {
-          border-right: none;
-        }
-
-        /* Product Table */
-        .product-section {
-          flex: 1 1 auto;
-          overflow: hidden;
-          border-bottom: 1px solid #000000;
-        }
-
-        .product-table {
-          width: 100%;
-          border-collapse: collapse;
-          font-size: 6.8pt;
-        }
-
-        .product-table th,
-        .product-table td {
-          padding: 2.5px 5px;
-          border-bottom: 0.5px solid #e5e7eb;
-        }
-
-        .product-table th {
-          background: #f3f4f6;
-          font-weight: 700;
-          font-size: 6.2pt;
-          border-bottom: 1px solid #000000;
-        }
-
-        .product-table .num {
-          text-align: right;
-        }
-
-        .product-table .pname {
-          font-weight: 600;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-
-        /* Return & Footer */
-        .return-box {
-          padding: 3px 6px;
-          font-size: 6.2pt;
-          border-bottom: 1px solid #000000;
-          line-height: 1.2;
-          background: #ffffff;
-        }
-
-        .return-tag {
-          font-weight: 800;
-          display: inline;
-        }
-
-        .return-addr {
-          display: inline;
-          color: #374151;
-        }
-
-        .contact-footer {
-          padding: 2.5px 6px;
-          font-size: 5.8pt;
-          font-weight: 700;
-          text-align: center;
-          background: #ffffff;
-        }
-
-        /* Compact overrides for 3x2, 4x2 */
-        .compact .logos { height: 24px; min-height: 24px; }
-        .compact .logo-box img { max-height: 20px; }
-        .compact .awb-box .barcode svg { height: 24px; }
-        .compact .col-half { min-height: 48px; padding: 2px 4px; }
-        .compact .product-section { display: none; }
-      </style>
     </article>
+
+    <style>
+      * { box-sizing: border-box; }
+
+      .shipping-label {
+        margin: 0;
+        padding: 3.5mm;
+        background: #fff;
+        color: #111827;
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 8pt;
+        line-height: 1.25;
+        overflow: hidden;
+        page-break-after: always;
+        break-after: page;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      .label-border {
+        width: 100%;
+        height: 100%;
+        border: 1.2px solid #111827;
+        overflow: hidden;
+
+        /* IMPORTANT: Do not distribute spare height between sections. */
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        align-items: stretch;
+        background: #fff;
+      }
+
+      .logos {
+        flex: 0 0 9mm;
+        height: 9mm;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1.2mm 2mm;
+        border-bottom: 1px solid #111827;
+        gap: 3mm;
+      }
+
+      .logo {
+        width: 48%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+      }
+
+      .logo.left { justify-content: flex-start; }
+      .logo.right { justify-content: flex-end; }
+
+      .logo img {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+        display: block;
+      }
+
+      .awb {
+        flex: 0 0 auto;
+        text-align: center;
+        padding: 2mm 2mm;
+        border-bottom: 1px solid #111827;
+      }
+
+      .eyebrow {
+        font-size: 6pt;
+        font-weight: 800;
+        letter-spacing: .25px;
+        color: #374151;
+      }
+
+      .awb-number {
+        font-size: 11pt;
+        font-weight: 900;
+        letter-spacing: .5px;
+        margin: 1mm 0;
+        overflow-wrap: anywhere;
+      }
+
+      .barcode svg {
+        display: block;
+        max-width: 100%;
+        max-height: 10mm;
+        height: auto;
+        margin: 0 auto;
+      }
+
+      .addresses {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        flex: 0 0 auto;
+        border-bottom: 1px solid #111827;
+      }
+
+      .address-block {
+        min-width: 0;
+        padding: 2mm;
+        overflow-wrap: anywhere;
+      }
+
+      .address-block + .address-block {
+        border-left: 1px solid #111827;
+      }
+
+      .person {
+        display: block;
+        font-size: 8pt;
+        line-height: 1.2;
+        margin-top: 1mm;
+        font-weight: 800;
+        overflow-wrap: anywhere;
+      }
+
+      .address {
+        font-size: 7pt;
+        line-height: 1.3;
+        margin-top: 1mm;
+        overflow-wrap: anywhere;
+      }
+
+      .phone {
+        font-size: 7pt;
+        font-weight: 800;
+        margin-top: 1mm;
+        overflow-wrap: anywhere;
+      }
+
+      .summary {
+        display: grid;
+        flex: 0 0 auto;
+        border-bottom: 1px solid #111827;
+      }
+
+      .summary.two-cols { grid-template-columns: 1fr 1fr; }
+      .summary.three-cols { grid-template-columns: 1fr 1fr 1fr; }
+
+      .summary > div {
+        min-width: 0;
+        padding: 2mm;
+        overflow-wrap: anywhere;
+      }
+
+      .summary > div + div {
+        border-left: 1px solid #9ca3af;
+      }
+
+      .summary span,
+      .info-cell span,
+      .seller span {
+        display: block;
+        font-size: 6pt;
+        font-weight: 800;
+        color: #374151;
+        margin-bottom: .7mm;
+      }
+
+      .summary b {
+        display: block;
+        font-size: 8pt;
+        font-weight: 900;
+      }
+
+      .order-info {
+        display: grid;
+        flex: 0 0 auto;
+        border-bottom: 1px solid #111827;
+      }
+
+      .info-cell {
+        min-width: 0;
+        padding: 1.8mm 2mm;
+        overflow-wrap: anywhere;
+      }
+
+      .info-cell + .info-cell {
+        border-left: 1px solid #9ca3af;
+      }
+
+      .info-cell b {
+        display: block;
+        font-size: 8pt;
+        font-weight: 800;
+      }
+
+      .cod {
+        flex: 0 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 2mm;
+        padding: 2mm;
+        border-bottom: 1px solid #111827;
+      }
+
+      .cod b { font-size: 8pt; }
+      .cod strong { font-size: 10pt; }
+
+      .products {
+        flex: 0 0 auto;
+        padding: 1.8mm 2mm;
+        border-bottom: 1px solid #111827;
+      }
+
+      .section-title {
+        font-size: 6.5pt;
+        font-weight: 900;
+        letter-spacing: .25px;
+        margin-bottom: 1mm;
+      }
+
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        table-layout: fixed;
+        font-size: 7pt;
+      }
+
+      th, td {
+        border: 1px solid #9ca3af;
+        padding: 1mm 1.2mm;
+        text-align: right;
+        overflow-wrap: anywhere;
+      }
+
+      th {
+        font-weight: 800;
+        background: #f3f4f6;
+      }
+
+      th:first-child, td:first-child {
+        text-align: left;
+        width: 46%;
+      }
+
+      .seller {
+        flex: 0 0 auto;
+        display: grid;
+        grid-template-columns: 1.25fr 1fr 1fr .8fr;
+        border-bottom: 1px solid #111827;
+      }
+
+      .seller > div {
+        min-width: 0;
+        padding: 1.8mm 1.5mm;
+        overflow-wrap: anywhere;
+      }
+
+      .seller > div + div {
+        border-left: 1px solid #9ca3af;
+      }
+
+      .seller b {
+        display: block;
+        font-size: 6.5pt;
+        font-weight: 800;
+        overflow-wrap: anywhere;
+      }
+
+      .return {
+        flex: 0 0 auto;
+        padding: 1.8mm 2mm;
+        border-bottom: 1px solid #9ca3af;
+        font-size: 6.5pt;
+        line-height: 1.3;
+        overflow-wrap: anywhere;
+      }
+
+      .return b {
+        display: block;
+        font-size: 6pt;
+        margin-bottom: .8mm;
+      }
+
+      .contact {
+        flex: 0 0 auto;
+        padding: 1.5mm 2mm;
+        font-size: 6pt;
+        line-height: 1.2;
+        text-align: center;
+        font-weight: 800;
+        overflow-wrap: anywhere;
+      }
+
+      .compact {
+        padding: 1.2mm;
+        font-size: 5pt;
+      }
+
+      .compact .label-border { justify-content: flex-start; }
+      .compact .logos { flex-basis: 5mm; height: 5mm; }
+      .compact .awb { padding: 1mm; }
+      .compact .awb-number { font-size: 7pt; margin: .5mm 0; }
+      .compact .barcode svg { max-height: 4mm; }
+      .compact .addresses .address-block { padding: 1mm; }
+      .compact .eyebrow,
+      .compact .summary span,
+      .compact .seller span { font-size: 4pt; }
+      .compact .person,
+      .compact .summary b { font-size: 5pt; }
+      .compact .address,
+      .compact .phone,
+      .compact .seller b,
+      .compact .return,
+      .compact .contact { font-size: 4pt; }
+      .compact .summary > div,
+      .compact .info-cell,
+      .compact .seller > div,
+      .compact .return,
+      .compact .contact { padding: 1mm; }
+      .compact .cod { padding: 1mm; }
+      .compact .cod b,
+      .compact .cod strong { font-size: 5pt; }
+      .compact .products { padding: 1mm; }
+      .compact .section-title,
+      .compact table { font-size: 4pt; }
+      .compact th, .compact td { padding: .5mm; }
+
+      .a4 { padding: 6mm; }
+      .a4 .logos { flex-basis: 15mm; height: 15mm; }
+      .a4 .awb { padding: 4mm; }
+      .a4 .awb-number { font-size: 17pt; }
+      .a4 .barcode svg { max-height: 16mm; }
+      .a4 .person { font-size: 12pt; }
+      .a4 .address, .a4 .phone { font-size: 10pt; }
+      .a4 .summary b { font-size: 12pt; }
+      .a4 .summary > div, .a4 .address-block { padding: 4mm; }
+      .a4 .seller b, .a4 .return { font-size: 9pt; }
+      .a4 .contact { font-size: 8pt; }
+      .a4 table { font-size: 10pt; }
+      .a4 th, .a4 td { padding: 2mm; }
+    </style>
   `;
 };
 
@@ -1175,22 +1164,20 @@ const prepareLabels = async (orders) => {
   const detailedOrders = await getDetailedOrders(orders);
   const size = getLabelSize(settings.labelSize);
 
-  const rightLogo =
-    settings.rightLogoMode === "custom" && settings.customLogo
-      ? settings.customLogo
-      : delhiveryLogo;
-
   return {
     settings,
     detailedOrders,
     size,
-    rightLogo,
+    rightLogo:
+      settings.rightLogoMode === "custom" && settings.customLogo
+        ? settings.customLogo
+        : delhiveryLogo,
   };
 };
 
 export const printShippingLabels = async (
   orders,
-  title = "ShipDrop Shipping Labels"
+  title = "ParcelDrop Shipping Labels"
 ) => {
   if (!Array.isArray(orders) || orders.length === 0) {
     toast.error("Please select at least one shipment");
@@ -1215,7 +1202,6 @@ export const printShippingLabels = async (
     }
 
     win.document.open();
-
     win.document.write(`
       <!doctype html>
       <html>
@@ -1223,58 +1209,27 @@ export const printShippingLabels = async (
           <meta charset="utf-8" />
           <title>${escapeHtml(title)}</title>
           <style>
-            html, body {
-              margin: 0;
-              padding: 0;
-              background: #fff;
-            }
-
-            body {
-              font-family: Arial, Helvetica, sans-serif;
-            }
-
-            .shipping-label {
-              margin: 0 !important;
-            }
-
+            html, body { margin: 0; padding: 0; background: #fff; }
             @page {
               size: ${size.widthIn}in ${size.heightIn}in;
               margin: 0;
             }
-
             @media print {
-              html, body {
-                margin: 0 !important;
-                padding: 0 !important;
-              }
-
-              .shipping-label {
-                page-break-after: always;
-              }
-
-              .shipping-label:last-child {
-                page-break-after: auto;
-              }
+              html, body { margin: 0 !important; padding: 0 !important; }
             }
           </style>
         </head>
         <body>${html}</body>
       </html>
     `);
-
     win.document.close();
-
-    const printOnce = () => {
-      if (win.closed) return;
-      win.focus();
-      win.print();
-    };
 
     const images = Array.from(win.document.images);
 
     await Promise.all(
       images.map((img) => {
         if (img.complete) return Promise.resolve();
+
         return new Promise((resolve) => {
           img.onload = resolve;
           img.onerror = resolve;
@@ -1282,20 +1237,19 @@ export const printShippingLabels = async (
       })
     );
 
-    win.setTimeout(printOnce, 300);
+    win.setTimeout(() => {
+      if (!win.closed) {
+        win.focus();
+        win.print();
+      }
+    }, 400);
 
-    toast.success(
-      `${detailedOrders.length} ${
-        detailedOrders.length === 1 ? "label" : "labels"
-      } ready to print`
-    );
+    toast.success(`${detailedOrders.length} label(s) ready to print`);
   } catch (error) {
     console.error("Print label error:", error);
     toast.error(error?.message || "Unable to print labels");
 
-    if (win && !win.closed) {
-      win.close();
-    }
+    if (win && !win.closed) win.close();
   }
 };
 
@@ -1312,7 +1266,6 @@ export const downloadShippingLabels = async (orders) => {
       await prepareLabels(orders);
 
     staging = document.createElement("div");
-
     staging.style.cssText = `
       position: fixed;
       left: -10000px;
@@ -1407,18 +1360,13 @@ export const downloadShippingLabels = async (orders) => {
 
     const filename =
       detailedOrders.length === 1
-        ? `shipdrop-label-${firstAwb}.pdf`
-        : `shipdrop-labels-${new Date()
+        ? `parceldrop-label-${firstAwb}.pdf`
+        : `parceldrop-labels-${new Date()
             .toISOString()
             .slice(0, 10)}.pdf`;
 
     pdf.save(filename);
-
-    toast.success(
-      `${detailedOrders.length} ${
-        detailedOrders.length === 1 ? "label" : "labels"
-      } downloaded`
-    );
+    toast.success(`${detailedOrders.length} label(s) downloaded`);
   } catch (error) {
     console.error("Download label error:", error);
     toast.error(error?.message || "Unable to download labels");
