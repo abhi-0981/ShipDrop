@@ -83,7 +83,7 @@ const Icon = ({ name, size = 17, strokeWidth = 1.8 }) => {
     case "eye":
       return (
         <svg {...common}>
-          <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6Z" />
+         <path d="M2.5 12 C4.5 8 8 6 12 6 C16 6 19.5 8 21.5 12 C19.5 16 16 18 12 18 C8 18 4.5 16 2.5 12 Z" />
           <circle cx="12" cy="12" r="2.5" />
         </svg>
       );
