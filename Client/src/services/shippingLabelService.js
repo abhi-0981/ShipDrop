@@ -1192,8 +1192,8 @@ const buildLabelHtml = (
       }
 
      .logo {
-  width: 40%;
-  height: 90%;
+  width: 50%;
+  height: 100%;
   min-width: 0;
   display: flex;
   align-items: center;
@@ -1246,30 +1246,31 @@ const buildLabelHtml = (
 
       .eyebrow {
         font-size: ${compact ? "4.5pt" : isA4 ? "9pt" : "6.5pt"};
-        font-weight: 800;
+        font-weight: 600;
         letter-spacing: .2px;
         color: #374151;
       }
 
-      .person {
-        display: block;
-        font-size: ${compact ? "5.5pt" : isA4 ? "13pt" : "8.5pt"};
-        line-height: 1.2;
-        margin-top: 1mm;
-        font-weight: 800;
-        overflow-wrap: anywhere;
-      }
+     .person {
+  display: block;
+  font-size: ${compact ? "5.5pt" : isA4 ? "13pt" : "8.5pt"};
+  line-height: 1.2;
+  margin-top: 1mm;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
 
-      .address {
-        font-size: ${compact ? "4.8pt" : isA4 ? "10pt" : "6.5pt"};
-        line-height: 1.3;
-        margin-top: 1mm;
-        overflow-wrap: anywhere;
-      }
+     .address {
+  font-size: ${compact ? "4.8pt" : isA4 ? "10pt" : "6.5pt"};
+  line-height: 1.35;
+  margin-top: 1mm;
+  overflow-wrap: anywhere;
+  font-weight: 400;
+}
 
       .phone {
         font-size: ${compact ? "4.8pt" : isA4 ? "9pt" : "6.5pt"};
-        font-weight: 800;
+        font-weight: 600;
         margin-top: 1mm;
         overflow-wrap: anywhere;
       }
@@ -1326,7 +1327,7 @@ const buildLabelHtml = (
       .seller span {
         display: block;
         font-size: ${compact ? "4.5pt" : isA4 ? "9pt" : "6.5pt"};
-        font-weight: 800;
+        font-weight: 600;
         color: #374151;
         margin-bottom: .5mm;
       }
@@ -1404,7 +1405,7 @@ const buildLabelHtml = (
       }
 
       th {
-        font-weight: 800;
+        font-weight: 600;
         background: #f3f4f6;
       }
 
@@ -1434,7 +1435,7 @@ const buildLabelHtml = (
       .seller b {
         display: block;
         font-size: ${compact ? "4.5pt" : isA4 ? "9pt" : "6pt"};
-        font-weight: 800;
+        font-weight: 600;
         overflow-wrap: anywhere;
       }
 
@@ -1459,7 +1460,7 @@ const buildLabelHtml = (
         font-size: ${compact ? "3.5pt" : isA4 ? "7pt" : "4.8pt"};
         line-height: 1.2;
         text-align: center;
-        font-weight: 800;
+        font-weight: 600;
         overflow-wrap: anywhere;
       }
     </style>
