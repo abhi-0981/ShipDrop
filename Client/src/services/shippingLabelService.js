@@ -625,9 +625,9 @@ const getLabelSize = (value) => {
   const sizes = {
     "4x6": {
       key: "4x6",
-      widthIn: 4,
+      widthIn: 4.2,
       heightIn: 6,
-      widthMm: 101.6,
+      widthMm: 106.6,
       heightMm: 152.4,
     },
     A4: {
