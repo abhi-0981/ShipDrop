@@ -1053,22 +1053,49 @@ const buildLabelHtml = (
 
         <!-- PAYMENT / SERVICE / OPTIONAL WEIGHT -->
 
-       <section class="summary ${showWeight ? "four-cols" : "three-cols"}">
-
+ <section
+  class="summary ${
+    showWeight
+      ? showOrderId
+        ? "four-cols"
+        : "three-cols"
+      : showOrderId
+        ? "three-cols"
+        : "two-cols"
+  }"
+>
   <div>
     <span>PAYMENT</span>
     <b>${payment}</b>
   </div>
 
-  <div>
-    <span>ORDER ID</span>
-    <b>${esc(getOrderId(order))}</b>
-  </div>
+  ${
+    showOrderId
+      ? `
+        <div>
+          <span>ORDER ID</span>
+          <b>${esc(getOrderId(order))}</b>
+        </div>
+      `
+      : ""
+  }
 
   <div>
     <span>SERVICE</span>
     <b>${getServiceType(order)}</b>
   </div>
+
+  ${
+    showWeight
+      ? `
+        <div>
+          <span>WEIGHT</span>
+          <b>${getWeight(order).toFixed(2)} KG</b>
+        </div>
+      `
+      : ""
+  }
+</section>
 
   ${
     showWeight
