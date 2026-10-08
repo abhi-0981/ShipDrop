@@ -943,25 +943,7 @@ const buildLabelHtml = (
         .join("")
     : "";
 
-  const orderCells = [
-    showOrderId
-      ? `
-        <div class="info-cell">
-          <span>ORDER ID</span>
-          <b>${esc(getOrderId(order))}</b>
-        </div>
-      `
-      : "",
-
-    showOrderValue
-      ? `
-        <div class="info-cell">
-          <span>ORDER VALUE</span>
-          <b>${money(getOrderValue(order))}</b>
-        </div>
-      `
-      : "",
-  ].filter(Boolean);
+    const orderCells = [];
 
   const returnAddress =
     getReturnAddress(order) || fromAddress;
@@ -1044,42 +1026,37 @@ const buildLabelHtml = (
 
         <!-- PAYMENT / SERVICE / OPTIONAL WEIGHT -->
 
-        <section class="summary ${showWeight ? "three-cols" : "two-cols"}">
-          <div>
-            <span>PAYMENT</span>
-            <b>${payment}</b>
-          </div>
+       <section class="summary ${showWeight ? "four-cols" : "three-cols"}">
 
-          <div>
-            <span>SERVICE</span>
-            <b>${getServiceType(order)}</b>
-          </div>
+  <div>
+    <span>PAYMENT</span>
+    <b>${payment}</b>
+  </div>
 
-          ${
-            showWeight
-              ? `
-                <div>
-                  <span>WEIGHT</span>
-                  <b>${getWeight(order).toFixed(2)} KG</b>
-                </div>
-              `
-              : ""
-          }
-        </section>
+  <div>
+    <span>ORDER ID</span>
+    <b>${esc(getOrderId(order))}</b>
+  </div>
 
-        ${
-          orderCells.length
-            ? `
-              <section
-                class="order-info"
-                style="grid-template-columns:repeat(${orderCells.length},minmax(0,1fr))"
-              >
-                ${orderCells.join("")}
-              </section>
-            `
-            : ""
-        }
+  <div>
+    <span>SERVICE</span>
+    <b>${getServiceType(order)}</b>
+  </div>
 
+  ${
+    showWeight
+      ? `
+        <div>
+          <span>WEIGHT</span>
+          <b>${getWeight(order).toFixed(2)} KG</b>
+        </div>
+      `
+      : ""
+  }
+
+</section>
+
+       
         ${
           showCod
             ? `
@@ -1325,9 +1302,9 @@ const buildLabelHtml = (
         grid-template-columns: 1fr 1fr;
       }
 
-      .summary.three-cols {
-        grid-template-columns: 1fr 1fr 1fr;
-      }
+      .summary.four-cols {
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+}
 
       .summary > div {
         min-width: 0;
