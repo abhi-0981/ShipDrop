@@ -1071,22 +1071,20 @@ const buildLabelHtml = (
         ${
           showProducts
             ? `
-              <section class="products">
-                <div class="section-title">PRODUCT DETAILS</div>
+             <section class="products">
+  <table>
+    <thead>
+      <tr>
+        <th>PRODUCT</th>
+        <th>RATE (₹)</th>
+        <th>QTY</th>
+        <th>TOTAL (₹)</th>
+      </tr>
+    </thead>
 
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Product</th>
-                      <th>Rate (₹)</th>
-                      <th>Qty</th>
-                      <th>Total (₹)</th>
-                    </tr>
-                  </thead>
-
-                  <tbody>${productRows}</tbody>
-                </table>
-              </section>
+    <tbody>${productRows}</tbody>
+  </table>
+</section>
             `
             : ""
         }
