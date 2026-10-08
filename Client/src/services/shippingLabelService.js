@@ -1849,10 +1849,13 @@ td:first-child {
 }
 
       .seller > div {
-        min-width: 0;
-        padding: ${compact ? "1mm" : "1.5mm"};
-        overflow-wrap: anywhere;
-      }
+  min-width: 0;
+  padding: ${compact ? "1mm" : "1.2mm"} ${compact ? "1mm" : "1.5mm"};
+  overflow-wrap: anywhere;
+  min-height: ${compact ? "7mm" : "9mm"};
+  box-sizing: border-box;
+}
+
 
       .seller > div + div {
         border-left: 1px solid #9ca3af;
