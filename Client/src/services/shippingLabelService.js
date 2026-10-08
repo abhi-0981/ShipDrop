@@ -654,7 +654,7 @@ const getLabelSize = (value) => {
       key: "4x6",
       widthIn: 4.2,
       heightIn: 6,
-      widthMm: 106.6,
+      widthMm: 107.6,
       heightMm: 152.4,
     },
     A4: {
@@ -1250,7 +1250,7 @@ const buildLabelHtml = (
 
       .address-block {
         min-width: 0;
-        padding: ${compact ? "1mm" : isA4 ? "4mm" : "2mm"};
+        padding: ${compact ? "0.5mm" : isA4 ? "3mm" : "1mm"};
         overflow-wrap: anywhere;
       }
 
