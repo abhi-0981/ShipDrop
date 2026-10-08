@@ -2278,7 +2278,6 @@ const canvas = await html2canvas(label, {
   scrollX: 0,
   scrollY: 0,
 });
-
 const image = canvas.toDataURL(
   "image/png"
 );
