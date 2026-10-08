@@ -1335,7 +1335,7 @@ const buildLabelHtml = (
       .summary b {
         display: block;
         font-size: ${compact ? "5.5pt" : isA4 ? "13pt" : "8.5pt"};
-        font-weight: 900;
+        font-weight: 600;
       }
 
       .order-info {
@@ -1385,7 +1385,7 @@ const buildLabelHtml = (
 
       .section-title {
         font-size: ${compact ? "4pt" : "6pt"};
-        font-weight: 900;
+        font-weight: 600;
         margin-bottom: 1mm;
       }
 
