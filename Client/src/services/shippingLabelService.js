@@ -1300,6 +1300,10 @@ const buildLabelHtml = (
         grid-template-columns: 1fr 1fr;
       }
 
+      .summary.three-cols {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
       .summary.four-cols {
   grid-template-columns: 1fr 1fr 1fr 1fr;
 }
@@ -1397,7 +1401,7 @@ td {
   padding: ${compact ? "1mm" : "1.5mm"};
   text-align: center;
   overflow-wrap: anywhere;
-  font-size: ${compact ? "5pt" : isA4 ? "12pt" : "7pt"};
+font-size: ${compact ? "5.5pt" : isA4 ? "13pt" : "8.5pt"};
   font-weight: 600;
 }
 
