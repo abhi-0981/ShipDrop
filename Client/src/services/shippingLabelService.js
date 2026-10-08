@@ -1471,6 +1471,7 @@ td:first-child {
 }
 
 .return {
+  margin-top: auto;
   padding: ${compact ? "1.5mm" : isA4 ? "4mm" : "2.5mm"};
   border-top: 1px solid #111827;
   border-bottom: 1px solid #111827;
@@ -1486,9 +1487,9 @@ td:first-child {
   margin-bottom: 1mm;
 }
 
- .contact {
-  margin-top: auto;
+.contact {
   flex: 0 0 auto;
+  margin-top: 0;
   padding: ${compact ? "1.5mm" : isA4 ? "4mm" : "2.5mm"};
   font-size: ${compact ? "5.5pt" : isA4 ? "10pt" : "8pt"};
   line-height: 1.2;
