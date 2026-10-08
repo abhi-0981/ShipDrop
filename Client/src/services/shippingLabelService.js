@@ -1187,26 +1187,28 @@ const buildLabelHtml = (
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 3mm;
         padding: 1mm 2mm;
         border-bottom: 1px solid #111827;
       }
 
-      .logo {
-        width: 47%;
-        height: 100%;
-        min-width: 0;
-        display: flex;
-        align-items: center;
-      }
+     .logo {
+  width: 50%;
+  height: 100%;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
 
-      .logo.left {
-        justify-content: flex-start;
-      }
+.logo.left {
+  justify-content: flex-start;
+  padding-right: 2mm;
+  border-right: 1px solid #111827;
+}
 
-      .logo.right {
-        justify-content: flex-end;
-      }
+.logo.right {
+  justify-content: flex-end;
+  padding-left: 2mm;
+}
 
       .logo img {
         display: block;
