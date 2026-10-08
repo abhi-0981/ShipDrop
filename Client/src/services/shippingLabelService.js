@@ -1197,7 +1197,7 @@ const buildLabelHtml = (
   position: absolute;
   top: 0;
   bottom: 0;
-  left: 50.2%;
+  left: 50.4%;
   width: 1px;
   background: #111827;
   transform: translateX(-50%);
