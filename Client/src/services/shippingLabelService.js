@@ -2122,7 +2122,8 @@ export const downloadShippingLabels = async (orders) => {
 
    staging.style.cssText = `
   position: fixed;
-  left: -10000px;
+   z-index: 999999;
+
   top: 0;
   width: ${size.widthIn}in;
   background: #fff;
@@ -2160,9 +2161,7 @@ for (const order of detailedOrders) {
     if (style) {
       sharedStyle = document.createElement("style");
 
-      sharedStyle.textContent = scopeLabelCss(
-        style.textContent
-      );
+      sharedStyle.textContent = style.textContent;
 
       staging.appendChild(sharedStyle);
     }
