@@ -1193,7 +1193,7 @@ const buildLabelHtml = (
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1mm 2mm;
+  padding: 0.5mm 2mm;
   border-bottom: 1px solid #111827;
 }
 
