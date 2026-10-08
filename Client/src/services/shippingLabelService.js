@@ -883,6 +883,373 @@ width: compact ? 2.5 : 3.5,
   return svg.outerHTML;
 };
 
+const build3x2LabelHtml = (
+  order,
+  settings,
+  leftLogo,
+  rightLogo,
+  size
+) => {
+  const awb = getAWB(order);
+  const payment = getPaymentType(order);
+
+  const buyerAddress = getBuyerAddress(order);
+  const customerName = getCustomerName(order);
+
+  const showOrderId = settings.orderId === true;
+  const showWeight = settings.orderWeight === true;
+
+  const showBuyerMobile =
+    settings.buyerMobile !== false && Boolean(getMobile(order));
+
+  const showFromName = settings.fromName !== false;
+  const showFromAddress =
+    settings.fromAddress !== false &&
+    settings.shipperAddress !== false;
+  const showFromMobile =
+    settings.fromMobile !== false &&
+    settings.shipperMobiles !== false;
+
+  /*
+   * 3x2 me FROM intentionally nahi rakhenge.
+   * Space TO + AWB + Barcode + Summary + Seller ke liye use hoga.
+   */
+
+  const summaryColumns =
+    2 +
+    (showOrderId ? 1 : 0) +
+    (showWeight ? 1 : 0);
+
+  const summaryClass =
+    summaryColumns === 4
+      ? "four-cols"
+      : summaryColumns === 3
+        ? "three-cols"
+        : "two-cols";
+
+  const returnAddress =
+    getReturnAddress(order) || getFromAddress(order);
+
+  return `
+    <article
+      class="shipping-label label-3x2"
+      style="width:${size.widthIn}in;height:${size.heightIn}in"
+    >
+      <div class="label-border">
+
+        <!-- LOGOS -->
+        <header class="logos">
+          <div class="logo left">
+            <img src="${esc(leftLogo)}" alt="ParcelDrop" />
+          </div>
+
+          <div class="logo right">
+            <img src="${esc(rightLogo)}" alt="Carrier" />
+          </div>
+        </header>
+
+        <!-- TO -->
+        <section class="mini-to">
+          <div class="eyebrow">TO</div>
+
+          <b class="person">
+            ${esc(customerName)}
+          </b>
+
+          <div class="address">
+            ${esc(buyerAddress || "—")}
+          </div>
+
+          ${
+            showBuyerMobile
+              ? `
+                <div class="phone">
+                  ☎ ${esc(getMobile(order))}
+                </div>
+              `
+              : ""
+          }
+        </section>
+
+        <!-- AWB + BARCODE -->
+        <section class="mini-awb">
+          <div class="awb-text">
+            AWB No: ${esc(awb)}
+          </div>
+
+          <div class="barcode">
+            ${createBarcode(awb, true)}
+          </div>
+        </section>
+
+        <!-- PAYMENT / ORDER ID / SERVICE / WEIGHT -->
+        <section class="mini-summary ${summaryClass}">
+
+          <div>
+            <span>PAYMENT</span>
+            <b>${payment}</b>
+          </div>
+
+          ${
+            showOrderId
+              ? `
+                <div>
+                  <span>ORDER ID</span>
+                  <b>${esc(getOrderId(order))}</b>
+                </div>
+              `
+              : ""
+          }
+
+          <div>
+            <span>SERVICE</span>
+            <b>${getServiceType(order)}</b>
+          </div>
+
+          ${
+            showWeight
+              ? `
+                <div>
+                  <span>WEIGHT</span>
+                  <b>${getWeight(order).toFixed(2)} KG</b>
+                </div>
+              `
+              : ""
+          }
+
+        </section>
+
+        <!-- SELLER INFO -->
+        <section class="mini-seller">
+
+          <div>
+            <span>SELLER</span>
+            <b>${esc(getSellerName(order))}</b>
+          </div>
+
+          <div>
+            <span>GSTIN</span>
+            <b>${esc(getSellerGstin(order) || "")}</b>
+          </div>
+
+          <div>
+            <span>INVOICE NO.</span>
+            <b></b>
+          </div>
+
+          <div>
+            <span>DATE</span>
+            <b>${esc(formatDate(getDate(order)))}</b>
+          </div>
+
+        </section>
+
+      </div>
+    </article>
+
+    <style>
+      .label-3x2 {
+        margin: 0;
+        padding: 1.2mm;
+        background: #fff;
+        color: #111827;
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 6.5pt;
+        line-height: 1.15;
+        overflow: hidden;
+        page-break-after: always;
+        break-after: page;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        box-sizing: border-box;
+      }
+
+      .label-3x2 *,
+      .label-3x2 *::before,
+      .label-3x2 *::after {
+        box-sizing: border-box;
+      }
+
+      .label-3x2 .label-border {
+        width: 100%;
+        height: 100%;
+        border: 1px solid #111827;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        background: #fff;
+      }
+
+      /* LOGOS */
+      .label-3x2 .logos {
+        height: 8mm;
+        flex: 0 0 8mm;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid #111827;
+      }
+
+      .label-3x2 .logo {
+        width: 50%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        padding: 0.8mm 2mm;
+      }
+
+      .label-3x2 .logo.left {
+        justify-content: flex-start;
+      }
+
+      .label-3x2 .logo.right {
+        justify-content: flex-end;
+        border-left: 1px solid #111827;
+      }
+
+      .label-3x2 .logo img {
+        max-width: 75%;
+        max-height: 75%;
+        object-fit: contain;
+      }
+
+      /* TO */
+      .label-3x2 .mini-to {
+        flex: 0 0 auto;
+        padding: 1.2mm 1.5mm;
+        border-bottom: 1px solid #111827;
+        overflow: hidden;
+      }
+
+      .label-3x2 .eyebrow {
+        font-size: 5.5pt;
+        font-weight: 700;
+        text-decoration: underline;
+        margin-bottom: 0.7mm;
+      }
+
+      .label-3x2 .person {
+        display: block;
+        font-size: 7pt;
+        font-weight: 700;
+        margin-bottom: 0.6mm;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .label-3x2 .address {
+        font-size: 6pt;
+        line-height: 1.2;
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+      }
+
+      .label-3x2 .phone {
+        font-size: 5.5pt;
+        font-weight: 600;
+        margin-top: 0.5mm;
+      }
+
+      /* AWB */
+      .label-3x2 .mini-awb {
+        flex: 0 0 auto;
+        text-align: center;
+        padding: 0.8mm 1mm;
+        border-bottom: 1px solid #111827;
+      }
+
+      .label-3x2 .awb-text {
+        font-size: 6.5pt;
+        font-weight: 600;
+        margin-bottom: 0.7mm;
+      }
+
+      .label-3x2 .barcode svg {
+        display: block;
+        width: 75%;
+        max-width: 75%;
+        height: 7mm;
+        margin: 0 auto;
+      }
+
+      /* SUMMARY */
+      .label-3x2 .mini-summary {
+        display: grid;
+        flex: 0 0 auto;
+        border-bottom: 1px solid #111827;
+      }
+
+      .label-3x2 .mini-summary.two-cols {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .label-3x2 .mini-summary.three-cols {
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      .label-3x2 .mini-summary.four-cols {
+        grid-template-columns: repeat(4, 1fr);
+      }
+
+      .label-3x2 .mini-summary > div {
+        min-width: 0;
+        padding: 1mm;
+        overflow: hidden;
+      }
+
+      .label-3x2 .mini-summary > div + div {
+        border-left: 1px solid #9ca3af;
+      }
+
+      .label-3x2 .mini-summary span,
+      .label-3x2 .mini-seller span {
+        display: block;
+        font-size: 4.5pt;
+        font-weight: 700;
+        margin-bottom: 0.4mm;
+      }
+
+      .label-3x2 .mini-summary b {
+        display: block;
+        font-size: 6.2pt;
+        font-weight: 700;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      /* SELLER */
+      .label-3x2 .mini-seller {
+        display: grid;
+        grid-template-columns: 1.2fr 1.2fr 1fr 0.9fr;
+        flex: 0 0 auto;
+      }
+
+      .label-3x2 .mini-seller > div {
+        min-width: 0;
+        padding: 0.8mm;
+        overflow: hidden;
+      }
+
+      .label-3x2 .mini-seller > div + div {
+        border-left: 1px solid #9ca3af;
+      }
+
+      .label-3x2 .mini-seller b {
+        display: block;
+        font-size: 5.2pt;
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    </style>
+  `;
+};
+
 const buildLabelHtml = (
   order,
   settings,
@@ -892,6 +1259,17 @@ const buildLabelHtml = (
 ) => {
   const compact = size.heightIn <= 2.5;
   const isA4 = size.key === "A4";
+  const is3x2 = size.key === "3x2";
+
+  if (is3x2) {
+    return build3x2LabelHtml(
+      order,
+      settings,
+      leftLogo,
+      rightLogo,
+      size
+    );
+  }
 
   const awb = getAWB(order);
   const payment = getPaymentType(order);
