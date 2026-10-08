@@ -1254,6 +1254,35 @@ const build3x2LabelHtml = (
   `;
 };
 
+const scopeLabelCss = (cssText) => {
+  return cssText.replace(
+    /(^|})\s*([^{}]+)\s*\{/g,
+    (match, closing, selectorText) => {
+      const selectors = selectorText
+        .split(",")
+        .map((selector) => selector.trim())
+        .filter(Boolean);
+
+      const scopedSelectors = selectors.map((selector) => {
+        if (selector.startsWith("@")) {
+          return selector;
+        }
+
+        if (
+          selector === ".shipping-label" ||
+          selector.startsWith(".shipping-label ")
+        ) {
+          return selector;
+        }
+
+        return `.shipping-label ${selector}`;
+      });
+
+      return `${closing}\n${scopedSelectors.join(",\n")} {`;
+    }
+  );
+};
+
 const buildLabelHtml = (
   order,
   settings,
@@ -2106,37 +2135,43 @@ export const downloadShippingLabels = async (orders) => {
     document.body.appendChild(staging);
 
     const labels = [];
-    let sharedStyle = null;
+let sharedStyle = null;
 
-    for (const order of detailedOrders) {
-      const holder = document.createElement("div");
+for (const order of detailedOrders) {
+  const holder = document.createElement("div");
 
-      holder.innerHTML = buildLabelHtml(
-        order,
-        settings,
-        leftLogoData,
-        rightLogoData,
-        size
+  holder.innerHTML = buildLabelHtml(
+    order,
+    settings,
+    leftLogoData,
+    rightLogoData,
+    size
+  );
+
+  const label = holder.querySelector(".shipping-label");
+
+  if (!label) continue;
+
+  // Label CSS ko sirf ek baar staging me add karo
+  // aur CSS ko .shipping-label ke andar scope karo
+  if (!sharedStyle) {
+    const style = holder.querySelector("style");
+
+    if (style) {
+      sharedStyle = document.createElement("style");
+
+      sharedStyle.textContent = scopeLabelCss(
+        style.textContent
       );
 
-const label = holder.querySelector(".shipping-label");
-
-if (!label) continue;
-
-// CSS sirf ek baar staging me add karo.
-// Har label ke saath duplicate style add nahi hoga.
-if (!sharedStyle) {
-  const style = holder.querySelector("style");
-
-  if (style) {
-    sharedStyle = style.cloneNode(true);
-    staging.appendChild(sharedStyle);
-  }
-}
-
-staging.appendChild(label);
-labels.push(label);
+      staging.appendChild(sharedStyle);
     }
+  }
+
+  staging.appendChild(label);
+  labels.push(label);
+}
+    
     if (!labels.length) {
       throw new Error(
         "No shipping labels could be generated"
