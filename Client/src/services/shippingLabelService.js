@@ -1162,7 +1162,7 @@ const buildLabelHtml = (
         background: #fff;
         color: #111827;
         font-family: Arial, Helvetica, sans-serif;
-        font-size: ${compact ? "5pt" : isA4 ? "10pt" : "7pt"};
+        font-size: ${compact ? "5.5pt" : isA4 ? "11pt" : "8pt"};
         line-height: 1.25;
         overflow: hidden;
         page-break-after: always;
@@ -1245,7 +1245,7 @@ const buildLabelHtml = (
       }
 
       .eyebrow {
-        font-size: ${compact ? "4pt" : isA4 ? "8pt" : "5.5pt"};
+        font-size: ${compact ? "4.5pt" : isA4 ? "9pt" : "6.5pt"};
         font-weight: 800;
         letter-spacing: .2px;
         color: #374151;
@@ -1253,7 +1253,7 @@ const buildLabelHtml = (
 
       .person {
         display: block;
-        font-size: ${compact ? "5pt" : isA4 ? "12pt" : "7.5pt"};
+        font-size: ${compact ? "5.5pt" : isA4 ? "13pt" : "8.5pt"};
         line-height: 1.2;
         margin-top: 1mm;
         font-weight: 800;
@@ -1261,14 +1261,14 @@ const buildLabelHtml = (
       }
 
       .address {
-        font-size: ${compact ? "4.2pt" : isA4 ? "9pt" : "5.5pt"};
+        font-size: ${compact ? "4.8pt" : isA4 ? "10pt" : "6.5pt"};
         line-height: 1.3;
         margin-top: 1mm;
         overflow-wrap: anywhere;
       }
 
       .phone {
-        font-size: ${compact ? "4.2pt" : isA4 ? "8pt" : "5.5pt"};
+        font-size: ${compact ? "4.8pt" : isA4 ? "9pt" : "6.5pt"};
         font-weight: 800;
         margin-top: 1mm;
         overflow-wrap: anywhere;
@@ -1325,7 +1325,7 @@ const buildLabelHtml = (
       .info-cell span,
       .seller span {
         display: block;
-        font-size: ${compact ? "4pt" : isA4 ? "8pt" : "5.5pt"};
+        font-size: ${compact ? "4.5pt" : isA4 ? "9pt" : "6.5pt"};
         font-weight: 800;
         color: #374151;
         margin-bottom: .5mm;
@@ -1333,7 +1333,7 @@ const buildLabelHtml = (
 
       .summary b {
         display: block;
-        font-size: ${compact ? "5pt" : isA4 ? "12pt" : "7.5pt"};
+        font-size: ${compact ? "5.5pt" : isA4 ? "13pt" : "8.5pt"};
         font-weight: 900;
       }
 
@@ -1392,7 +1392,7 @@ const buildLabelHtml = (
         border-collapse: collapse;
         width: 100%;
         table-layout: fixed;
-        font-size: ${compact ? "4pt" : isA4 ? "9pt" : "5.5pt"};
+        font-size: ${compact ? "4.5pt" : isA4 ? "10pt" : "6.5pt"};
       }
 
       th,
@@ -1433,7 +1433,7 @@ const buildLabelHtml = (
 
       .seller b {
         display: block;
-        font-size: ${compact ? "4pt" : isA4 ? "8pt" : "5pt"};
+        font-size: ${compact ? "4.5pt" : isA4 ? "9pt" : "6pt"};
         font-weight: 800;
         overflow-wrap: anywhere;
       }
