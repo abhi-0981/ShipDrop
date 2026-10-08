@@ -2199,30 +2199,57 @@ export const downloadShippingLabels = async (orders) => {
     });
 
     // Render labels
-    for (
-      let index = 0;
-      index < labels.length;
-      index += 1
-    ) {
-      const label = labels[index];
+for (
+  let index = 0;
+  index < labels.length;
+  index += 1
+) {
+  const label = labels[index];
 
-      const canvas = await html2canvas(label, {
-        scale: 4,
-        backgroundColor: "#ffffff",
-        useCORS: true,
-        logging: false,
+  // PDF capture ke time fixed height/overflow ko remove karo
+  const labelBorder = label.querySelector(".label-border");
 
-        width: label.scrollWidth,
-        height: label.scrollHeight,
+  label.style.height = "auto";
+  label.style.minHeight = "0";
+  label.style.overflow = "visible";
 
-        windowWidth: label.scrollWidth,
-        windowHeight: label.scrollHeight,
+  if (labelBorder) {
+    labelBorder.style.height = "auto";
+    labelBorder.style.minHeight = "0";
+    labelBorder.style.overflow = "visible";
+  }
 
-        scrollX: 0,
-        scrollY: 0,
-      });
+  // Layout ko update hone do
+  await new Promise((resolve) => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(resolve);
+    });
+  });
 
-      const image = canvas.toDataURL("image/png");
+  const renderWidth = label.scrollWidth;
+  const renderHeight = label.scrollHeight;
+
+  if (!renderWidth || !renderHeight) {
+    throw new Error("Unable to determine label size");
+  }
+
+  const canvas = await html2canvas(label, {
+    scale: 4,
+    backgroundColor: "#ffffff",
+    useCORS: true,
+    logging: false,
+
+    width: renderWidth,
+    height: renderHeight,
+
+    windowWidth: renderWidth,
+    windowHeight: renderHeight,
+
+    scrollX: 0,
+    scrollY: 0,
+  });
+
+  const image = canvas.toDataURL("image/png");
 
       if (index > 0) {
         pdf.addPage(
