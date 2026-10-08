@@ -1183,16 +1183,28 @@ const buildLabelHtml = (
       }
 
 .logos {
+  position: relative;
   flex: 0 0 ${compact ? "5mm" : isA4 ? "15mm" : "9mm"};
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
   align-items: center;
+  justify-content: space-between;
   padding: 1mm 2mm;
   border-bottom: 1px solid #111827;
 }
 
+.logos::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  background: #111827;
+  transform: translateX(-50%);
+}
+
 .logo {
-  width: 100%;
+  width: 47%;
   height: 100%;
   min-width: 0;
   display: flex;
@@ -1201,13 +1213,13 @@ const buildLabelHtml = (
 
 .logo.left {
   justify-content: flex-start;
-  padding-right: 3mm;
-  border-right: 1px solid #111827;
+  border-right: none;
+  padding-right: 0;
 }
 
 .logo.right {
   justify-content: flex-end;
-  padding-left: 3mm;
+  padding-left: 0;
 }
 
       .logo img {
