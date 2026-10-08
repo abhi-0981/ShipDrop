@@ -1369,11 +1369,11 @@ const buildLabelHtml = (
         font-size: ${compact ? "5.5pt" : "9pt"};
       }
 
-      .products {
-        flex: 0 0 auto;
-        padding: ${compact ? "1mm" : "2mm"};
-        border-bottom: 1px solid #111827;
-      }
+     .products {
+  flex: 0 0 auto;
+  padding: 0;
+  border-bottom: 1px solid #111827;
+}
 
       .section-title {
         font-size: ${compact ? "4pt" : "6pt"};
