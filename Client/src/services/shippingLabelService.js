@@ -843,8 +843,8 @@ const createBarcode = (awb, compact = false) => {
     displayValue: false,
 
     // Barcode ko bada rakhenge
-    height: compact ? 35 : 60,
-width: compact ? 2 : 2.8,
+height: compact ? 45 : 85,
+width: compact ? 2.5 : 3.5,
 
     margin: 0,
     background: "#ffffff",
