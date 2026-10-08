@@ -2275,7 +2275,6 @@ const canvas = await html2canvas(label, {
   height: renderHeight,
   windowWidth: renderWidth,
   windowHeight: renderHeight,
-
   scrollX: 0,
   scrollY: 0,
 });
