@@ -1442,12 +1442,12 @@ td:first-child {
   text-align: left;
   width: 25%;
 }
-      .seller {
-        flex: 0 0 auto;
-        display: grid;
-grid-template-columns: 1.25fr 1.45fr .85fr .8fr;
-        border-bottom: 1px solid #111827;
-      }
+ .seller {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  border-bottom: 1px solid #111827;
+}
 
       .seller > div {
         min-width: 0;
@@ -1459,9 +1459,9 @@ grid-template-columns: 1.25fr 1.45fr .85fr .8fr;
         border-left: 1px solid #9ca3af;
       }
 
- .seller b {
+.seller b {
   display: block;
-  font-size: ${compact ? "4.8pt" : isA4 ? "9.5pt" : "6.5pt"};
+  font-size: ${compact ? "4.8pt" : isA4 ? "9.5pt" : "6pt"};
   font-weight: 600;
   line-height: 1.15;
   margin-top: 0.5mm;
