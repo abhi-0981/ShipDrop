@@ -1261,7 +1261,7 @@ const buildLabelHtml = (
 }
 
      .address {
-  font-size: ${compact ? "4.8pt" : isA4 ? "10pt" : "6.5pt"};
+  font-size: ${compact ? "4.8pt" : isA4 ? "10pt" : "8pt"};
   line-height: 1.35;
   margin-top: 1mm;
   overflow-wrap: anywhere;
