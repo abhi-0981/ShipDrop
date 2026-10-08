@@ -1033,6 +1033,7 @@ const buildLabelHtml = (
 
         <section class="awb">
           <div class="eyebrow">AWB NUMBER - ${esc(awb)}</div>
+          // <div class="awb-number"> </div>
           <div class="barcode">${createBarcode(awb, compact)}</div>
         </section>
 
