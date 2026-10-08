@@ -1097,18 +1097,7 @@ const buildLabelHtml = (
   }
 </section>
 
-  ${
-    showWeight
-      ? `
-        <div>
-          <span>WEIGHT</span>
-          <b>${getWeight(order).toFixed(2)} KG</b>
-        </div>
-      `
-      : ""
-  }
 
-</section>
 
        
         ${
