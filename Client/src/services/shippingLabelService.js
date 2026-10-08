@@ -2206,46 +2206,71 @@ export const downloadShippingLabels = async (orders) => {
         });
       });
 
-    // --------------------------------------------------
+// --------------------------------------------------
 // FIT COMPLETE LABEL INSIDE THE PDF PAGE
 // Print already fits this automatically.
-// Direct download needs the same behavior.
+// Direct download should not cut the bottom.
 // --------------------------------------------------
-
-const pageWidth = label.clientWidth;
-const pageHeight = label.clientHeight;
-
-const contentWidth = label.scrollWidth;
-const contentHeight = label.scrollHeight;
-
-// Find the scale required to fit the complete
-// content inside the fixed label page.
-const fitScale = Math.min(
-  pageWidth / contentWidth,
-  pageHeight / contentHeight,
-  1
-);
-
-// Only shrink when content is overflowing.
-// Never enlarge the label.
-label.style.transformOrigin = "top left";
-label.style.transform =
-  fitScale < 1
-    ? `scale(${fitScale})`
-    : "none";
-
-// Allow html2canvas to see the complete content.
-label.style.overflow = "visible";
 
 const labelBorder = label.querySelector(
   ".label-border"
 );
 
+// First allow the complete label content to be visible.
+label.style.overflow = "visible";
+
 if (labelBorder) {
   labelBorder.style.overflow = "visible";
 }
 
-// Give browser one frame to apply the scale.
+// Wait for the browser to recalculate the layout.
+await new Promise((resolve) => {
+  iframe.contentWindow.requestAnimationFrame(() => {
+    iframe.contentWindow.requestAnimationFrame(resolve);
+  });
+});
+
+// Fixed PDF page size.
+const pageWidth = label.clientWidth;
+const pageHeight = label.clientHeight;
+
+// Find the actual bottom of all visible content.
+const labelRect = label.getBoundingClientRect();
+
+let contentBottom = labelRect.top;
+
+Array.from(label.querySelectorAll("*")).forEach(
+  (element) => {
+    const rect = element.getBoundingClientRect();
+
+    if (rect.width > 0 && rect.height > 0) {
+      contentBottom = Math.max(
+        contentBottom,
+        rect.bottom
+      );
+    }
+  }
+);
+
+const contentHeight =
+  contentBottom - labelRect.top;
+
+// Only shrink if content is going outside
+// the fixed label page.
+const fitScale =
+  contentHeight > pageHeight
+    ? pageHeight / contentHeight
+    : 1;
+
+// Keep label anchored from top-left.
+label.style.transformOrigin = "top left";
+
+label.style.transform =
+  fitScale < 1
+    ? `scale(${fitScale})`
+    : "none";
+
+// Wait for transform to apply.
 await new Promise((resolve) => {
   iframe.contentWindow.requestAnimationFrame(resolve);
 });
@@ -2265,7 +2290,7 @@ const canvas = await html2canvas(label, {
 
 const image = canvas.toDataURL("image/png");
 
-// Reset transform after rendering
+// Reset temporary changes.
 label.style.transform = "none";
 label.style.transformOrigin = "";
 label.style.overflow = "";
