@@ -989,7 +989,7 @@ const buildLabelHtml = (
             hasFromDetails
               ? `
                 <div class="address-block">
-                  <div class="eyebrow">FROM / SHIPPER</div>
+                  <div class="eyebrow">FROM</div>
 
                   ${
                     fromName
@@ -1014,7 +1014,7 @@ const buildLabelHtml = (
           }
 
           <div class="address-block to-block">
-            <div class="eyebrow">SHIP TO / CONSIGNEE</div>
+            <div class="eyebrow">TO</div>
 
             <b class="person">${esc(getCustomerName(order))}</b>
 
@@ -1032,8 +1032,7 @@ const buildLabelHtml = (
         <!-- AWB AND BARCODE -->
 
         <section class="awb">
-          <div class="eyebrow">AWB NUMBER</div>
-          <div class="awb-number">${esc(awb)}</div>
+          <div class="eyebrow">AWB NUMBER - ${esc(awb)}</div>
           <div class="barcode">${createBarcode(awb, compact)}</div>
         </section>
 
