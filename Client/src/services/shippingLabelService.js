@@ -2268,7 +2268,7 @@ if (
 
 const canvas = await html2canvas(label, {
   scale: 4,
-  backgroundColor: "#ffffff",
+  backgroundColor:  "#ffffff",
   useCORS: true,
   logging: false,
 
