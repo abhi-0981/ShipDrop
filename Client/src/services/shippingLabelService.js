@@ -1134,22 +1134,22 @@ const buildLabelHtml = (
 
         <section class="seller">
           <div>
-            <span>SELLER</span>
+            <span>SELLER : </span>
             <b>${esc(getSellerName(order))}</b>
           </div>
 
           <div>
-            <span>GSTIN</span>
+            <span>GSTIN : </span>
             <b>${esc(getSellerGstin(order) || " ")}</b>
           </div>
 
           <div>
-            <span>INVOICE NO.</span>
+            <span>INVOICE NO. : </span>
             <b>&nbsp;</b>
           </div>
 
           <div>
-            <span>DATE</span>
+            <span>DATE : </span>
             <b>${esc(formatDate(getDate(order)))}</b>
           </div>
         </section>
