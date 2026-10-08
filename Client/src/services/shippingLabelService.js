@@ -1470,30 +1470,31 @@ td:first-child {
   text-overflow: ellipsis;
 }
 
-      .return {
-        flex: 0 0 auto;
-        padding: ${compact ? "1mm" : "1.5mm 2mm"};
-        border-bottom: 1px solid #9ca3af;
-        font-size: ${compact ? "4pt" : "5.5pt"};
-        line-height: 1.25;
-        overflow-wrap: anywhere;
-      }
+     .return {
+  margin-top: auto;
+  padding: ${compact ? "1.5mm" : isA4 ? "4mm" : "2.5mm"};
+  border-top: 1px solid #111827;
+  border-bottom: 1px solid #111827;
+  font-size: ${compact ? "5.5pt" : isA4 ? "11pt" : "8pt"};
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
 
-      .return b {
-        display: block;
-        font-size: ${compact ? "4pt" : "5.5pt"};
-        margin-bottom: .5mm;
-      }
+     .return b {
+  display: block;
+  font-size: ${compact ? "5.5pt" : isA4 ? "11pt" : "8pt"};
+  font-weight: 600;
+  margin-bottom: 1mm;
+}
 
-      .contact {
-        flex: 0 0 auto;
-        padding: ${compact ? "1mm" : "1.5mm"};
-        font-size: ${compact ? "3.5pt" : isA4 ? "7pt" : "4.8pt"};
-        line-height: 1.2;
-        text-align: center;
-        font-weight: 600;
-        overflow-wrap: anywhere;
-      }
+    .contact {
+  flex: 0 0 auto;
+  padding: ${compact ? "1.5mm" : isA4 ? "4mm" : "2.5mm"};
+  font-size: ${compact ? "5.5pt" : isA4 ? "10pt" : "8pt"};
+  line-height: 1.2;
+  text-align: center;
+  font-weight: 600;
+}
     </style>
   `;
 };
