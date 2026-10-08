@@ -1262,7 +1262,7 @@ const buildLabelHtml = (
       }
 
       .eyebrow {
-        font-size: ${compact ? "4.5pt" : isA4 ? "9pt" : "6.5pt"};
+        font-size: ${compact ? "4.5pt" : isA4 ? "9pt" : "9pt"};
         font-weight: 600;
         letter-spacing: .2px;
         color: #374151;
@@ -1300,7 +1300,7 @@ const buildLabelHtml = (
 }
 
     .awb-number {
-  font-size: ${compact ? "7pt" : isA4 ? "17pt" : "11pt"};
+  font-size: ${compact ? "7pt" : isA4 ? "17pt" : "15pt"};
   font-weight: 700;
   letter-spacing: .4px;
   margin: 1mm 0 2mm;
@@ -1310,7 +1310,7 @@ const buildLabelHtml = (
       .barcode svg {
         display: block;
         max-width: 100%;
-       max-height: ${compact ? "4mm" : isA4 ? "14mm" : "14mm"};
+       max-height: ${compact ? "4mm" : isA4 ? "14mm" : "12mm"};
         height: auto;
         margin: 0 auto;
       }
