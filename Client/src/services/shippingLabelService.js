@@ -2091,18 +2091,22 @@ export const downloadShippingLabels = async (orders) => {
 
     staging = document.createElement("div");
 
-    staging.style.cssText = `
-      position: fixed;
-      left: -10000px;
-      top: 0;
-      width: ${size.widthIn}in;
-      background: #fff;
-      z-index: -1;
-    `;
+   staging.style.cssText = `
+  position: fixed;
+  left: -10000px;
+  top: 0;
+  width: ${size.widthIn}in;
+  background: #fff;
+  z-index: -1;
+  visibility: hidden;
+  pointer-events: none;
+  contain: strict;
+`;
 
     document.body.appendChild(staging);
 
     const labels = [];
+    let sharedStyle = null;
 
     for (const order of detailedOrders) {
       const holder = document.createElement("div");
@@ -2115,23 +2119,24 @@ export const downloadShippingLabels = async (orders) => {
         size
       );
 
-   const label = holder.querySelector(".shipping-label");
+const label = holder.querySelector(".shipping-label");
 
 if (!label) continue;
 
-// IMPORTANT:
-// buildLabelHtml() ke andar jo <style> hai,
-// use bhi staging me add karo.
-const styles = holder.querySelectorAll("style");
+// CSS sirf ek baar staging me add karo.
+// Har label ke saath duplicate style add nahi hoga.
+if (!sharedStyle) {
+  const style = holder.querySelector("style");
 
-styles.forEach((style) => {
-  staging.appendChild(style.cloneNode(true));
-});
+  if (style) {
+    sharedStyle = style.cloneNode(true);
+    staging.appendChild(sharedStyle);
+  }
+}
 
 staging.appendChild(label);
 labels.push(label);
     }
-
     if (!labels.length) {
       throw new Error(
         "No shipping labels could be generated"
@@ -2165,7 +2170,7 @@ labels.push(label);
 
     for (let index = 0; index < labels.length; index += 1) {
      const canvas = await html2canvas(labels[index], {
-  scale: 4,
+  scale: 2,
   backgroundColor: "#ffffff",
   useCORS: true,
   logging: false,
