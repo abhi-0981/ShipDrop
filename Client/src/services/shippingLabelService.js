@@ -2206,28 +2206,63 @@ for (
 ) {
   const label = labels[index];
 
-  // PDF capture ke time fixed height/overflow ko remove karo
-  const labelBorder = label.querySelector(".label-border");
+ // Render labels
+for (
+  let index = 0;
+  index < labels.length;
+  index += 1
+) {
+  const label = labels[index];
 
-  label.style.height = "auto";
-  label.style.minHeight = "0";
-  label.style.overflow = "visible";
+  // Original label size ko bilkul change nahi karna
+  const renderWidth = label.offsetWidth;
+  const renderHeight = label.offsetHeight;
 
-  if (labelBorder) {
-    labelBorder.style.height = "auto";
-    labelBorder.style.minHeight = "0";
-    labelBorder.style.overflow = "visible";
+  if (!renderWidth || !renderHeight) {
+    throw new Error("Unable to determine label size");
   }
 
-  // Layout ko update hone do
-  await new Promise((resolve) => {
-    requestAnimationFrame(() => {
-      requestAnimationFrame(resolve);
-    });
+  const canvas = await html2canvas(label, {
+    scale: 4,
+    backgroundColor: "#ffffff",
+    useCORS: true,
+    logging: false,
+
+    width: renderWidth,
+    height: renderHeight,
+
+    windowWidth: renderWidth,
+    windowHeight: renderHeight,
+
+    scrollX: 0,
+    scrollY: 0,
   });
 
-  const renderWidth = label.scrollWidth;
-  const renderHeight = label.scrollHeight;
+  const image = canvas.toDataURL("image/png");
+
+  if (index > 0) {
+    pdf.addPage(
+      [
+        size.widthMm,
+        size.heightMm,
+      ],
+      size.widthMm > size.heightMm
+        ? "landscape"
+        : "portrait"
+    );
+  }
+
+  pdf.addImage(
+    image,
+    "PNG",
+    0,
+    0,
+    size.widthMm,
+    size.heightMm,
+    undefined,
+    "FAST"
+  );
+}
 
   if (!renderWidth || !renderHeight) {
     throw new Error("Unable to determine label size");
