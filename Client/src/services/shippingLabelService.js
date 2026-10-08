@@ -2079,7 +2079,8 @@ export const downloadShippingLabels = async (orders) => {
     return;
   }
 
-  let iframe;
+  let staging;
+  let addedStyles = [];
 
   try {
     const {
@@ -2090,45 +2091,32 @@ export const downloadShippingLabels = async (orders) => {
       rightLogoData,
     } = await prepareLabels(orders);
 
-    // --------------------------------------------------
-    // IMPORTANT:
-    // Render labels inside an isolated iframe.
-    // This prevents label CSS from affecting the main UI.
-    // --------------------------------------------------
-    iframe = document.createElement("iframe");
+    // Off-screen rendering area
+    // Visibility hidden nahi rakhenge because html2canvas
+    // ko actual layout render karna zaroori hai.
+    staging = document.createElement("div");
 
-    iframe.style.cssText = `
+    staging.style.cssText = `
       position: fixed;
       left: -10000px;
       top: 0;
-      width: ${Math.ceil(size.widthIn * 96)}px;
-      height: ${Math.ceil(size.heightIn * 96)}px;
-      border: 0;
+      width: ${size.widthIn}in;
+      background: #ffffff;
+      z-index: -9999;
       visibility: visible;
       opacity: 1;
       pointer-events: none;
     `;
 
-    document.body.appendChild(iframe);
+    document.body.appendChild(staging);
 
-    const pdf = new jsPDF({
-      orientation:
-        size.widthMm > size.heightMm
-          ? "landscape"
-          : "portrait",
-      unit: "mm",
-      format: [size.widthMm, size.heightMm],
-      compress: true,
-    });
+    const labels = [];
 
-    for (
-      let index = 0;
-      index < detailedOrders.length;
-      index += 1
-    ) {
-      const order = detailedOrders[index];
+    // Build every label
+    for (const order of detailedOrders) {
+      const holder = document.createElement("div");
 
-      const labelHtml = buildLabelHtml(
+      holder.innerHTML = buildLabelHtml(
         order,
         settings,
         leftLogoData,
@@ -2136,155 +2124,112 @@ export const downloadShippingLabels = async (orders) => {
         size
       );
 
-      const doc = iframe.contentDocument;
+      const label = holder.querySelector(".shipping-label");
 
-      if (!doc) {
-        throw new Error(
-          "Unable to create label rendering area"
-        );
-      }
+      if (!label) continue;
 
-      // Completely reset iframe content
-      doc.open();
-
-      doc.write(`
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <meta charset="UTF-8" />
-          </head>
-          <body style="margin:0; padding:0; background:#ffffff;">
-            ${labelHtml}
-          </body>
-        </html>
-      `);
-
-      doc.close();
-
-      const label = doc.querySelector(
-        ".shipping-label"
+      // buildLabelHtml ke andar generated CSS ko
+      // temporarily document.head me add karenge.
+      const styles = Array.from(
+        holder.querySelectorAll("style")
       );
 
-      if (!label) {
-        throw new Error(
-          "Unable to generate shipping label"
-        );
-      }
+      styles.forEach((style) => {
+        const styleClone = style.cloneNode(true);
 
-      // Wait for all images inside the label
-      const images = Array.from(
-        doc.querySelectorAll("img")
-      );
-
-      await Promise.all(
-        images.map((img) => {
-          if (
-            img.complete &&
-            img.naturalWidth > 0
-          ) {
-            return Promise.resolve();
-          }
-
-          return new Promise((resolve) => {
-            img.onload = resolve;
-            img.onerror = resolve;
-          });
-        })
-      );
-
-      // Wait for fonts if available
-      if (doc.fonts?.ready) {
-        await doc.fonts.ready;
-      }
-
-      // Give browser time to apply iframe CSS/layout
-      await new Promise((resolve) => {
-        iframe.contentWindow.requestAnimationFrame(() => {
-          iframe.contentWindow.requestAnimationFrame(
-            resolve
-          );
-        });
+        document.head.appendChild(styleClone);
+        addedStyles.push(styleClone);
       });
 
-// --------------------------------------------------
-// DIRECT DOWNLOAD RENDERING
-// Render the complete label first.
-// Then place the complete image on the PDF page.
-// --------------------------------------------------
+      // Style ko holder se remove karo
+      styles.forEach((style) => style.remove());
 
-const labelBorder = label.querySelector(
-  ".label-border"
-);
+      staging.appendChild(label);
+      labels.push(label);
+    }
 
-// Temporarily remove the fixed height ONLY
-// inside the hidden iframe.
-//
-// This allows Seller / GSTIN / Invoice / Date
-// and the sections below them to render fully.
-label.style.height = "auto";
-label.style.minHeight = "0";
-label.style.overflow = "visible";
+    if (!labels.length) {
+      throw new Error(
+        "No shipping labels could be generated"
+      );
+    }
 
-if (labelBorder) {
-  labelBorder.style.height = "auto";
-  labelBorder.style.minHeight = "0";
-  labelBorder.style.overflow = "visible";
-}
+    // Wait for logos/images
+    const images = Array.from(
+      staging.querySelectorAll("img")
+    );
 
-// Also make the iframe document capable of
-// showing the complete label.
-doc.documentElement.style.height = "auto";
-doc.documentElement.style.overflow = "visible";
+    await Promise.all(
+      images.map((img) => {
+        if (
+          img.complete &&
+          img.naturalWidth > 0
+        ) {
+          return Promise.resolve();
+        }
 
-doc.body.style.height = "auto";
-doc.body.style.overflow = "visible";
+        return new Promise((resolve) => {
+          img.onload = resolve;
+          img.onerror = resolve;
+        });
+      })
+    );
 
-// Wait for the browser to recalculate layout.
-await new Promise((resolve) => {
-  iframe.contentWindow.requestAnimationFrame(() => {
-    iframe.contentWindow.requestAnimationFrame(resolve);
-  });
-});
+    // Browser ko CSS/layout apply karne ka time
+    await new Promise((resolve) => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(resolve);
+      });
+    });
 
-// --------------------------------------------------
-// GET COMPLETE NATURAL LABEL SIZE
-// --------------------------------------------------
+    const pdf = new jsPDF({
+      orientation:
+        size.widthMm > size.heightMm
+          ? "landscape"
+          : "portrait",
 
-const renderWidth = label.scrollWidth;
-const renderHeight = label.scrollHeight;
+      unit: "mm",
 
-if (
-  !renderWidth ||
-  !renderHeight
-) {
-  throw new Error(
-    "Unable to determine label size"
-  );
-}
+      format: [
+        size.widthMm,
+        size.heightMm,
+      ],
 
-// --------------------------------------------------
-// CAPTURE COMPLETE LABEL
-// --------------------------------------------------
+      compress: true,
+    });
 
-const canvas = await html2canvas(label, {
-  scale: 4,
-  backgroundColor:  "#ffffff",
-  useCORS: true,
-  logging: false,
-  width: renderWidth,
-  height: renderHeight,
-  windowWidth: renderWidth,
-  windowHeight: renderHeight,
-  scrollX: 0,
-  scrollY: 0,
-  
-});
-const image = canvas.toDataURL(
-  "image/png"
-);
+    // Render labels
+    for (
+      let index = 0;
+      index < labels.length;
+      index += 1
+    ) {
+      const label = labels[index];
+
+      const canvas = await html2canvas(label, {
+        scale: 4,
+        backgroundColor: "#ffffff",
+        useCORS: true,
+        logging: false,
+
+        width: label.scrollWidth,
+        height: label.scrollHeight,
+
+        windowWidth: label.scrollWidth,
+        windowHeight: label.scrollHeight,
+
+        scrollX: 0,
+        scrollY: 0,
+      });
+
+      const image = canvas.toDataURL("image/png");
+
       if (index > 0) {
         pdf.addPage(
-          [size.widthMm, size.heightMm],
+          [
+            size.widthMm,
+            size.heightMm,
+          ],
           size.widthMm > size.heightMm
             ? "landscape"
             : "portrait"
@@ -2303,6 +2248,7 @@ const image = canvas.toDataURL(
       );
     }
 
+    // Filename
     const firstAwb = getAWB(
       detailedOrders[0]
     ).replace(
@@ -2326,6 +2272,7 @@ const image = canvas.toDataURL(
           : "labels"
       } downloaded`
     );
+
   } catch (error) {
     console.error(
       "Download label error:",
@@ -2336,9 +2283,14 @@ const image = canvas.toDataURL(
       error?.message ||
         "Unable to download labels"
     );
+
   } finally {
-    // Remove only the isolated iframe.
-    // Main ParcelDrop UI is never modified.
-    iframe?.remove();
+    // Temporary labels remove
+    staging?.remove();
+
+    // Temporary CSS remove
+    addedStyles.forEach((style) => {
+      style.remove();
+    });
   }
 };
