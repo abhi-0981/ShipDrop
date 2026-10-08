@@ -843,7 +843,7 @@ const createBarcode = (awb, compact = false) => {
     displayValue: false,
 
     // Barcode ko bada rakhenge
-height: compact ? 45 : 85,
+   height: compact ? 40 : 75,
 width: compact ? 2.5 : 3.5,
 
     margin: 0,
@@ -1310,7 +1310,7 @@ const buildLabelHtml = (
       .barcode svg {
         display: block;
         max-width: 100%;
-        max-height: ${compact ? "4mm" : isA4 ? "14mm" : "9mm"};
+       max-height: ${compact ? "4mm" : isA4 ? "14mm" : "14mm"};
         height: auto;
         margin: 0 auto;
       }
