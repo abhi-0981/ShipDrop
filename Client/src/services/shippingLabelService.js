@@ -1192,8 +1192,8 @@ const buildLabelHtml = (
       }
 
      .logo {
-  width: 50%;
-  height: 100%;
+  width: 40%;
+  height: 90%;
   min-width: 0;
   display: flex;
   align-items: center;
