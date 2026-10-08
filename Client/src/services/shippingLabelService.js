@@ -2288,7 +2288,6 @@ export const downloadShippingLabels = async (orders) => {
   
     staging?.remove();
 
-    // Temporary CSS remove
     addedStyles.forEach((style) => {
       style.remove();
     });
