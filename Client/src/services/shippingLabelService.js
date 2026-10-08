@@ -838,14 +838,19 @@ const createBarcode = (awb, compact = false) => {
     "svg"
   );
 
-  JsBarcode(svg, String(awb || "AWB"), {
+  JsBarcode(svg, String(awb || ""), {
     format: "CODE128",
     displayValue: false,
-    height: compact ? 22 : 32,
-    width: compact ? 1 : 1.3,
+
+    // Barcode ko bada rakhenge
+    height: compact ? 28 : 45,
+    width: compact ? 1.5 : 2,
+
     margin: 0,
     background: "#ffffff",
     lineColor: "#111827",
+
+    // Scanner ke liye clear CODE128 barcode
   });
 
   return svg.outerHTML;
@@ -1287,20 +1292,20 @@ const buildLabelHtml = (
         overflow-wrap: anywhere;
       }
 
-      .awb {
-        flex: 0 0 auto;
-        text-align: center;
-        padding: ${compact ? "1mm" : isA4 ? "4mm" : "2mm"};
-        border-bottom: 1px solid #111827;
-      }
+    .awb {
+  flex: 0 0 auto;
+  text-align: center;
+  padding: ${compact ? "1.5mm" : isA4 ? "5mm" : "3mm"};
+  border-bottom: 1px solid #111827;
+}
 
-      .awb-number {
-        font-size: ${compact ? "7pt" : isA4 ? "17pt" : "11pt"};
-        font-weight: 900;
-        letter-spacing: .4px;
-        margin: 1mm 0;
-        overflow-wrap: anywhere;
-      }
+    .awb-number {
+  font-size: ${compact ? "7pt" : isA4 ? "17pt" : "11pt"};
+  font-weight: 700;
+  letter-spacing: .4px;
+  margin: 1mm 0 2mm;
+  overflow-wrap: anywhere;
+}
 
       .barcode svg {
         display: block;
@@ -1736,14 +1741,14 @@ export const downloadShippingLabels = async (orders) => {
     });
 
     for (let index = 0; index < labels.length; index += 1) {
-      const canvas = await html2canvas(labels[index], {
-        scale: 3,
-        backgroundColor: "#ffffff",
-        useCORS: true,
-        logging: false,
-      });
+     const canvas = await html2canvas(labels[index], {
+  scale: 4,
+  backgroundColor: "#ffffff",
+  useCORS: true,
+  logging: false,
+});
 
-      const image = canvas.toDataURL("image/jpeg", 0.96);
+     const image = canvas.toDataURL("image/png");
 
       if (index > 0) {
         pdf.addPage(
@@ -1754,16 +1759,16 @@ export const downloadShippingLabels = async (orders) => {
         );
       }
 
-      pdf.addImage(
-        image,
-        "JPEG",
-        0,
-        0,
-        size.widthMm,
-        size.heightMm,
-        undefined,
-        "FAST"
-      );
+    pdf.addImage(
+  image,
+  "PNG",
+  0,
+  0,
+  size.widthMm,
+  size.heightMm,
+  undefined,
+  "FAST"
+);
     }
 
     const firstAwb = getAWB(detailedOrders[0]).replace(
