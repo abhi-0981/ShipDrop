@@ -2206,22 +2206,73 @@ export const downloadShippingLabels = async (orders) => {
         });
       });
 
-      const canvas = await html2canvas(label, {
-        scale: 4,
-        backgroundColor: "#ffffff",
-        useCORS: true,
-        logging: false,
-        width: label.scrollWidth,
-        height: label.scrollHeight,
-        windowWidth: label.scrollWidth,
-        windowHeight: label.scrollHeight,
-        scrollX: 0,
-        scrollY: 0,
-      });
+    // --------------------------------------------------
+// FIT COMPLETE LABEL INSIDE THE PDF PAGE
+// Print already fits this automatically.
+// Direct download needs the same behavior.
+// --------------------------------------------------
 
-      const image = canvas.toDataURL(
-        "image/png"
-      );
+const pageWidth = label.clientWidth;
+const pageHeight = label.clientHeight;
+
+const contentWidth = label.scrollWidth;
+const contentHeight = label.scrollHeight;
+
+// Find the scale required to fit the complete
+// content inside the fixed label page.
+const fitScale = Math.min(
+  pageWidth / contentWidth,
+  pageHeight / contentHeight,
+  1
+);
+
+// Only shrink when content is overflowing.
+// Never enlarge the label.
+label.style.transformOrigin = "top left";
+label.style.transform =
+  fitScale < 1
+    ? `scale(${fitScale})`
+    : "none";
+
+// Allow html2canvas to see the complete content.
+label.style.overflow = "visible";
+
+const labelBorder = label.querySelector(
+  ".label-border"
+);
+
+if (labelBorder) {
+  labelBorder.style.overflow = "visible";
+}
+
+// Give browser one frame to apply the scale.
+await new Promise((resolve) => {
+  iframe.contentWindow.requestAnimationFrame(resolve);
+});
+
+const canvas = await html2canvas(label, {
+  scale: 4,
+  backgroundColor: "#ffffff",
+  useCORS: true,
+  logging: false,
+  width: pageWidth,
+  height: pageHeight,
+  windowWidth: pageWidth,
+  windowHeight: pageHeight,
+  scrollX: 0,
+  scrollY: 0,
+});
+
+const image = canvas.toDataURL("image/png");
+
+// Reset transform after rendering
+label.style.transform = "none";
+label.style.transformOrigin = "";
+label.style.overflow = "";
+
+if (labelBorder) {
+  labelBorder.style.overflow = "";
+}
 
       if (index > 0) {
         pdf.addPage(
