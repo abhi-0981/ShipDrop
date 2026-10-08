@@ -1090,28 +1090,30 @@ const build3x2LabelHtml = (
         border-bottom: 1px solid #111827;
       }
 
-      .label-3x2 .logo {
-        width: 50%;
-        height: 100%;
-        display: flex;
-        align-items: center;
-        padding: 0.8mm 2mm;
-      }
+    .label-3x2 .logo {
+  width: 50%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.4mm 1mm;
+}
 
-      .label-3x2 .logo.left {
-        justify-content: flex-start;
-      }
+.label-3x2 .logo.left {
+  justify-content: center;
+}
 
-      .label-3x2 .logo.right {
-        justify-content: flex-end;
-        border-left: 1px solid #111827;
-      }
+.label-3x2 .logo.right {
+  justify-content: center;
+  border-left: 1px solid #111827;
+}
 
-      .label-3x2 .logo img {
-       max-width: 85%;
-  max-height: 85%;
-        object-fit: contain;
-      }
+.label-3x2 .logo img {
+  display: block;
+  max-width: 90%;
+  max-height: 90%;
+  object-fit: contain;
+}
 
       /* TO */
       .label-3x2 .mini-to {
