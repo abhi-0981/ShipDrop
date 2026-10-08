@@ -1368,10 +1368,10 @@ const buildLabelHtml = (
       .cod strong {
         font-size: ${compact ? "5.5pt" : "9pt"};
       }
-
-     .products {
+.products {
   flex: 0 0 auto;
   padding: 0;
+  margin: 0;
   border-bottom: 1px solid #111827;
 }
 
@@ -1381,21 +1381,23 @@ const buildLabelHtml = (
         margin-bottom: 1mm;
       }
 
-      table {
+table {
   border-collapse: collapse;
   width: 100%;
+  margin: 0;
+  padding: 0;
   table-layout: fixed;
   font-size: ${compact ? "4.5pt" : isA4 ? "9pt" : "6.5pt"};
 }
 
-     th,
+th,
 td {
   width: 25%;
   border: 1px solid #9ca3af;
   padding: ${compact ? "1mm" : "1.5mm"};
   text-align: center;
   overflow-wrap: anywhere;
-  font-size: ${compact ? "5.5pt" : isA4 ? "13pt" : "8pt"};
+  font-size: ${compact ? "5pt" : isA4 ? "12pt" : "7pt"};
   font-weight: 600;
 }
 
