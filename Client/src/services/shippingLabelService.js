@@ -2207,97 +2207,84 @@ export const downloadShippingLabels = async (orders) => {
       });
 
 // --------------------------------------------------
-// FIT COMPLETE LABEL INSIDE THE PDF PAGE
-// Print already fits this automatically.
-// Direct download should not cut the bottom.
+// DIRECT DOWNLOAD RENDERING
+// Render the complete label first.
+// Then place the complete image on the PDF page.
 // --------------------------------------------------
 
 const labelBorder = label.querySelector(
   ".label-border"
 );
 
-// First allow the complete label content to be visible.
+// Temporarily remove the fixed height ONLY
+// inside the hidden iframe.
+//
+// This allows Seller / GSTIN / Invoice / Date
+// and the sections below them to render fully.
+label.style.height = "auto";
+label.style.minHeight = "0";
 label.style.overflow = "visible";
 
 if (labelBorder) {
+  labelBorder.style.height = "auto";
+  labelBorder.style.minHeight = "0";
   labelBorder.style.overflow = "visible";
 }
 
-// Wait for the browser to recalculate the layout.
+// Also make the iframe document capable of
+// showing the complete label.
+doc.documentElement.style.height = "auto";
+doc.documentElement.style.overflow = "visible";
+
+doc.body.style.height = "auto";
+doc.body.style.overflow = "visible";
+
+// Wait for the browser to recalculate layout.
 await new Promise((resolve) => {
   iframe.contentWindow.requestAnimationFrame(() => {
     iframe.contentWindow.requestAnimationFrame(resolve);
   });
 });
 
-// Fixed PDF page size.
-const pageWidth = label.clientWidth;
-const pageHeight = label.clientHeight;
+// --------------------------------------------------
+// GET COMPLETE NATURAL LABEL SIZE
+// --------------------------------------------------
 
-// Find the actual bottom of all visible content.
-const labelRect = label.getBoundingClientRect();
+const renderWidth = label.scrollWidth;
+const renderHeight = label.scrollHeight;
 
-let contentBottom = labelRect.top;
+if (
+  !renderWidth ||
+  !renderHeight
+) {
+  throw new Error(
+    "Unable to determine label size"
+  );
+}
 
-Array.from(label.querySelectorAll("*")).forEach(
-  (element) => {
-    const rect = element.getBoundingClientRect();
-
-    if (rect.width > 0 && rect.height > 0) {
-      contentBottom = Math.max(
-        contentBottom,
-        rect.bottom
-      );
-    }
-  }
-);
-
-const contentHeight =
-  contentBottom - labelRect.top;
-
-// Only shrink if content is going outside
-// the fixed label page.
-const fitScale =
-  contentHeight > pageHeight
-    ? pageHeight / contentHeight
-    : 1;
-
-// Keep label anchored from top-left.
-label.style.transformOrigin = "top left";
-
-label.style.transform =
-  fitScale < 1
-    ? `scale(${fitScale})`
-    : "none";
-
-// Wait for transform to apply.
-await new Promise((resolve) => {
-  iframe.contentWindow.requestAnimationFrame(resolve);
-});
+// --------------------------------------------------
+// CAPTURE COMPLETE LABEL
+// --------------------------------------------------
 
 const canvas = await html2canvas(label, {
   scale: 4,
   backgroundColor: "#ffffff",
   useCORS: true,
   logging: false,
-  width: pageWidth,
-  height: pageHeight,
-  windowWidth: pageWidth,
-  windowHeight: pageHeight,
+
+  width: renderWidth,
+  height: renderHeight,
+
+  windowWidth: renderWidth,
+  windowHeight: renderHeight,
+
   scrollX: 0,
   scrollY: 0,
 });
 
-const image = canvas.toDataURL("image/png");
-
-// Reset temporary changes.
-label.style.transform = "none";
-label.style.transformOrigin = "";
-label.style.overflow = "";
-
-if (labelBorder) {
-  labelBorder.style.overflow = "";
-}
+const image = canvas.toDataURL(
+  "image/png"
+);
 
       if (index > 0) {
         pdf.addPage(
