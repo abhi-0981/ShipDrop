@@ -2278,6 +2278,7 @@ export const downloadShippingLabels = async (orders) => {
       "Download label error:",
       error
     );
+    
     toast.error(
       error?.message ||
         "Unable to download labels"
