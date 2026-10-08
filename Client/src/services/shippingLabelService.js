@@ -1348,10 +1348,11 @@ const buildLabelHtml = (
       .summary span,
       .info-cell span,
       .seller span {
-        display: block;
-        font-size: ${compact ? "4.5pt" : isA4 ? "9pt" : "6.5pt"};
-        font-weight: 600;
-        margin-bottom: .5mm;
+          display: block;
+  font-size: ${compact ? "4.3pt" : isA4 ? "8pt" : "5.8pt"};
+  font-weight: 600;
+  line-height: 1;
+  margin-bottom: 0.5mm;
       }
 
       .summary b {
@@ -1444,7 +1445,7 @@ td:first-child {
       .seller {
         flex: 0 0 auto;
         display: grid;
-        grid-template-columns: 1.25fr 1fr 1fr .8fr;
+grid-template-columns: 1.25fr 1.45fr .85fr .8fr;
         border-bottom: 1px solid #111827;
       }
 
@@ -1458,12 +1459,15 @@ td:first-child {
         border-left: 1px solid #9ca3af;
       }
 
-      .seller b {
+ .seller b {
   display: block;
-  font-size: ${compact ? "5pt" : isA4 ? "10pt" : "7.5pt"};
+  font-size: ${compact ? "4.8pt" : isA4 ? "9.5pt" : "6.5pt"};
   font-weight: 600;
-  line-height: 1.2;
-  overflow-wrap: anywhere;
+  line-height: 1.15;
+  margin-top: 0.5mm;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
       .return {
