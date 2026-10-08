@@ -1366,10 +1366,10 @@ function Manifested() {
 
         <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1120px] border-collapse">
+            <table className="w-full min-w-0 table-fixed border-collapse">
               <thead>
                 <tr className="border-b border-slate-200 bg-white">
-                  <th className="w-[52px] px-4 py-3.5 text-left">
+                  <th className="w-[44px] px-4 py-3.5 text-left">
                     <button
                       type="button"
                       onClick={toggleAll}
@@ -1392,31 +1392,31 @@ function Manifested() {
                     </button>
                   </th>
 
-                  <th className="w-[190px] px-3 py-3.5 text-left text-[13px] font-medium text-slate-700">
+                  <th className="w-[160px] px-3 py-3.5 text-left text-[13px] font-medium text-slate-700">
                     Customer
                   </th>
 
-                  <th className="w-[175px] px-3 py-3.5 text-left text-[13px] font-medium text-slate-700">
+                  <th className="w-[150px] px-3 py-3.5 text-left text-[13px] font-medium text-slate-700">
                     Shipment
                   </th>
 
-                  <th className="w-[165px] px-3 py-3.5 text-left text-[13px] font-medium text-slate-700">
+                  <th className="w-[140px] px-3 py-3.5 text-left text-[13px] font-medium text-slate-700">
                     Route
                   </th>
 
-                  <th className="w-[150px] px-3 py-3.5 text-left text-[13px] font-medium text-slate-700">
+                  <th className="w-[130px] px-3 py-3.5 text-left text-[13px] font-medium text-slate-700">
                     Payment
                   </th>
 
-                  <th className="w-[135px] px-3 py-3.5 text-left text-[13px] font-medium text-slate-700">
+                  <th className="w-[115px] px-3 py-3.5 text-left text-[13px] font-medium text-slate-700">
                     Weight
                   </th>
 
-                  <th className="w-[155px] px-3 py-3.5 text-left text-[13px] font-medium text-slate-700">
+                  <th className="w-[130px] px-3 py-3.5 text-left text-[13px] font-medium text-slate-700">
                     Created
                   </th>
 
-                  <th className="w-[125px] px-3 py-3.5 text-left text-[13px] font-medium text-slate-700">
+                  <th className="w-[150px] px-3 py-3.5 text-left text-[13px] font-medium text-slate-700">
                     Actions
                   </th>
                 </tr>
@@ -1490,7 +1490,7 @@ function Manifested() {
                         </td>
 
                         <td className="px-3 py-4 align-middle">
-                          <div className="min-w-[160px]">
+                          <div className="min-w-0">
                             <div className="text-[13px] font-medium leading-5 text-slate-800">
                               {getCustomerName(order)}
                             </div>
@@ -1510,7 +1510,7 @@ function Manifested() {
                         </td>
 
                         <td className="px-3 py-4 align-middle">
-                          <div className="min-w-[145px]">
+                          <div className="min-w-0">
                             <div className="text-[13px] font-semibold leading-5 text-slate-800">
                               {getAWB(order)}
                             </div>
@@ -1527,7 +1527,7 @@ function Manifested() {
                         </td>
 
                         <td className="px-3 py-4 align-middle">
-                          <div className="min-w-[145px]">
+                          <div className="min-w-0">
                             <div className="flex items-center gap-2">
                               <span
                                 className="mt-[1px]"
@@ -1620,7 +1620,7 @@ function Manifested() {
                         {/* ACTIONS */}
 
                         <td className="px-3 py-4 align-middle">
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-1 whitespace-nowrap">
                             {/* PRINT */}
 
                             <button
@@ -1628,7 +1628,7 @@ function Manifested() {
                               onClick={() => handlePrintSingle(order)}
                               disabled={actionLoading}
                               title="Print Shipping Label"
-                              className="flex h-8 w-8 items-center justify-center rounded-md text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                               style={{
                                 background: PRIMARY,
                               }}
@@ -1643,7 +1643,7 @@ function Manifested() {
                               onClick={() => handleDownloadSingle(order)}
                               disabled={actionLoading}
                               title="Download Shipping Label"
-                              className="flex h-8 w-8 items-center justify-center rounded-md text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                               style={{
                                 background: PRIMARY_DARK,
                               }}
@@ -1658,7 +1658,7 @@ function Manifested() {
                               onClick={() => handleDuplicate(order)}
                               disabled={actionLoading}
                               title="Duplicate Order"
-                              className="flex h-8 w-8 items-center justify-center rounded-md border bg-white transition hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-50"
+                              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border bg-white transition hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-50"
                               style={{
                                 borderColor: "#c4b5fd",
                                 color: "#7c3aed",
@@ -1673,7 +1673,7 @@ function Manifested() {
                               type="button"
                               onClick={() => setViewingOrder(order)}
                               title="View Shipment"
-                              className="flex h-8 w-8 items-center justify-center rounded-md border bg-white transition hover:bg-[#f3faff]"
+                              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border bg-white transition hover:bg-[#f3faff]"
                               style={{
                                 borderColor: PRIMARY,
                                 color: PRIMARY,
@@ -1843,7 +1843,7 @@ function Manifested() {
               <button
                 type="button"
                 onClick={() => setViewingOrder(null)}
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100"
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100"
               >
                 <Icon name="x" size={16} />
               </button>
