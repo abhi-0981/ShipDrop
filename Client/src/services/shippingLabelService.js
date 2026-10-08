@@ -1105,6 +1105,7 @@ const build3x2LabelHtml = (
 
 .label-3x2 .logo.right {
   justify-content: center;
+
   border-left: 1px solid #111827;
 }
 
@@ -2079,6 +2080,7 @@ export const downloadShippingLabels = async (orders) => {
   }
 
   let staging;
+  let addedStyles = [];
 
   try {
     const {
@@ -2089,6 +2091,9 @@ export const downloadShippingLabels = async (orders) => {
       rightLogoData,
     } = await prepareLabels(orders);
 
+    // Off-screen rendering area
+    // Visibility hidden nahi rakhenge because html2canvas
+    // ko actual layout render karna zaroori hai.
     staging = document.createElement("div");
 
     staging.style.cssText = `
@@ -2096,14 +2101,18 @@ export const downloadShippingLabels = async (orders) => {
       left: -10000px;
       top: 0;
       width: ${size.widthIn}in;
-      background: #fff;
-      z-index: -1;
+      background: #ffffff;
+      z-index: -9999;
+      visibility: visible;
+      opacity: 1;
+      pointer-events: none;
     `;
 
     document.body.appendChild(staging);
 
     const labels = [];
 
+    // Build every label
     for (const order of detailedOrders) {
       const holder = document.createElement("div");
 
@@ -2119,6 +2128,22 @@ export const downloadShippingLabels = async (orders) => {
 
       if (!label) continue;
 
+      // buildLabelHtml ke andar generated CSS ko
+      // temporarily document.head me add karenge.
+      const styles = Array.from(
+        holder.querySelectorAll("style")
+      );
+
+      styles.forEach((style) => {
+        const styleClone = style.cloneNode(true);
+
+        document.head.appendChild(styleClone);
+        addedStyles.push(styleClone);
+      });
+
+      // Style ko holder se remove karo
+      styles.forEach((style) => style.remove());
+
       staging.appendChild(label);
       labels.push(label);
     }
@@ -2129,64 +2154,105 @@ export const downloadShippingLabels = async (orders) => {
       );
     }
 
-    await Promise.all(
-      Array.from(staging.querySelectorAll("img")).map(
-        (img) => {
-          if (img.complete && img.naturalWidth > 0) {
-            return Promise.resolve();
-          }
-
-          return new Promise((resolve) => {
-            img.onload = resolve;
-            img.onerror = resolve;
-          });
-        }
-      )
+    // Wait for logos/images
+    const images = Array.from(
+      staging.querySelectorAll("img")
     );
+
+    await Promise.all(
+      images.map((img) => {
+        if (
+          img.complete &&
+          img.naturalWidth > 0
+        ) {
+          return Promise.resolve();
+        }
+
+        return new Promise((resolve) => {
+          img.onload = resolve;
+          img.onerror = resolve;
+        });
+      })
+    );
+
+    // Browser ko CSS/layout apply karne ka time
+    await new Promise((resolve) => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(resolve);
+      });
+    });
 
     const pdf = new jsPDF({
       orientation:
         size.widthMm > size.heightMm
           ? "landscape"
           : "portrait",
+
       unit: "mm",
-      format: [size.widthMm, size.heightMm],
+
+      format: [
+        size.widthMm,
+        size.heightMm,
+      ],
+
       compress: true,
     });
 
-    for (let index = 0; index < labels.length; index += 1) {
-     const canvas = await html2canvas(labels[index], {
-  scale: 4,
-  backgroundColor: "#ffffff",
-  useCORS: true,
-  logging: false,
-});
+    // Render labels
+    for (
+      let index = 0;
+      index < labels.length;
+      index += 1
+    ) {
+      const label = labels[index];
 
-     const image = canvas.toDataURL("image/png");
+      const canvas = await html2canvas(label, {
+        scale: 4,
+        backgroundColor: "#ffffff",
+        useCORS: true,
+        logging: false,
+
+        width: label.scrollWidth,
+        height: label.scrollHeight,
+
+        windowWidth: label.scrollWidth,
+        windowHeight: label.scrollHeight,
+
+        scrollX: 0,
+        scrollY: 0,
+      });
+
+      const image = canvas.toDataURL("image/png");
 
       if (index > 0) {
         pdf.addPage(
-          [size.widthMm, size.heightMm],
+          [
+            size.widthMm,
+            size.heightMm,
+          ],
           size.widthMm > size.heightMm
             ? "landscape"
             : "portrait"
         );
       }
 
-    pdf.addImage(
-  image,
-  "PNG",
-  0,
-  0,
-  size.widthMm,
-  size.heightMm,
-  undefined,
-  "FAST"
-);
+      pdf.addImage(
+        image,
+        "PNG",
+        0,
+        0,
+        size.widthMm,
+        size.heightMm,
+        undefined,
+        "FAST"
+      );
     }
 
-    const firstAwb = getAWB(detailedOrders[0]).replace(
-      /[^a-zA-Z0-9_-]/g,
+    // Filename
+    const firstAwb = getAWB(
+      detailedOrders[0]
+    ).replace(
+      /[^a-zA-Z0-9\_-]/g,
       "-"
     );
 
@@ -2200,15 +2266,31 @@ export const downloadShippingLabels = async (orders) => {
     pdf.save(filename);
 
     toast.success(
-      `${detailedOrders.length} label(s) downloaded`
+      `${detailedOrders.length} ${
+        detailedOrders.length === 1
+          ? "label"
+          : "labels"
+      } downloaded`
     );
+
   } catch (error) {
-    console.error("Download label error:", error);
+    console.error(
+      "Download label error:",
+      error
+    );
 
     toast.error(
-      error?.message || "Unable to download labels"
+      error?.message ||
+        "Unable to download labels"
     );
+
   } finally {
+    // Temporary labels remove
     staging?.remove();
+
+    // Temporary CSS remove
+    addedStyles.forEach((style) => {
+      style.remove();
+    });
   }
 };
