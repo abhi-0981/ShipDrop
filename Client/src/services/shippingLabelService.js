@@ -2277,11 +2277,11 @@ const canvas = await html2canvas(label, {
   windowHeight: renderHeight,
   scrollX: 0,
   scrollY: 0,
+  
 });
 const image = canvas.toDataURL(
   "image/png"
 );
-
       if (index > 0) {
         pdf.addPage(
           [size.widthMm, size.heightMm],
