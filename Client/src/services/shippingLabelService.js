@@ -2271,10 +2271,8 @@ const canvas = await html2canvas(label, {
   backgroundColor:  "#ffffff",
   useCORS: true,
   logging: false,
-
   width: renderWidth,
   height: renderHeight,
-
   windowWidth: renderWidth,
   windowHeight: renderHeight,
 
