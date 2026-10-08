@@ -2115,12 +2115,21 @@ export const downloadShippingLabels = async (orders) => {
         size
       );
 
-      const label = holder.querySelector(".shipping-label");
+   const label = holder.querySelector(".shipping-label");
 
-      if (!label) continue;
+if (!label) continue;
 
-      staging.appendChild(label);
-      labels.push(label);
+// IMPORTANT:
+// buildLabelHtml() ke andar jo <style> hai,
+// use bhi staging me add karo.
+const styles = holder.querySelectorAll("style");
+
+styles.forEach((style) => {
+  staging.appendChild(style.cloneNode(true));
+});
+
+staging.appendChild(label);
+labels.push(label);
     }
 
     if (!labels.length) {
