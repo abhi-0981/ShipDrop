@@ -1382,31 +1382,33 @@ const buildLabelHtml = (
       }
 
       table {
-        border-collapse: collapse;
-        width: 100%;
-        table-layout: fixed;
-        font-size: ${compact ? "4.5pt" : isA4 ? "10pt" : "6.5pt"};
-      }
+  border-collapse: collapse;
+  width: 100%;
+  table-layout: fixed;
+  font-size: ${compact ? "4.5pt" : isA4 ? "9pt" : "6.5pt"};
+}
 
-      th,
-      td {
-        border: 1px solid #9ca3af;
-        padding: ${compact ? ".5mm" : "1mm"};
-        text-align: right;
-        overflow-wrap: anywhere;
-      }
+     th,
+td {
+  width: 25%;
+  border: 1px solid #9ca3af;
+  padding: ${compact ? "1mm" : "1.5mm"};
+  text-align: center;
+  overflow-wrap: anywhere;
+  font-size: ${compact ? "5.5pt" : isA4 ? "13pt" : "8pt"};
+  font-weight: 600;
+}
 
       th {
         font-weight: 600;
         background: #f3f4f6;
       }
 
-      th:first-child,
-      td:first-child {
-        text-align: left;
-        width: 46%;
-      }
-
+     th:first-child,
+td:first-child {
+  text-align: left;
+  width: 25%;
+}
       .seller {
         flex: 0 0 auto;
         display: grid;
