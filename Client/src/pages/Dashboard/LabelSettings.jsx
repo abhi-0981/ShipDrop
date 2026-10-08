@@ -686,7 +686,7 @@ function LabelSettings() {
 
               <SettingRow
                 title="Complaints & Queries Contact"
-                description="Show or hide: For complaints & queries please contact 8766066070, 0141-4797120"
+                description="Show or hide: For complaints & queries please contact 8384930617"
                 checked={settings.contactLine}
                 onChange={(value) => updateSetting("contactLine", value)}
               />

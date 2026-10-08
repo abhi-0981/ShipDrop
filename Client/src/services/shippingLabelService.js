@@ -976,7 +976,7 @@ const buildLabelHtml = (
     getReturnAddress(order) || fromAddress;
 
   const contactLine =
-    "For complaints & queries please contact 8766066070, 0141-4797120";
+    "For complaints & queries please contact 8384930617";
 
   return `
     <article
