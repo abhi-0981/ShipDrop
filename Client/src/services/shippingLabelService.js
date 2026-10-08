@@ -1472,11 +1472,11 @@ td:first-child {
 
 .return {
   margin-top: auto;
-  padding: ${compact ? "1.5mm" : isA4 ? "4mm" : "2.5mm"};
-  border-top: 1px solid #111827;
+  padding: ${compact ? "1mm" : isA4 ? "2.5mm" : "1.5mm"};
+  border-top: none;
   border-bottom: 1px solid #111827;
   font-size: ${compact ? "5.5pt" : isA4 ? "11pt" : "8pt"};
-  line-height: 1.25;
+  line-height: 1.2;
   overflow-wrap: anywhere;
 }
 
@@ -1490,9 +1490,9 @@ td:first-child {
 .contact {
   flex: 0 0 auto;
   margin-top: 0;
-  padding: ${compact ? "1.5mm" : isA4 ? "4mm" : "2.5mm"};
+  padding: ${compact ? "1mm" : isA4 ? "2.5mm" : "1.5mm"};
   font-size: ${compact ? "5.5pt" : isA4 ? "10pt" : "8pt"};
-  line-height: 1.2;
+  line-height: 1.15;
   text-align: center;
   font-weight: 600;
 }
