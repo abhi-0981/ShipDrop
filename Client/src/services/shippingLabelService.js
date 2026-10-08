@@ -1470,8 +1470,7 @@ td:first-child {
   text-overflow: ellipsis;
 }
 
-     .return {
-  margin-top: auto;
+.return {
   padding: ${compact ? "1.5mm" : isA4 ? "4mm" : "2.5mm"};
   border-top: 1px solid #111827;
   border-bottom: 1px solid #111827;
@@ -1487,7 +1486,8 @@ td:first-child {
   margin-bottom: 1mm;
 }
 
-    .contact {
+ .contact {
+  margin-top: auto;
   flex: 0 0 auto;
   padding: ${compact ? "1.5mm" : isA4 ? "4mm" : "2.5mm"};
   font-size: ${compact ? "5.5pt" : isA4 ? "10pt" : "8pt"};
