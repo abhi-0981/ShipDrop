@@ -438,63 +438,90 @@ const getBuyerAddress = (o) => {
 
 const getSellerName = (o) => {
   const user = getStoredUser();
+  const account = o.user || {};
   const seller = o.seller || {};
   const profile = o.seller_profile || o.sellerProfile || {};
-  const account = o.user || {};
 
   return txt(
     first(
-      o.seller_name,
-      o.sellerName,
-      o.seller_full_name,
-      o.sellerFullName,
-      o.seller_company_name,
-      o.sellerCompanyName,
-      o.company_name,
-      o.companyName,
-      o.business_name,
-      o.businessName,
-      profile.business_name,
-      profile.company_name,
-      profile.name,
-      seller.business_name,
-      seller.company_name,
-      seller.name,
-      account.business_name,
-      account.company_name,
+      // Logged-in account user name — highest priority
+      user.full_name,
+      user.fullName,
+      user.name,
+      user.first_name && user.last_name
+        ? `${user.first_name} ${user.last_name}`
+        : null,
+
+      // Order's user/account name
+      account.full_name,
+      account.fullName,
       account.name,
-      user.business_name,
-      user.company_name,
-      user.name
+
+      // Seller personal name
+      seller.full_name,
+      seller.fullName,
+      seller.name,
+
+      // Profile personal name
+      profile.full_name,
+      profile.fullName,
+      profile.name,
+
+      // Last fallback
+      o.seller_name,
+      o.sellerName
     )
   );
 };
+    
 
 const getSellerGstin = (o) => {
   const user = getStoredUser();
+  const account = o.user || {};
   const seller = o.seller || {};
   const profile = o.seller_profile || o.sellerProfile || {};
-  const account = o.user || {};
 
   return txt(
     first(
-      o.seller_gstin,
-      o.sellerGstin,
-      o.seller_gst,
-      o.sellerGSTIN,
+      // Logged-in account user's GSTIN — highest priority
+      user.gstin,
+      user.GSTIN,
+      user.gst_number,
+      user.gstNumber,
+      user.gst_no,
+      user.gstNo,
+
+      // Order's user/account GST
+      account.gstin,
+      account.GSTIN,
+      account.gst_number,
+      account.gstNumber,
+      account.gst_no,
+      account.gstNo,
+
+      // Seller GST
+      seller.gstin,
+      seller.GSTIN,
+      seller.gst_number,
+      seller.gstNumber,
+      seller.gst_no,
+      seller.gstNo,
+
+      // Profile GST
+      profile.gstin,
+      profile.GSTIN,
+      profile.gst_number,
+      profile.gstNumber,
+      profile.gst_no,
+      profile.gstNo,
+
+      // Order-level fallback
       o.gstin,
       o.GSTIN,
       o.gst_number,
       o.gstNumber,
-      profile.gstin,
-      profile.gst_number,
-      seller.gstin,
-      seller.gst_number,
-      account.gstin,
-      account.gst_number,
-      user.gstin,
-      user.GSTIN,
-      user.gst_number
+      o.seller_gstin,
+      o.sellerGstin
     ),
     ""
   );
@@ -1324,7 +1351,6 @@ const buildLabelHtml = (
         display: block;
         font-size: ${compact ? "4.5pt" : isA4 ? "9pt" : "6.5pt"};
         font-weight: 600;
-        color: #374151;
         margin-bottom: .5mm;
       }
 
@@ -1433,11 +1459,12 @@ td:first-child {
       }
 
       .seller b {
-        display: block;
-        font-size: ${compact ? "4.5pt" : isA4 ? "9pt" : "6pt"};
-        font-weight: 600;
-        overflow-wrap: anywhere;
-      }
+  display: block;
+  font-size: ${compact ? "5pt" : isA4 ? "10pt" : "7.5pt"};
+  font-weight: 600;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
 
       .return {
         flex: 0 0 auto;
