@@ -1082,8 +1082,8 @@ const build3x2LabelHtml = (
 
       /* LOGOS */
       .label-3x2 .logos {
-        height: 8mm;
-        flex: 0 0 8mm;
+      height: 8.5mm;
+  flex: 0 0 8.5mm;
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -1108,15 +1108,15 @@ const build3x2LabelHtml = (
       }
 
       .label-3x2 .logo img {
-        max-width: 75%;
-        max-height: 75%;
+       max-width: 85%;
+  max-height: 85%;
         object-fit: contain;
       }
 
       /* TO */
       .label-3x2 .mini-to {
         flex: 0 0 auto;
-        padding: 1.2mm 1.5mm;
+  padding: 0.8mm 1.5mm;
         border-bottom: 1px solid #111827;
         overflow: hidden;
       }
@@ -1139,8 +1139,8 @@ const build3x2LabelHtml = (
       }
 
       .label-3x2 .address {
-        font-size: 6pt;
-        line-height: 1.2;
+        font-size: 5.7pt;
+  line-height: 1.15;
         overflow: hidden;
         display: -webkit-box;
         -webkit-line-clamp: 2;
@@ -1148,16 +1148,17 @@ const build3x2LabelHtml = (
       }
 
       .label-3x2 .phone {
-        font-size: 5.5pt;
+         font-size: 5.2pt;
+  margin-top: 0.3mm;
         font-weight: 600;
-        margin-top: 0.5mm;
       }
 
       /* AWB */
       .label-3x2 .mini-awb {
         flex: 0 0 auto;
         text-align: center;
-        padding: 0.8mm 1mm;
+         padding: 0.6mm 1mm;
+
         border-bottom: 1px solid #111827;
       }
 
@@ -1169,9 +1170,9 @@ const build3x2LabelHtml = (
 
       .label-3x2 .barcode svg {
         display: block;
-        width: 75%;
-        max-width: 75%;
-        height: 7mm;
+          width: 75%;
+  max-width: 75%;
+  height: 6.5mm;
         margin: 0 auto;
       }
 
@@ -1196,7 +1197,8 @@ const build3x2LabelHtml = (
 
       .label-3x2 .mini-summary > div {
         min-width: 0;
-        padding: 1mm;
+          padding: 0.7mm;
+
         overflow: hidden;
       }
 
@@ -1230,7 +1232,7 @@ const build3x2LabelHtml = (
 
       .label-3x2 .mini-seller > div {
         min-width: 0;
-        padding: 0.8mm;
+  padding: 0.6mm 0.7mm;
         overflow: hidden;
       }
 
@@ -1240,7 +1242,7 @@ const build3x2LabelHtml = (
 
       .label-3x2 .mini-seller b {
         display: block;
-        font-size: 5.2pt;
+        font-size: 5pt;
         font-weight: 600;
         white-space: nowrap;
         overflow: hidden;
