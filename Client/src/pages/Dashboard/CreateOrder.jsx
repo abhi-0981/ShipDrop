@@ -1567,29 +1567,45 @@ function CreateOrder() {
 
   };
 
-  const handleRequiredFieldEnter = (e) => {
-    if (e.key !== "Enter") return;
+ 
+const handleRequiredFieldEnter = (e) => {
+  if (e.key !== "Enter") return;
 
-    // Allow normal textarea and button behavior
-    if (e.target.tagName === "TEXTAREA" || e.target.tagName === "BUTTON") {
-      return;
-    }
+  // Textarea mein Enter se new line aane do
+  if (
+    e.target.tagName === "TEXTAREA" ||
+    e.target.tagName === "BUTTON"
+  ) {
+    return;
+  }
 
-    e.preventDefault();
+  e.preventDefault();
 
-    const fields = Array.from(
-      e.currentTarget.querySelectorAll("[data-enter-required='true']"),
-    ).filter((field) => !field.disabled && !field.readOnly);
+  const fields = Array.from(
+    e.currentTarget.querySelectorAll(
+      "[data-enter-required='true']"
+    )
+  ).filter(
+    (field) => !field.disabled && !field.readOnly
+  );
 
-    const firstIncompleteField = fields.find(
-      (field) => !isEnterFieldComplete(field),
-    );
+  const firstIncompleteField = fields.find(
+    (field) => !isEnterFieldComplete(field)
+  );
 
-    if (firstIncompleteField) {
-      firstIncompleteField.focus();
-      firstIncompleteField.select?.();
-    }
-  };
+  // Koi required field incomplete hai
+  if (firstIncompleteField) {
+    firstIncompleteField.focus();
+    firstIncompleteField.select?.();
+    return;
+  }
+
+  // Sab required fields complete hain toh save karo
+  if (!loading) {
+    handleSubmit(e);
+  }
+};
+
 
   const handleSubmit = async (e) => {
     e?.preventDefault();
