@@ -1119,12 +1119,13 @@ const build3x2LabelHtml = (
 }
 
       /* TO */
-      .label-3x2 .mini-to {
-        flex: 0 0 auto;
+.label-3x2 .mini-to {
+  flex: 1 1 auto;
+  min-height: 0;
   padding: 0.8mm 1.5mm;
-        border-bottom: 1px solid #111827;
-        overflow: hidden;
-      }
+  border-bottom: 1px solid #111827;
+  overflow: hidden;
+}
 
       .label-3x2 .eyebrow {
         font-size: 5.5pt;
@@ -1143,14 +1144,14 @@ const build3x2LabelHtml = (
         text-overflow: ellipsis;
       }
 
-      .label-3x2 .address {
-        font-size: 5.7pt;
-  line-height: 1.15;
-        overflow: hidden;
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-      }
+    .label-3x2 .address {
+  font-size: 5.2pt;
+  line-height: 1.1;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
 
       .label-3x2 .phone {
          font-size: 5.2pt;
@@ -1229,11 +1230,13 @@ const build3x2LabelHtml = (
       }
 
       /* SELLER */
-      .label-3x2 .mini-seller {
-        display: grid;
-        grid-template-columns: 1.2fr 1.2fr 1fr 0.9fr;
-        flex: 0 0 auto;
-      }
+     .label-3x2 .mini-seller {
+  display: grid;
+  grid-template-columns: 1.2fr 1.2fr 1fr 0.9fr;
+  flex: 0 0 9mm;
+  min-height: 0;
+  overflow: hidden;
+}
 
       .label-3x2 .mini-seller > div {
         min-width: 0;
