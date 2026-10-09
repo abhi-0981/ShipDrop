@@ -1989,8 +1989,7 @@ export const printShippingLabels = async (
       <html>
         <head>
           <meta charset="utf-8">
-          <title>${esc(title)}</title>
-          <style>
+<title>${getParcelDropFilename()}</title>          <style>
             html, body {
               margin: 0;
               padding: 0;
@@ -2436,19 +2435,7 @@ export const downloadShippingLabels = async (orders) => {
     // FILE NAME
     // =====================================================
 
-    const firstAwb = getAWB(
-      detailedOrders[0]
-    ).replace(
-      /[^a-zA-Z0-9_-]/g,
-      "-"
-    );
-
-    const filename =
-      detailedOrders.length === 1
-        ? `parceldrop-label-${firstAwb}.pdf`
-        : `parceldrop-labels-${new Date()
-            .toISOString()
-            .slice(0, 10)}.pdf`;
+ const filename = `${getParcelDropFilename()}.pdf`;
 
     // =====================================================
     // DOWNLOAD
