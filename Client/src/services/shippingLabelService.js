@@ -1578,15 +1578,16 @@ const buildLabelHtml = (
       }
 
       .label-border {
-        width: 100%;
-        height: 100%;
-        border: 1px solid #111827;
-        display: flex;
-        flex-direction: column;
-        align-items: stretch;
-        overflow: hidden;
-        background: #fff;
-      }
+  width: 100%;
+  height: 100%;
+  border: 1px solid #111827;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  overflow: hidden;
+  background: #fff;
+}
 
 .logos {
   position: relative;
@@ -1878,8 +1879,10 @@ td:first-child {
   min-height: 0;
 }
 
+
 .return {
-  margin-top: auto;
+  margin-top: 0;
+  flex: 0 0 auto;
   padding: ${compact ? "1mm" : isA4 ? "2.5mm" : "1.5mm"};
   border-top: none;
   border-bottom: 1px solid #111827;
@@ -1887,6 +1890,7 @@ td:first-child {
   line-height: 1.2;
   overflow-wrap: anywhere;
 }
+
 
      .return b {
   display: block;
