@@ -1,11 +1,4 @@
-
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
-
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   HiOutlineSearch,
   HiOutlineRefresh,
@@ -18,23 +11,28 @@ import {
   HiOutlineX,
   HiOutlineUsers,
 } from "react-icons/hi";
-
 import toast from "react-hot-toast";
 import { API_BASE_URL } from "../../config/api";
 
-const formatAmount = (amount) =>
-  `₹${Number(amount || 0).toLocaleString("en-IN", {
+const statusOf = (value) =>
+  String(value || "PENDING").trim().toUpperCase();
+
+const rowId = (row) => String(row.remittance_id);
+
+const money = (value) =>
+  `₹${Number(value || 0).toLocaleString("en-IN", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;
 
-const formatDate = (date) => {
-  if (!date) return "-";
+const dateText = (value) => {
+  if (!value) return "—";
 
-  const parsed = new Date(date);
-  if (Number.isNaN(parsed.getTime())) return "-";
+  const date = new Date(value);
 
-  return parsed.toLocaleString("en-IN", {
+  if (Number.isNaN(date.getTime())) return "—";
+
+  return date.toLocaleString("en-IN", {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -43,34 +41,29 @@ const formatDate = (date) => {
   });
 };
 
-const getStatus = (status) =>
-  String(status || "PENDING").trim().toUpperCase();
-
-const getId = (item) => String(item.remittance_id);
-
-const StatusBadge = ({ status }) => {
-  const successful = getStatus(status) === "SUCCESSFUL";
+function StatusBadge({ status }) {
+  const successful = statusOf(status) === "SUCCESSFUL";
 
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[10px] font-semibold ${
+      className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold ${
         successful
           ? "border-emerald-200 bg-emerald-50 text-emerald-700"
           : "border-amber-200 bg-amber-50 text-amber-700"
       }`}
     >
       <span
-        className={`h-1.5 w-1.5 rounded-full ${
+        className={`h-2 w-2 rounded-full ${
           successful ? "bg-emerald-500" : "bg-amber-500"
         }`}
       />
       {successful ? "Successful" : status || "Pending"}
     </span>
   );
-};
+}
 
-const SummaryCard = ({ title, value, subtitle, icon, color }) => {
-  const styles = {
+function SummaryCard({ title, value, note, icon, tone }) {
+  const tones = {
     blue: "bg-sky-50 text-[#008dd2]",
     amber: "bg-amber-50 text-amber-600",
     green: "bg-emerald-50 text-emerald-600",
@@ -78,32 +71,35 @@ const SummaryCard = ({ title, value, subtitle, icon, color }) => {
   };
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-3">
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-[11px] font-medium text-slate-500">
-          {title}
-        </p>
+    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-medium text-slate-500">
+            {title}
+          </p>
+
+          <p className="mt-2 break-words text-2xl font-bold tracking-tight text-slate-800">
+            {value}
+          </p>
+
+          <p className="mt-1 text-xs text-slate-400">
+            {note}
+          </p>
+        </div>
+
         <span
-          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
-            styles[color] || styles.blue
+          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${
+            tones[tone] || tones.blue
           }`}
         >
           {icon}
         </span>
       </div>
-
-      <p className="mt-2 break-words text-lg font-bold tracking-tight text-slate-800">
-        {value}
-      </p>
-
-      <p className="mt-0.5 text-[10px] text-slate-400">
-        {subtitle}
-      </p>
     </div>
   );
-};
+}
 
-const CODRemittance = () => {
+export default function CODRemittance() {
   const [remittances, setRemittances] = useState([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
@@ -111,25 +107,28 @@ const CODRemittance = () => {
 
   const [selectedIds, setSelectedIds] = useState([]);
   const [bulkDescription, setBulkDescription] = useState("");
-  const [descriptionDrafts, setDescriptionDrafts] = useState({});
-  const [editingDescriptionId, setEditingDescriptionId] = useState(null);
+  const [drafts, setDrafts] = useState({});
+  const [editingId, setEditingId] = useState(null);
 
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState(null);
-  const [savingDescriptionId, setSavingDescriptionId] = useState(null);
+  const [savingId, setSavingId] = useState(null);
   const [bulkProcessing, setBulkProcessing] = useState(false);
   const [error, setError] = useState("");
 
-  const getHeaders = () => {
+  const headers = () => {
     const token = localStorage.getItem("adminToken");
 
     return {
       "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(token
+        ? { Authorization: `Bearer ${token}` }
+        : {}),
     };
   };
 
-  const fetchRemittances = useCallback(async (showToast = false) => {
+  // Fetch all remittances
+  const fetchRemittances = useCallback(async (notify = false) => {
     try {
       setLoading(true);
       setError("");
@@ -137,8 +136,7 @@ const CODRemittance = () => {
       const response = await fetch(
         `${API_BASE_URL}/admin/cod-remittances`,
         {
-          method: "GET",
-          headers: getHeaders(),
+          headers: headers(),
         }
       );
 
@@ -150,37 +148,49 @@ const CODRemittance = () => {
         );
       }
 
-      const records = Array.isArray(data?.remittances)
+      const rows = Array.isArray(data?.remittances)
         ? data.remittances
         : [];
 
-      setRemittances(records);
+      setRemittances(rows);
 
-      setDescriptionDrafts((previous) => {
+      setDrafts((previous) => {
         const next = { ...previous };
 
-        records.forEach((item) => {
-          const id = getId(item);
-          if (!(id in next)) next[id] = item.description || "";
+        rows.forEach((row) => {
+          const id = rowId(row);
+
+          if (!(id in next)) {
+            next[id] = row.description || "";
+          }
         });
 
         return next;
       });
 
       const pendingIds = new Set(
-        records
-          .filter((item) => getStatus(item.status) === "PENDING")
-          .map(getId)
+        rows
+          .filter(
+            (row) => statusOf(row.status) === "PENDING"
+          )
+          .map(rowId)
       );
 
       setSelectedIds((previous) =>
         previous.filter((id) => pendingIds.has(String(id)))
       );
 
-      if (showToast) toast.success("Remittances refreshed");
+      if (notify) {
+        toast.success("Remittances refreshed");
+      }
     } catch (err) {
-      setError(err.message || "Unable to load COD remittances");
-      toast.error(err.message || "Unable to load COD remittances");
+      setError(
+        err.message || "Unable to load COD remittances"
+      );
+
+      toast.error(
+        err.message || "Unable to load COD remittances"
+      );
     } finally {
       setLoading(false);
     }
@@ -190,16 +200,17 @@ const CODRemittance = () => {
     fetchRemittances();
   }, [fetchRemittances]);
 
+  // Customer dropdown
   const customers = useMemo(() => {
     const map = new Map();
 
-    remittances.forEach((item) => {
-      const id = String(item.user_id ?? "unknown");
+    remittances.forEach((row) => {
+      const id = String(row.user_id ?? "unknown");
 
       if (!map.has(id)) {
         map.set(id, {
           id,
-          name: item.customer_name || `Customer ${id}`,
+          name: row.customer_name || `Customer ${id}`,
         });
       }
     });
@@ -209,13 +220,14 @@ const CODRemittance = () => {
     );
   }, [remittances]);
 
+  // Summary data
   const stats = useMemo(() => {
     const pending = remittances.filter(
-      (item) => getStatus(item.status) === "PENDING"
+      (row) => statusOf(row.status) === "PENDING"
     );
 
     const successful = remittances.filter(
-      (item) => getStatus(item.status) === "SUCCESSFUL"
+      (row) => statusOf(row.status) === "SUCCESSFUL"
     );
 
     return {
@@ -223,67 +235,81 @@ const CODRemittance = () => {
       pending: pending.length,
       successful: successful.length,
       pendingAmount: pending.reduce(
-        (sum, item) => sum + Number(item.cod_amount || 0),
+        (sum, row) => sum + Number(row.cod_amount || 0),
         0
       ),
     };
   }, [remittances]);
 
-  const filteredRemittances = useMemo(() => {
+  // Search and filters
+  const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
 
-    return remittances.filter((item) => {
-      const status = getStatus(item.status);
+    return remittances.filter((row) => {
+      const status = statusOf(row.status);
 
       const matchesStatus =
-        statusFilter === "ALL" || status === statusFilter;
+        statusFilter === "ALL" ||
+        status === statusFilter;
 
       const matchesCustomer =
         customerFilter === "ALL" ||
-        String(item.user_id ?? "unknown") === customerFilter;
+        String(row.user_id ?? "unknown") === customerFilter;
+
+      const searchableValues = [
+        row.order_id,
+        row.buyer,
+        row.awb,
+        row.customer_name,
+        row.user_id,
+      ];
 
       const matchesSearch =
         !query ||
-        String(item.order_id || "").toLowerCase().includes(query) ||
-        String(item.buyer || "").toLowerCase().includes(query) ||
-        String(item.awb || "").toLowerCase().includes(query) ||
-        String(item.customer_name || "").toLowerCase().includes(query) ||
-        String(item.user_id ?? "").toLowerCase().includes(query);
+        searchableValues.some((value) =>
+          String(value ?? "").toLowerCase().includes(query)
+        );
 
-      return matchesStatus && matchesCustomer && matchesSearch;
+      return (
+        matchesStatus &&
+        matchesCustomer &&
+        matchesSearch
+      );
     });
-  }, [remittances, search, statusFilter, customerFilter]);
+  }, [
+    remittances,
+    search,
+    statusFilter,
+    customerFilter,
+  ]);
 
-  const selectedRemittances = useMemo(() => {
+  // Bulk selection
+  const visiblePending = filtered.filter(
+    (row) => statusOf(row.status) === "PENDING"
+  );
+
+  const visibleIds = visiblePending.map(rowId);
+
+  const allSelected =
+    visibleIds.length > 0 &&
+    visibleIds.every((id) => selectedIds.includes(id));
+
+  const selectedRows = useMemo(() => {
     const ids = new Set(selectedIds.map(String));
 
     return remittances.filter(
-      (item) =>
-        ids.has(getId(item)) &&
-        getStatus(item.status) === "PENDING"
+      (row) =>
+        ids.has(rowId(row)) &&
+        statusOf(row.status) === "PENDING"
     );
   }, [remittances, selectedIds]);
 
-  const selectedAmount = useMemo(
-    () =>
-      selectedRemittances.reduce(
-        (sum, item) => sum + Number(item.cod_amount || 0),
-        0
-      ),
-    [selectedRemittances]
+  const selectedAmount = selectedRows.reduce(
+    (sum, row) => sum + Number(row.cod_amount || 0),
+    0
   );
 
-  const visiblePending = filteredRemittances.filter(
-    (item) => getStatus(item.status) === "PENDING"
-  );
-
-  const visiblePendingIds = visiblePending.map(getId);
-
-  const allVisibleSelected =
-    visiblePendingIds.length > 0 &&
-    visiblePendingIds.every((id) => selectedIds.includes(id));
-
-  const toggleSelection = (id) => {
+  const toggleOne = (id) => {
     const key = String(id);
 
     setSelectedIds((previous) =>
@@ -293,18 +319,14 @@ const CODRemittance = () => {
     );
   };
 
-  const toggleSelectAll = () => {
-    if (allVisibleSelected) {
-      setSelectedIds((previous) =>
-        previous.filter(
-          (id) => !visiblePendingIds.includes(String(id))
-        )
-      );
-    } else {
-      setSelectedIds((previous) => [
-        ...new Set([...previous, ...visiblePendingIds]),
-      ]);
-    }
+  const toggleAll = () => {
+    setSelectedIds((previous) =>
+      allSelected
+        ? previous.filter(
+            (id) => !visibleIds.includes(String(id))
+          )
+        : [...new Set([...previous, ...visibleIds])]
+    );
   };
 
   const clearSelection = () => {
@@ -312,16 +334,10 @@ const CODRemittance = () => {
     setBulkDescription("");
   };
 
-  const updateDescriptionDraft = (id, value) => {
-    setDescriptionDrafts((previous) => ({
-      ...previous,
-      [id]: value,
-    }));
-  };
-
+  // Save an individual description
   const saveDescription = async (item) => {
-    const id = getId(item);
-    const description = descriptionDrafts[id] ?? "";
+    const id = rowId(item);
+    const description = drafts[id] ?? "";
 
     if (description.length > 1000) {
       toast.error("Description cannot exceed 1000 characters");
@@ -329,13 +345,13 @@ const CODRemittance = () => {
     }
 
     try {
-      setSavingDescriptionId(id);
+      setSavingId(id);
 
       const response = await fetch(
         `${API_BASE_URL}/admin/cod-remittances/${id}/description`,
         {
           method: "PATCH",
-          headers: getHeaders(),
+          headers: headers(),
           body: JSON.stringify({ description }),
         }
       );
@@ -351,39 +367,40 @@ const CODRemittance = () => {
       const cleanDescription = description.trim();
 
       setRemittances((previous) =>
-        previous.map((record) =>
-          getId(record) === id
-            ? { ...record, description: cleanDescription }
-            : record
+        previous.map((row) =>
+          rowId(row) === id
+            ? { ...row, description: cleanDescription }
+            : row
         )
       );
 
-      setDescriptionDrafts((previous) => ({
+      setDrafts((previous) => ({
         ...previous,
         [id]: cleanDescription,
       }));
 
-      setEditingDescriptionId(null);
+      setEditingId(null);
       toast.success("Description saved successfully");
     } catch (err) {
-      toast.error(err.message || "Unable to save description");
+      toast.error(
+        err.message || "Unable to save description"
+      );
     } finally {
-      setSavingDescriptionId(null);
+      setSavingId(null);
     }
   };
 
+  // Mark one remittance successful
   const markSuccessful = async (item) => {
-    if (getStatus(item.status) !== "PENDING") return;
+    if (statusOf(item.status) !== "PENDING") return;
 
-    if (
-      !window.confirm(
-        `Mark order ${item.order_id} as Successful?`
-      )
-    ) {
-      return;
-    }
+    const confirmed = window.confirm(
+      `Mark remittance for order ${item.order_id} as Successful?`
+    );
 
-    const id = getId(item);
+    if (!confirmed) return;
+
+    const id = rowId(item);
 
     try {
       setProcessingId(id);
@@ -392,7 +409,7 @@ const CODRemittance = () => {
         `${API_BASE_URL}/admin/cod-remittances/${id}/successful`,
         {
           method: "PATCH",
-          headers: getHeaders(),
+          headers: headers(),
         }
       );
 
@@ -407,14 +424,17 @@ const CODRemittance = () => {
       toast.success("Remittance marked successful");
       await fetchRemittances();
     } catch (err) {
-      toast.error(err.message || "Unable to update remittance");
+      toast.error(
+        err.message || "Unable to update remittance"
+      );
     } finally {
       setProcessingId(null);
     }
   };
 
-  const markSelectedSuccessful = async () => {
-    if (!selectedRemittances.length) {
+  // Bulk successful update
+  const bulkSuccessful = async () => {
+    if (!selectedRows.length) {
       toast.error("Select at least one Pending remittance");
       return;
     }
@@ -425,9 +445,9 @@ const CODRemittance = () => {
     }
 
     const confirmed = window.confirm(
-      `Mark ${selectedRemittances.length} orders Successful?\n\nSelected COD Amount: ${formatAmount(
-        selectedAmount
-      )}\n\nThe same description will be applied to all selected records.`
+      `Mark ${selectedRows.length} orders Successful?\n\n` +
+        `Selected COD Amount: ${money(selectedAmount)}\n\n` +
+        "The same description will be applied to all selected records."
     );
 
     if (!confirmed) return;
@@ -435,8 +455,8 @@ const CODRemittance = () => {
     try {
       setBulkProcessing(true);
 
-      const ids = selectedRemittances.map((item) =>
-        Number(item.remittance_id)
+      const ids = selectedRows.map((row) =>
+        Number(row.remittance_id)
       );
 
       if (
@@ -451,7 +471,7 @@ const CODRemittance = () => {
         `${API_BASE_URL}/admin/cod-remittances/bulk-successful`,
         {
           method: "PATCH",
-          headers: getHeaders(),
+          headers: headers(),
           body: JSON.stringify({
             ids,
             description: bulkDescription.trim(),
@@ -463,7 +483,8 @@ const CODRemittance = () => {
 
       if (!response.ok) {
         throw new Error(
-          data?.message || "Unable to update selected remittances"
+          data?.message ||
+            "Unable to update selected remittances"
         );
       }
 
@@ -481,332 +502,428 @@ const CODRemittance = () => {
     }
   };
 
+  // Export CSV
   const exportCSV = () => {
-    if (!filteredRemittances.length) {
+    if (!filtered.length) {
       toast.error("No records available to export");
       return;
     }
 
-    const headers = [
-      "Order ID",
-      "Buyer",
-      "AWB",
-      "COD Amount",
-      "Created On",
-      "Status",
-      "Transferred On",
-      "Description",
-      "Customer",
-      "Customer ID",
+    const columns = [
+      ["Order ID", "order_id"],
+      ["Buyer", "buyer"],
+      ["AWB", "awb"],
+      ["COD Amount", "cod_amount"],
+      ["Created On", "created_at"],
+      ["Status", "status"],
+      ["Transferred On", "transferred_on"],
+      ["Description", "description"],
+      ["Customer", "customer_name"],
+      ["Customer ID", "user_id"],
     ];
-
-    const rows = filteredRemittances.map((item) => [
-      item.order_id,
-      item.buyer,
-      item.awb,
-      item.cod_amount,
-      item.created_at,
-      item.status,
-      item.transferred_on,
-      item.description,
-      item.customer_name,
-      item.user_id,
-    ]);
 
     const escapeCSV = (value) =>
       `"${String(value ?? "").replace(/"/g, '""')}"`;
 
-    const csv = [headers, ...rows]
-      .map((row) => row.map(escapeCSV).join(","))
-      .join("\r\n");
+    const csv = [
+      columns.map(([label]) => escapeCSV(label)).join(","),
+      ...filtered.map((row) =>
+        columns
+          .map(([, key]) => escapeCSV(row[key]))
+          .join(",")
+      ),
+    ].join("\r\n");
 
-    const blob = new Blob(["\uFEFF" + csv], {
-      type: "text/csv;charset=utf-8;",
-    });
+    const url = URL.createObjectURL(
+      new Blob(["\uFEFF" + csv], {
+        type: "text/csv;charset=utf-8;",
+      })
+    );
 
-    const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
-
     link.href = url;
     link.download = "cod-remittances.csv";
+
     document.body.appendChild(link);
     link.click();
     link.remove();
-    URL.revokeObjectURL(url);
 
+    URL.revokeObjectURL(url);
     toast.success("CSV exported");
   };
 
-  const resetFilters = () => {
-    setSearch("");
-    setStatusFilter("ALL");
-    setCustomerFilter("ALL");
-  };
+  // Description editor
+  const Description = ({ item }) => {
+    const id = rowId(item);
+    const editing = String(editingId) === id;
+    const saving = String(savingId) === id;
 
-  const tabs = [
-    { label: "All", value: "ALL", count: stats.total },
-    { label: "Pending", value: "PENDING", count: stats.pending },
-    { label: "Successful", value: "SUCCESSFUL", count: stats.successful },
-  ];
-
-  return (
-    <div className="mx-auto min-h-full max-w-[1500px] bg-[#f8fafc] p-3 pb-20 sm:p-4">
-
-      {/* Header */}
-      <div className="mb-4 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#e8f5fc] text-[#008dd2]">
-              <HiOutlineCurrencyRupee size={21} />
-            </span>
-
-            <div>
-              <h1 className="text-lg font-bold text-slate-800">
-                COD Remittance
-              </h1>
-              <p className="text-[11px] text-slate-500">
-                Manage COD payouts and transfer status.
-              </p>
-            </div>
-
-            <span className="rounded-md bg-sky-50 px-2 py-1 text-[10px] font-bold text-[#008dd2]">
-              {stats.total}
-            </span>
-          </div>
-        </div>
-
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => fetchRemittances(true)}
-            disabled={loading || bulkProcessing}
-            className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-[11px] font-semibold text-slate-600 hover:border-sky-200 hover:text-[#008dd2] disabled:opacity-50"
-          >
-            <HiOutlineRefresh
-              size={14}
-              className={loading ? "animate-spin" : ""}
-            />
-            Refresh
-          </button>
-
-          <button
-            type="button"
-            onClick={exportCSV}
-            disabled={!filteredRemittances.length}
-            className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[#008dd2] px-3 text-[11px] font-semibold text-white hover:bg-sky-700 disabled:opacity-50"
-          >
-            <HiOutlineDownload size={14} />
-            Export CSV
-          </button>
-        </div>
-      </div>
-
-      {/* Compact summary */}
-      <div className="mb-4 grid grid-cols-2 gap-2.5 xl:grid-cols-4">
-        <SummaryCard
-          title="Total Remittances"
-          value={stats.total}
-          subtitle="All records"
-          icon={<HiOutlineCurrencyRupee size={17} />}
-          color="blue"
-        />
-
-        <SummaryCard
-          title="Pending"
-          value={stats.pending}
-          subtitle="Awaiting payout"
-          icon={<HiOutlineClock size={17} />}
-          color="amber"
-        />
-
-        <SummaryCard
-          title="Successful"
-          value={stats.successful}
-          subtitle="Completed"
-          icon={<HiOutlineCheckCircle size={17} />}
-          color="green"
-        />
-
-        <SummaryCard
-          title="Pending Amount"
-          value={formatAmount(stats.pendingAmount)}
-          subtitle="Awaiting transfer"
-          icon={<HiOutlineCurrencyRupee size={17} />}
-          color="violet"
-        />
-      </div>
-
-      {/* Compact bulk selection panel */}
-      <div className="mb-4 overflow-hidden rounded-xl border border-slate-200 bg-white">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-3.5 py-3">
-          <div>
-            <h2 className="text-xs font-bold text-slate-800">
-              Bulk Remittance Update
-            </h2>
-            <p className="mt-0.5 text-[10px] text-slate-500">
-              Select pending orders and update them together.
-            </p>
-          </div>
-
-          <button
-            type="button"
-            onClick={toggleSelectAll}
-            disabled={!visiblePending.length || bulkProcessing}
-            className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-[10px] font-bold text-[#008dd2] hover:bg-sky-100 disabled:opacity-40"
-          >
-            {allVisibleSelected
-              ? "Deselect Visible"
-              : "Select All Pending"}
-          </button>
-        </div>
-
-        <div className="grid grid-cols-2 gap-2.5 p-3.5 sm:grid-cols-3">
-          <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5">
-            <p className="text-[10px] font-medium text-slate-500">
-              Selected Orders
-            </p>
-            <p className="mt-1 text-lg font-bold text-slate-800">
-              {selectedRemittances.length}
-            </p>
-          </div>
-
-          <div className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-2.5">
-            <p className="text-[10px] font-medium text-sky-700">
-              Selected COD Amount
-            </p>
-            <p className="mt-1 break-words text-base font-bold text-[#008dd2]">
-              {formatAmount(selectedAmount)}
-            </p>
-          </div>
-
-          <div className="col-span-2 rounded-lg border border-slate-200 bg-white px-3 py-2.5 sm:col-span-1">
-            <p className="text-[10px] font-medium text-slate-500">
-              Customer
-            </p>
-            <p className="mt-1 truncate text-xs font-semibold text-slate-700">
-              {customerFilter === "ALL"
-                ? "All Customers"
-                : customers.find((c) => c.id === customerFilter)?.name ||
-                  `Customer ${customerFilter}`}
-            </p>
-          </div>
-        </div>
-
-        {selectedRemittances.length > 0 && (
-          <div className="mx-3.5 mb-3 rounded-lg border border-sky-100 bg-sky-50/50 p-2.5">
-            <div className="mb-2 flex items-center justify-between">
-              <p className="text-[10px] font-bold text-slate-600">
-                Selected Orders
-              </p>
-              <button
-                type="button"
-                onClick={clearSelection}
-                disabled={bulkProcessing}
-                className="text-[10px] font-semibold text-rose-600 hover:text-rose-700 disabled:opacity-50"
-              >
-                Clear all
-              </button>
-            </div>
-
-            <div className="flex flex-wrap gap-1.5">
-              {selectedRemittances.map((item) => (
-                <span
-                  key={getId(item)}
-                  className="inline-flex items-center gap-2 rounded-md border border-sky-100 bg-white px-2 py-1.5"
-                >
-                  <span className="text-[10px] font-semibold text-slate-700">
-                    #{item.order_id}
-                  </span>
-                  <span className="text-[10px] font-bold text-[#008dd2]">
-                    {formatAmount(item.cod_amount)}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => toggleSelection(getId(item))}
-                    disabled={bulkProcessing}
-                    aria-label={`Remove order ${item.order_id}`}
-                    className="text-slate-400 hover:text-rose-600 disabled:opacity-50"
-                  >
-                    <HiOutlineX size={12} />
-                  </button>
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <div className="border-t border-slate-100 p-3.5">
-          <div className="mb-1.5 flex items-center justify-between gap-2">
-            <label
-              htmlFor="bulk-description"
-              className="text-[11px] font-semibold text-slate-700"
-            >
-              Common Description
-            </label>
-            <span className="text-[10px] text-slate-400">
-              {bulkDescription.length}/1000
-            </span>
-          </div>
-
+    if (editing) {
+      return (
+        <div className="min-w-[220px]">
           <textarea
-            id="bulk-description"
-            value={bulkDescription}
+            value={drafts[id] ?? ""}
             onChange={(event) =>
-              setBulkDescription(event.target.value)
+              setDrafts((previous) => ({
+                ...previous,
+                [id]: event.target.value,
+              }))
             }
             maxLength={1000}
             rows={2}
-            disabled={bulkProcessing}
-            placeholder="Enter common description or UTR reference..."
-            className="w-full resize-y rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs text-slate-700 outline-none placeholder:text-slate-400 focus:border-[#008dd2] focus:ring-1 focus:ring-sky-100 disabled:opacity-60"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-[#008dd2] focus:ring-2 focus:ring-sky-100"
           />
 
-          <div className="mt-2.5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-[10px] leading-relaxed text-slate-400">
-              The description will replace the existing description for each
-              selected record.
-            </p>
+          <div className="mt-2 flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setDrafts((previous) => ({
+                  ...previous,
+                  [id]: item.description || "",
+                }));
+                setEditingId(null);
+              }}
+              className="rounded-lg border px-3 py-1.5 text-xs text-slate-600"
+            >
+              Cancel
+            </button>
 
             <button
               type="button"
-              onClick={markSelectedSuccessful}
-              disabled={
-                !selectedRemittances.length ||
-                bulkProcessing ||
-                loading
-              }
-              className="inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg bg-[#008dd2] px-3.5 text-[11px] font-bold text-white hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
+              disabled={saving}
+              onClick={() => saveDescription(item)}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-[#008dd2] px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
             >
-              {bulkProcessing ? (
-                <>
-                  <HiOutlineRefresh className="animate-spin" size={14} />
-                  Updating...
-                </>
-              ) : (
-                <>
-                  <HiOutlineCheckCircle size={15} />
-                  Mark Selected Successful
-                </>
-              )}
+              <HiOutlineSave size={14} />
+              {saving ? "Saving..." : "Save"}
             </button>
           </div>
         </div>
-      </div>
+      );
+    }
 
-      {/* Records and filters */}
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-        <div className="border-b border-slate-100 px-3.5 py-3 sm:px-4">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+    return (
+      <div className="min-w-[220px]">
+        <p className="whitespace-pre-wrap break-words text-sm leading-5 text-slate-600">
+          {item.description || (
+            <span className="italic text-slate-400">
+              No description
+            </span>
+          )}
+        </p>
+
+        <button
+          type="button"
+          onClick={() => {
+            setDrafts((previous) => ({
+              ...previous,
+              [id]: item.description || "",
+            }));
+            setEditingId(id);
+          }}
+          className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-[#008dd2] hover:text-sky-700"
+        >
+          <HiOutlinePencil size={13} />
+          Edit description
+        </button>
+      </div>
+    );
+  };
+
+  const tabs = [
+    { label: "All Records", value: "ALL", count: stats.total },
+    { label: "Pending", value: "PENDING", count: stats.pending },
+    {
+      label: "Successful",
+      value: "SUCCESSFUL",
+      count: stats.successful,
+    },
+  ];
+
+  return (
+    <div className="min-h-full bg-slate-50 p-4 sm:p-5 lg:p-6">
+      <div className="mx-auto max-w-[1600px]">
+
+        {/* Header */}
+        <header className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-center">
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-100 text-[#008dd2]">
+              <HiOutlineCurrencyRupee size={26} />
+            </div>
+
             <div>
-              <h2 className="text-xs font-bold text-slate-800">
-                Remittance Records
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-2xl font-bold tracking-tight text-slate-800">
+                  COD Remittance
+                </h1>
+
+                <span className="rounded-full bg-sky-100 px-3 py-1 text-xs font-bold text-[#008dd2]">
+                  {stats.total} records
+                </span>
+              </div>
+
+              <p className="mt-1 text-sm text-slate-500">
+                Track COD payouts, manage descriptions and confirm transfers.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => fetchRemittances(true)}
+              disabled={loading || bulkProcessing}
+              className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm hover:border-sky-200 hover:text-[#008dd2] disabled:opacity-50"
+            >
+              <HiOutlineRefresh
+                size={17}
+                className={loading ? "animate-spin" : ""}
+              />
+              Refresh
+            </button>
+
+            <button
+              type="button"
+              onClick={exportCSV}
+              disabled={!filtered.length}
+              className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#008dd2] px-4 text-sm font-semibold text-white shadow-sm hover:bg-sky-700 disabled:opacity-50"
+            >
+              <HiOutlineDownload size={17} />
+              Export CSV
+            </button>
+          </div>
+        </header>
+
+        {/* Summary cards */}
+        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <SummaryCard
+            title="Total Remittances"
+            value={stats.total}
+            note="All COD records"
+            icon={<HiOutlineCurrencyRupee size={22} />}
+            tone="blue"
+          />
+
+          <SummaryCard
+            title="Pending Remittances"
+            value={stats.pending}
+            note="Awaiting payout"
+            icon={<HiOutlineClock size={22} />}
+            tone="amber"
+          />
+
+          <SummaryCard
+            title="Successful Remittances"
+            value={stats.successful}
+            note="Transfers completed"
+            icon={<HiOutlineCheckCircle size={22} />}
+            tone="green"
+          />
+
+          <SummaryCard
+            title="Pending COD Amount"
+            value={money(stats.pendingAmount)}
+            note="Amount awaiting transfer"
+            icon={<HiOutlineCurrencyRupee size={22} />}
+            tone="violet"
+          />
+        </div>
+
+        {/* Bulk update panel */}
+        <section className="mb-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div className="flex flex-col justify-between gap-3 border-b border-slate-100 bg-gradient-to-r from-sky-50 to-white px-5 py-4 sm:flex-row sm:items-center">
+            <div>
+              <h2 className="text-base font-bold text-slate-800">
+                Bulk Remittance Update
               </h2>
-              <p className="mt-0.5 text-[10px] text-slate-500">
-                Search and manage individual remittances.
+
+              <p className="mt-1 text-sm text-slate-500">
+                Select pending records and mark them successful in one step.
               </p>
             </div>
 
-            <div className="flex flex-wrap gap-1.5">
+            <button
+              type="button"
+              onClick={toggleAll}
+              disabled={!visiblePending.length || bulkProcessing}
+              className="inline-flex h-10 items-center justify-center rounded-xl border border-sky-200 bg-white px-4 text-sm font-semibold text-[#008dd2] hover:bg-sky-50 disabled:opacity-40"
+            >
+              {allSelected
+                ? "Deselect Visible"
+                : "Select All Visible Pending"}
+            </button>
+          </div>
+
+          <div className="grid gap-4 p-5 sm:grid-cols-3">
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <p className="text-sm font-medium text-slate-500">
+                Selected Orders
+              </p>
+
+              <p className="mt-2 text-2xl font-bold text-slate-800">
+                {selectedRows.length}
+              </p>
+
+              <p className="mt-1 text-xs text-slate-400">
+                Pending records selected
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-sky-200 bg-sky-50 p-4">
+              <p className="text-sm font-medium text-sky-700">
+                Selected COD Amount
+              </p>
+
+              <p className="mt-2 break-words text-2xl font-bold text-[#008dd2]">
+                {money(selectedAmount)}
+              </p>
+
+              <p className="mt-1 text-xs text-sky-700/70">
+                Combined selected order amount
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-slate-200 bg-white p-4">
+              <p className="flex items-center gap-2 text-sm font-medium text-slate-500">
+                <HiOutlineUsers size={17} />
+                Customer filter
+              </p>
+
+              <p className="mt-2 truncate text-base font-bold text-slate-800">
+                {customerFilter === "ALL"
+                  ? "All Customers"
+                  : customers.find(
+                      (customer) => customer.id === customerFilter
+                    )?.name || `Customer ${customerFilter}`}
+              </p>
+
+              <p className="mt-1 text-xs text-slate-400">
+                Applied to record list
+              </p>
+            </div>
+          </div>
+
+          {selectedRows.length > 0 && (
+            <div className="mx-5 mb-4 rounded-xl border border-sky-100 bg-sky-50/60 p-4">
+              <div className="mb-3 flex items-center justify-between">
+                <p className="text-sm font-semibold text-slate-700">
+                  Selected orders
+                </p>
+
+                <button
+                  type="button"
+                  onClick={clearSelection}
+                  disabled={bulkProcessing}
+                  className="text-sm font-semibold text-rose-600"
+                >
+                  Clear selection
+                </button>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                {selectedRows.map((row) => (
+                  <span
+                    key={rowId(row)}
+                    className="inline-flex items-center gap-2 rounded-lg border border-sky-100 bg-white px-3 py-2"
+                  >
+                    <span className="text-sm font-semibold text-slate-700">
+                      #{row.order_id}
+                    </span>
+
+                    <span className="text-sm font-bold text-[#008dd2]">
+                      {money(row.cod_amount)}
+                    </span>
+
+                    <button
+                      type="button"
+                      onClick={() => toggleOne(rowId(row))}
+                      aria-label={`Remove order ${row.order_id}`}
+                      className="text-slate-400 hover:text-rose-600"
+                    >
+                      <HiOutlineX size={15} />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="border-t border-slate-100 p-5">
+            <div className="mb-2 flex items-center justify-between">
+              <label
+                htmlFor="bulk-description"
+                className="text-sm font-semibold text-slate-700"
+              >
+                Common description / UTR reference
+              </label>
+
+              <span className="text-xs text-slate-400">
+                {bulkDescription.length}/1000
+              </span>
+            </div>
+
+            <textarea
+              id="bulk-description"
+              value={bulkDescription}
+              onChange={(event) =>
+                setBulkDescription(event.target.value)
+              }
+              maxLength={1000}
+              rows={3}
+              disabled={bulkProcessing}
+              placeholder="Enter the description to apply to all selected remittances..."
+              className="w-full resize-y rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none placeholder:text-slate-400 focus:border-[#008dd2] focus:ring-2 focus:ring-sky-100 disabled:opacity-60"
+            />
+
+            <div className="mt-3 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+              <p className="max-w-2xl text-xs leading-5 text-slate-500">
+                This description replaces the existing description on every
+                selected record. Confirm the selected orders and amount before
+                submitting.
+              </p>
+
+              <button
+                type="button"
+                onClick={bulkSuccessful}
+                disabled={
+                  !selectedRows.length ||
+                  bulkProcessing ||
+                  loading
+                }
+                className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#008dd2] px-5 text-sm font-bold text-white shadow-sm hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
+              >
+                {bulkProcessing ? (
+                  <HiOutlineRefresh
+                    className="animate-spin"
+                    size={17}
+                  />
+                ) : (
+                  <HiOutlineCheckCircle size={18} />
+                )}
+
+                {bulkProcessing
+                  ? "Updating Remittances..."
+                  : "Mark Selected Successful"}
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* Records section */}
+        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div className="flex flex-col justify-between gap-4 border-b border-slate-100 px-5 py-4 lg:flex-row lg:items-center">
+            <div>
+              <h2 className="text-base font-bold text-slate-800">
+                Remittance Records
+              </h2>
+
+              <p className="mt-1 text-sm text-slate-500">
+                Search, filter and manage individual COD remittances.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
               {tabs.map((tab) => {
                 const active = statusFilter === tab.value;
 
@@ -815,15 +932,16 @@ const CODRemittance = () => {
                     key={tab.value}
                     type="button"
                     onClick={() => setStatusFilter(tab.value)}
-                    className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-[10px] font-bold ${
+                    className={`inline-flex h-10 items-center gap-2 rounded-xl px-4 text-sm font-semibold ${
                       active
-                        ? "bg-[#008dd2] text-white"
+                        ? "bg-[#008dd2] text-white shadow-sm"
                         : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                     }`}
                   >
                     {tab.label}
+
                     <span
-                      className={`rounded px-1.5 py-0.5 ${
+                      className={`rounded-full px-2 py-0.5 text-xs ${
                         active
                           ? "bg-white/20 text-white"
                           : "bg-white text-slate-600"
@@ -836,468 +954,369 @@ const CODRemittance = () => {
               })}
             </div>
           </div>
-        </div>
 
-        {/* Search and customer filter */}
-        <div className="border-b border-slate-100 bg-slate-50/60 p-3">
-          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-[minmax(200px,1fr)_240px_auto]">
-            <div className="relative">
-              <HiOutlineSearch
-                size={15}
-                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-              />
-              <input
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search order, buyer, AWB or customer..."
-                className="h-9 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-[11px] outline-none focus:border-[#008dd2]"
-              />
+          {/* Filters */}
+          <div className="border-b border-slate-100 bg-slate-50/70 p-4">
+            <div className="grid gap-3 md:grid-cols-[minmax(220px,1fr)_280px_auto]">
+              <div className="relative">
+                <HiOutlineSearch
+                  size={18}
+                  className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+                />
+
+                <input
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Search order ID, buyer, AWB or customer..."
+                  className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-4 text-sm outline-none focus:border-[#008dd2] focus:ring-2 focus:ring-sky-100"
+                />
+              </div>
+
+              <select
+                value={customerFilter}
+                onChange={(event) =>
+                  setCustomerFilter(event.target.value)
+                }
+                className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-[#008dd2]"
+              >
+                <option value="ALL">All Customers</option>
+
+                {customers.map((customer) => (
+                  <option key={customer.id} value={customer.id}>
+                    {customer.name} (ID: {customer.id})
+                  </option>
+                ))}
+              </select>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setSearch("");
+                  setStatusFilter("ALL");
+                  setCustomerFilter("ALL");
+                }}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 hover:bg-slate-100"
+              >
+                <HiOutlineX size={16} />
+                Reset Filters
+              </button>
             </div>
 
-            <select
-              value={customerFilter}
-              onChange={(event) =>
-                setCustomerFilter(event.target.value)
-              }
-              className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-[11px] text-slate-700 outline-none focus:border-[#008dd2]"
-            >
-              <option value="ALL">All Customers</option>
-              {customers.map((customer) => (
-                <option key={customer.id} value={customer.id}>
-                  {customer.name} (ID: {customer.id})
-                </option>
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-sm text-slate-500">
+              <span>
+                Showing{" "}
+                <strong className="text-slate-800">
+                  {filtered.length}
+                </strong>{" "}
+                of {remittances.length} records
+              </span>
+
+              <span>
+                {visiblePending.length} pending records in current view
+              </span>
+            </div>
+          </div>
+
+          {/* Loading / errors / empty state */}
+          {error && !remittances.length ? (
+            <div className="p-12 text-center">
+              <p className="text-sm font-semibold text-rose-600">
+                {error}
+              </p>
+
+              <button
+                type="button"
+                onClick={() => fetchRemittances()}
+                className="mt-4 rounded-xl bg-[#008dd2] px-4 py-2.5 text-sm font-semibold text-white"
+              >
+                Try Again
+              </button>
+            </div>
+          ) : loading && !remittances.length ? (
+            <div className="space-y-3 p-5">
+              {[1, 2, 3, 4].map((number) => (
+                <div
+                  key={number}
+                  className="h-14 animate-pulse rounded-xl bg-slate-100"
+                />
               ))}
-            </select>
+            </div>
+          ) : !filtered.length ? (
+            <div className="px-5 py-16 text-center">
+              <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+                <HiOutlineSearch size={24} />
+              </span>
 
-            <button
-              type="button"
-              onClick={resetFilters}
-              className="inline-flex h-9 items-center justify-center gap-1 rounded-lg border border-slate-200 bg-white px-3 text-[10px] font-semibold text-slate-600 hover:bg-slate-50"
-            >
-              <HiOutlineX size={13} />
-              Reset
-            </button>
-          </div>
+              <p className="mt-3 text-base font-semibold text-slate-700">
+                No matching records
+              </p>
 
-          <div className="mt-2 flex flex-wrap items-center justify-between gap-1 text-[10px] text-slate-400">
-            <span>
-              Showing{" "}
-              <strong className="text-slate-700">
-                {filteredRemittances.length}
-              </strong>{" "}
-              of {remittances.length} records
-            </span>
-            <span>
-              {visiblePending.length} visible pending record(s)
-            </span>
-          </div>
-        </div>
+              <p className="mt-1 text-sm text-slate-500">
+                Try changing your search or filters.
+              </p>
+            </div>
+          ) : (
+            <>
+              {/* Mobile cards */}
+              <div className="space-y-4 p-4 sm:hidden">
+                {filtered.map((row) => {
+                  const id = rowId(row);
+                  const pending =
+                    statusOf(row.status) === "PENDING";
+                  const selected = selectedIds.includes(id);
 
-        {error && !remittances.length ? (
-          <div className="p-8 text-center">
-            <p className="text-xs font-semibold text-rose-600">{error}</p>
-            <button
-              type="button"
-              onClick={() => fetchRemittances()}
-              className="mt-3 rounded-lg bg-[#008dd2] px-3 py-2 text-xs font-bold text-white"
-            >
-              Try Again
-            </button>
-          </div>
-        ) : loading && !remittances.length ? (
-          <div className="space-y-2 p-4">
-            {[1, 2, 3, 4].map((item) => (
-              <div
-                key={item}
-                className="h-12 animate-pulse rounded-lg bg-slate-100"
-              />
-            ))}
-          </div>
-        ) : filteredRemittances.length === 0 ? (
-          <div className="px-4 py-12 text-center">
-            <HiOutlineSearch
-              size={23}
-              className="mx-auto text-slate-300"
-            />
-            <p className="mt-2 text-xs font-bold text-slate-700">
-              No matching records
-            </p>
-            <p className="mt-1 text-[10px] text-slate-400">
-              Try changing your search or filters.
-            </p>
-          </div>
-        ) : (
-          <>
-            {/* Mobile cards */}
-            <div className="space-y-2.5 p-3 sm:hidden">
-              {filteredRemittances.map((item) => {
-                const id = getId(item);
-                const pending = getStatus(item.status) === "PENDING";
-                const selected = selectedIds.includes(id);
-                const editing = String(editingDescriptionId) === id;
-                const saving = String(savingDescriptionId) === id;
-                const draft = descriptionDrafts[id] ?? "";
+                  return (
+                    <article
+                      key={id}
+                      className={`rounded-2xl border p-4 ${
+                        selected
+                          ? "border-sky-300 bg-sky-50/40"
+                          : "border-slate-200 bg-white"
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        {pending && (
+                          <input
+                            type="checkbox"
+                            checked={selected}
+                            onChange={() => toggleOne(id)}
+                            className="mt-1 h-4 w-4 accent-[#008dd2]"
+                          />
+                        )}
 
-                return (
-                  <div
-                    key={id}
-                    className={`rounded-xl border p-3 ${
-                      selected
-                        ? "border-sky-300 bg-sky-50/40"
-                        : "border-slate-200 bg-white"
-                    }`}
-                  >
-                    <div className="flex items-start gap-2">
-                      {pending && (
-                        <input
-                          type="checkbox"
-                          checked={selected}
-                          onChange={() => toggleSelection(id)}
-                          disabled={bulkProcessing}
-                          className="mt-1 h-3.5 w-3.5 accent-[#008dd2]"
-                          aria-label={`Select order ${item.order_id}`}
-                        />
-                      )}
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <p className="text-base font-bold text-slate-800">
+                                Order #{row.order_id || "—"}
+                              </p>
 
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="min-w-0">
-                            <p className="truncate text-xs font-bold text-slate-800">
-                              #{item.order_id || "-"}
-                            </p>
-                            <p className="mt-1 truncate text-[10px] text-slate-500">
-                              {item.customer_name || "Customer"}
-                            </p>
-                          </div>
-                          <div className="shrink-0 text-right">
-                            <p className="text-xs font-bold text-slate-800">
-                              {formatAmount(item.cod_amount)}
-                            </p>
-                            <div className="mt-1">
-                              <StatusBadge status={item.status} />
+                              <p className="mt-1 text-sm text-slate-500">
+                                {row.customer_name || "Customer"} · ID{" "}
+                                {row.user_id ?? "—"}
+                              </p>
+                            </div>
+
+                            <div className="text-right">
+                              <p className="text-base font-bold text-slate-800">
+                                {money(row.cod_amount)}
+                              </p>
+
+                              <div className="mt-2">
+                                <StatusBadge status={row.status} />
+                              </div>
                             </div>
                           </div>
-                        </div>
 
-                        <div className="mt-2 grid grid-cols-2 gap-2 border-t border-slate-100 pt-2 text-[10px]">
-                          <p className="truncate text-slate-500">
-                            Buyer:{" "}
-                            <span className="font-semibold text-slate-700">
-                              {item.buyer || "-"}
-                            </span>
-                          </p>
-                          <p className="truncate text-slate-500">
-                            ID: {item.user_id ?? "-"}
-                          </p>
-                          <p className="break-all text-slate-500">
-                            AWB: {item.awb || "-"}
-                          </p>
-                          <p className="text-slate-500">
-                            {formatDate(item.created_at)}
-                          </p>
-                        </div>
+                          <div className="mt-4 grid grid-cols-2 gap-3 border-t border-slate-100 pt-3 text-sm">
+                            <div>
+                              <p className="text-xs text-slate-400">
+                                Buyer
+                              </p>
+                              <p className="mt-1 break-words font-medium text-slate-700">
+                                {row.buyer || "—"}
+                              </p>
+                            </div>
 
-                        <div className="mt-2 rounded-lg bg-slate-50 p-2">
-                          <div className="mb-1 flex items-center justify-between gap-2">
-                            <span className="text-[10px] font-semibold text-slate-500">
-                              Description
-                            </span>
-                            {!editing && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setDescriptionDrafts((previous) => ({
-                                    ...previous,
-                                    [id]: item.description || "",
-                                  }));
-                                  setEditingDescriptionId(id);
-                                }}
-                                className="inline-flex items-center gap-1 text-[10px] font-semibold text-[#008dd2]"
-                              >
-                                <HiOutlinePencil size={11} />
-                                Edit
-                              </button>
-                            )}
+                            <div>
+                              <p className="text-xs text-slate-400">
+                                AWB
+                              </p>
+                              <p className="mt-1 break-all font-medium text-slate-700">
+                                {row.awb || "—"}
+                              </p>
+                            </div>
+
+                            <div>
+                              <p className="text-xs text-slate-400">
+                                Created On
+                              </p>
+                              <p className="mt-1 text-slate-700">
+                                {dateText(row.created_at)}
+                              </p>
+                            </div>
+
+                            <div>
+                              <p className="text-xs text-slate-400">
+                                Transferred On
+                              </p>
+                              <p className="mt-1 text-slate-700">
+                                {dateText(row.transferred_on)}
+                              </p>
+                            </div>
                           </div>
 
-                          {editing ? (
-                            <>
-                              <textarea
-                                value={draft}
-                                onChange={(event) =>
-                                  updateDescriptionDraft(
-                                    id,
-                                    event.target.value
-                                  )
-                                }
-                                maxLength={1000}
-                                rows={2}
-                                className="w-full rounded-md border border-slate-200 bg-white p-2 text-[11px] outline-none focus:border-[#008dd2]"
-                              />
-                              <div className="mt-1.5 flex justify-end gap-1.5">
-                                <button
-                                  type="button"
-                                  disabled={saving}
-                                  onClick={() => {
-                                    setDescriptionDrafts((previous) => ({
-                                      ...previous,
-                                      [id]: item.description || "",
-                                    }));
-                                    setEditingDescriptionId(null);
-                                  }}
-                                  className="rounded-md border border-slate-200 px-2.5 py-1.5 text-[10px] text-slate-600"
-                                >
-                                  Cancel
-                                </button>
-                                <button
-                                  type="button"
-                                  disabled={saving}
-                                  onClick={() => saveDescription(item)}
-                                  className="inline-flex items-center gap-1 rounded-md bg-[#008dd2] px-2.5 py-1.5 text-[10px] font-semibold text-white disabled:opacity-50"
-                                >
-                                  <HiOutlineSave size={11} />
-                                  {saving ? "Saving..." : "Save"}
-                                </button>
-                              </div>
-                            </>
-                          ) : (
-                            <p className="whitespace-pre-wrap break-words text-[10px] leading-relaxed text-slate-600">
-                              {item.description || "No description added"}
-                            </p>
-                          )}
-                        </div>
-
-                        {pending ? (
-                          <button
-                            type="button"
-                            onClick={() => markSuccessful(item)}
-                            disabled={
-                              processingId !== null ||
-                              savingDescriptionId !== null ||
-                              bulkProcessing
-                            }
-                            className="mt-2 inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-3 text-[10px] font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
-                          >
-                            <HiOutlineCheckCircle size={13} />
-                            {String(processingId) === id
-                              ? "Updating..."
-                              : "Mark Successful"}
-                          </button>
-                        ) : (
-                          <p className="mt-2 text-[10px] font-semibold text-emerald-700">
-                            <HiOutlineCheckCircle className="mr-1 inline" />
-                            Transfer Completed
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Desktop table */}
-            <div className="hidden overflow-x-auto sm:block">
-              <table className="w-full min-w-[1150px] border-collapse text-left">
-                <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50 text-[10px] font-bold uppercase tracking-wide text-slate-500">
-                    <th className="w-9 px-3 py-2.5">
-                      <input
-                        type="checkbox"
-                        checked={allVisibleSelected}
-                        onChange={toggleSelectAll}
-                        disabled={
-                          !visiblePending.length || bulkProcessing
-                        }
-                        aria-label="Select all visible pending records"
-                        className="h-3.5 w-3.5 accent-[#008dd2]"
-                      />
-                    </th>
-                    <th className="px-3 py-2.5">Order / Customer</th>
-                    <th className="px-3 py-2.5">Buyer</th>
-                    <th className="px-3 py-2.5">AWB</th>
-                    <th className="px-3 py-2.5">COD Amount</th>
-                    <th className="px-3 py-2.5">Created On</th>
-                    <th className="px-3 py-2.5">Status</th>
-                    <th className="px-3 py-2.5">Transferred On</th>
-                    <th className="px-3 py-2.5">Description</th>
-                    <th className="px-3 py-2.5">Action</th>
-                  </tr>
-                </thead>
-
-                <tbody className="divide-y divide-slate-100 text-[11px]">
-                  {filteredRemittances.map((item) => {
-                    const id = getId(item);
-                    const pending = getStatus(item.status) === "PENDING";
-                    const selected = selectedIds.includes(id);
-                    const editing = String(editingDescriptionId) === id;
-                    const saving = String(savingDescriptionId) === id;
-                    const draft = descriptionDrafts[id] ?? "";
-
-                    return (
-                      <tr
-                        key={id}
-                        className={`align-top hover:bg-slate-50 ${
-                          selected ? "bg-sky-50/50" : ""
-                        }`}
-                      >
-                        <td className="px-3 py-3">
-                          {pending && (
-                            <input
-                              type="checkbox"
-                              checked={selected}
-                              onChange={() => toggleSelection(id)}
-                              disabled={bulkProcessing}
-                              aria-label={`Select order ${item.order_id}`}
-                              className="h-3.5 w-3.5 accent-[#008dd2]"
-                            />
-                          )}
-                        </td>
-
-                        <td className="px-3 py-3">
-                          <p className="whitespace-nowrap font-bold text-slate-800">
-                            #{item.order_id || "-"}
-                          </p>
-                          <p className="mt-1 max-w-[130px] truncate text-[10px] text-slate-500">
-                            {item.customer_name || "Customer"}
-                          </p>
-                          <p className="mt-0.5 text-[10px] text-slate-400">
-                            ID: {item.user_id ?? "-"}
-                          </p>
-                        </td>
-
-                        <td className="px-3 py-3">
-                          <p className="max-w-[140px] truncate font-medium text-slate-700">
-                            {item.buyer || "-"}
-                          </p>
-                        </td>
-
-                        <td className="px-3 py-3 font-mono text-[10px] text-slate-600">
-                          {item.awb || "-"}
-                        </td>
-
-                        <td className="whitespace-nowrap px-3 py-3 font-bold text-slate-800">
-                          {formatAmount(item.cod_amount)}
-                        </td>
-
-                        <td className="whitespace-nowrap px-3 py-3 text-[10px] text-slate-500">
-                          {formatDate(item.created_at)}
-                        </td>
-
-                        <td className="px-3 py-3">
-                          <StatusBadge status={item.status} />
-                        </td>
-
-                        <td className="whitespace-nowrap px-3 py-3 text-[10px] text-slate-500">
-                          {formatDate(item.transferred_on)}
-                        </td>
-
-                        <td className="w-[250px] px-3 py-3">
-                          <div className="w-[220px]">
-                            {editing ? (
-                              <>
-                                <textarea
-                                  value={draft}
-                                  onChange={(event) =>
-                                    updateDescriptionDraft(
-                                      id,
-                                      event.target.value
-                                    )
-                                  }
-                                  maxLength={1000}
-                                  rows={2}
-                                  className="w-full rounded-md border border-slate-200 p-2 text-[10px] outline-none focus:border-[#008dd2]"
-                                />
-                                <div className="mt-1 flex justify-end gap-1.5">
-                                  <button
-                                    type="button"
-                                    disabled={saving}
-                                    onClick={() => {
-                                      setDescriptionDrafts((previous) => ({
-                                        ...previous,
-                                        [id]: item.description || "",
-                                      }));
-                                      setEditingDescriptionId(null);
-                                    }}
-                                    className="rounded-md border border-slate-200 px-2 py-1 text-[10px] text-slate-600"
-                                  >
-                                    Cancel
-                                  </button>
-                                  <button
-                                    type="button"
-                                    disabled={saving}
-                                    onClick={() => saveDescription(item)}
-                                    className="inline-flex items-center gap-1 rounded-md bg-[#008dd2] px-2 py-1 text-[10px] font-semibold text-white disabled:opacity-50"
-                                  >
-                                    <HiOutlineSave size={10} />
-                                    {saving ? "Saving..." : "Save"}
-                                  </button>
-                                </div>
-                              </>
-                            ) : (
-                              <>
-                                <p className="whitespace-pre-wrap break-words text-[10px] leading-relaxed text-slate-600">
-                                  {item.description || "No description"}
-                                </p>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setDescriptionDrafts((previous) => ({
-                                      ...previous,
-                                      [id]: item.description || "",
-                                    }));
-                                    setEditingDescriptionId(id);
-                                  }}
-                                  className="mt-1.5 inline-flex items-center gap-1 text-[10px] font-semibold text-[#008dd2] hover:text-sky-700"
-                                >
-                                  <HiOutlinePencil size={10} />
-                                  Edit
-                                </button>
-                              </>
-                            )}
+                          <div className="mt-4 rounded-xl bg-slate-50 p-3">
+                            <Description item={row} />
                           </div>
-                        </td>
 
-                        <td className="px-3 py-3">
                           {pending ? (
                             <button
                               type="button"
-                              onClick={() => markSuccessful(item)}
+                              onClick={() => markSuccessful(row)}
                               disabled={
                                 processingId !== null ||
-                                savingDescriptionId !== null ||
+                                savingId !== null ||
                                 bulkProcessing
                               }
-                              className="inline-flex whitespace-nowrap items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-2 text-[10px] font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+                              className="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
                             >
-                              <HiOutlineCheckCircle size={12} />
+                              <HiOutlineCheckCircle size={17} />
                               {String(processingId) === id
                                 ? "Updating..."
                                 : "Mark Successful"}
                             </button>
                           ) : (
-                            <span className="inline-flex items-center gap-1 whitespace-nowrap text-[10px] font-semibold text-emerald-700">
-                              <HiOutlineCheckCircle size={12} />
-                              Completed
-                            </span>
+                            <p className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-emerald-700">
+                              <HiOutlineCheckCircle size={17} />
+                              Transfer completed
+                            </p>
                           )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </>
-        )}
+                        </div>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 bg-slate-50/60 px-3.5 py-2.5 text-[10px] text-slate-400">
-          <span>ParcelDrop · COD Remittance</span>
-          <span>{filteredRemittances.length} records</span>
-        </div>
+              {/* Desktop table */}
+              <div className="hidden overflow-x-auto sm:block">
+                <table className="w-full min-w-[1300px] border-collapse text-left">
+                  <thead>
+                    <tr className="border-b border-slate-200 bg-slate-50 text-xs font-bold uppercase tracking-wide text-slate-500">
+                      <th className="w-12 px-4 py-4">
+                        <input
+                          type="checkbox"
+                          checked={allSelected}
+                          onChange={toggleAll}
+                          disabled={
+                            !visiblePending.length || bulkProcessing
+                          }
+                          className="h-4 w-4 accent-[#008dd2]"
+                        />
+                      </th>
+
+                      <th className="px-4 py-4">Order / Customer</th>
+                      <th className="px-4 py-4">Buyer</th>
+                      <th className="px-4 py-4">AWB</th>
+                      <th className="px-4 py-4">COD Amount</th>
+                      <th className="px-4 py-4">Created On</th>
+                      <th className="px-4 py-4">Status</th>
+                      <th className="px-4 py-4">Transferred On</th>
+                      <th className="px-4 py-4">Description</th>
+                      <th className="px-4 py-4">Action</th>
+                    </tr>
+                  </thead>
+
+                  <tbody className="divide-y divide-slate-100 text-sm">
+                    {filtered.map((row) => {
+                      const id = rowId(row);
+                      const pending =
+                        statusOf(row.status) === "PENDING";
+                      const selected = selectedIds.includes(id);
+
+                      return (
+                        <tr
+                          key={id}
+                          className={`align-top transition hover:bg-slate-50 ${
+                            selected ? "bg-sky-50/50" : "bg-white"
+                          }`}
+                        >
+                          <td className="px-4 py-4">
+                            {pending && (
+                              <input
+                                type="checkbox"
+                                checked={selected}
+                                onChange={() => toggleOne(id)}
+                                disabled={bulkProcessing}
+                                className="h-4 w-4 accent-[#008dd2]"
+                              />
+                            )}
+                          </td>
+
+                          <td className="px-4 py-4">
+                            <p className="whitespace-nowrap font-bold text-slate-800">
+                              #{row.order_id || "—"}
+                            </p>
+
+                            <p className="mt-1 max-w-[160px] truncate text-xs text-slate-500">
+                              {row.customer_name || "Customer"}
+                            </p>
+
+                            <p className="mt-1 text-xs text-slate-400">
+                              ID: {row.user_id ?? "—"}
+                            </p>
+                          </td>
+
+                          <td className="px-4 py-4">
+                            <p className="max-w-[160px] break-words font-medium text-slate-700">
+                              {row.buyer || "—"}
+                            </p>
+                          </td>
+
+                          <td className="px-4 py-4 font-mono text-xs text-slate-600">
+                            {row.awb || "—"}
+                          </td>
+
+                          <td className="whitespace-nowrap px-4 py-4 font-bold text-slate-800">
+                            {money(row.cod_amount)}
+                          </td>
+
+                          <td className="whitespace-nowrap px-4 py-4 text-xs text-slate-500">
+                            {dateText(row.created_at)}
+                          </td>
+
+                          <td className="px-4 py-4">
+                            <StatusBadge status={row.status} />
+                          </td>
+
+                          <td className="whitespace-nowrap px-4 py-4 text-xs text-slate-500">
+                            {dateText(row.transferred_on)}
+                          </td>
+
+                          <td className="px-4 py-4">
+                            <Description item={row} />
+                          </td>
+
+                          <td className="px-4 py-4">
+                            {pending ? (
+                              <button
+                                type="button"
+                                onClick={() => markSuccessful(row)}
+                                disabled={
+                                  processingId !== null ||
+                                  savingId !== null ||
+                                  bulkProcessing
+                                }
+                                className="inline-flex whitespace-nowrap items-center gap-2 rounded-xl bg-emerald-600 px-3 py-2.5 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+                              >
+                                <HiOutlineCheckCircle size={15} />
+                                {String(processingId) === id
+                                  ? "Updating..."
+                                  : "Mark Successful"}
+                              </button>
+                            ) : (
+                              <span className="inline-flex items-center gap-2 whitespace-nowrap text-xs font-semibold text-emerald-700">
+                                <HiOutlineCheckCircle size={16} />
+                                Completed
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 bg-slate-50 px-5 py-3 text-xs text-slate-500">
+            <span>ParcelDrop · COD Remittance</span>
+            <span>{filtered.length} records shown</span>
+          </div>
+        </section>
       </div>
     </div>
   );
-};
-
-export default CODRemittance;
+}
