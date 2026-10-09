@@ -62,7 +62,7 @@ const getStoredUser = () => {
         return user;
       }
     } catch {
-      // Ignore invalid stored values.
+      // Ignore
     }
   }
 
@@ -632,9 +632,9 @@ const getLabelSize = (value) => {
   const sizes = {
     "4x6": {
       key: "4x6",
-      widthIn: 4.2,
-      heightIn: 6,
-      widthMm: 107.6,
+      widthIn: 4.0,
+      heightIn: 6.0,
+      widthMm: 101.6,
       heightMm: 152.4,
     },
     A4: {
@@ -770,8 +770,8 @@ const createBarcode = (awb, compact = false) => {
   JsBarcode(svg, String(awb || ""), {
     format: "CODE128",
     displayValue: false,
-    height: compact ? 40 : 75,
-    width: compact ? 2.5 : 3.5,
+    height: compact ? 36 : 65,
+    width: compact ? 2.2 : 3.0,
     margin: 0,
     background: "#ffffff",
     lineColor: "#111827",
@@ -779,270 +779,9 @@ const createBarcode = (awb, compact = false) => {
   return svg.outerHTML;
 };
 
-const build3x2LabelHtml = (order, settings, leftLogo, rightLogo, size) => {
-  const awb = getAWB(order);
-  const payment = getPaymentType(order);
-  const buyerAddress = getBuyerAddress(order);
-  const customerName = getCustomerName(order);
-  const showOrderId = settings.orderId === true;
-  const showWeight = settings.orderWeight === true;
-  const showBuyerMobile =
-    settings.buyerMobile !== false && Boolean(getMobile(order));
-
-  const summaryColumns =
-    2 + (showOrderId ? 1 : 0) + (showWeight ? 1 : 0);
-
-  const summaryClass =
-    summaryColumns === 4
-      ? "four-cols"
-      : summaryColumns === 3
-      ? "three-cols"
-      : "two-cols";
-
-  return `
-    <article
-      class="shipping-label label-3x2"
-      style="width:${size.widthIn}in;height:${size.heightIn}in"
-    >
-      <div class="label-border">
-        <!-- LOGOS -->
-        <header class="logos">
-          <div class="logo left">
-            <img src="${esc(leftLogo)}" alt="ParcelDrop" />
-          </div>
-          <div class="logo right">
-            <img src="${esc(rightLogo)}" alt="Carrier" />
-          </div>
-        </header>
-
-        <!-- TO -->
-        <section class="mini-to">
-          <div class="eyebrow">TO</div>
-          <b class="person">${esc(customerName)}</b>
-          <div class="address">${esc(buyerAddress || "—")}</div>
-          ${
-            showBuyerMobile
-              ? `<div class="phone">☎ ${esc(getMobile(order))}</div>`
-              : ""
-          }
-        </section>
-
-        <!-- AWB + BARCODE -->
-        <section class="mini-awb">
-          <div class="awb-text">AWB No: ${esc(awb)}</div>
-          <div class="barcode">${createBarcode(awb, true)}</div>
-        </section>
-
-        <!-- PAYMENT / ORDER ID / SERVICE / WEIGHT -->
-        <section class="mini-summary ${summaryClass}">
-          <div>
-            <span>PAYMENT</span>
-            <b>${payment}</b>
-          </div>
-          ${
-            showOrderId
-              ? `<div><span>ORDER ID</span><b>${esc(getOrderId(order))}</b></div>`
-              : ""
-          }
-          <div>
-            <span>SERVICE</span>
-            <b>${getServiceType(order)}</b>
-          </div>
-          ${
-            showWeight
-              ? `<div><span>WEIGHT</span><b>${getWeight(order).toFixed(2)} KG</b></div>`
-              : ""
-          }
-        </section>
-
-        <!-- SELLER INFO -->
-        <section class="mini-seller">
-          <div>
-            <span>SELLER</span>
-            <b>${esc(getSellerName(order))}</b>
-          </div>
-          <div>
-            <span>GSTIN</span>
-            <b>${esc(getSellerGstin(order) || "")}</b>
-          </div>
-          <div>
-            <span>INVOICE NO.</span>
-            <b></b>
-          </div>
-          <div>
-            <span>DATE</span>
-            <b>${esc(formatDate(getDate(order)))}</b>
-          </div>
-        </section>
-      </div>
-    </article>
-
-    <style>
-      .label-3x2 {
-        margin: 0;
-        padding: 1.2mm;
-        background: #fff;
-        color: #111827;
-        font-family: Arial, Helvetica, sans-serif;
-        font-size: 6.5pt;
-        line-height: 1.15;
-        overflow: hidden;
-        page-break-after: always;
-        break-after: page;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-        box-sizing: border-box;
-      }
-      .label-3x2 *,
-      .label-3x2 *::before,
-      .label-3x2 *::after {
-        box-sizing: border-box;
-      }
-      .label-3x2 .label-border {
-        width: 100%;
-        height: 100%;
-        border: 1px solid #111827;
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-        background: #fff;
-      }
-      .label-3x2 .logos {
-        height: 8.5mm;
-        flex: 0 0 8.5mm;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        border-bottom: 1px solid #111827;
-      }
-      .label-3x2 .logo {
-        width: 50%;
-        height: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 0.4mm 1mm;
-      }
-      .label-3x2 .logo.left { justify-content: center; }
-      .label-3x2 .logo.right { justify-content: center; border-left: 1px solid #111827; }
-      .label-3x2 .logo img {
-        display: block;
-        max-width: 90%;
-        max-height: 90%;
-        object-fit: contain;
-      }
-      .label-3x2 .mini-to {
-        flex: 0 0 auto;
-        padding: 0.8mm 1.5mm;
-        border-bottom: 1px solid #111827;
-        overflow: hidden;
-      }
-      .label-3x2 .eyebrow {
-        font-size: 5.5pt;
-        font-weight: 700;
-        text-decoration: underline;
-        margin-bottom: 0.7mm;
-      }
-      .label-3x2 .person {
-        display: block;
-        font-size: 7pt;
-        font-weight: 700;
-        margin-bottom: 0.6mm;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-      .label-3x2 .address {
-        font-size: 5.7pt;
-        line-height: 1.15;
-        overflow: hidden;
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-      }
-      .label-3x2 .phone {
-        font-size: 5.2pt;
-        margin-top: 0.3mm;
-        font-weight: 600;
-      }
-      .label-3x2 .mini-awb {
-        flex: 0 0 auto;
-        text-align: center;
-        padding: 0.6mm 1mm;
-        border-bottom: 1px solid #111827;
-      }
-      .label-3x2 .awb-text {
-        font-size: 6.5pt;
-        font-weight: 600;
-        margin-bottom: 0.7mm;
-      }
-      .label-3x2 .barcode svg {
-        display: block;
-        width: 75%;
-        max-width: 75%;
-        height: 6.5mm;
-        margin: 0 auto;
-      }
-      .label-3x2 .mini-summary {
-        display: grid;
-        flex: 0 0 auto;
-        border-bottom: 1px solid #111827;
-      }
-      .label-3x2 .mini-summary.two-cols { grid-template-columns: repeat(2, 1fr); }
-      .label-3x2 .mini-summary.three-cols { grid-template-columns: repeat(3, 1fr); }
-      .label-3x2 .mini-summary.four-cols { grid-template-columns: repeat(4, 1fr); }
-      .label-3x2 .mini-summary > div {
-        min-width: 0;
-        padding: 0.7mm;
-        overflow: hidden;
-      }
-      .label-3x2 .mini-summary > div + div { border-left: 1px solid #9ca3af; }
-      .label-3x2 .mini-summary span,
-      .label-3x2 .mini-seller span {
-        display: block;
-        font-size: 4.5pt;
-        font-weight: 700;
-        margin-bottom: 0.4mm;
-      }
-      .label-3x2 .mini-summary b {
-        display: block;
-        font-size: 6.2pt;
-        font-weight: 700;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-      .label-3x2 .mini-seller {
-        display: grid;
-        grid-template-columns: 1.2fr 1.2fr 1fr 0.9fr;
-        flex: 0 0 auto;
-      }
-      .label-3x2 .mini-seller > div {
-        min-width: 0;
-        padding: 0.6mm 0.7mm;
-        overflow: hidden;
-      }
-      .label-3x2 .mini-seller > div + div { border-left: 1px solid #9ca3af; }
-      .label-3x2 .mini-seller b {
-        display: block;
-        font-size: 5pt;
-        font-weight: 600;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-    </style>
-  `;
-};
-
 const buildLabelHtml = (order, settings, leftLogo, rightLogo, size) => {
   const compact = size.heightIn <= 2.5;
   const isA4 = size.key === "A4";
-  const is3x2 = size.key === "3x2";
-
-  if (is3x2) {
-    return build3x2LabelHtml(order, settings, leftLogo, rightLogo, size);
-  }
 
   const awb = getAWB(order);
   const payment = getPaymentType(order);
@@ -1096,16 +835,16 @@ const buildLabelHtml = (order, settings, leftLogo, rightLogo, size) => {
     : "";
 
   const returnAddress = getReturnAddress(order) || fromAddress;
-  const contactLine =
-    "For complaints & queries please contact 8384930617";
+  const contactLine = "For complaints & queries please contact 8384930617";
 
   return `
     <article
       class="shipping-label ${compact ? "compact" : ""} ${isA4 ? "a4" : ""}"
-      style="width:${size.widthIn}in;height:${size.heightIn}in"
+      style="width:${size.widthIn}in;height:${size.heightIn}in;"
     >
       <div class="label-border">
 
+        <!-- LOGOS -->
         <header class="logos">
           <div class="logo left">
             <img src="${esc(leftLogo)}" alt="ParcelDrop" />
@@ -1149,39 +888,29 @@ const buildLabelHtml = (order, settings, leftLogo, rightLogo, size) => {
         </section>
 
         <!-- PAYMENT / SERVICE / WEIGHT -->
-        <section
-          class="summary ${
-            showWeight
-              ? showOrderId
-                ? "four-cols"
-                : "three-cols"
-              : showOrderId
-              ? "three-cols"
-              : "two-cols"
-          }"
-        >
-          <div>
+        <section class="summary">
+          <div class="summary-cell">
             <span>PAYMENT</span>
             <b>${payment}</b>
           </div>
           ${
             showOrderId
               ? `
-                <div>
+                <div class="summary-cell">
                   <span>ORDER ID</span>
                   <b>${esc(getOrderId(order))}</b>
                 </div>
               `
               : ""
           }
-          <div>
+          <div class="summary-cell">
             <span>SERVICE</span>
             <b>${getServiceType(order)}</b>
           </div>
           ${
             showWeight
               ? `
-                <div>
+                <div class="summary-cell">
                   <span>WEIGHT</span>
                   <b>${getWeight(order).toFixed(2)} KG</b>
                 </div>
@@ -1221,24 +950,32 @@ const buildLabelHtml = (order, settings, leftLogo, rightLogo, size) => {
             : ""
         }
 
-        <section class="seller">
-          <div>
-            <span>SELLER : </span>
-            <b>${esc(getSellerName(order))}</b>
-          </div>
-          <div>
-            <span>GSTIN : </span>
-            <b>${esc(getSellerGstin(order) || " ")}</b>
-          </div>
-          <div>
-            <span>INVOICE NO. : </span>
-            <b>&nbsp;</b>
-          </div>
-          <div>
-            <span>DATE : </span>
-            <b>${esc(formatDate(getDate(order)))}</b>
-          </div>
+        <!-- SELLER INFO TABLE: Html2canvas safe -->
+        <section class="seller-table-wrap">
+          <table class="seller-table">
+            <tr>
+              <td>
+                <span>SELLER :</span>
+                <b>${esc(getSellerName(order))}</b>
+              </td>
+              <td>
+                <span>GSTIN :</span>
+                <b>${esc(getSellerGstin(order) || " ")}</b>
+              </td>
+              <td>
+                <span>INVOICE NO. :</span>
+                <b>&nbsp;</b>
+              </td>
+              <td>
+                <span>DATE :</span>
+                <b>${esc(formatDate(getDate(order)))}</b>
+              </td>
+            </tr>
+          </table>
         </section>
+
+        <!-- SPACER: Expands naturally to push Return and Contact evenly without sticking -->
+        <div class="spacer"></div>
 
         ${
           settings.returnAddress !== false
@@ -1263,67 +1000,54 @@ const buildLabelHtml = (order, settings, leftLogo, rightLogo, size) => {
     <style>
       * {
         box-sizing: border-box;
+        margin: 0;
+        padding: 0;
       }
 
       .shipping-label {
-        margin: 0;
-        padding: ${compact ? "1.2mm" : isA4 ? "6mm" : "3mm"};
+        width: 100%;
+        height: 100%;
+        padding: ${compact ? "1.5mm" : isA4 ? "5mm" : "2.5mm"};
         background: #fff;
         color: #111827;
         font-family: Arial, Helvetica, sans-serif;
-        font-size: ${compact ? "5.5pt" : isA4 ? "11pt" : "8pt"};
+        font-size: ${compact ? "5.5pt" : isA4 ? "10pt" : "7.5pt"};
         line-height: 1.25;
-        overflow: hidden;
         page-break-after: always;
         break-after: page;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
-        box-sizing: border-box;
+        display: block;
       }
 
       .label-border {
         width: 100%;
         height: 100%;
-        border: 1px solid #111827;
+        border: 1.5px solid #111827;
         display: flex;
         flex-direction: column;
-        align-items: stretch;
-        justify-content: flex-start;
-        overflow: hidden;
         background: #fff;
       }
 
       .logos {
-        position: relative;
-        flex: 0 0 ${compact ? "5mm" : isA4 ? "15mm" : "9mm"};
+        height: ${compact ? "6mm" : isA4 ? "15mm" : "10mm"};
+        flex: 0 0 auto;
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        padding: 0.5mm 2mm;
         border-bottom: 1px solid #111827;
       }
 
-      .logos::after {
-        content: "";
-        position: absolute;
-        top: 0;
-        bottom: 0;
-        left: 50.4%;
-        width: 1px;
-        background: #111827;
-        transform: translateX(-50%);
-      }
-
       .logo {
-        width: 47%;
+        width: 50%;
         height: 100%;
-        min-width: 0;
         display: flex;
         align-items: center;
+        padding: 1mm 2.5mm;
       }
 
       .logo.left {
         justify-content: flex-start;
+        border-right: 1px solid #111827;
       }
 
       .logo.right {
@@ -1338,19 +1062,14 @@ const buildLabelHtml = (order, settings, leftLogo, rightLogo, size) => {
       }
 
       .addresses {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
+        display: flex;
         flex: 0 0 auto;
         border-bottom: 1px solid #111827;
       }
 
-      .addresses.to-only {
-        grid-template-columns: minmax(0, 1fr);
-      }
-
       .address-block {
-        min-width: 0;
-        padding: ${compact ? "0.5mm" : isA4 ? "3mm" : "1.2mm"};
+        width: 50%;
+        padding: 1.5mm 2mm;
         overflow-wrap: anywhere;
       }
 
@@ -1364,88 +1083,77 @@ const buildLabelHtml = (order, settings, leftLogo, rightLogo, size) => {
       }
 
       .eyebrow {
-        font-size: ${compact ? "4.5pt" : isA4 ? "9pt" : "8pt"};
-        font-weight: 600;
-        letter-spacing: .2px;
+        font-size: 7pt;
+        font-weight: 700;
         color: #374151;
       }
 
       .person {
         display: block;
-        font-size: ${compact ? "5.5pt" : isA4 ? "13pt" : "8.5pt"};
-        line-height: 1.2;
+        font-size: 8.5pt;
+        font-weight: 700;
         margin-top: 0.8mm;
-        font-weight: 600;
-        overflow-wrap: anywhere;
       }
 
       .address {
-        font-size: ${compact ? "4.8pt" : isA4 ? "10pt" : "7.5pt"};
-        line-height: 1.3;
+        font-size: 7.2pt;
+        line-height: 1.25;
         margin-top: 0.8mm;
-        overflow-wrap: anywhere;
         font-weight: 400;
       }
 
       .phone {
-        font-size: ${compact ? "4.8pt" : isA4 ? "9pt" : "6.5pt"};
-        font-weight: 600;
+        font-size: 6.8pt;
+        font-weight: 700;
         margin-top: 0.8mm;
-        overflow-wrap: anywhere;
       }
 
       .awb {
         flex: 0 0 auto;
         text-align: center;
-        padding: ${compact ? "1.2mm" : isA4 ? "5mm" : "2.5mm"};
+        padding: 1.8mm 1mm;
         border-bottom: 1px solid #111827;
       }
 
       .awb .eyebrow {
-        margin-bottom: 1mm;
+        margin-bottom: 1.2mm;
       }
 
       .barcode svg {
         display: block;
-        max-width: 100%;
-        max-height: ${compact ? "4mm" : isA4 ? "14mm" : "11mm"};
+        max-width: 90%;
+        max-height: 12mm;
         height: auto;
         margin: 0 auto;
       }
 
       .summary {
-        display: grid;
+        display: flex;
         flex: 0 0 auto;
         border-bottom: 1px solid #111827;
       }
 
-      .summary.two-cols { grid-template-columns: 1fr 1fr; }
-      .summary.three-cols { grid-template-columns: 1fr 1fr 1fr; }
-      .summary.four-cols { grid-template-columns: 1fr 1fr 1fr 1fr; }
-
-      .summary > div {
-        min-width: 0;
-        padding: ${compact ? "1mm" : isA4 ? "3mm" : "1.8mm"};
-        overflow-wrap: anywhere;
+      .summary-cell {
+        flex: 1;
+        padding: 1.5mm 1.8mm;
       }
 
-      .summary > div + div {
+      .summary-cell + .summary-cell {
         border-left: 1px solid #9ca3af;
       }
 
-      .summary span,
-      .seller span {
+      .summary-cell span {
         display: block;
-        font-size: ${compact ? "4.3pt" : isA4 ? "8pt" : "5.8pt"};
+        font-size: 5.5pt;
         font-weight: 600;
-        line-height: 1;
+        color: #4b5563;
         margin-bottom: 0.5mm;
       }
 
-      .summary b {
+      .summary-cell b {
         display: block;
-        font-size: ${compact ? "5.5pt" : isA4 ? "13pt" : "8.5pt"};
-        font-weight: 600;
+        font-size: 8pt;
+        font-weight: 700;
       }
 
       .cod {
@@ -1453,100 +1161,100 @@ const buildLabelHtml = (order, settings, leftLogo, rightLogo, size) => {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 2mm;
-        padding: ${compact ? "1mm" : "1.8mm"};
+        padding: 1.5mm 2mm;
         border-bottom: 1px solid #111827;
       }
 
-      .cod b { font-size: ${compact ? "5pt" : "7.5pt"}; }
-      .cod strong { font-size: ${compact ? "5.5pt" : "9pt"}; }
-
       .products {
         flex: 0 0 auto;
-        padding: 0;
-        margin: 0;
         border-bottom: 1px solid #111827;
       }
 
       table {
-        border-collapse: collapse;
         width: 100%;
-        margin: 0;
-        padding: 0;
+        border-collapse: collapse;
         table-layout: fixed;
       }
 
-      th, td {
-        width: 25%;
+      .products th, .products td {
         border: 1px solid #9ca3af;
-        padding: ${compact ? "0.8mm" : "1.2mm"};
+        padding: 1mm 1.5mm;
         text-align: center;
-        overflow-wrap: anywhere;
-        font-size: ${compact ? "5.2pt" : isA4 ? "12pt" : "7.8pt"};
+        font-size: 7.5pt;
         font-weight: 600;
       }
 
-      th {
-        font-weight: 600;
+      .products th {
         background: #f3f4f6;
       }
 
-      th:first-child, td:first-child {
+      .products th:first-child, .products td:first-child {
         text-align: left;
       }
 
-      .seller {
+      /* SELLER TABLE: Fixed cut-off */
+      .seller-table-wrap {
         flex: 0 0 auto;
-        display: grid;
-        grid-template-columns: 1fr 1fr 1fr 1fr;
         border-bottom: 1px solid #111827;
-        align-items: start;
       }
 
-      .seller > div {
-        min-width: 0;
-        padding: ${compact ? "0.8mm" : "1.2mm"};
-        overflow-wrap: anywhere;
+      .seller-table td {
+        width: 25%;
+        padding: 1.5mm 1.8mm 2mm;
+        vertical-align: top;
+        border-right: 1px solid #9ca3af;
       }
 
-      .seller > div + div {
-        border-left: 1px solid #9ca3af;
+      .seller-table td:last-child {
+        border-right: none;
       }
 
-      .seller b {
+      .seller-table span {
         display: block;
-        font-size: ${compact ? "4.8pt" : isA4 ? "9.5pt" : "6pt"};
+        font-size: 5.5pt;
         font-weight: 600;
-        line-height: 1.2;
-        margin-top: 0.5mm;
+        color: #4b5563;
+        margin-bottom: 0.8mm;
+      }
+
+      .seller-table b {
+        display: block;
+        font-size: 6.8pt;
+        font-weight: 600;
+        line-height: 1.25;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
       }
 
+      /* FLEX SPACER: Pushes bottom content cleanly without crowding */
+      .spacer {
+        flex: 1 1 auto;
+        min-height: 2mm;
+      }
+
       .return {
         flex: 0 0 auto;
-        padding: ${compact ? "1mm" : isA4 ? "2.5mm" : "1.5mm"};
+        padding: 1.8mm 2mm;
+        border-top: 1px solid #111827;
         border-bottom: 1px solid #111827;
-        font-size: ${compact ? "5.5pt" : isA4 ? "11pt" : "7.5pt"};
-        line-height: 1.2;
-        overflow-wrap: anywhere;
+        font-size: 7.5pt;
+        line-height: 1.25;
       }
 
       .return b {
         display: block;
-        font-size: ${compact ? "5.5pt" : isA4 ? "11pt" : "7.5pt"};
-        font-weight: 600;
-        margin-bottom: 0.5mm;
+        font-size: 7.5pt;
+        font-weight: 700;
+        margin-bottom: 0.8mm;
       }
 
       .contact {
         flex: 0 0 auto;
-        padding: ${compact ? "1mm" : isA4 ? "2.5mm" : "1.8mm"};
-        font-size: ${compact ? "5.2pt" : isA4 ? "9.5pt" : "7pt"};
-        line-height: 1.15;
+        padding: 1.8mm 1mm;
+        font-size: 7pt;
         text-align: center;
-        font-weight: 600;
+        font-weight: 700;
       }
     </style>
   `;
@@ -1568,7 +1276,6 @@ const prepareLabels = async (orders) => {
   try {
     rightLogoData = await imageToDataUrl(rightLogoSource);
   } catch (error) {
-    console.error("Carrier logo loading error:", error);
     rightLogoData = await imageToDataUrl(delhiveryLogo);
   }
 
@@ -1663,9 +1370,7 @@ export const printShippingLabels = async (
       const images = Array.from(win.document.images);
       await Promise.all(
         images.map((img) => {
-          if (img.complete && img.naturalWidth > 0) {
-            return Promise.resolve();
-          }
+          if (img.complete && img.naturalWidth > 0) return Promise.resolve();
           return new Promise((resolve) => {
             img.onload = resolve;
             img.onerror = resolve;
@@ -1674,31 +1379,21 @@ export const printShippingLabels = async (
       );
 
       if (win.closed || printStarted) return;
-
       printStarted = true;
       win.focus();
       win.print();
     };
 
-    win.addEventListener(
-      "load",
-      () => {
-        printWhenReady().catch((error) =>
-          console.error("Print readiness error:", error)
-        );
-      },
-      { once: true }
-    );
+    win.addEventListener("load", () => {
+      printWhenReady().catch(console.error);
+    }, { once: true });
 
     window.setTimeout(() => {
-      printWhenReady().catch((error) =>
-        console.error("Print readiness error:", error)
-      );
+      printWhenReady().catch(console.error);
     }, 1000);
 
     toast.success(`${detailedOrders.length} label(s) ready to print`);
   } catch (error) {
-    console.error("Print label error:", error);
     toast.error(error?.message || "Unable to print labels");
   }
 };
@@ -1725,7 +1420,7 @@ export const downloadShippingLabels = async (orders) => {
     iframe.style.left = "-10000px";
     iframe.style.top = "0";
     iframe.style.width = `${size.widthIn}in`;
-    iframe.style.height = `${size.heightIn * 2}in`; // Extra headroom for rendering accurate heights
+    iframe.style.height = `${size.heightIn}in`;
     iframe.style.border = "0";
     iframe.style.visibility = "visible";
     iframe.style.opacity = "1";
@@ -1747,6 +1442,8 @@ export const downloadShippingLabels = async (orders) => {
               margin: 0;
               padding: 0;
               background: #ffffff;
+              width: 100%;
+              height: 100%;
             }
             * { box-sizing: border-box; }
           </style>
@@ -1816,37 +1513,8 @@ export const downloadShippingLabels = async (orders) => {
       const pageWidth = label.offsetWidth;
       const pageHeight = label.offsetHeight;
 
-      if (!pageWidth || !pageHeight) {
-        throw new Error("Unable to determine label size");
-      }
-
-      const contentWidth = Math.max(label.scrollWidth, pageWidth);
-      const contentHeight = Math.max(label.scrollHeight, pageHeight);
-
-      // Scale down only if content spills over
-      const fitScale = Math.min(
-        pageWidth / contentWidth,
-        pageHeight / contentHeight,
-        1
-      );
-
-      const labelBorder = label.querySelector(".label-border");
-      label.style.overflow = "visible";
-      if (labelBorder) labelBorder.style.overflow = "visible";
-
-      // Centered scaling taaki content dono taraf equal margin banaye rakhe
-      label.style.transformOrigin = "top center";
-      label.style.transform =
-        fitScale < 1 ? `scale(${fitScale})` : "none";
-
-      await new Promise((resolve) => {
-        iframe.contentWindow.requestAnimationFrame(() => {
-          iframe.contentWindow.requestAnimationFrame(resolve);
-        });
-      });
-
       const canvas = await html2canvas(label, {
-        scale: 3.5, // Crisp resolution without memory spike
+        scale: 3,
         backgroundColor: "#ffffff",
         useCORS: true,
         logging: false,
@@ -1859,11 +1527,6 @@ export const downloadShippingLabels = async (orders) => {
       });
 
       const image = canvas.toDataURL("image/png");
-
-      label.style.transform = "none";
-      label.style.transformOrigin = "";
-      label.style.overflow = "";
-      if (labelBorder) labelBorder.style.overflow = "";
 
       if (index > 0) {
         pdf.addPage(
@@ -1892,9 +1555,7 @@ export const downloadShippingLabels = async (orders) => {
     const filename =
       detailedOrders.length === 1
         ? `parceldrop-label-${firstAwb}.pdf`
-        : `parceldrop-labels-${new Date()
-            .toISOString()
-            .slice(0, 10)}.pdf`;
+        : `parceldrop-labels-${new Date().toISOString().slice(0, 10)}.pdf`;
 
     pdf.save(filename);
     toast.success(
