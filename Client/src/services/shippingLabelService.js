@@ -1048,21 +1048,23 @@ const build3x2LabelHtml = (
     </article>
 
     <style>
-      .label-3x2 {
-        margin: 0;
-        padding: 1.2mm;
-        background: #fff;
-        color: #111827;
-        font-family: Arial, Helvetica, sans-serif;
-        font-size: 6.5pt;
-        line-height: 1.15;
-        overflow: hidden;
-        page-break-after: always;
-        break-after: page;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-        box-sizing: border-box;
-      }
+     .label-3x2 {
+  width: 3in;
+  height: 2in;
+  margin: 0;
+  padding: 0.8mm;
+  background: #fff;
+  color: #111827;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 6pt;
+  line-height: 1.05;
+  overflow: hidden;
+  page-break-after: always;
+  break-after: page;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+  box-sizing: border-box;
+}
 
       .label-3x2 *,
       .label-3x2 *::before,
