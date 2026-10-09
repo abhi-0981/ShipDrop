@@ -368,6 +368,7 @@ function CreateOrder() {
       }
     }
 
+ 
     // 5. Packages
     if (!Array.isArray(packages) || packages.length === 0) {
       toast.error("At least one package is required");
@@ -381,7 +382,11 @@ function CreateOrder() {
       const weightText = String(item.weight ?? "").trim();
       const weight = Number(weightText);
 
-      if (weightText === "" || !Number.isFinite(weight) || weight <= 0) {
+      if (
+        weightText === "" ||
+        !Number.isFinite(weight) ||
+        weight <= 0
+      ) {
         toast.error(`${label}: weight must be greater than 0`);
         return false;
       }
@@ -392,39 +397,41 @@ function CreateOrder() {
         String(item.height ?? "").trim(),
       ];
 
-      const anyDimensionEntered = dimensions.some((value) => value !== "");
+      const [length, width, height] = dimensions.map(Number);
 
-      // Dimensions optional hain, lekin ek dimension bharne par teeno valid honi chahiye.
-      if (anyDimensionEntered) {
-        const [length, width, height] = dimensions.map(Number);
-
-        if (
-          dimensions.some((value) => value === "") ||
-          !Number.isFinite(length) ||
-          !Number.isFinite(width) ||
-          !Number.isFinite(height) ||
-          length <= 0 ||
-          width <= 0 ||
-          height <= 0
-        ) {
-          toast.error(
-            `${label}: enter all three dimensions (length, width, height) greater than 0, or leave all three blank`,
-          );
-          return false;
-        }
+      if (
+        dimensions.some((value) => value === "") ||
+        !Number.isFinite(length) ||
+        !Number.isFinite(width) ||
+        !Number.isFinite(height) ||
+        length <= 0 ||
+        width <= 0 ||
+        height <= 0
+      ) {
+        toast.error(
+          `${label}: Length, Width and Height are required and must be greater than 0`
+        );
+        return false;
       }
 
       const countText = String(item.count ?? "").trim();
       const count = Number(countText);
 
-      if (countText === "" || !Number.isInteger(count) || count < 1) {
-        toast.error(`${label}: box count must be a whole number of at least 1`);
+      if (
+        countText === "" ||
+        !Number.isInteger(count) ||
+        count < 1
+      ) {
+        toast.error(
+          `${label}: box count must be a whole number of at least 1`
+        );
         return false;
       }
     }
 
     return true;
   };
+
 
   const resetShippingRate = () => {
     setShippingRate(null);
@@ -1305,9 +1312,18 @@ function CreateOrder() {
         }
       : {};
 
+   
     setFormData({ ...initialFormData, ...preservedPickup });
+
+    if (!preservePickup) {
+      setSelectedWarehouse(null);
+      setWarehouseSearch("");
+    }
+
+    setShowWarehouseDropdown(false);
     setPreviousCustomers([]);
     setShowPreviousCustomers(false);
+
     setProducts([{ ...initialProduct }]);
     setPackages([{ ...initialPackage }]);
     resetShippingRate();
@@ -1533,14 +1549,22 @@ function CreateOrder() {
       return Number.isInteger(number) && number >= 1;
     }
 
+ 
     // Package weight: greater than zero
     if (field.dataset.enterType === "weight") {
       const number = Number(value);
       return Number.isFinite(number) && number > 0;
     }
 
+    // Package dimensions: greater than zero
+    if (field.dataset.enterType === "dimension") {
+      const number = Number(value);
+      return Number.isFinite(number) && number > 0;
+    }
+
     // Other required fields: non-empty
     return true;
+
   };
 
   const handleRequiredFieldEnter = (e) => {
@@ -2190,6 +2214,9 @@ function CreateOrder() {
                       <input
                         type="number"
                         min="0"
+                        data-enter-required="true"
+data-enter-type="dimension"
+required
                         value={item.length}
                         onChange={(e) =>
                           handlePackageChange(index, "length", e.target.value)
@@ -2204,6 +2231,9 @@ function CreateOrder() {
                       <input
                         type="number"
                         min="0"
+                        data-enter-required="true"
+data-enter-type="dimension"
+required
                         value={item.width}
                         onChange={(e) =>
                           handlePackageChange(index, "width", e.target.value)
@@ -2218,6 +2248,9 @@ function CreateOrder() {
                       <input
                         type="number"
                         min="0"
+                        data-enter-required="true"
+data-enter-type="dimension"
+required
                         value={item.height}
                         onChange={(e) =>
                           handlePackageChange(index, "height", e.target.value)
