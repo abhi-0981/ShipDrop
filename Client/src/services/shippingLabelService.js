@@ -1,12 +1,23 @@
-
 import { jsPDF } from "jspdf";
 import JsBarcode from "jsbarcode";
 import html2canvas from "html2canvas";
 import { toast } from "react-hot-toast";
 import api from "./api";
+
 import shipdropLogo from "../assets/images/shipdrop-logo.png";
 import delhiveryLogo from "../assets/images/delhivery-logo.png";
 
+// YE NAYA CODE YAHAN PASTE KAR
+const getParcelDropFilename = () => {
+  const now = new Date();
+  const day = String(now.getDate()).padStart(2, "0");
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const year = now.getFullYear();
+
+  return `ParcelDrop-${day}-${month}-${year}`;
+};
+
+// ISKE NEECHE TERA PURANA CODE JAISE HAI WAISE HI RAHE
 export const DEFAULT_LABEL_SETTINGS = {
   orderValue: true,
   codAmount: true,
