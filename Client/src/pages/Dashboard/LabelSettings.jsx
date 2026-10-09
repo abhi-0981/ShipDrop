@@ -216,6 +216,7 @@ function LabelSettings() {
         URL.revokeObjectURL(objectUrlRef.current);
       }
     };
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -338,6 +339,7 @@ function LabelSettings() {
   return (
     <div className="min-h-full w-full bg-white px-3 pb-20 pt-4 sm:px-6 sm:pt-5">
       <div className="mx-auto max-w-4xl">
+
         {/* Header */}
         <div className="mb-5 flex items-center justify-between gap-3">
           <div>
@@ -385,6 +387,7 @@ function LabelSettings() {
           </div>
         ) : (
           <div className="space-y-4">
+
             {/* Branding */}
             <section className="overflow-hidden rounded-lg border border-slate-200 bg-white">
               <div className="border-b border-slate-100 px-4 py-3">
@@ -437,7 +440,7 @@ function LabelSettings() {
               </div>
             </section>
 
-            {/* Label information */}
+            {/* Only changeable settings */}
             <section className="overflow-hidden rounded-lg border border-slate-200 bg-white">
               <div className="border-b border-slate-100 px-4 py-3">
                 <h2 className="text-sm font-semibold text-slate-800">
@@ -446,9 +449,6 @@ function LabelSettings() {
               </div>
 
               <div className="px-4">
-                <p className="pt-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
-                  From · Sender
-                </p>
 
                 <SettingRow
                   title="Sender Name"
@@ -471,56 +471,12 @@ function LabelSettings() {
                   disabled={isBusy}
                 />
 
-                <p className="pt-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
-                  To · Buyer
-                </p>
-
-                <div className="flex min-h-11 items-center justify-between border-b border-slate-100 py-2">
-                  <span className="text-sm text-slate-700">
-                    Buyer Name
-                  </span>
-                  <span className="text-xs text-slate-400">
-                    Always on
-                  </span>
-                </div>
-
-                <div className="flex min-h-11 items-center justify-between border-b border-slate-100 py-2">
-                  <span className="text-sm text-slate-700">
-                    Buyer Address
-                  </span>
-                  <span className="text-xs text-slate-400">
-                    Always on
-                  </span>
-                </div>
-
                 <SettingRow
                   title="Buyer Mobile Number"
                   checked={settings.buyerMobile}
                   onChange={(v) => updateSetting("buyerMobile", v)}
                   disabled={isBusy}
                 />
-
-                <p className="pt-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
-                  Shipment & Order
-                </p>
-
-                <div className="flex min-h-11 items-center justify-between border-b border-slate-100 py-2">
-                  <span className="text-sm text-slate-700">
-                    AWB Number & Barcode
-                  </span>
-                  <span className="text-xs text-slate-400">
-                    Always on
-                  </span>
-                </div>
-
-                <div className="flex min-h-11 items-center justify-between border-b border-slate-100 py-2">
-                  <span className="text-sm text-slate-700">
-                    Payment Type
-                  </span>
-                  <span className="text-xs text-slate-400">
-                    Always on
-                  </span>
-                </div>
 
                 <SettingRow
                   title="Order ID"
@@ -543,19 +499,6 @@ function LabelSettings() {
                   disabled={isBusy}
                 />
 
-                <div className="flex min-h-11 items-center justify-between border-b border-slate-100 py-2">
-                  <span className="text-sm text-slate-700">
-                    Seller Details, GSTIN, Invoice & Date
-                  </span>
-                  <span className="text-xs text-slate-400">
-                    Always on
-                  </span>
-                </div>
-
-                <p className="pt-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
-                  Bottom of Label
-                </p>
-
                 <SettingRow
                   title="Return Address"
                   checked={settings.returnAddress}
@@ -569,6 +512,7 @@ function LabelSettings() {
                   onChange={(v) => updateSetting("contactLine", v)}
                   disabled={isBusy}
                 />
+
               </div>
             </section>
 
@@ -588,7 +532,9 @@ function LabelSettings() {
                     onClick={() =>
                       updateSetting("labelSize", size.value)
                     }
-                    aria-pressed={settings.labelSize === size.value}
+                    aria-pressed={
+                      settings.labelSize === size.value
+                    }
                     className={`rounded-md border px-3 py-2 text-sm transition ${
                       settings.labelSize === size.value
                         ? "border-blue-600 bg-blue-50 text-blue-700"
@@ -600,6 +546,7 @@ function LabelSettings() {
                 ))}
               </div>
             </section>
+
           </div>
         )}
 
@@ -614,6 +561,7 @@ function LabelSettings() {
             {saving ? "Saving..." : "Save Changes"}
           </button>
         </div>
+
       </div>
     </div>
   );
