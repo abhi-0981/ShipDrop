@@ -73,12 +73,7 @@ function Toggle({ checked, onChange, disabled = false }) {
   );
 }
 
-function SettingRow({
-  title,
-  checked,
-  onChange,
-  disabled,
-}) {
+function SettingRow({ title, checked, onChange, disabled }) {
   return (
     <div className="flex min-h-11 items-center justify-between gap-4 border-b border-slate-100 py-2 last:border-b-0">
       <span className="text-sm text-slate-700">
@@ -86,21 +81,19 @@ function SettingRow({
       </span>
 
       <div className="flex shrink-0 items-center gap-2">
+        <span
+          className={`text-xs ${
+            checked ? "text-green-700" : "text-slate-400"
+          }`}
+        >
+          {checked ? "On" : "Off"}
+        </span>
+
         <Toggle
           checked={checked}
           onChange={onChange}
           disabled={disabled}
         />
-
-        <span
-          className={`w-8 text-right text-xs ${
-            checked
-              ? "text-green-700"
-              : "text-slate-400"
-          }`}
-        >
-          {checked ? "On" : "Off"}
-        </span>
       </div>
     </div>
   );
