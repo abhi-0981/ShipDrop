@@ -1578,16 +1578,15 @@ const buildLabelHtml = (
       }
 
       .label-border {
-  width: 100%;
-  height: 100%;
-  border: 1px solid #111827;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  justify-content: flex-start;
-  overflow: hidden;
-  background: #fff;
-}
+        width: 100%;
+        height: 100%;
+        border: 1px solid #111827;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        overflow: hidden;
+        background: #fff;
+      }
 
 .logos {
   position: relative;
@@ -1879,10 +1878,8 @@ td:first-child {
   min-height: 0;
 }
 
-
 .return {
-  margin-top: 0;
-  flex: 0 0 auto;
+  margin-top: auto;
   padding: ${compact ? "1mm" : isA4 ? "2.5mm" : "1.5mm"};
   border-top: none;
   border-bottom: 1px solid #111827;
@@ -1890,7 +1887,6 @@ td:first-child {
   line-height: 1.2;
   overflow-wrap: anywhere;
 }
-
 
      .return b {
   display: block;
@@ -2296,18 +2292,51 @@ export const downloadShippingLabels = async (orders) => {
       // CHECK ACTUAL CONTENT SIZE
       // ---------------------------------------------------
 
-     
+      const contentWidth =
+        Math.max(
+          label.scrollWidth,
+          pageWidth
+        );
 
-     
+      const contentHeight =
+        Math.max(
+          label.scrollHeight,
+          pageHeight
+        );
+
+      // ---------------------------------------------------
+      // IF CONTENT IS TOO BIG,
+      // SCALE IT DOWN INSIDE THE LABEL
+      // ---------------------------------------------------
+
+      const fitScale = Math.min(
+        pageWidth / contentWidth,
+        pageHeight / contentHeight,
+        1
+      );
 
       const labelBorder =
         label.querySelector(
           ".label-border"
         );
 
-      
+      // Temporarily allow complete content
+      label.style.overflow = "visible";
 
-     
+      if (labelBorder) {
+        labelBorder.style.overflow =
+          "visible";
+      }
+
+      // Keep scaling inside the original page
+      label.style.transformOrigin =
+        "top left";
+
+      label.style.transform =
+        fitScale < 1
+          ? `scale(${fitScale})`
+          : "none";
+
       // ---------------------------------------------------
       // WAIT FOR TRANSFORM
       // ---------------------------------------------------
