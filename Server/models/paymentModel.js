@@ -403,7 +403,7 @@ const getCODRemittances = (
       cr.cod_amount,
       o.created_at,
       JSON_UNQUOTE(
-  JSON_EXTRACT(o.tracking_data, '$.delivery_date')
+  JSON_EXTRACT(o.tracking_data, '$.tracking_delivery_date')
 ) AS tracking_updated_at,
       cr.status,
       cr.transferred_on,
