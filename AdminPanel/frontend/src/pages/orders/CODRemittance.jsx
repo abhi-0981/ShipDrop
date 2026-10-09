@@ -1,3 +1,4 @@
+
 import React, {
   useCallback,
   useEffect,
@@ -16,16 +17,10 @@ import {
   HiOutlineSave,
   HiOutlineX,
   HiOutlineUsers,
-  HiOutlineClipboardList,
-  HiOutlineArrowRight,
 } from "react-icons/hi";
 
 import toast from "react-hot-toast";
 import { API_BASE_URL } from "../../config/api";
-
-/* =========================
-   HELPERS
-========================= */
 
 const formatAmount = (amount) =>
   `₹${Number(amount || 0).toLocaleString("en-IN", {
@@ -37,7 +32,6 @@ const formatDate = (date) => {
   if (!date) return "-";
 
   const parsed = new Date(date);
-
   if (Number.isNaN(parsed.getTime())) return "-";
 
   return parsed.toLocaleString("en-IN", {
@@ -59,7 +53,7 @@ const StatusBadge = ({ status }) => {
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1 text-[10px] font-bold ${
+      className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[10px] font-semibold ${
         successful
           ? "border-emerald-200 bg-emerald-50 text-emerald-700"
           : "border-amber-200 bg-amber-50 text-amber-700"
@@ -75,20 +69,48 @@ const StatusBadge = ({ status }) => {
   );
 };
 
-/* =========================
-   MAIN COMPONENT
-========================= */
+const SummaryCard = ({ title, value, subtitle, icon, color }) => {
+  const styles = {
+    blue: "bg-sky-50 text-[#008dd2]",
+    amber: "bg-amber-50 text-amber-600",
+    green: "bg-emerald-50 text-emerald-600",
+    violet: "bg-violet-50 text-violet-600",
+  };
+
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-3">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-[11px] font-medium text-slate-500">
+          {title}
+        </p>
+        <span
+          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
+            styles[color] || styles.blue
+          }`}
+        >
+          {icon}
+        </span>
+      </div>
+
+      <p className="mt-2 break-words text-lg font-bold tracking-tight text-slate-800">
+        {value}
+      </p>
+
+      <p className="mt-0.5 text-[10px] text-slate-400">
+        {subtitle}
+      </p>
+    </div>
+  );
+};
 
 const CODRemittance = () => {
   const [remittances, setRemittances] = useState([]);
-
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [customerFilter, setCustomerFilter] = useState("ALL");
 
   const [selectedIds, setSelectedIds] = useState([]);
   const [bulkDescription, setBulkDescription] = useState("");
-
   const [descriptionDrafts, setDescriptionDrafts] = useState({});
   const [editingDescriptionId, setEditingDescriptionId] = useState(null);
 
@@ -106,10 +128,6 @@ const CODRemittance = () => {
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     };
   };
-
-  /* =========================
-     FETCH RECORDS
-  ========================= */
 
   const fetchRemittances = useCallback(async (showToast = false) => {
     try {
@@ -143,16 +161,12 @@ const CODRemittance = () => {
 
         records.forEach((item) => {
           const id = getId(item);
-
-          if (!(id in next)) {
-            next[id] = item.description || "";
-          }
+          if (!(id in next)) next[id] = item.description || "";
         });
 
         return next;
       });
 
-      // Keep only IDs that still exist and are Pending.
       const pendingIds = new Set(
         records
           .filter((item) => getStatus(item.status) === "PENDING")
@@ -163,9 +177,7 @@ const CODRemittance = () => {
         previous.filter((id) => pendingIds.has(String(id)))
       );
 
-      if (showToast) {
-        toast.success("Remittances refreshed");
-      }
+      if (showToast) toast.success("Remittances refreshed");
     } catch (err) {
       setError(err.message || "Unable to load COD remittances");
       toast.error(err.message || "Unable to load COD remittances");
@@ -177,10 +189,6 @@ const CODRemittance = () => {
   useEffect(() => {
     fetchRemittances();
   }, [fetchRemittances]);
-
-  /* =========================
-     CUSTOMERS
-  ========================= */
 
   const customers = useMemo(() => {
     const map = new Map();
@@ -201,10 +209,6 @@ const CODRemittance = () => {
     );
   }, [remittances]);
 
-  /* =========================
-     STATISTICS
-  ========================= */
-
   const stats = useMemo(() => {
     const pending = remittances.filter(
       (item) => getStatus(item.status) === "PENDING"
@@ -224,10 +228,6 @@ const CODRemittance = () => {
       ),
     };
   }, [remittances]);
-
-  /* =========================
-     FILTERS
-  ========================= */
 
   const filteredRemittances = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -254,16 +254,12 @@ const CODRemittance = () => {
     });
   }, [remittances, search, statusFilter, customerFilter]);
 
-  /* =========================
-     SELECTED ORDERS + AMOUNT
-  ========================= */
-
   const selectedRemittances = useMemo(() => {
-    const selectedSet = new Set(selectedIds.map(String));
+    const ids = new Set(selectedIds.map(String));
 
     return remittances.filter(
       (item) =>
-        selectedSet.has(getId(item)) &&
+        ids.has(getId(item)) &&
         getStatus(item.status) === "PENDING"
     );
   }, [remittances, selectedIds]);
@@ -277,28 +273,22 @@ const CODRemittance = () => {
     [selectedRemittances]
   );
 
-  const visiblePending = useMemo(
-    () =>
-      filteredRemittances.filter(
-        (item) => getStatus(item.status) === "PENDING"
-      ),
-    [filteredRemittances]
+  const visiblePending = filteredRemittances.filter(
+    (item) => getStatus(item.status) === "PENDING"
   );
 
   const visiblePendingIds = visiblePending.map(getId);
 
   const allVisibleSelected =
     visiblePendingIds.length > 0 &&
-    visiblePendingIds.every((id) =>
-      selectedIds.includes(id)
-    );
+    visiblePendingIds.every((id) => selectedIds.includes(id));
 
   const toggleSelection = (id) => {
     const key = String(id);
 
     setSelectedIds((previous) =>
       previous.includes(key)
-        ? previous.filter((selectedId) => selectedId !== key)
+        ? previous.filter((value) => value !== key)
         : [...previous, key]
     );
   };
@@ -321,10 +311,6 @@ const CODRemittance = () => {
     setSelectedIds([]);
     setBulkDescription("");
   };
-
-  /* =========================
-     SAVE INDIVIDUAL DESCRIPTION
-  ========================= */
 
   const updateDescriptionDraft = (id, value) => {
     setDescriptionDrafts((previous) => ({
@@ -386,18 +372,16 @@ const CODRemittance = () => {
     }
   };
 
-  /* =========================
-     MARK SINGLE SUCCESSFUL
-  ========================= */
-
   const markSuccessful = async (item) => {
     if (getStatus(item.status) !== "PENDING") return;
 
-    const confirmed = window.confirm(
-      `Mark order ${item.order_id} as Successful?`
-    );
-
-    if (!confirmed) return;
+    if (
+      !window.confirm(
+        `Mark order ${item.order_id} as Successful?`
+      )
+    ) {
+      return;
+    }
 
     const id = getId(item);
 
@@ -429,10 +413,6 @@ const CODRemittance = () => {
     }
   };
 
-  /* =========================
-     BULK SUCCESSFUL
-  ========================= */
-
   const markSelectedSuccessful = async () => {
     if (!selectedRemittances.length) {
       toast.error("Select at least one Pending remittance");
@@ -445,9 +425,9 @@ const CODRemittance = () => {
     }
 
     const confirmed = window.confirm(
-      `Confirm bulk update?\n\nOrders: ${selectedRemittances.length}\nSelected COD Amount: ${formatAmount(
+      `Mark ${selectedRemittances.length} orders Successful?\n\nSelected COD Amount: ${formatAmount(
         selectedAmount
-      )}\n\nAll selected records will be marked Successful and receive the same description.`
+      )}\n\nThe same description will be applied to all selected records.`
     );
 
     if (!confirmed) return;
@@ -464,7 +444,7 @@ const CODRemittance = () => {
           (id) => !Number.isSafeInteger(id) || id <= 0
         )
       ) {
-        throw new Error("One or more selected remittance IDs are invalid");
+        throw new Error("One or more selected IDs are invalid");
       }
 
       const response = await fetch(
@@ -495,17 +475,11 @@ const CODRemittance = () => {
       clearSelection();
       await fetchRemittances();
     } catch (err) {
-      toast.error(
-        err.message || "Unable to update selected remittances"
-      );
+      toast.error(err.message || "Bulk update failed");
     } finally {
       setBulkProcessing(false);
     }
   };
-
-  /* =========================
-     CSV EXPORT
-  ========================= */
 
   const exportCSV = () => {
     if (!filteredRemittances.length) {
@@ -558,8 +532,8 @@ const CODRemittance = () => {
     document.body.appendChild(link);
     link.click();
     link.remove();
-
     URL.revokeObjectURL(url);
+
     toast.success("CSV exported");
   };
 
@@ -570,35 +544,34 @@ const CODRemittance = () => {
   };
 
   const tabs = [
-    { label: "All Remittances", value: "ALL", count: stats.total },
+    { label: "All", value: "ALL", count: stats.total },
     { label: "Pending", value: "PENDING", count: stats.pending },
     { label: "Successful", value: "SUCCESSFUL", count: stats.successful },
   ];
 
-  /* =========================
-     RENDER
-  ========================= */
-
   return (
-    <div className="mx-auto min-h-full max-w-[1600px] bg-[#f5f8fc] p-3 pb-24 sm:p-5 lg:p-6">
+    <div className="mx-auto min-h-full max-w-[1500px] bg-[#f8fafc] p-3 pb-20 sm:p-4">
 
-      {/* PAGE HEADER */}
-      <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      {/* Header */}
+      <div className="mb-4 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
         <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-sky-100 text-[#008dd2]">
-              <HiOutlineCurrencyRupee size={23} />
+          <div className="flex items-center gap-2">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#e8f5fc] text-[#008dd2]">
+              <HiOutlineCurrencyRupee size={21} />
             </span>
 
             <div>
-              <h1 className="text-xl font-extrabold tracking-tight text-slate-900 sm:text-2xl">
+              <h1 className="text-lg font-bold text-slate-800">
                 COD Remittance
               </h1>
-
-              <p className="mt-0.5 text-xs text-slate-500">
-                Manage customer COD payouts and transfer records.
+              <p className="text-[11px] text-slate-500">
+                Manage COD payouts and transfer status.
               </p>
             </div>
+
+            <span className="rounded-md bg-sky-50 px-2 py-1 text-[10px] font-bold text-[#008dd2]">
+              {stats.total}
+            </span>
           </div>
         </div>
 
@@ -607,10 +580,10 @@ const CODRemittance = () => {
             type="button"
             onClick={() => fetchRemittances(true)}
             disabled={loading || bulkProcessing}
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:opacity-50"
+            className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-[11px] font-semibold text-slate-600 hover:border-sky-200 hover:text-[#008dd2] disabled:opacity-50"
           >
             <HiOutlineRefresh
-              size={16}
+              size={14}
               className={loading ? "animate-spin" : ""}
             />
             Refresh
@@ -620,239 +593,179 @@ const CODRemittance = () => {
             type="button"
             onClick={exportCSV}
             disabled={!filteredRemittances.length}
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#008dd2] px-4 text-xs font-bold text-white shadow-sm transition hover:bg-sky-700 disabled:opacity-50"
+            className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[#008dd2] px-3 text-[11px] font-semibold text-white hover:bg-sky-700 disabled:opacity-50"
           >
-            <HiOutlineDownload size={16} />
+            <HiOutlineDownload size={14} />
             Export CSV
           </button>
         </div>
       </div>
 
-      {/* SUMMARY CARDS */}
-      <div className="mb-6 grid grid-cols-2 gap-3 xl:grid-cols-4">
+      {/* Compact summary */}
+      <div className="mb-4 grid grid-cols-2 gap-2.5 xl:grid-cols-4">
         <SummaryCard
           title="Total Remittances"
           value={stats.total}
           subtitle="All records"
-          icon={<HiOutlineClipboardList size={20} />}
+          icon={<HiOutlineCurrencyRupee size={17} />}
           color="blue"
         />
 
         <SummaryCard
-          title="Pending Remittances"
+          title="Pending"
           value={stats.pending}
-          subtitle="Awaiting transfer"
-          icon={<HiOutlineClock size={20} />}
+          subtitle="Awaiting payout"
+          icon={<HiOutlineClock size={17} />}
           color="amber"
         />
 
         <SummaryCard
           title="Successful"
           value={stats.successful}
-          subtitle="Completed payouts"
-          icon={<HiOutlineCheckCircle size={20} />}
+          subtitle="Completed"
+          icon={<HiOutlineCheckCircle size={17} />}
           color="green"
         />
 
         <SummaryCard
           title="Pending Amount"
           value={formatAmount(stats.pendingAmount)}
-          subtitle="Total pending COD"
-          icon={<HiOutlineCurrencyRupee size={20} />}
+          subtitle="Awaiting transfer"
+          icon={<HiOutlineCurrencyRupee size={17} />}
           color="violet"
         />
       </div>
 
-      {/* BULK SELECTION SUMMARY */}
-      <div className="mb-6 overflow-hidden rounded-2xl border border-sky-200 bg-white shadow-sm">
-        <div className="flex flex-col gap-3 border-b border-slate-100 bg-gradient-to-r from-sky-50 to-white p-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+      {/* Compact bulk selection panel */}
+      <div className="mb-4 overflow-hidden rounded-xl border border-slate-200 bg-white">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-3.5 py-3">
           <div>
-            <div className="flex items-center gap-2">
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#008dd2] text-white">
-                <HiOutlineCheckCircle size={19} />
-              </span>
-
-              <div>
-                <h2 className="text-sm font-extrabold text-slate-900">
-                  Bulk Remittance Processing
-                </h2>
-
-                <p className="mt-0.5 text-[11px] text-slate-500">
-                  Select pending orders and process them together.
-                </p>
-              </div>
-            </div>
+            <h2 className="text-xs font-bold text-slate-800">
+              Bulk Remittance Update
+            </h2>
+            <p className="mt-0.5 text-[10px] text-slate-500">
+              Select pending orders and update them together.
+            </p>
           </div>
 
           <button
             type="button"
             onClick={toggleSelectAll}
             disabled={!visiblePending.length || bulkProcessing}
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-sky-200 bg-white px-3.5 py-2.5 text-xs font-bold text-[#008dd2] transition hover:bg-sky-50 disabled:cursor-not-allowed disabled:opacity-40"
+            className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-[10px] font-bold text-[#008dd2] hover:bg-sky-100 disabled:opacity-40"
           >
             {allVisibleSelected
-              ? "Deselect Visible Orders"
-              : "Select All Visible Pending"}
+              ? "Deselect Visible"
+              : "Select All Pending"}
           </button>
         </div>
 
-        <div className="p-4 sm:p-5">
-          {/* SELECTED METRICS */}
-          <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3.5">
-              <div className="flex items-center gap-2 text-slate-500">
-                <HiOutlineClipboardList size={16} />
-
-                <span className="text-[11px] font-semibold">
-                  Selected Orders
-                </span>
-              </div>
-
-              <p className="mt-2 text-2xl font-extrabold text-slate-900">
-                {selectedRemittances.length}
-              </p>
-
-              <p className="mt-1 text-[10px] text-slate-400">
-                Pending records selected
-              </p>
-            </div>
-
-            <div className="rounded-xl border border-sky-200 bg-sky-50/70 p-3.5">
-              <div className="flex items-center gap-2 text-sky-700">
-                <HiOutlineCurrencyRupee size={17} />
-
-                <span className="text-[11px] font-bold">
-                  Selected COD Amount
-                </span>
-              </div>
-
-              <p className="mt-2 break-words text-xl font-extrabold text-slate-900 sm:text-2xl">
-                {formatAmount(selectedAmount)}
-              </p>
-
-              <p className="mt-1 text-[10px] text-slate-500">
-                Combined amount of selected orders
-              </p>
-            </div>
-
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-3.5">
-              <div className="flex items-center gap-2 text-emerald-700">
-                <HiOutlineUsers size={17} />
-
-                <span className="text-[11px] font-bold">
-                  Customer Selection
-                </span>
-              </div>
-
-              <p className="mt-2 text-sm font-extrabold text-slate-900">
-                {customerFilter === "ALL"
-                  ? "All Customers"
-                  : customers.find((c) => c.id === customerFilter)?.name ||
-                    `Customer ${customerFilter}`}
-              </p>
-
-              <p className="mt-1 text-[10px] text-slate-500">
-                Current customer filter
-              </p>
-            </div>
-          </div>
-
-          {/* SELECTED ORDER CHIPS */}
-          {selectedRemittances.length > 0 && (
-            <div className="mb-4 rounded-xl border border-slate-200 bg-white p-3">
-              <div className="mb-2 flex items-center justify-between gap-2">
-                <p className="text-[11px] font-bold text-slate-700">
-                  Selected Orders
-                </p>
-
-                <button
-                  type="button"
-                  onClick={clearSelection}
-                  disabled={bulkProcessing}
-                  className="text-[10px] font-bold text-rose-600 hover:text-rose-700 disabled:opacity-50"
-                >
-                  Clear selection
-                </button>
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                {selectedRemittances.map((item) => (
-                  <div
-                    key={getId(item)}
-                    className="inline-flex max-w-full items-center gap-2 rounded-lg border border-sky-100 bg-sky-50 px-2.5 py-2"
-                  >
-                    <div className="min-w-0">
-                      <p className="truncate text-[10px] font-bold text-slate-800">
-                        Order #{item.order_id || "-"}
-                      </p>
-
-                      <p className="text-[10px] font-semibold text-[#008dd2]">
-                        {formatAmount(item.cod_amount)}
-                      </p>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => toggleSelection(getId(item))}
-                      disabled={bulkProcessing}
-                      aria-label={`Remove order ${item.order_id} from selection`}
-                      className="rounded-md p-1 text-slate-400 hover:bg-white hover:text-rose-600 disabled:opacity-50"
-                    >
-                      <HiOutlineX size={14} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* COMMON DESCRIPTION */}
-          <div>
-            <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-              <label
-                htmlFor="bulk-description"
-                className="text-xs font-bold text-slate-800"
-              >
-                Common Description
-              </label>
-
-              <span className="text-[10px] text-slate-400">
-                {bulkDescription.length}/1000
-              </span>
-            </div>
-
-            <textarea
-              id="bulk-description"
-              value={bulkDescription}
-              onChange={(event) =>
-                setBulkDescription(event.target.value)
-              }
-              maxLength={1000}
-              rows={2}
-              placeholder="Example: COD payment transferred | UTR: 123456789 | Transfer date: 09 Oct 2026"
-              disabled={bulkProcessing}
-              className="w-full resize-y rounded-xl border border-slate-200 bg-slate-50/60 px-3.5 py-3 text-xs text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-sky-100 disabled:opacity-60"
-            />
-
-            <p className="mt-1.5 text-[10px] leading-relaxed text-slate-400">
-              This description will replace the existing description on every
-              selected record when the bulk update succeeds.
+        <div className="grid grid-cols-2 gap-2.5 p-3.5 sm:grid-cols-3">
+          <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5">
+            <p className="text-[10px] font-medium text-slate-500">
+              Selected Orders
+            </p>
+            <p className="mt-1 text-lg font-bold text-slate-800">
+              {selectedRemittances.length}
             </p>
           </div>
 
-          {/* BULK ACTION FOOTER */}
-          <div className="mt-4 flex flex-col gap-3 rounded-xl bg-slate-900 p-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-4">
-            <div>
-              <p className="text-xs font-bold text-white">
-                {selectedRemittances.length
-                  ? `${selectedRemittances.length} order(s) ready to process`
-                  : "No orders selected"}
-              </p>
+          <div className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-2.5">
+            <p className="text-[10px] font-medium text-sky-700">
+              Selected COD Amount
+            </p>
+            <p className="mt-1 break-words text-base font-bold text-[#008dd2]">
+              {formatAmount(selectedAmount)}
+            </p>
+          </div>
 
-              <p className="mt-1 text-[10px] text-slate-300">
-                Total selected: {formatAmount(selectedAmount)}
+          <div className="col-span-2 rounded-lg border border-slate-200 bg-white px-3 py-2.5 sm:col-span-1">
+            <p className="text-[10px] font-medium text-slate-500">
+              Customer
+            </p>
+            <p className="mt-1 truncate text-xs font-semibold text-slate-700">
+              {customerFilter === "ALL"
+                ? "All Customers"
+                : customers.find((c) => c.id === customerFilter)?.name ||
+                  `Customer ${customerFilter}`}
+            </p>
+          </div>
+        </div>
+
+        {selectedRemittances.length > 0 && (
+          <div className="mx-3.5 mb-3 rounded-lg border border-sky-100 bg-sky-50/50 p-2.5">
+            <div className="mb-2 flex items-center justify-between">
+              <p className="text-[10px] font-bold text-slate-600">
+                Selected Orders
               </p>
+              <button
+                type="button"
+                onClick={clearSelection}
+                disabled={bulkProcessing}
+                className="text-[10px] font-semibold text-rose-600 hover:text-rose-700 disabled:opacity-50"
+              >
+                Clear all
+              </button>
             </div>
+
+            <div className="flex flex-wrap gap-1.5">
+              {selectedRemittances.map((item) => (
+                <span
+                  key={getId(item)}
+                  className="inline-flex items-center gap-2 rounded-md border border-sky-100 bg-white px-2 py-1.5"
+                >
+                  <span className="text-[10px] font-semibold text-slate-700">
+                    #{item.order_id}
+                  </span>
+                  <span className="text-[10px] font-bold text-[#008dd2]">
+                    {formatAmount(item.cod_amount)}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => toggleSelection(getId(item))}
+                    disabled={bulkProcessing}
+                    aria-label={`Remove order ${item.order_id}`}
+                    className="text-slate-400 hover:text-rose-600 disabled:opacity-50"
+                  >
+                    <HiOutlineX size={12} />
+                  </button>
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="border-t border-slate-100 p-3.5">
+          <div className="mb-1.5 flex items-center justify-between gap-2">
+            <label
+              htmlFor="bulk-description"
+              className="text-[11px] font-semibold text-slate-700"
+            >
+              Common Description
+            </label>
+            <span className="text-[10px] text-slate-400">
+              {bulkDescription.length}/1000
+            </span>
+          </div>
+
+          <textarea
+            id="bulk-description"
+            value={bulkDescription}
+            onChange={(event) =>
+              setBulkDescription(event.target.value)
+            }
+            maxLength={1000}
+            rows={2}
+            disabled={bulkProcessing}
+            placeholder="Enter common description or UTR reference..."
+            className="w-full resize-y rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs text-slate-700 outline-none placeholder:text-slate-400 focus:border-[#008dd2] focus:ring-1 focus:ring-sky-100 disabled:opacity-60"
+          />
+
+          <div className="mt-2.5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-[10px] leading-relaxed text-slate-400">
+              The description will replace the existing description for each
+              selected record.
+            </p>
 
             <button
               type="button"
@@ -862,18 +775,17 @@ const CODRemittance = () => {
                 bulkProcessing ||
                 loading
               }
-              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-2.5 text-xs font-extrabold text-white transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-slate-600 disabled:text-slate-300"
+              className="inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg bg-[#008dd2] px-3.5 text-[11px] font-bold text-white hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
             >
               {bulkProcessing ? (
                 <>
-                  <HiOutlineRefresh className="animate-spin" size={16} />
-                  Processing...
+                  <HiOutlineRefresh className="animate-spin" size={14} />
+                  Updating...
                 </>
               ) : (
                 <>
-                  <HiOutlineCheckCircle size={17} />
+                  <HiOutlineCheckCircle size={15} />
                   Mark Selected Successful
-                  <HiOutlineArrowRight size={15} />
                 </>
               )}
             </button>
@@ -881,18 +793,16 @@ const CODRemittance = () => {
         </div>
       </div>
 
-      {/* RECORDS SECTION */}
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        {/* SECTION HEADER */}
-        <div className="border-b border-slate-100 p-4 sm:px-5">
+      {/* Records and filters */}
+      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+        <div className="border-b border-slate-100 px-3.5 py-3 sm:px-4">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <h2 className="text-sm font-extrabold text-slate-900">
+              <h2 className="text-xs font-bold text-slate-800">
                 Remittance Records
               </h2>
-
-              <p className="mt-1 text-[11px] text-slate-500">
-                Search, filter, select and manage individual remittances.
+              <p className="mt-0.5 text-[10px] text-slate-500">
+                Search and manage individual remittances.
               </p>
             </div>
 
@@ -905,16 +815,15 @@ const CODRemittance = () => {
                     key={tab.value}
                     type="button"
                     onClick={() => setStatusFilter(tab.value)}
-                    className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-[11px] font-bold transition ${
+                    className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-[10px] font-bold ${
                       active
-                        ? "bg-[#008dd2] text-white shadow-sm"
+                        ? "bg-[#008dd2] text-white"
                         : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                     }`}
                   >
                     {tab.label}
-
                     <span
-                      className={`rounded-md px-1.5 py-0.5 text-[10px] ${
+                      className={`rounded px-1.5 py-0.5 ${
                         active
                           ? "bg-white/20 text-white"
                           : "bg-white text-slate-600"
@@ -929,20 +838,19 @@ const CODRemittance = () => {
           </div>
         </div>
 
-        {/* FILTER BAR */}
-        <div className="border-b border-slate-100 bg-slate-50/50 p-3 sm:p-4">
-          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-[minmax(220px,1fr)_260px_auto]">
+        {/* Search and customer filter */}
+        <div className="border-b border-slate-100 bg-slate-50/60 p-3">
+          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-[minmax(200px,1fr)_240px_auto]">
             <div className="relative">
               <HiOutlineSearch
-                size={16}
+                size={15}
                 className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
               />
-
               <input
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder="Search order, buyer, AWB or customer..."
-                className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-xs outline-none transition focus:border-[#008dd2] focus:ring-2 focus:ring-sky-100"
+                className="h-9 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-[11px] outline-none focus:border-[#008dd2]"
               />
             </div>
 
@@ -951,10 +859,9 @@ const CODRemittance = () => {
               onChange={(event) =>
                 setCustomerFilter(event.target.value)
               }
-              className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs text-slate-700 outline-none focus:border-[#008dd2] focus:ring-2 focus:ring-sky-100"
+              className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-[11px] text-slate-700 outline-none focus:border-[#008dd2]"
             >
               <option value="ALL">All Customers</option>
-
               {customers.map((customer) => (
                 <option key={customer.id} value={customer.id}>
                   {customer.name} (ID: {customer.id})
@@ -965,394 +872,154 @@ const CODRemittance = () => {
             <button
               type="button"
               onClick={resetFilters}
-              className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 text-xs font-bold text-slate-600 hover:bg-slate-50"
+              className="inline-flex h-9 items-center justify-center gap-1 rounded-lg border border-slate-200 bg-white px-3 text-[10px] font-semibold text-slate-600 hover:bg-slate-50"
             >
-              <HiOutlineX size={14} />
-              Reset Filters
+              <HiOutlineX size={13} />
+              Reset
             </button>
           </div>
 
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-[10px] text-slate-500">
+          <div className="mt-2 flex flex-wrap items-center justify-between gap-1 text-[10px] text-slate-400">
             <span>
               Showing{" "}
-              <strong className="text-slate-800">
+              <strong className="text-slate-700">
                 {filteredRemittances.length}
               </strong>{" "}
               of {remittances.length} records
             </span>
-
             <span>
-              {visiblePending.length} visible pending order(s) available
-              for selection
+              {visiblePending.length} visible pending record(s)
             </span>
           </div>
         </div>
 
-        {/* ERROR */}
-        {error && !remittances.length && (
+        {error && !remittances.length ? (
           <div className="p-8 text-center">
-            <p className="text-sm font-bold text-rose-600">
-              Unable to load remittances
-            </p>
-
-            <p className="mt-1 text-xs text-slate-500">{error}</p>
-
+            <p className="text-xs font-semibold text-rose-600">{error}</p>
             <button
               type="button"
               onClick={() => fetchRemittances()}
-              className="mt-3 rounded-xl bg-[#008dd2] px-4 py-2 text-xs font-bold text-white"
+              className="mt-3 rounded-lg bg-[#008dd2] px-3 py-2 text-xs font-bold text-white"
             >
               Try Again
             </button>
           </div>
-        )}
-
-        {/* LOADING */}
-        {loading && !remittances.length && (
-          <div className="space-y-3 p-4">
+        ) : loading && !remittances.length ? (
+          <div className="space-y-2 p-4">
             {[1, 2, 3, 4].map((item) => (
               <div
                 key={item}
-                className="h-14 animate-pulse rounded-xl bg-slate-100"
+                className="h-12 animate-pulse rounded-lg bg-slate-100"
               />
             ))}
           </div>
-        )}
+        ) : filteredRemittances.length === 0 ? (
+          <div className="px-4 py-12 text-center">
+            <HiOutlineSearch
+              size={23}
+              className="mx-auto text-slate-300"
+            />
+            <p className="mt-2 text-xs font-bold text-slate-700">
+              No matching records
+            </p>
+            <p className="mt-1 text-[10px] text-slate-400">
+              Try changing your search or filters.
+            </p>
+          </div>
+        ) : (
+          <>
+            {/* Mobile cards */}
+            <div className="space-y-2.5 p-3 sm:hidden">
+              {filteredRemittances.map((item) => {
+                const id = getId(item);
+                const pending = getStatus(item.status) === "PENDING";
+                const selected = selectedIds.includes(id);
+                const editing = String(editingDescriptionId) === id;
+                const saving = String(savingDescriptionId) === id;
+                const draft = descriptionDrafts[id] ?? "";
 
-        {/* EMPTY STATE */}
-        {!loading &&
-          !error &&
-          filteredRemittances.length === 0 && (
-            <div className="px-4 py-14 text-center">
-              <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
-                <HiOutlineSearch size={22} />
-              </span>
+                return (
+                  <div
+                    key={id}
+                    className={`rounded-xl border p-3 ${
+                      selected
+                        ? "border-sky-300 bg-sky-50/40"
+                        : "border-slate-200 bg-white"
+                    }`}
+                  >
+                    <div className="flex items-start gap-2">
+                      {pending && (
+                        <input
+                          type="checkbox"
+                          checked={selected}
+                          onChange={() => toggleSelection(id)}
+                          disabled={bulkProcessing}
+                          className="mt-1 h-3.5 w-3.5 accent-[#008dd2]"
+                          aria-label={`Select order ${item.order_id}`}
+                        />
+                      )}
 
-              <h3 className="mt-3 text-sm font-bold text-slate-800">
-                {remittances.length
-                  ? "No matching records"
-                  : "No COD remittances found"}
-              </h3>
-
-              <p className="mt-1 text-xs text-slate-500">
-                Try changing the search, customer or status filter.
-              </p>
-            </div>
-          )}
-
-        {/* MOBILE CARDS */}
-        {filteredRemittances.length > 0 && (
-          <div className="space-y-3 p-3 sm:hidden">
-            {filteredRemittances.map((item) => {
-              const id = getId(item);
-              const pending = getStatus(item.status) === "PENDING";
-              const selected = selectedIds.includes(id);
-              const editing = String(editingDescriptionId) === id;
-              const saving = String(savingDescriptionId) === id;
-              const draft = descriptionDrafts[id] ?? "";
-
-              return (
-                <div
-                  key={id}
-                  className={`rounded-2xl border p-3.5 ${
-                    selected
-                      ? "border-sky-300 bg-sky-50/40"
-                      : "border-slate-200 bg-white"
-                  }`}
-                >
-                  <div className="flex items-start gap-2.5">
-                    {pending && (
-                      <input
-                        type="checkbox"
-                        checked={selected}
-                        onChange={() => toggleSelection(id)}
-                        disabled={bulkProcessing}
-                        className="mt-1 h-4 w-4 accent-[#008dd2]"
-                        aria-label={`Select order ${item.order_id}`}
-                      />
-                    )}
-
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-extrabold text-slate-900">
-                            Order #{item.order_id || "-"}
-                          </p>
-
-                          <p className="mt-1 truncate text-[11px] text-slate-500">
-                            {item.customer_name || "Customer"}
-                          </p>
-
-                          <p className="mt-0.5 text-[10px] text-slate-400">
-                            Customer ID: {item.user_id ?? "-"}
-                          </p>
-                        </div>
-
-                        <div className="shrink-0 text-right">
-                          <p className="text-sm font-extrabold text-slate-900">
-                            {formatAmount(item.cod_amount)}
-                          </p>
-
-                          <div className="mt-1">
-                            <StatusBadge status={item.status} />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="truncate text-xs font-bold text-slate-800">
+                              #{item.order_id || "-"}
+                            </p>
+                            <p className="mt-1 truncate text-[10px] text-slate-500">
+                              {item.customer_name || "Customer"}
+                            </p>
+                          </div>
+                          <div className="shrink-0 text-right">
+                            <p className="text-xs font-bold text-slate-800">
+                              {formatAmount(item.cod_amount)}
+                            </p>
+                            <div className="mt-1">
+                              <StatusBadge status={item.status} />
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </div>
-                  </div>
 
-                  <div className="mt-3 grid grid-cols-2 gap-3 rounded-xl bg-slate-50 p-3">
-                    <div className="min-w-0">
-                      <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-                        Buyer
-                      </p>
-
-                      <p className="mt-1 truncate text-xs font-semibold text-slate-700">
-                        {item.buyer || "-"}
-                      </p>
-                    </div>
-
-                    <div className="min-w-0">
-                      <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-                        AWB Number
-                      </p>
-
-                      <p className="mt-1 break-all font-mono text-[11px] text-slate-700">
-                        {item.awb || "-"}
-                      </p>
-                    </div>
-
-                    <div>
-                      <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-                        Created On
-                      </p>
-
-                      <p className="mt-1 text-[10px] text-slate-700">
-                        {formatDate(item.created_at)}
-                      </p>
-                    </div>
-
-                    <div>
-                      <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-                        Transferred On
-                      </p>
-
-                      <p className="mt-1 text-[10px] text-slate-700">
-                        {formatDate(item.transferred_on)}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="mt-3 rounded-xl border border-slate-200 p-3">
-                    <div className="mb-2 flex items-center justify-between gap-2">
-                      <p className="text-[10px] font-extrabold uppercase tracking-wide text-slate-500">
-                        Admin Description
-                      </p>
-
-                      {!editing && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setDescriptionDrafts((previous) => ({
-                              ...previous,
-                              [id]: item.description || "",
-                            }));
-
-                            setEditingDescriptionId(id);
-                          }}
-                          className="inline-flex items-center gap-1 text-[10px] font-bold text-[#008dd2]"
-                        >
-                          <HiOutlinePencil size={12} />
-                          Edit
-                        </button>
-                      )}
-                    </div>
-
-                    {editing ? (
-                      <>
-                        <textarea
-                          value={draft}
-                          onChange={(event) =>
-                            updateDescriptionDraft(
-                              id,
-                              event.target.value
-                            )
-                          }
-                          maxLength={1000}
-                          rows={3}
-                          className="w-full rounded-lg border border-slate-200 p-2.5 text-xs outline-none focus:border-[#008dd2]"
-                        />
-
-                        <div className="mt-2 flex justify-end gap-2">
-                          <button
-                            type="button"
-                            disabled={saving}
-                            onClick={() => {
-                              setDescriptionDrafts((previous) => ({
-                                ...previous,
-                                [id]: item.description || "",
-                              }));
-
-                              setEditingDescriptionId(null);
-                            }}
-                            className="rounded-lg border border-slate-200 px-3 py-1.5 text-[10px] font-bold text-slate-600 disabled:opacity-50"
-                          >
-                            Cancel
-                          </button>
-
-                          <button
-                            type="button"
-                            disabled={saving}
-                            onClick={() => saveDescription(item)}
-                            className="inline-flex items-center gap-1 rounded-lg bg-[#008dd2] px-3 py-1.5 text-[10px] font-bold text-white disabled:opacity-50"
-                          >
-                            <HiOutlineSave size={12} />
-                            {saving ? "Saving..." : "Save"}
-                          </button>
+                        <div className="mt-2 grid grid-cols-2 gap-2 border-t border-slate-100 pt-2 text-[10px]">
+                          <p className="truncate text-slate-500">
+                            Buyer:{" "}
+                            <span className="font-semibold text-slate-700">
+                              {item.buyer || "-"}
+                            </span>
+                          </p>
+                          <p className="truncate text-slate-500">
+                            ID: {item.user_id ?? "-"}
+                          </p>
+                          <p className="break-all text-slate-500">
+                            AWB: {item.awb || "-"}
+                          </p>
+                          <p className="text-slate-500">
+                            {formatDate(item.created_at)}
+                          </p>
                         </div>
-                      </>
-                    ) : (
-                      <p className="whitespace-pre-wrap break-words text-[11px] leading-relaxed text-slate-600">
-                        {item.description || "No description added"}
-                      </p>
-                    )}
-                  </div>
 
-                  {pending ? (
-                    <button
-                      type="button"
-                      onClick={() => markSuccessful(item)}
-                      disabled={
-                        processingId !== null ||
-                        savingDescriptionId !== null ||
-                        bulkProcessing
-                      }
-                      className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-3 py-2.5 text-xs font-bold text-white transition hover:bg-emerald-700 disabled:opacity-50"
-                    >
-                      <HiOutlineCheckCircle size={16} />
-                      {String(processingId) === id
-                        ? "Updating..."
-                        : "Mark Successful"}
-                    </button>
-                  ) : (
-                    <div className="mt-3 rounded-xl bg-emerald-50 px-3 py-2 text-center text-xs font-bold text-emerald-700">
-                      <HiOutlineCheckCircle className="mr-1 inline" />
-                      Transfer Completed
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
+                        <div className="mt-2 rounded-lg bg-slate-50 p-2">
+                          <div className="mb-1 flex items-center justify-between gap-2">
+                            <span className="text-[10px] font-semibold text-slate-500">
+                              Description
+                            </span>
+                            {!editing && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setDescriptionDrafts((previous) => ({
+                                    ...previous,
+                                    [id]: item.description || "",
+                                  }));
+                                  setEditingDescriptionId(id);
+                                }}
+                                className="inline-flex items-center gap-1 text-[10px] font-semibold text-[#008dd2]"
+                              >
+                                <HiOutlinePencil size={11} />
+                                Edit
+                              </button>
+                            )}
+                          </div>
 
-        {/* DESKTOP TABLE */}
-        {filteredRemittances.length > 0 && (
-          <div className="hidden overflow-x-auto sm:block">
-            <table className="w-full min-w-[1250px] border-collapse text-left">
-              <thead>
-                <tr className="border-b border-slate-200 bg-slate-50 text-[10px] font-bold uppercase tracking-wide text-slate-500">
-                  <th className="w-10 px-4 py-3">
-                    <input
-                      type="checkbox"
-                      checked={allVisibleSelected}
-                      onChange={toggleSelectAll}
-                      disabled={
-                        !visiblePending.length ||
-                        bulkProcessing
-                      }
-                      aria-label="Select all visible pending orders"
-                      className="h-4 w-4 accent-[#008dd2]"
-                    />
-                  </th>
-
-                  <th className="px-4 py-3">Order / Customer</th>
-                  <th className="px-4 py-3">Buyer</th>
-                  <th className="px-4 py-3">AWB</th>
-                  <th className="px-4 py-3">COD Amount</th>
-                  <th className="px-4 py-3">Created On</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3">Transferred On</th>
-                  <th className="px-4 py-3">Admin Description</th>
-                  <th className="px-4 py-3">Action</th>
-                </tr>
-              </thead>
-
-              <tbody className="divide-y divide-slate-100 text-xs">
-                {filteredRemittances.map((item) => {
-                  const id = getId(item);
-                  const pending = getStatus(item.status) === "PENDING";
-                  const selected = selectedIds.includes(id);
-                  const editing = String(editingDescriptionId) === id;
-                  const saving = String(savingDescriptionId) === id;
-                  const draft = descriptionDrafts[id] ?? "";
-
-                  return (
-                    <tr
-                      key={id}
-                      className={`align-top transition hover:bg-slate-50 ${
-                        selected ? "bg-sky-50/50" : ""
-                      }`}
-                    >
-                      <td className="px-4 py-4">
-                        {pending && (
-                          <input
-                            type="checkbox"
-                            checked={selected}
-                            onChange={() => toggleSelection(id)}
-                            disabled={bulkProcessing}
-                            aria-label={`Select order ${item.order_id}`}
-                            className="h-4 w-4 accent-[#008dd2]"
-                          />
-                        )}
-                      </td>
-
-                      <td className="px-4 py-4">
-                        <p className="whitespace-nowrap font-extrabold text-slate-900">
-                          #{item.order_id || "-"}
-                        </p>
-
-                        <p className="mt-1 whitespace-nowrap text-[10px] text-slate-500">
-                          {item.customer_name || "Customer"}
-                        </p>
-
-                        <p className="mt-0.5 text-[10px] text-slate-400">
-                          ID: {item.user_id ?? "-"}
-                        </p>
-                      </td>
-
-                      <td className="px-4 py-4">
-                        <p className="max-w-[160px] truncate font-semibold text-slate-700">
-                          {item.buyer || "-"}
-                        </p>
-                      </td>
-
-                      <td className="px-4 py-4">
-                        <span className="font-mono text-[11px] text-slate-600">
-                          {item.awb || "-"}
-                        </span>
-                      </td>
-
-                      <td className="whitespace-nowrap px-4 py-4">
-                        <p className="font-extrabold text-slate-900">
-                          {formatAmount(item.cod_amount)}
-                        </p>
-                      </td>
-
-                      <td className="whitespace-nowrap px-4 py-4 text-[10px] text-slate-500">
-                        {formatDate(item.created_at)}
-                      </td>
-
-                      <td className="px-4 py-4">
-                        <StatusBadge status={item.status} />
-                      </td>
-
-                      <td className="whitespace-nowrap px-4 py-4 text-[10px] text-slate-500">
-                        {formatDate(item.transferred_on)}
-                      </td>
-
-                      <td className="w-[280px] px-4 py-4">
-                        <div className="w-[250px]">
                           {editing ? (
                             <>
                               <textarea
@@ -1364,74 +1031,42 @@ const CODRemittance = () => {
                                   )
                                 }
                                 maxLength={1000}
-                                rows={3}
-                                placeholder="Enter admin description..."
-                                className="w-full resize-y rounded-xl border border-slate-200 bg-white p-2.5 text-xs outline-none focus:border-[#008dd2]"
+                                rows={2}
+                                className="w-full rounded-md border border-slate-200 bg-white p-2 text-[11px] outline-none focus:border-[#008dd2]"
                               />
-
-                              <div className="mt-1.5 flex items-center justify-between gap-2">
-                                <span className="text-[10px] text-slate-400">
-                                  {draft.length}/1000
-                                </span>
-
-                                <div className="flex gap-1.5">
-                                  <button
-                                    type="button"
-                                    disabled={saving}
-                                    onClick={() => {
-                                      setDescriptionDrafts(
-                                        (previous) => ({
-                                          ...previous,
-                                          [id]: item.description || "",
-                                        })
-                                      );
-
-                                      setEditingDescriptionId(null);
-                                    }}
-                                    className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-[10px] font-bold text-slate-600 disabled:opacity-50"
-                                  >
-                                    Cancel
-                                  </button>
-
-                                  <button
-                                    type="button"
-                                    disabled={saving}
-                                    onClick={() => saveDescription(item)}
-                                    className="inline-flex items-center gap-1 rounded-lg bg-[#008dd2] px-2.5 py-1.5 text-[10px] font-bold text-white disabled:opacity-50"
-                                  >
-                                    <HiOutlineSave size={12} />
-                                    {saving ? "Saving..." : "Save"}
-                                  </button>
-                                </div>
+                              <div className="mt-1.5 flex justify-end gap-1.5">
+                                <button
+                                  type="button"
+                                  disabled={saving}
+                                  onClick={() => {
+                                    setDescriptionDrafts((previous) => ({
+                                      ...previous,
+                                      [id]: item.description || "",
+                                    }));
+                                    setEditingDescriptionId(null);
+                                  }}
+                                  className="rounded-md border border-slate-200 px-2.5 py-1.5 text-[10px] text-slate-600"
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={saving}
+                                  onClick={() => saveDescription(item)}
+                                  className="inline-flex items-center gap-1 rounded-md bg-[#008dd2] px-2.5 py-1.5 text-[10px] font-semibold text-white disabled:opacity-50"
+                                >
+                                  <HiOutlineSave size={11} />
+                                  {saving ? "Saving..." : "Save"}
+                                </button>
                               </div>
                             </>
                           ) : (
-                            <>
-                              <p className="whitespace-pre-wrap break-words leading-relaxed text-slate-600">
-                                {item.description || "No description added"}
-                              </p>
-
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setDescriptionDrafts((previous) => ({
-                                    ...previous,
-                                    [id]: item.description || "",
-                                  }));
-
-                                  setEditingDescriptionId(id);
-                                }}
-                                className="mt-2 inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[10px] font-bold text-slate-600 transition hover:border-[#008dd2] hover:text-[#008dd2]"
-                              >
-                                <HiOutlinePencil size={11} />
-                                Edit Description
-                              </button>
-                            </>
+                            <p className="whitespace-pre-wrap break-words text-[10px] leading-relaxed text-slate-600">
+                              {item.description || "No description added"}
+                            </p>
                           )}
                         </div>
-                      </td>
 
-                      <td className="px-4 py-4">
                         {pending ? (
                           <button
                             type="button"
@@ -1441,97 +1076,225 @@ const CODRemittance = () => {
                               savingDescriptionId !== null ||
                               bulkProcessing
                             }
-                            className="inline-flex whitespace-nowrap items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2 text-[10px] font-bold text-white transition hover:bg-emerald-700 disabled:opacity-50"
+                            className="mt-2 inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-3 text-[10px] font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
                           >
-                            <HiOutlineCheckCircle size={14} />
+                            <HiOutlineCheckCircle size={13} />
                             {String(processingId) === id
                               ? "Updating..."
                               : "Mark Successful"}
                           </button>
                         ) : (
-                          <span className="inline-flex items-center gap-1 whitespace-nowrap text-[10px] font-bold text-emerald-700">
-                            <HiOutlineCheckCircle size={14} />
-                            Completed
-                          </span>
+                          <p className="mt-2 text-[10px] font-semibold text-emerald-700">
+                            <HiOutlineCheckCircle className="mr-1 inline" />
+                            Transfer Completed
+                          </p>
                         )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Desktop table */}
+            <div className="hidden overflow-x-auto sm:block">
+              <table className="w-full min-w-[1150px] border-collapse text-left">
+                <thead>
+                  <tr className="border-b border-slate-200 bg-slate-50 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                    <th className="w-9 px-3 py-2.5">
+                      <input
+                        type="checkbox"
+                        checked={allVisibleSelected}
+                        onChange={toggleSelectAll}
+                        disabled={
+                          !visiblePending.length || bulkProcessing
+                        }
+                        aria-label="Select all visible pending records"
+                        className="h-3.5 w-3.5 accent-[#008dd2]"
+                      />
+                    </th>
+                    <th className="px-3 py-2.5">Order / Customer</th>
+                    <th className="px-3 py-2.5">Buyer</th>
+                    <th className="px-3 py-2.5">AWB</th>
+                    <th className="px-3 py-2.5">COD Amount</th>
+                    <th className="px-3 py-2.5">Created On</th>
+                    <th className="px-3 py-2.5">Status</th>
+                    <th className="px-3 py-2.5">Transferred On</th>
+                    <th className="px-3 py-2.5">Description</th>
+                    <th className="px-3 py-2.5">Action</th>
+                  </tr>
+                </thead>
+
+                <tbody className="divide-y divide-slate-100 text-[11px]">
+                  {filteredRemittances.map((item) => {
+                    const id = getId(item);
+                    const pending = getStatus(item.status) === "PENDING";
+                    const selected = selectedIds.includes(id);
+                    const editing = String(editingDescriptionId) === id;
+                    const saving = String(savingDescriptionId) === id;
+                    const draft = descriptionDrafts[id] ?? "";
+
+                    return (
+                      <tr
+                        key={id}
+                        className={`align-top hover:bg-slate-50 ${
+                          selected ? "bg-sky-50/50" : ""
+                        }`}
+                      >
+                        <td className="px-3 py-3">
+                          {pending && (
+                            <input
+                              type="checkbox"
+                              checked={selected}
+                              onChange={() => toggleSelection(id)}
+                              disabled={bulkProcessing}
+                              aria-label={`Select order ${item.order_id}`}
+                              className="h-3.5 w-3.5 accent-[#008dd2]"
+                            />
+                          )}
+                        </td>
+
+                        <td className="px-3 py-3">
+                          <p className="whitespace-nowrap font-bold text-slate-800">
+                            #{item.order_id || "-"}
+                          </p>
+                          <p className="mt-1 max-w-[130px] truncate text-[10px] text-slate-500">
+                            {item.customer_name || "Customer"}
+                          </p>
+                          <p className="mt-0.5 text-[10px] text-slate-400">
+                            ID: {item.user_id ?? "-"}
+                          </p>
+                        </td>
+
+                        <td className="px-3 py-3">
+                          <p className="max-w-[140px] truncate font-medium text-slate-700">
+                            {item.buyer || "-"}
+                          </p>
+                        </td>
+
+                        <td className="px-3 py-3 font-mono text-[10px] text-slate-600">
+                          {item.awb || "-"}
+                        </td>
+
+                        <td className="whitespace-nowrap px-3 py-3 font-bold text-slate-800">
+                          {formatAmount(item.cod_amount)}
+                        </td>
+
+                        <td className="whitespace-nowrap px-3 py-3 text-[10px] text-slate-500">
+                          {formatDate(item.created_at)}
+                        </td>
+
+                        <td className="px-3 py-3">
+                          <StatusBadge status={item.status} />
+                        </td>
+
+                        <td className="whitespace-nowrap px-3 py-3 text-[10px] text-slate-500">
+                          {formatDate(item.transferred_on)}
+                        </td>
+
+                        <td className="w-[250px] px-3 py-3">
+                          <div className="w-[220px]">
+                            {editing ? (
+                              <>
+                                <textarea
+                                  value={draft}
+                                  onChange={(event) =>
+                                    updateDescriptionDraft(
+                                      id,
+                                      event.target.value
+                                    )
+                                  }
+                                  maxLength={1000}
+                                  rows={2}
+                                  className="w-full rounded-md border border-slate-200 p-2 text-[10px] outline-none focus:border-[#008dd2]"
+                                />
+                                <div className="mt-1 flex justify-end gap-1.5">
+                                  <button
+                                    type="button"
+                                    disabled={saving}
+                                    onClick={() => {
+                                      setDescriptionDrafts((previous) => ({
+                                        ...previous,
+                                        [id]: item.description || "",
+                                      }));
+                                      setEditingDescriptionId(null);
+                                    }}
+                                    className="rounded-md border border-slate-200 px-2 py-1 text-[10px] text-slate-600"
+                                  >
+                                    Cancel
+                                  </button>
+                                  <button
+                                    type="button"
+                                    disabled={saving}
+                                    onClick={() => saveDescription(item)}
+                                    className="inline-flex items-center gap-1 rounded-md bg-[#008dd2] px-2 py-1 text-[10px] font-semibold text-white disabled:opacity-50"
+                                  >
+                                    <HiOutlineSave size={10} />
+                                    {saving ? "Saving..." : "Save"}
+                                  </button>
+                                </div>
+                              </>
+                            ) : (
+                              <>
+                                <p className="whitespace-pre-wrap break-words text-[10px] leading-relaxed text-slate-600">
+                                  {item.description || "No description"}
+                                </p>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setDescriptionDrafts((previous) => ({
+                                      ...previous,
+                                      [id]: item.description || "",
+                                    }));
+                                    setEditingDescriptionId(id);
+                                  }}
+                                  className="mt-1.5 inline-flex items-center gap-1 text-[10px] font-semibold text-[#008dd2] hover:text-sky-700"
+                                >
+                                  <HiOutlinePencil size={10} />
+                                  Edit
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </td>
+
+                        <td className="px-3 py-3">
+                          {pending ? (
+                            <button
+                              type="button"
+                              onClick={() => markSuccessful(item)}
+                              disabled={
+                                processingId !== null ||
+                                savingDescriptionId !== null ||
+                                bulkProcessing
+                              }
+                              className="inline-flex whitespace-nowrap items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-2 text-[10px] font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+                            >
+                              <HiOutlineCheckCircle size={12} />
+                              {String(processingId) === id
+                                ? "Updating..."
+                                : "Mark Successful"}
+                            </button>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 whitespace-nowrap text-[10px] font-semibold text-emerald-700">
+                              <HiOutlineCheckCircle size={12} />
+                              Completed
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
 
-        {/* TABLE FOOTER */}
-        <div className="flex flex-col gap-1 border-t border-slate-100 bg-slate-50/70 px-4 py-3 text-[10px] text-slate-500 sm:flex-row sm:items-center sm:justify-between">
-          <span>ParcelDrop · COD Remittance Ledger</span>
-
-          <span>
-            {filteredRemittances.length} record(s) displayed
-          </span>
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 bg-slate-50/60 px-3.5 py-2.5 text-[10px] text-slate-400">
+          <span>ParcelDrop · COD Remittance</span>
+          <span>{filteredRemittances.length} records</span>
         </div>
-      </div>
-    </div>
-  );
-};
-
-/* =========================
-   SUMMARY CARD
-========================= */
-
-const SummaryCard = ({ title, value, subtitle, icon, color }) => {
-  const styles = {
-    blue: {
-      icon: "bg-sky-100 text-[#008dd2]",
-      border: "border-sky-100",
-      value: "text-slate-900",
-    },
-    amber: {
-      icon: "bg-amber-100 text-amber-700",
-      border: "border-amber-100",
-      value: "text-amber-700",
-    },
-    green: {
-      icon: "bg-emerald-100 text-emerald-700",
-      border: "border-emerald-100",
-      value: "text-emerald-700",
-    },
-    violet: {
-      icon: "bg-violet-100 text-violet-700",
-      border: "border-violet-100",
-      value: "text-slate-900",
-    },
-  };
-
-  const style = styles[color] || styles.blue;
-
-  return (
-    <div
-      className={`rounded-2xl border ${style.border} bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:p-5`}
-    >
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <p className="text-[11px] font-semibold text-slate-500 sm:text-xs">
-            {title}
-          </p>
-
-          <p
-            className={`mt-3 break-words text-xl font-extrabold tracking-tight sm:text-2xl ${style.value}`}
-          >
-            {value}
-          </p>
-
-          <p className="mt-1.5 text-[10px] text-slate-400 sm:text-[11px]">
-            {subtitle}
-          </p>
-        </div>
-
-        <span
-          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${style.icon}`}
-        >
-          {icon}
-        </span>
       </div>
     </div>
   );
