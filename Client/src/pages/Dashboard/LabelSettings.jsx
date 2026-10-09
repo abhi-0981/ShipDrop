@@ -594,7 +594,7 @@ function LabelSettings() {
       {notice && !error && (
         <div
           role="status"
-          className="fixed bottom-20 right-4 z-50 flex items-center gap-2 rounded-lg border border-green-200 bg-white px-4 py-3 text-sm text-green-700 shadow-lg sm:bottom-5"
+className="fixed right-4 top-4 z-50 flex items-center gap-2 rounded-lg border border-green-200 bg-white px-4 py-3 text-sm text-green-700 shadow-lg"
         >
           <span className="flex h-5 w-5 items-center justify-center rounded-full bg-green-100 text-xs font-bold">
             ✓
