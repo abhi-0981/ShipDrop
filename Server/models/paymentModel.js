@@ -384,6 +384,8 @@ const createCODRemittancesForDeliveredOrders = (
 };
 
 
+
+
 // ========================================
 // GET COD REMITTANCE HISTORY
 // ========================================
@@ -400,7 +402,7 @@ const getCODRemittances = (
       o.awb,
       cr.cod_amount,
       o.created_at,
-      o.tracking_updated_at,
+      o.tracking_delivery_date AS tracking_updated_at,
       cr.status,
       cr.transferred_on,
       cr.description
