@@ -1,9 +1,4 @@
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
   HiOutlineSearch,
@@ -42,12 +37,11 @@ const formatDate = (date) => {
 };
 
 const StatusBadge = ({ status }) => {
-  const successful =
-    String(status || "").toUpperCase() === "SUCCESSFUL";
+  const successful = String(status || "").toUpperCase() === "SUCCESSFUL";
 
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[10.5px] font-semibold ${
+      className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-semibold ${
         successful
           ? "border-emerald-200 bg-emerald-50 text-emerald-700"
           : "border-amber-200 bg-amber-50 text-amber-700"
@@ -58,7 +52,6 @@ const StatusBadge = ({ status }) => {
       ) : (
         <HiOutlineClock size={13} />
       )}
-
       {successful ? "Successful" : status || "Pending"}
     </span>
   );
@@ -68,11 +61,18 @@ const CODRemittance = () => {
   const [remittances, setRemittances] = useState([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
+  const [customerFilter, setCustomerFilter] = useState("ALL");
+
   const [descriptionDrafts, setDescriptionDrafts] = useState({});
+  const [editingDescriptionId, setEditingDescriptionId] = useState(null);
+
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [bulkDescription, setBulkDescription] = useState("");
+
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState(null);
   const [savingDescriptionId, setSavingDescriptionId] = useState(null);
-  const [editingDescriptionId, setEditingDescriptionId] = useState(null);
+  const [bulkProcessing, setBulkProcessing] = useState(false);
   const [error, setError] = useState("");
 
   const getHeaders = () => {
@@ -89,25 +89,18 @@ const CODRemittance = () => {
       setLoading(true);
       setError("");
 
-      const response = await fetch(
-        `${API_BASE_URL}/admin/cod-remittances`,
-        {
-          method: "GET",
-          headers: getHeaders(),
-        }
-      );
+      const response = await fetch(`${API_BASE_URL}/admin/cod-remittances`, {
+        method: "GET",
+        headers: getHeaders(),
+      });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(
-          data?.message || "Unable to load COD remittances"
-        );
+        throw new Error(data?.message || "Unable to load COD remittances");
       }
 
-      const records = Array.isArray(data?.remittances)
-        ? data.remittances
-        : [];
+      const records = Array.isArray(data?.remittances) ? data.remittances : [];
 
       setRemittances(records);
 
@@ -125,6 +118,19 @@ const CODRemittance = () => {
         return next;
       });
 
+      // Remove IDs that are no longer pending or no longer exist.
+      const pendingIds = new Set(
+        records
+          .filter(
+            (item) => String(item.status || "").toUpperCase() === "PENDING",
+          )
+          .map((item) => String(item.remittance_id)),
+      );
+
+      setSelectedIds((previous) =>
+        previous.filter((id) => pendingIds.has(String(id))),
+      );
+
       if (showToast) {
         toast.success("Remittances refreshed");
       }
@@ -140,15 +146,31 @@ const CODRemittance = () => {
     fetchRemittances();
   }, [fetchRemittances]);
 
+  // Unique customers for the customer filter.
+  const customers = useMemo(() => {
+    const unique = new Map();
+
+    remittances.forEach((item) => {
+      const id = String(item.user_id ?? "unknown");
+
+      if (!unique.has(id)) {
+        unique.set(id, {
+          id,
+          name: item.customer_name || `Customer ${id}`,
+        });
+      }
+    });
+
+    return [...unique.values()].sort((a, b) => a.name.localeCompare(b.name));
+  }, [remittances]);
+
   const stats = useMemo(() => {
     const pending = remittances.filter(
-      (item) =>
-        String(item.status || "").toUpperCase() === "PENDING"
+      (item) => String(item.status || "").toUpperCase() === "PENDING",
     );
 
     const successful = remittances.filter(
-      (item) =>
-        String(item.status || "").toUpperCase() === "SUCCESSFUL"
+      (item) => String(item.status || "").toUpperCase() === "SUCCESSFUL",
     );
 
     return {
@@ -157,7 +179,7 @@ const CODRemittance = () => {
       successful: successful.length,
       pendingAmount: pending.reduce(
         (sum, item) => sum + Number(item.cod_amount || 0),
-        0
+        0,
       ),
     };
   }, [remittances]);
@@ -166,26 +188,74 @@ const CODRemittance = () => {
     const query = search.trim().toLowerCase();
 
     return remittances.filter((item) => {
-      const status = String(
-        item.status || "PENDING"
-      ).toUpperCase();
+      const status = String(item.status || "PENDING").toUpperCase();
 
-      const matchesStatus =
-        statusFilter === "ALL" || status === statusFilter;
+      const matchesStatus = statusFilter === "ALL" || status === statusFilter;
+
+      const matchesCustomer =
+        customerFilter === "ALL" ||
+        String(item.user_id ?? "unknown") === customerFilter;
 
       const matchesSearch =
         !query ||
-        String(item.order_id || "").toLowerCase().includes(query) ||
-        String(item.buyer || "").toLowerCase().includes(query) ||
-        String(item.awb || "").toLowerCase().includes(query) ||
+        String(item.order_id || "")
+          .toLowerCase()
+          .includes(query) ||
+        String(item.buyer || "")
+          .toLowerCase()
+          .includes(query) ||
+        String(item.awb || "")
+          .toLowerCase()
+          .includes(query) ||
         String(item.customer_name || "")
           .toLowerCase()
           .includes(query) ||
-        String(item.user_id || "").toLowerCase().includes(query);
+        String(item.user_id ?? "")
+          .toLowerCase()
+          .includes(query);
 
-      return matchesStatus && matchesSearch;
+      return matchesStatus && matchesCustomer && matchesSearch;
     });
-  }, [remittances, search, statusFilter]);
+  }, [remittances, search, statusFilter, customerFilter]);
+
+  // Only pending rows can be selected for bulk processing.
+  const visiblePending = useMemo(
+    () =>
+      filteredRemittances.filter(
+        (item) => String(item.status || "").toUpperCase() === "PENDING",
+      ),
+    [filteredRemittances],
+  );
+
+  const visiblePendingIds = visiblePending.map((item) =>
+    String(item.remittance_id),
+  );
+
+  const allVisibleSelected =
+    visiblePendingIds.length > 0 &&
+    visiblePendingIds.every((id) => selectedIds.includes(id));
+
+  const toggleSelection = (id) => {
+    const key = String(id);
+
+    setSelectedIds((previous) =>
+      previous.includes(key)
+        ? previous.filter((selectedId) => selectedId !== key)
+        : [...previous, key],
+    );
+  };
+
+  const toggleSelectAll = () => {
+    if (allVisibleSelected) {
+      setSelectedIds((previous) =>
+        previous.filter((id) => !visiblePendingIds.includes(id)),
+      );
+    } else {
+      setSelectedIds((previous) => [
+        ...new Set([...previous, ...visiblePendingIds]),
+      ]);
+    }
+  };
 
   const updateDescriptionDraft = (id, value) => {
     setDescriptionDrafts((previous) => ({
@@ -212,28 +282,28 @@ const CODRemittance = () => {
           method: "PATCH",
           headers: getHeaders(),
           body: JSON.stringify({ description }),
-        }
+        },
       );
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(
-          data?.message || "Unable to save description"
-        );
+        throw new Error(data?.message || "Unable to save description");
       }
+
+      const cleanDescription = description.trim();
 
       setRemittances((previous) =>
         previous.map((record) =>
-          record.remittance_id === id
-            ? { ...record, description: description.trim() }
-            : record
-        )
+          String(record.remittance_id) === String(id)
+            ? { ...record, description: cleanDescription }
+            : record,
+        ),
       );
 
       setDescriptionDrafts((previous) => ({
         ...previous,
-        [id]: description.trim(),
+        [id]: cleanDescription,
       }));
 
       setEditingDescriptionId(null);
@@ -246,14 +316,12 @@ const CODRemittance = () => {
   };
 
   const markSuccessful = async (item) => {
-    if (
-      String(item.status || "").toUpperCase() !== "PENDING"
-    ) {
+    if (String(item.status || "").toUpperCase() !== "PENDING") {
       return;
     }
 
     const confirmed = window.confirm(
-      `Mark remittance for order ${item.order_id} as Successful?`
+      `Mark remittance for order ${item.order_id} as Successful?`,
     );
 
     if (!confirmed) return;
@@ -266,15 +334,13 @@ const CODRemittance = () => {
         {
           method: "PATCH",
           headers: getHeaders(),
-        }
+        },
       );
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(
-          data?.message || "Unable to update remittance"
-        );
+        throw new Error(data?.message || "Unable to update remittance");
       }
 
       toast.success("Remittance marked successful");
@@ -283,6 +349,65 @@ const CODRemittance = () => {
       toast.error(err.message || "Unable to update remittance");
     } finally {
       setProcessingId(null);
+    }
+  };
+
+  // Bulk action: status + same description for every selected record.
+  const markSelectedSuccessful = async () => {
+    if (!selectedIds.length) {
+      toast.error("Please select at least one pending remittance");
+      return;
+    }
+
+    if (bulkDescription.length > 1000) {
+      toast.error("Description cannot exceed 1000 characters");
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Mark ${selectedIds.length} selected remittance(s) as Successful and apply the same description to all?`,
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setBulkProcessing(true);
+
+      const numericIds = selectedIds.map(Number);
+
+      const response = await fetch(
+        `${API_BASE_URL}/admin/cod-remittances/bulk-successful`,
+        {
+          method: "PATCH",
+          headers: getHeaders(),
+          body: JSON.stringify({
+            ids: numericIds,
+            description: bulkDescription.trim(),
+          }),
+        },
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data?.message || "Unable to update selected remittances",
+        );
+      }
+
+      toast.success(
+        data?.message ||
+          `${selectedIds.length} remittance(s) marked successful`,
+      );
+
+      setSelectedIds([]);
+      setBulkDescription("");
+
+      await fetchRemittances();
+    } catch (err) {
+      toast.error(err.message || "Unable to update selected remittances");
+    } finally {
+      setBulkProcessing(false);
     }
   };
 
@@ -302,6 +427,7 @@ const CODRemittance = () => {
       "Transferred On",
       "Description",
       "Customer",
+      "Customer ID",
     ];
 
     const rows = filteredRemittances.map((item) => [
@@ -314,10 +440,10 @@ const CODRemittance = () => {
       item.transferred_on,
       item.description,
       item.customer_name,
+      item.user_id,
     ]);
 
-    const escapeCSV = (value) =>
-      `"${String(value ?? "").replace(/"/g, '""')}"`;
+    const escapeCSV = (value) => `"${String(value ?? "").replace(/"/g, '""')}"`;
 
     const csv = [headers, ...rows]
       .map((row) => row.map(escapeCSV).join(","))
@@ -341,6 +467,7 @@ const CODRemittance = () => {
   const resetFilters = () => {
     setSearch("");
     setStatusFilter("ALL");
+    setCustomerFilter("ALL");
   };
 
   const tabs = [
@@ -354,124 +481,88 @@ const CODRemittance = () => {
   ];
 
   return (
-    <div className="min-h-full bg-[#f8fafc] p-3.5 pb-24 sm:p-5 sm:pb-8 max-w-7xl mx-auto">
+    <div className="mx-auto min-h-full max-w-7xl bg-[#f8fafc] p-3.5 pb-24 sm:p-5 sm:pb-8">
       {/* Header */}
-      <div className="mb-4 sm:mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-800">
+            <h1 className="text-xl font-bold tracking-tight text-slate-800 sm:text-2xl">
               COD Remittance
             </h1>
 
-            <span className="rounded-full bg-sky-100 px-2.5 py-0.5 text-[11px] font-bold text-sky-700">
+            <span className="rounded-full bg-sky-100 px-2.5 py-1 text-[11px] font-bold text-sky-700">
               {stats.total}
             </span>
           </div>
 
-          <p className="mt-0.5 text-xs text-slate-500">
+          <p className="mt-1 text-xs text-slate-500">
             Manage COD remittances, descriptions and transfer status.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex gap-2">
           <button
             type="button"
             onClick={() => fetchRemittances(true)}
-            disabled={loading}
-            className="flex-1 sm:flex-initial inline-flex h-9.5 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-semibold text-slate-700 shadow-2xs transition hover:bg-slate-50 active:scale-95 disabled:opacity-60"
+            disabled={loading || bulkProcessing}
+            className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
           >
             <HiOutlineRefresh
               size={15}
-              className={loading ? "animate-spin text-[#008dd2]" : ""}
+              className={loading ? "animate-spin" : ""}
             />
-            <span>Refresh</span>
+            Refresh
           </button>
 
           <button
             type="button"
             onClick={exportCSV}
             disabled={!filteredRemittances.length}
-            className="flex-1 sm:flex-initial inline-flex h-9.5 items-center justify-center gap-1.5 rounded-xl bg-[#008dd2] px-3.5 text-xs font-bold text-white shadow-2xs transition hover:bg-sky-600 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl bg-[#008dd2] px-3 text-xs font-bold text-white hover:bg-sky-600 disabled:opacity-50"
           >
             <HiOutlineDownload size={15} />
-            <span>Export CSV</span>
+            Export CSV
           </button>
         </div>
       </div>
 
-      {/* Summary Cards */}
-      <div className="mb-4 sm:mb-5 grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-3.5 sm:p-4 shadow-2xs">
-          <div className="flex items-center justify-between">
-            <p className="text-[11px] sm:text-xs font-medium text-slate-500">
-              Total Remittances
-            </p>
-            <span className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-xl bg-sky-50 text-[#008dd2]">
-              <HiOutlineCurrencyRupee size={18} />
-            </span>
-          </div>
-          <p className="mt-2 text-xl sm:text-2xl font-bold text-slate-800">
-            {stats.total}
-          </p>
-          <p className="mt-0.5 text-[10px] sm:text-[11px] text-slate-400">
-            All records
-          </p>
-        </div>
+      {/* Summary cards */}
+      <div className="mb-5 grid grid-cols-2 gap-3 xl:grid-cols-4">
+        <SummaryCard
+          title="Total Remittances"
+          value={stats.total}
+          subtitle="All records"
+          icon={<HiOutlineCurrencyRupee size={19} />}
+          color="sky"
+        />
 
-        <div className="rounded-2xl border border-amber-200/80 bg-amber-50/20 p-3.5 sm:p-4 shadow-2xs">
-          <div className="flex items-center justify-between">
-            <p className="text-[11px] sm:text-xs font-medium text-slate-500">
-              Pending
-            </p>
-            <span className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
-              <HiOutlineClock size={18} />
-            </span>
-          </div>
-          <p className="mt-2 text-xl sm:text-2xl font-bold text-amber-600">
-            {stats.pending}
-          </p>
-          <p className="mt-0.5 text-[10px] sm:text-[11px] text-slate-400">
-            Awaiting payout
-          </p>
-        </div>
+        <SummaryCard
+          title="Pending"
+          value={stats.pending}
+          subtitle="Awaiting payout"
+          icon={<HiOutlineClock size={19} />}
+          color="amber"
+        />
 
-        <div className="rounded-2xl border border-emerald-200/80 bg-emerald-50/20 p-3.5 sm:p-4 shadow-2xs">
-          <div className="flex items-center justify-between">
-            <p className="text-[11px] sm:text-xs font-medium text-slate-500">
-              Successful
-            </p>
-            <span className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
-              <HiOutlineCheckCircle size={18} />
-            </span>
-          </div>
-          <p className="mt-2 text-xl sm:text-2xl font-bold text-emerald-600">
-            {stats.successful}
-          </p>
-          <p className="mt-0.5 text-[10px] sm:text-[11px] text-slate-400">
-            Completed
-          </p>
-        </div>
+        <SummaryCard
+          title="Successful"
+          value={stats.successful}
+          subtitle="Completed"
+          icon={<HiOutlineCheckCircle size={19} />}
+          color="emerald"
+        />
 
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-3.5 sm:p-4 shadow-2xs col-span-2 sm:col-span-1">
-          <div className="flex items-center justify-between">
-            <p className="text-[11px] sm:text-xs font-medium text-slate-500">
-              Pending Amount
-            </p>
-            <span className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-xl bg-violet-50 text-violet-600">
-              <HiOutlineCurrencyRupee size={18} />
-            </span>
-          </div>
-          <p className="mt-2 break-words text-xl sm:text-2xl font-black text-slate-800">
-            {formatAmount(stats.pendingAmount)}
-          </p>
-          <p className="mt-0.5 text-[10px] sm:text-[11px] text-slate-400">
-            Awaiting transfer
-          </p>
-        </div>
+        <SummaryCard
+          title="Pending Amount"
+          value={formatAmount(stats.pendingAmount)}
+          subtitle="Awaiting transfer"
+          icon={<HiOutlineCurrencyRupee size={19} />}
+          color="violet"
+        />
       </div>
 
-      {/* Status Tabs */}
-      <div className="mb-3.5 sm:mb-4 overflow-x-auto rounded-2xl border border-slate-200/80 bg-white p-1.5 shadow-2xs [scrollbar-width:none]">
+      {/* Status tabs */}
+      <div className="mb-4 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-1.5">
         <div className="flex min-w-max gap-1.5">
           {tabs.map((tab) => {
             const active = statusFilter === tab.value;
@@ -481,16 +572,16 @@ const CODRemittance = () => {
                 key={tab.value}
                 type="button"
                 onClick={() => setStatusFilter(tab.value)}
-                className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold transition active:scale-95 ${
+                className={`inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold transition ${
                   active
-                    ? "bg-[#008dd2] text-white shadow-2xs"
+                    ? "bg-[#008dd2] text-white"
                     : "text-slate-600 hover:bg-slate-50"
                 }`}
               >
-                <span>{tab.label}</span>
+                {tab.label}
 
                 <span
-                  className={`rounded-full px-1.5 py-0.2 text-[10px] font-bold ${
+                  className={`rounded-full px-1.5 py-0.5 text-[10px] ${
                     active
                       ? "bg-white/20 text-white"
                       : "bg-slate-100 text-slate-600"
@@ -504,9 +595,9 @@ const CODRemittance = () => {
         </div>
       </div>
 
-      {/* Search & Filter Controls */}
-      <div className="mb-3.5 sm:mb-4 rounded-2xl border border-slate-200/80 bg-white p-3 shadow-2xs space-y-2.5">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+      {/* Search and customer filter */}
+      <div className="mb-4 space-y-3 rounded-2xl border border-slate-200 bg-white p-3">
+        <div className="flex flex-col gap-2 sm:flex-row">
           <div className="relative min-w-0 flex-1">
             <HiOutlineSearch
               className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
@@ -518,67 +609,142 @@ const CODRemittance = () => {
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Search Order ID, buyer, AWB or customer..."
-              className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/60 pl-9 pr-3 text-xs text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-sky-100"
+              className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-3 text-xs outline-none focus:border-[#008dd2] focus:bg-white"
             />
           </div>
 
-          {search && (
-            <button
-              type="button"
-              onClick={resetFilters}
-              className="h-10 rounded-xl border border-slate-200 px-3.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
-            >
-              Reset
-            </button>
-          )}
+          <select
+            value={customerFilter}
+            onChange={(event) => setCustomerFilter(event.target.value)}
+            className="h-10 min-w-0 rounded-xl border border-slate-200 bg-white px-3 text-xs text-slate-700 outline-none focus:border-[#008dd2] sm:w-64"
+          >
+            <option value="ALL">All Customers</option>
+
+            {customers.map((customer) => (
+              <option key={customer.id} value={customer.id}>
+                {customer.name} (ID: {customer.id})
+              </option>
+            ))}
+          </select>
+
+          <button
+            type="button"
+            onClick={resetFilters}
+            className="h-10 rounded-xl border border-slate-200 px-3 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+          >
+            Reset
+          </button>
         </div>
 
-        <div className="flex items-center justify-between border-t border-slate-100 pt-2 text-[11px] text-slate-400">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-2 text-[11px] text-slate-500">
           <span>
-            Showing <strong className="text-slate-700">{filteredRemittances.length}</strong> of {remittances.length} records
+            Showing{" "}
+            <strong className="text-slate-800">
+              {filteredRemittances.length}
+            </strong>{" "}
+            of {remittances.length} records
           </span>
 
-          <span className="text-[#008dd2] font-semibold">
-            {statusFilter === "ALL"
-              ? "All statuses"
-              : statusFilter === "PENDING"
-              ? "Pending only"
-              : "Successful only"}
+          <span>
+            {customerFilter === "ALL"
+              ? "All customers"
+              : `Customer ID: ${customerFilter}`}
           </span>
         </div>
       </div>
 
-      {/* Records Container */}
-      <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-2xs">
-        <div className="border-b border-slate-100 px-4 py-3 bg-slate-50/40">
+      {/* Bulk action panel */}
+      <div className="mb-4 rounded-2xl border border-sky-200 bg-white p-4 shadow-sm">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <h2 className="text-sm font-bold text-slate-800">
+              Bulk Remittance Update
+            </h2>
+
+            <p className="mt-1 text-xs text-slate-500">
+              Select pending records and apply one description to all selected
+              remittances.
+            </p>
+
+            <p className="mt-2 text-xs font-semibold text-[#008dd2]">
+              {selectedIds.length} record(s) selected
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={toggleSelectAll}
+            disabled={!visiblePending.length || bulkProcessing}
+            className="rounded-xl border border-sky-200 px-3 py-2 text-xs font-bold text-[#008dd2] hover:bg-sky-50 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {allVisibleSelected
+              ? "Deselect Visible Pending"
+              : "Select All Visible Pending"}
+          </button>
+        </div>
+
+        <div className="mt-3 grid gap-3 lg:grid-cols-[1fr_auto]">
+          <div>
+            <textarea
+              value={bulkDescription}
+              onChange={(event) => setBulkDescription(event.target.value)}
+              maxLength={1000}
+              rows={2}
+              placeholder="Enter the same description for all selected records (e.g. UTR number, bank transfer reference)..."
+              className="w-full resize-y rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-700 outline-none focus:border-[#008dd2] focus:bg-white"
+            />
+
+            <p className="mt-1 text-right text-[10px] text-slate-400">
+              {bulkDescription.length}/1000 characters
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={markSelectedSuccessful}
+            disabled={!selectedIds.length || bulkProcessing || loading}
+            className="inline-flex items-center justify-center gap-2 self-start rounded-xl bg-emerald-600 px-4 py-3 text-xs font-bold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <HiOutlineCheckCircle size={16} />
+
+            {bulkProcessing
+              ? "Updating..."
+              : `Mark ${selectedIds.length || ""} Successful`}
+          </button>
+        </div>
+
+        <p className="mt-2 text-[10px] leading-relaxed text-slate-400">
+          Only Pending records can be selected. The bulk action sends the
+          selected IDs and description to the backend in one request.
+        </p>
+      </div>
+
+      {/* Remittance records */}
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="border-b border-slate-100 bg-slate-50/70 px-4 py-3">
           <h2 className="text-xs font-bold uppercase tracking-wider text-slate-800">
             {statusFilter === "ALL"
               ? "All Remittance Records"
               : statusFilter === "PENDING"
-              ? "Pending Remittances"
-              : "Successful Remittances"}
+                ? "Pending Remittances"
+                : "Successful Remittances"}
           </h2>
-          <p className="text-[11px] text-slate-400 mt-0.5">
-            Manage payouts, add reference remarks, and track bank transfers.
-          </p>
         </div>
 
         {error && !remittances.length ? (
           <div className="p-8 text-center">
-            <p className="text-xs font-bold text-rose-600">
-              Unable to load remittances
-            </p>
-            <p className="mt-1 text-xs text-slate-500">{error}</p>
+            <p className="text-xs font-semibold text-rose-600">{error}</p>
+
             <button
               type="button"
               onClick={() => fetchRemittances()}
-              className="mt-3 rounded-xl bg-[#008dd2] px-4 py-2 text-xs font-bold text-white shadow-2xs"
+              className="mt-3 rounded-xl bg-[#008dd2] px-4 py-2 text-xs font-bold text-white"
             >
               Try Again
             </button>
           </div>
         ) : loading && !remittances.length ? (
-          <div className="space-y-2.5 p-4 sm:p-5">
+          <div className="space-y-3 p-4">
             {[1, 2, 3, 4].map((item) => (
               <div
                 key={item}
@@ -587,85 +753,113 @@ const CODRemittance = () => {
             ))}
           </div>
         ) : filteredRemittances.length === 0 ? (
-          <div className="px-4 py-12 text-center text-slate-400">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
-              <HiOutlineCurrencyRupee size={24} />
-            </div>
-            <h3 className="mt-3 text-xs font-bold text-slate-700">
+          <div className="px-4 py-12 text-center">
+            <HiOutlineCurrencyRupee
+              size={28}
+              className="mx-auto text-slate-300"
+            />
+
+            <h3 className="mt-3 text-sm font-bold text-slate-700">
               {remittances.length
                 ? "No matching records"
                 : "No COD remittances found"}
             </h3>
-            <p className="mx-auto mt-1 max-w-sm text-[11px] leading-relaxed text-slate-400">
-              {remittances.length
-                ? "Try changing your search or selecting another status tab."
-                : "Remittance records will appear here when available in the database."}
+
+            <p className="mt-1 text-xs text-slate-400">
+              Try changing the search, customer or status filter.
             </p>
           </div>
         ) : (
           <>
-            {/* 1. MOBILE CARD VIEW (App Feel on Phones) */}
-            <div className="space-y-2.5 p-3 sm:hidden">
+            {/* Mobile cards */}
+            <div className="space-y-3 p-3 sm:hidden">
               {filteredRemittances.map((item) => {
+                const id = String(item.remittance_id);
                 const pending =
                   String(item.status || "").toUpperCase() === "PENDING";
-                const id = item.remittance_id;
-                const editing = editingDescriptionId === id;
-                const saving = savingDescriptionId === id;
+                const editing = String(editingDescriptionId) === id;
+                const saving = String(savingDescriptionId) === id;
+                const selected = selectedIds.includes(id);
                 const draft = descriptionDrafts[id] ?? "";
 
                 return (
                   <div
                     key={id}
-                    className="rounded-2xl border border-slate-200/80 bg-white p-3.5 space-y-2.5 shadow-2xs"
+                    className={`space-y-3 rounded-2xl border p-3 ${
+                      selected
+                        ? "border-sky-300 bg-sky-50/30"
+                        : "border-slate-200 bg-white"
+                    }`}
                   >
-                    <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                      <div>
-                        <span className="font-bold text-xs text-slate-900">
-                          #{item.order_id || "-"}
-                        </span>
-                        <p className="text-[10px] text-slate-400">
-                          Customer ID: {item.user_id ?? "-"}
-                        </p>
-                      </div>
+                    <div className="flex items-start gap-2">
+                      {pending && (
+                        <input
+                          type="checkbox"
+                          checked={selected}
+                          onChange={() => toggleSelection(id)}
+                          disabled={bulkProcessing}
+                          aria-label={`Select remittance ${item.order_id}`}
+                          className="mt-1 h-4 w-4 accent-[#008dd2]"
+                        />
+                      )}
 
-                      <div className="text-right">
-                        <span className="text-sm font-black text-slate-900 block">
-                          {formatAmount(item.cod_amount)}
-                        </span>
-                        <StatusBadge status={item.status} />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <p className="text-xs font-bold text-slate-900">
+                              #{item.order_id || "-"}
+                            </p>
+
+                            <p className="mt-1 text-[10px] text-slate-400">
+                              Customer ID: {item.user_id ?? "-"}
+                            </p>
+                          </div>
+
+                          <div className="text-right">
+                            <p className="text-sm font-black text-slate-900">
+                              {formatAmount(item.cod_amount)}
+                            </p>
+
+                            <StatusBadge status={item.status} />
+                          </div>
+                        </div>
                       </div>
                     </div>
 
-                    <div className="space-y-1 text-xs">
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-500 font-medium">Buyer:</span>
-                        <span className="font-bold text-slate-800 truncate max-w-[170px]">
+                    <div className="space-y-1.5 border-t border-slate-100 pt-2 text-xs">
+                      <p>
+                        <span className="font-medium text-slate-500">
+                          Buyer:{" "}
+                        </span>
+                        <span className="font-semibold text-slate-800">
                           {item.buyer || "-"}
                         </span>
-                      </div>
+                      </p>
 
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-500 font-medium">Customer:</span>
-                        <span className="text-slate-700 truncate max-w-[170px]">
+                      <p>
+                        <span className="font-medium text-slate-500">
+                          Customer:{" "}
+                        </span>
+                        <span className="text-slate-700">
                           {item.customer_name || "Customer"}
                         </span>
-                      </div>
+                      </p>
 
-                      <div className="flex items-center justify-between font-mono text-[11px] text-slate-600 bg-slate-50 px-2 py-1 rounded-lg">
-                        <span>AWB: {item.awb || "-"}</span>
-                        <span className="text-[10px] text-slate-400 font-sans">
-                          {formatDate(item.created_at)}
-                        </span>
-                      </div>
+                      <p className="break-all font-mono text-[11px] text-slate-600">
+                        AWB: {item.awb || "-"}
+                      </p>
+
+                      <p className="text-[10px] text-slate-400">
+                        Created: {formatDate(item.created_at)}
+                      </p>
                     </div>
 
-                    {/* Admin Description Area on Mobile */}
-                    <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-2.5 text-xs space-y-1.5">
-                      <div className="flex items-center justify-between">
+                    <div className="rounded-xl border border-slate-100 bg-slate-50 p-2.5">
+                      <div className="mb-2 flex items-center justify-between">
                         <span className="text-[10px] font-bold uppercase text-slate-400">
-                          Admin Remarks
+                          Admin Description
                         </span>
+
                         {!editing && (
                           <button
                             type="button"
@@ -674,18 +868,19 @@ const CODRemittance = () => {
                                 ...previous,
                                 [id]: item.description || "",
                               }));
+
                               setEditingDescriptionId(id);
                             }}
-                            className="text-[10px] font-bold text-[#008dd2] flex items-center gap-1"
+                            className="inline-flex items-center gap-1 text-[10px] font-bold text-[#008dd2]"
                           >
-                            <HiOutlinePencil size={11} />
+                            <HiOutlinePencil size={12} />
                             Edit
                           </button>
                         )}
                       </div>
 
                       {editing ? (
-                        <div className="space-y-1.5">
+                        <>
                           <textarea
                             value={draft}
                             onChange={(event) =>
@@ -693,10 +888,10 @@ const CODRemittance = () => {
                             }
                             maxLength={1000}
                             rows={2}
-                            placeholder="Add remittance note or UTR..."
-                            className="w-full resize-none rounded-lg border border-slate-200 bg-white p-2 text-xs text-slate-800 outline-none focus:border-[#008dd2]"
+                            className="w-full resize-y rounded-lg border border-slate-200 bg-white p-2 text-xs outline-none focus:border-[#008dd2]"
                           />
-                          <div className="flex justify-end gap-1.5">
+
+                          <div className="mt-2 flex justify-end gap-2">
                             <button
                               type="button"
                               onClick={() => {
@@ -704,32 +899,34 @@ const CODRemittance = () => {
                                   ...previous,
                                   [id]: item.description || "",
                                 }));
+
                                 setEditingDescriptionId(null);
                               }}
                               disabled={saving}
-                              className="px-2.5 py-1 text-[10px] font-bold text-slate-500 rounded-lg border border-slate-200"
+                              className="rounded-lg border border-slate-200 px-3 py-1.5 text-[10px] font-semibold text-slate-600"
                             >
                               Cancel
                             </button>
+
                             <button
                               type="button"
                               onClick={() => saveDescription(item)}
                               disabled={saving}
-                              className="px-3 py-1 text-[10px] font-bold text-white rounded-lg bg-[#008dd2]"
+                              className="inline-flex items-center gap-1 rounded-lg bg-[#008dd2] px-3 py-1.5 text-[10px] font-bold text-white disabled:opacity-50"
                             >
+                              <HiOutlineSave size={12} />
                               {saving ? "Saving..." : "Save"}
                             </button>
                           </div>
-                        </div>
+                        </>
                       ) : (
-                        <p className="text-slate-600 leading-relaxed text-[11px]">
-                          {item.description || "No notes added."}
+                        <p className="whitespace-pre-wrap break-words text-[11px] leading-relaxed text-slate-600">
+                          {item.description || "No description added"}
                         </p>
                       )}
                     </div>
 
-                    {/* Action button */}
-                    <div className="border-t border-slate-100 pt-2 flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-2 border-t border-slate-100 pt-2">
                       <span className="text-[10px] text-slate-400">
                         {item.transferred_on
                           ? `Transferred: ${formatDate(item.transferred_on)}`
@@ -741,18 +938,21 @@ const CODRemittance = () => {
                           type="button"
                           onClick={() => markSuccessful(item)}
                           disabled={
-                            processingId === id ||
-                            savingDescriptionId === id
+                            processingId !== null ||
+                            savingDescriptionId !== null ||
+                            bulkProcessing
                           }
-                          className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-2xs transition active:scale-95 disabled:opacity-60"
+                          className="inline-flex shrink-0 items-center gap-1 rounded-xl bg-emerald-600 px-3 py-2 text-[10px] font-bold text-white disabled:opacity-50"
                         >
-                          <HiOutlineCheckCircle size={14} />
-                          {processingId === id ? "Updating..." : "Mark Successful"}
+                          <HiOutlineCheckCircle size={13} />
+                          {String(processingId) === id
+                            ? "Updating..."
+                            : "Mark Successful"}
                         </button>
                       ) : (
-                        <span className="text-xs font-bold text-emerald-600 flex items-center gap-1">
-                          <HiOutlineCheckCircle size={14} />
-                          Transferred
+                        <span className="text-[10px] font-bold text-emerald-600">
+                          <HiOutlineCheckCircle className="mr-1 inline" />
+                          Completed
                         </span>
                       )}
                     </div>
@@ -761,26 +961,34 @@ const CODRemittance = () => {
               })}
             </div>
 
-            {/* 2. TABLET & DESKTOP: STRUCTURED DATA TABLE */}
-            <div className="hidden sm:block overflow-x-auto">
-              <table className="w-full min-w-[1250px] border-collapse text-left">
+            {/* Desktop table */}
+            <div className="hidden overflow-x-auto sm:block">
+              <table className="w-full min-w-[1200px] border-collapse text-left">
                 <thead>
-                  <tr className="bg-slate-50/70 border-b border-slate-200 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                  <tr className="border-b border-slate-200 bg-slate-50/70 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                    <th className="px-4 py-3">
+                      <input
+                        type="checkbox"
+                        checked={allVisibleSelected}
+                        onChange={toggleSelectAll}
+                        disabled={!visiblePending.length || bulkProcessing}
+                        aria-label="Select all visible pending remittances"
+                        className="h-4 w-4 accent-[#008dd2]"
+                      />
+                    </th>
+
                     {[
                       "Order Details",
-                      "Buyer",
+                      "Buyer / Customer",
                       "AWB No.",
                       "COD Amount",
                       "Created On",
-                      "Remit. Status",
+                      "Status",
                       "Transferred On",
                       "Admin Description",
                       "Action",
                     ].map((heading) => (
-                      <th
-                        key={heading}
-                        className="whitespace-nowrap px-4 py-3"
-                      >
+                      <th key={heading} className="whitespace-nowrap px-4 py-3">
                         {heading}
                       </th>
                     ))}
@@ -789,24 +997,40 @@ const CODRemittance = () => {
 
                 <tbody className="divide-y divide-slate-100 text-xs">
                   {filteredRemittances.map((item) => {
+                    const id = String(item.remittance_id);
                     const pending =
-                      String(item.status || "").toUpperCase() ===
-                      "PENDING";
-                    const id = item.remittance_id;
-                    const editing = editingDescriptionId === id;
-                    const saving = savingDescriptionId === id;
+                      String(item.status || "").toUpperCase() === "PENDING";
+                    const editing = String(editingDescriptionId) === id;
+                    const saving = String(savingDescriptionId) === id;
+                    const selected = selectedIds.includes(id);
                     const draft = descriptionDrafts[id] ?? "";
 
                     return (
                       <tr
                         key={id}
-                        className="align-top transition hover:bg-slate-50/70"
+                        className={`align-top transition hover:bg-slate-50/70 ${
+                          selected ? "bg-sky-50/50" : ""
+                        }`}
                       >
+                        <td className="px-4 py-3.5">
+                          {pending && (
+                            <input
+                              type="checkbox"
+                              checked={selected}
+                              onChange={() => toggleSelection(id)}
+                              disabled={bulkProcessing}
+                              aria-label={`Select remittance ${item.order_id}`}
+                              className="h-4 w-4 accent-[#008dd2]"
+                            />
+                          )}
+                        </td>
+
                         <td className="px-4 py-3.5">
                           <p className="whitespace-nowrap font-bold text-slate-800">
                             #{item.order_id || "-"}
                           </p>
-                          <p className="mt-0.5 whitespace-nowrap text-[10px] text-slate-400">
+
+                          <p className="mt-1 text-[10px] text-slate-400">
                             Customer ID: {item.user_id ?? "-"}
                           </p>
                         </td>
@@ -815,7 +1039,8 @@ const CODRemittance = () => {
                           <p className="max-w-[180px] truncate font-semibold text-slate-700">
                             {item.buyer || "-"}
                           </p>
-                          <p className="mt-0.5 max-w-[180px] truncate text-[10px] text-slate-400">
+
+                          <p className="mt-1 max-w-[180px] truncate text-[10px] text-slate-400">
                             {item.customer_name || "Customer"}
                           </p>
                         </td>
@@ -842,79 +1067,82 @@ const CODRemittance = () => {
                           {formatDate(item.transferred_on)}
                         </td>
 
-                        {/* Editable Admin Description */}
                         <td className="w-[280px] px-4 py-3.5">
-                          {editing ? (
-                            <div className="w-[250px]">
-                              <textarea
-                                value={draft}
-                                onChange={(event) =>
-                                  updateDescriptionDraft(
-                                    id,
-                                    event.target.value
-                                  )
-                                }
-                                maxLength={1000}
-                                rows={3}
-                                placeholder="Enter admin description..."
-                                className="w-full resize-y rounded-xl border border-slate-200 bg-white p-2.5 text-xs text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#008dd2] focus:ring-2 focus:ring-sky-100"
-                              />
+                          <div className="w-[250px]">
+                            {editing ? (
+                              <>
+                                <textarea
+                                  value={draft}
+                                  onChange={(event) =>
+                                    updateDescriptionDraft(
+                                      id,
+                                      event.target.value,
+                                    )
+                                  }
+                                  maxLength={1000}
+                                  rows={3}
+                                  placeholder="Enter admin description..."
+                                  className="w-full resize-y rounded-xl border border-slate-200 bg-white p-2.5 text-xs text-slate-700 outline-none focus:border-[#008dd2]"
+                                />
 
-                              <div className="mt-1 flex items-center justify-between">
-                                <span className="text-[10px] text-slate-400">
-                                  {draft.length}/1000
-                                </span>
+                                <div className="mt-1 flex items-center justify-between">
+                                  <span className="text-[10px] text-slate-400">
+                                    {draft.length}/1000
+                                  </span>
 
-                                <div className="flex gap-1.5">
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setDescriptionDrafts((previous) => ({
-                                        ...previous,
-                                        [id]: item.description || "",
-                                      }));
-                                      setEditingDescriptionId(null);
-                                    }}
-                                    disabled={saving}
-                                    className="rounded-lg border border-slate-200 px-2.5 py-1 text-[10px] font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50"
-                                  >
-                                    Cancel
-                                  </button>
+                                  <div className="flex gap-1.5">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setDescriptionDrafts((previous) => ({
+                                          ...previous,
+                                          [id]: item.description || "",
+                                        }));
 
-                                  <button
-                                    type="button"
-                                    onClick={() => saveDescription(item)}
-                                    disabled={saving}
-                                    className="inline-flex items-center gap-1 rounded-lg bg-[#008dd2] px-2.5 py-1 text-[10px] font-semibold text-white hover:bg-sky-700 disabled:opacity-50"
-                                  >
-                                    <HiOutlineSave size={12} />
-                                    {saving ? "Saving..." : "Save"}
-                                  </button>
+                                        setEditingDescriptionId(null);
+                                      }}
+                                      disabled={saving}
+                                      className="rounded-lg border border-slate-200 px-2.5 py-1 text-[10px] font-semibold text-slate-600 disabled:opacity-50"
+                                    >
+                                      Cancel
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      onClick={() => saveDescription(item)}
+                                      disabled={saving}
+                                      className="inline-flex items-center gap-1 rounded-lg bg-[#008dd2] px-2.5 py-1 text-[10px] font-semibold text-white disabled:opacity-50"
+                                    >
+                                      <HiOutlineSave size={12} />
+                                      {saving ? "Saving..." : "Save"}
+                                    </button>
+                                  </div>
                                 </div>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="w-[250px]">
-                              <p className="whitespace-pre-wrap break-words leading-relaxed text-slate-600">
-                                {item.description || "No description added"}
-                              </p>
+                              </>
+                            ) : (
+                              <>
+                                <p className="whitespace-pre-wrap break-words leading-relaxed text-slate-600">
+                                  {item.description || "No description added"}
+                                </p>
 
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setDescriptionDrafts((previous) => ({
-                                    ...previous,
-                                    [id]: item.description || "",
-                                  }));
-                                  setEditingDescriptionId(id);
-                                }}
-                                className="mt-1.5 inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-[10px] font-semibold text-slate-600 transition hover:border-[#008dd2] hover:text-[#008dd2]"
-                              >
-                                <HiOutlinePencil size={11} />
-                                Edit
-                              </button>
-                            </div>
-                          )}
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setDescriptionDrafts((previous) => ({
+                                      ...previous,
+                                      [id]: item.description || "",
+                                    }));
+
+                                    setEditingDescriptionId(id);
+                                  }}
+                                  className="mt-1.5 inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-[10px] font-semibold text-slate-600 hover:border-[#008dd2] hover:text-[#008dd2]"
+                                >
+                                  <HiOutlinePencil size={11} />
+                                  Edit
+                                </button>
+                              </>
+                            )}
+                          </div>
                         </td>
 
                         <td className="px-4 py-3.5">
@@ -923,19 +1151,20 @@ const CODRemittance = () => {
                               type="button"
                               onClick={() => markSuccessful(item)}
                               disabled={
-                                processingId === id ||
-                                savingDescriptionId === id
+                                processingId !== null ||
+                                savingDescriptionId !== null ||
+                                bulkProcessing
                               }
-                              className="inline-flex whitespace-nowrap items-center gap-1 rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-2xs transition hover:bg-emerald-700 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+                              className="inline-flex whitespace-nowrap items-center gap-1 rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
                             >
                               <HiOutlineCheckCircle size={14} />
-                              {processingId === id
+                              {String(processingId) === id
                                 ? "Updating..."
                                 : "Mark Successful"}
                             </button>
                           ) : (
                             <span className="whitespace-nowrap text-xs font-semibold text-emerald-600">
-                              <HiOutlineCheckCircle className="mr-1 inline text-sm" />
+                              <HiOutlineCheckCircle className="mr-1 inline" />
                               Completed
                             </span>
                           )}
@@ -954,6 +1183,52 @@ const CODRemittance = () => {
           <span>Showing {filteredRemittances.length} records</span>
         </div>
       </div>
+    </div>
+  );
+};
+
+const SummaryCard = ({ title, value, subtitle, icon, color }) => {
+  const colorClasses = {
+    sky: "bg-sky-50 text-[#008dd2]",
+    amber: "bg-amber-50 text-amber-600",
+    emerald: "bg-emerald-50 text-emerald-600",
+    violet: "bg-violet-50 text-violet-600",
+  };
+
+  const valueClasses = {
+    sky: "text-slate-800",
+    amber: "text-amber-600",
+    emerald: "text-emerald-600",
+    violet: "text-slate-800",
+  };
+
+  return (
+    <div className="rounded-2xl border border-slate-200/80 bg-white p-3.5 shadow-sm sm:p-4">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-[11px] font-medium text-slate-500 sm:text-xs">
+          {title}
+        </p>
+
+        <span
+          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${
+            colorClasses[color]
+          }`}
+        >
+          {icon}
+        </span>
+      </div>
+
+      <p
+        className={`mt-2 break-words text-xl font-bold sm:text-2xl ${
+          valueClasses[color]
+        }`}
+      >
+        {value}
+      </p>
+
+      <p className="mt-1 text-[10px] text-slate-400 sm:text-[11px]">
+        {subtitle}
+      </p>
     </div>
   );
 };

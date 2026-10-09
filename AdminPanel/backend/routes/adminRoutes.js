@@ -25,6 +25,7 @@ const {
   getAdminCODRemittances,
   updateCODRemittanceDescription,
   markCODRemittanceSuccessful,
+  bulkMarkCODRemittancesSuccessful,
 } = require("../controllers/codRemittanceAdminController");
 
 const router = express.Router();
@@ -79,6 +80,11 @@ router.patch(
 router.patch(
   "/cod-remittances/:id/successful",
   markCODRemittanceSuccessful
+);
+
+router.patch(
+  "/cod-remittances/bulk-successful",
+  bulkMarkCODRemittancesSuccessful
 );
 
 module.exports = router;

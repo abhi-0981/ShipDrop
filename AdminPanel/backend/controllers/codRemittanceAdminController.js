@@ -183,8 +183,132 @@ const markCODRemittanceSuccessful = async (req, res) => {
   }
 };
 
+
+
+/* ========================================
+   BULK MARK COD REMITTANCES SUCCESSFUL
+======================================== */
+
+const bulkMarkCODRemittancesSuccessful = async (req, res) => {
+  let connection;
+
+  try {
+    const { ids, description } = req.body || {};
+
+    if (
+      !Array.isArray(ids) ||
+      ids.length === 0 ||
+      ids.some((id) => !Number.isSafeInteger(Number(id)) || Number(id) <= 0)
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Please select valid remittances",
+      });
+    }
+
+    const uniqueIds = [...new Set(ids.map(Number))];
+
+    if (uniqueIds.length !== ids.length) {
+      return res.status(400).json({
+        success: false,
+        message: "Duplicate remittance IDs are not allowed",
+      });
+    }
+
+    if (typeof description !== "string") {
+      return res.status(400).json({
+        success: false,
+        message: "Description must be text",
+      });
+    }
+
+    const cleanDescription = description.trim();
+
+    if (cleanDescription.length > 1000) {
+      return res.status(400).json({
+        success: false,
+        message: "Description cannot exceed 1000 characters",
+      });
+    }
+
+    connection = await db.getConnection();
+    await connection.beginTransaction();
+
+    const placeholders = uniqueIds.map(() => "?").join(", ");
+
+    const [rows] = await connection.query(
+      `SELECT id, status
+       FROM cod_remittances
+       WHERE id IN (${placeholders})
+       FOR UPDATE`,
+      uniqueIds
+    );
+
+    if (rows.length !== uniqueIds.length) {
+      await connection.rollback();
+
+      return res.status(404).json({
+        success: false,
+        message: "One or more remittances were not found",
+      });
+    }
+
+    const nonPending = rows.filter(
+      (row) => String(row.status).toUpperCase() !== "PENDING"
+    );
+
+    if (nonPending.length > 0) {
+      await connection.rollback();
+
+      return res.status(409).json({
+        success: false,
+        message:
+          "All selected remittances must be PENDING. Refresh and try again.",
+      });
+    }
+
+    await connection.query(
+      `UPDATE cod_remittances
+       SET
+         status = 'SUCCESSFUL',
+         transferred_on = NOW(),
+         description = ?
+       WHERE id IN (${placeholders})
+         AND status = 'PENDING'`,
+      [cleanDescription || null, ...uniqueIds]
+    );
+
+    await connection.commit();
+
+    return res.status(200).json({
+      success: true,
+      message: `${uniqueIds.length} remittances marked successful`,
+      updatedCount: uniqueIds.length,
+    });
+  } catch (error) {
+    if (connection) {
+      try {
+        await connection.rollback();
+      } catch (rollbackError) {
+        console.error("Bulk remittance rollback error:", rollbackError);
+      }
+    }
+
+    console.error("Bulk COD remittance update error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update selected remittances",
+    });
+  } finally {
+    if (connection) connection.release();
+  }
+};
+
+
 module.exports = {
   getAdminCODRemittances,
   updateCODRemittanceDescription,
   markCODRemittanceSuccessful,
+  bulkMarkCODRemittancesSuccessful,
 };
