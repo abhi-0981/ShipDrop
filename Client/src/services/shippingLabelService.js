@@ -1405,6 +1405,8 @@ const buildLabelHtml = (
                       ? `<div class="phone">☎ ${esc(fromMobileValue)}</div>`
                       : ""
                   }
+                          <div style="height: 3mm;"></div>
+
                 </div>
               `
               : ""
@@ -2418,18 +2420,16 @@ export const downloadShippingLabels = async (orders) => {
         );
       }
 
-   
-pdf.addImage(
-  image,
-  "PNG",
-  0,
-  0,
-  size.widthMm,
-  size.heightMm - 2,
-  undefined,
-  "FAST"
-);
-
+      pdf.addImage(
+        image,
+        "PNG",
+        0,
+        0,
+        size.widthMm,
+        size.heightMm,
+        undefined,
+        "FAST"
+      );
     }
 
     // =====================================================
