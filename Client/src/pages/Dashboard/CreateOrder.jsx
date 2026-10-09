@@ -86,16 +86,17 @@ function CreateOrder() {
   const [pincodeLoading, setPincodeLoading] = useState(false);
 
   // Previous customer autocomplete
- // Previous customer autocomplete
-const [previousCustomers, setPreviousCustomers] = useState([]);
-const [showPreviousCustomers, setShowPreviousCustomers] = useState(false);
-const [previousCustomersLoading, setPreviousCustomersLoading] = useState(false);
-const previousCustomerDropdownRef = useRef(null);
+  // Previous customer autocomplete
+  const [previousCustomers, setPreviousCustomers] = useState([]);
+  const [showPreviousCustomers, setShowPreviousCustomers] = useState(false);
+  const [previousCustomersLoading, setPreviousCustomersLoading] =
+    useState(false);
+  const previousCustomerDropdownRef = useRef(null);
 
-// Prevent autocomplete from reopening after selecting a previous customer
-const skipPreviousCustomerSearchRef = useRef(false);
+  // Prevent autocomplete from reopening after selecting a previous customer
+  const skipPreviousCustomerSearchRef = useRef(false);
 
-const [rateLoading, setRateLoading] = useState(false);
+  const [rateLoading, setRateLoading] = useState(false);
   const [shippingRate, setShippingRate] = useState(null);
   const [shippingOptions, setShippingOptions] = useState(null);
   const [selectedShippingType, setSelectedShippingType] = useState(null);
@@ -257,73 +258,65 @@ const [rateLoading, setRateLoading] = useState(false);
   };
 
   const validateRequiredFields = () => {
-    const currentPickupAddress = String(
-      formData.pickup_address || warehouseSearch || "",
-    )
-      .trim()
-      .toLowerCase();
-
-    const effectiveWarehouse = selectedWarehouse?.id
-      ? selectedWarehouse
-      : warehouses.find((warehouse) => {
-          const warehouseAddress = getWarehouseDisplayAddress(warehouse)
-            .trim()
-            .toLowerCase();
-
-          const addressLine = String(warehouse.address_line1 || "")
-            .trim()
-            .toLowerCase();
-
-          return (
-            warehouseAddress === currentPickupAddress ||
-            addressLine === currentPickupAddress
-          );
-        }) || null;
-
-    const effectivePickupAddress = String(
-      formData.pickup_address ||
-        warehouseSearch ||
-        (effectiveWarehouse
-          ? getWarehouseDisplayAddress(effectiveWarehouse)
-          : ""),
-    ).trim();
-
-    const effectivePickupPincode = String(
-      formData.pickup_pincode || effectiveWarehouse?.pincode || "",
-    ).trim();
-
-    if (!effectiveWarehouse?.id) {
+    // 1. Pickup warehouse
+    if (!selectedWarehouse?.id) {
       toast.error("Please select a pickup warehouse");
       return false;
     }
 
-    if (!effectivePickupAddress) {
-      toast.error("Please enter pickup address");
+    const pickupAddress = String(
+      getWarehouseDisplayAddress(selectedWarehouse) || "",
+    ).trim();
+
+    const pickupPincode = String(
+      selectedWarehouse.pincode || formData.pickup_pincode || "",
+    ).trim();
+
+    if (!pickupAddress) {
+      toast.error("Selected warehouse has no pickup address");
       return false;
     }
 
-    if (!/^\d{6}$/.test(effectivePickupPincode)) {
+    if (!/^\d{6}$/.test(pickupPincode)) {
       toast.error("Please enter a valid 6-digit pickup pincode");
       return false;
     }
 
+    // 2. Customer details
     if (!String(formData.consignee_name || "").trim()) {
-      toast.error("Please enter consignee name");
+      toast.error("Please enter customer name");
       return false;
     }
 
     if (!/^\d{10}$/.test(String(formData.mobile || "").trim())) {
-      toast.error("Please enter a valid 10-digit mobile number");
+      toast.error("Mobile number must be exactly 10 digits");
       return false;
     }
 
+    if (
+      String(formData.alternate_mobile || "").trim() &&
+      !/^\d{10}$/.test(String(formData.alternate_mobile).trim())
+    ) {
+      toast.error("Alternate mobile number must be 10 digits");
+      return false;
+    }
+
+    if (
+      String(formData.email || "").trim() &&
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(formData.email).trim())
+    ) {
+      toast.error("Please enter a valid email address");
+      return false;
+    }
+
+    // 3. Delivery address
     if (!String(formData.address_line1 || "").trim()) {
       toast.error("Please enter delivery address");
       return false;
     }
 
     if (!/^\d{6}$/.test(String(formData.pincode || "").trim())) {
-      toast.error("Please enter a valid 6-digit delivery pincode");
+      toast.error("Delivery pincode must be exactly 6 digits");
       return false;
     }
 
@@ -331,18 +324,103 @@ const [rateLoading, setRateLoading] = useState(false);
       !String(formData.city || "").trim() ||
       !String(formData.state || "").trim()
     ) {
-      toast.error("Please enter a valid delivery pincode");
+      toast.error("Please verify delivery pincode and city/state");
       return false;
     }
 
+    // 4. Products
     if (!Array.isArray(products) || products.length === 0) {
       toast.error("At least one product is required");
       return false;
     }
 
+    for (let i = 0; i < products.length; i++) {
+      const product = products[i];
+      const label = `Product ${i + 1}`;
+
+      if (!String(product.product || "").trim()) {
+        toast.error(`${label}: please enter product name`);
+        return false;
+      }
+
+      const priceText = String(product.price ?? "").trim();
+      const price = Number(priceText);
+
+      if (priceText === "" || !Number.isFinite(price) || price < 0) {
+        toast.error(`${label}: price must be a valid number (0 or more)`);
+        return false;
+      }
+
+      const qtyText = String(product.qty ?? "").trim();
+      const qty = Number(qtyText);
+
+      if (qtyText === "" || !Number.isInteger(qty) || qty < 1) {
+        toast.error(`${label}: quantity must be a whole number of at least 1`);
+        return false;
+      }
+
+      const taxText = String(product.tax ?? "").trim();
+      const tax = Number(taxText);
+
+      if (taxText !== "" && (!Number.isFinite(tax) || tax < 0 || tax > 100)) {
+        toast.error(`${label}: tax must be between 0 and 100`);
+        return false;
+      }
+    }
+
+    // 5. Packages
     if (!Array.isArray(packages) || packages.length === 0) {
       toast.error("At least one package is required");
       return false;
+    }
+
+    for (let i = 0; i < packages.length; i++) {
+      const item = packages[i];
+      const label = `Package ${i + 1}`;
+
+      const weightText = String(item.weight ?? "").trim();
+      const weight = Number(weightText);
+
+      if (weightText === "" || !Number.isFinite(weight) || weight <= 0) {
+        toast.error(`${label}: weight must be greater than 0`);
+        return false;
+      }
+
+      const dimensions = [
+        String(item.length ?? "").trim(),
+        String(item.width ?? "").trim(),
+        String(item.height ?? "").trim(),
+      ];
+
+      const anyDimensionEntered = dimensions.some((value) => value !== "");
+
+      // Dimensions optional hain, lekin ek dimension bharne par teeno valid honi chahiye.
+      if (anyDimensionEntered) {
+        const [length, width, height] = dimensions.map(Number);
+
+        if (
+          dimensions.some((value) => value === "") ||
+          !Number.isFinite(length) ||
+          !Number.isFinite(width) ||
+          !Number.isFinite(height) ||
+          length <= 0 ||
+          width <= 0 ||
+          height <= 0
+        ) {
+          toast.error(
+            `${label}: enter all three dimensions (length, width, height) greater than 0, or leave all three blank`,
+          );
+          return false;
+        }
+      }
+
+      const countText = String(item.count ?? "").trim();
+      const count = Number(countText);
+
+      if (countText === "" || !Number.isInteger(count) || count < 1) {
+        toast.error(`${label}: box count must be a whole number of at least 1`);
+        return false;
+      }
     }
 
     return true;
@@ -381,10 +459,13 @@ const [rateLoading, setRateLoading] = useState(false);
   const applyWarehouseToPickup = (warehouse) => {
     if (!warehouse) return;
 
+    const pickupAddress = getWarehouseDisplayAddress(warehouse);
+
     setSelectedWarehouse(warehouse);
+
     setFormData((prev) => ({
       ...prev,
-      pickup_address: getWarehouseDisplayAddress(warehouse),
+      pickup_address: pickupAddress,
       pickup_pincode: String(warehouse.pincode || ""),
       pickup_city: warehouse.city || "",
     }));
@@ -973,24 +1054,24 @@ const [rateLoading, setRateLoading] = useState(false);
   // ========================================
   // PREVIOUS CUSTOMER AUTOCOMPLETE
   // ========================================
- useEffect(() => {
-  if (isEditMode) {
-    setShowPreviousCustomers(false);
-    setPreviousCustomers([]);
-    return;
-  }
+  useEffect(() => {
+    if (isEditMode) {
+      setShowPreviousCustomers(false);
+      setPreviousCustomers([]);
+      return;
+    }
 
-  // Previous customer select karne ke baad
-  // autofilled name ko dobara search nahi karna
-  if (skipPreviousCustomerSearchRef.current) {
-    skipPreviousCustomerSearchRef.current = false;
-    setPreviousCustomers([]);
-    setShowPreviousCustomers(false);
-    setPreviousCustomersLoading(false);
-    return;
-  }
+    // Previous customer select karne ke baad
+    // autofilled name ko dobara search nahi karna
+    if (skipPreviousCustomerSearchRef.current) {
+      skipPreviousCustomerSearchRef.current = false;
+      setPreviousCustomers([]);
+      setShowPreviousCustomers(false);
+      setPreviousCustomersLoading(false);
+      return;
+    }
 
-  const search = String(formData.consignee_name || "").trim();
+    const search = String(formData.consignee_name || "").trim();
 
     if (search.length < 2) {
       setPreviousCustomers([]);
@@ -1050,18 +1131,17 @@ const [rateLoading, setRateLoading] = useState(false);
       document.removeEventListener(
         "mousedown",
         handleOutsidePreviousCustomerClick,
-        
       );
     };
   }, []);
 
- const selectPreviousCustomer = (customer) => {
-  if (!customer) return;
+  const selectPreviousCustomer = (customer) => {
+    if (!customer) return;
 
-  // Selection ke baad autocomplete ko dobara open hone se roko
-  skipPreviousCustomerSearchRef.current = true;
+    // Selection ke baad autocomplete ko dobara open hone se roko
+    skipPreviousCustomerSearchRef.current = true;
 
-  setFormData((prev) => ({
+    setFormData((prev) => ({
       ...prev,
       consignee_name: customer.consignee_name || "",
       mobile: customer.mobile || "",
@@ -1425,6 +1505,68 @@ const [rateLoading, setRateLoading] = useState(false);
     setShippingRate(optionMap[normalized]);
   };
 
+  const isEnterFieldComplete = (field) => {
+    const value = String(field.value ?? "").trim();
+
+    // Empty field
+    if (!value) return false;
+
+    // Mobile number: exactly 10 digits
+    if (field.dataset.enterType === "phone") {
+      return /^\d{10}$/.test(value);
+    }
+
+    // Pincode: exactly 6 digits
+    if (field.dataset.enterType === "pincode") {
+      return /^\d{6}$/.test(value);
+    }
+
+    // Product price: zero or greater
+    if (field.dataset.enterType === "price") {
+      const number = Number(value);
+      return Number.isFinite(number) && number >= 0;
+    }
+
+    // Quantity: whole number, minimum 1
+    if (field.dataset.enterType === "quantity") {
+      const number = Number(value);
+      return Number.isInteger(number) && number >= 1;
+    }
+
+    // Package weight: greater than zero
+    if (field.dataset.enterType === "weight") {
+      const number = Number(value);
+      return Number.isFinite(number) && number > 0;
+    }
+
+    // Other required fields: non-empty
+    return true;
+  };
+
+  const handleRequiredFieldEnter = (e) => {
+    if (e.key !== "Enter") return;
+
+    // Allow normal textarea and button behavior
+    if (e.target.tagName === "TEXTAREA" || e.target.tagName === "BUTTON") {
+      return;
+    }
+
+    e.preventDefault();
+
+    const fields = Array.from(
+      e.currentTarget.querySelectorAll("[data-enter-required='true']"),
+    ).filter((field) => !field.disabled && !field.readOnly);
+
+    const firstIncompleteField = fields.find(
+      (field) => !isEnterFieldComplete(field),
+    );
+
+    if (firstIncompleteField) {
+      firstIncompleteField.focus();
+      firstIncompleteField.select?.();
+    }
+  };
+
   const handleSubmit = async (e) => {
     e?.preventDefault();
 
@@ -1475,6 +1617,8 @@ const [rateLoading, setRateLoading] = useState(false);
   };
 
   const handleConfirmShipment = async () => {
+    if (!validateRequiredFields()) return;
+
     if (!shippingRate || !selectedShippingType) {
       return toast.error("Please select a shipping rate first");
     }
@@ -1591,6 +1735,7 @@ const [rateLoading, setRateLoading] = useState(false);
         {/* MAIN FORM CARD */}
         <form
           onSubmit={handleSubmit}
+          onKeyDown={handleRequiredFieldEnter}
           className="space-y-4 rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-6 md:p-7 shadow-[0_1px_4px_rgba(15,23,42,0.03)]"
         >
           {/* 1. PICKUP LOCATION */}
@@ -1610,6 +1755,7 @@ const [rateLoading, setRateLoading] = useState(false);
                 <div ref={warehouseDropdownRef} className="relative flex-1">
                   <input
                     name="pickup_address"
+                    data-enter-required="true"
                     value={
                       selectedWarehouse
                         ? getWarehouseDisplayAddress(selectedWarehouse)
@@ -1618,6 +1764,14 @@ const [rateLoading, setRateLoading] = useState(false);
                     onChange={(e) => {
                       setSelectedWarehouse(null);
                       setWarehouseSearch(e.target.value);
+
+                      setFormData((prev) => ({
+                        ...prev,
+                        pickup_address: "",
+                        pickup_pincode: "",
+                        pickup_city: "",
+                      }));
+
                       setShowWarehouseDropdown(true);
                       resetShippingRate();
                     }}
@@ -1695,6 +1849,7 @@ const [rateLoading, setRateLoading] = useState(false);
                 <div className="relative">
                   <input
                     name="consignee_name"
+                    data-enter-required="true"
                     value={formData.consignee_name}
                     onChange={(e) => {
                       handleChange(e);
@@ -1753,6 +1908,8 @@ const [rateLoading, setRateLoading] = useState(false);
                 <label className={labelClass}>Mobile Number *</label>
                 <input
                   name="mobile"
+                  data-enter-required="true"
+                  data-enter-type="phone"
                   value={formData.mobile}
                   onChange={handleChange}
                   placeholder="10-digit phone"
@@ -1791,6 +1948,7 @@ const [rateLoading, setRateLoading] = useState(false);
                 <label className={labelClass}>Delivery Address *</label>
                 <input
                   name="address_line1"
+                  data-enter-required="true"
                   value={formData.address_line1}
                   onChange={handleChange}
                   placeholder="Flat/House No, Building, Road"
@@ -1814,6 +1972,8 @@ const [rateLoading, setRateLoading] = useState(false);
                 <div className="relative">
                   <input
                     name="pincode"
+                    data-enter-required="true"
+                    data-enter-type="pincode"
                     value={formData.pincode}
                     onChange={handlePincodeChange}
                     placeholder="6-digit PIN"
@@ -1906,6 +2066,7 @@ const [rateLoading, setRateLoading] = useState(false);
                       <div className="col-span-2 sm:col-span-2">
                         <label className={labelClass}>Product Name *</label>
                         <input
+                          data-enter-required="true"
                           value={product.product}
                           onChange={(e) =>
                             handleProductChange(
@@ -1937,6 +2098,8 @@ const [rateLoading, setRateLoading] = useState(false);
                           type="number"
                           min="0"
                           step="0.01"
+                          data-enter-required="true"
+                          data-enter-type="price"
                           value={product.price}
                           onChange={(e) =>
                             handleProductChange(index, "price", e.target.value)
@@ -1951,6 +2114,8 @@ const [rateLoading, setRateLoading] = useState(false);
                         <input
                           type="number"
                           min="1"
+                          data-enter-required="true"
+                          data-enter-type="quantity"
                           value={product.qty}
                           onChange={(e) =>
                             handleProductChange(index, "qty", e.target.value)
@@ -2068,6 +2233,8 @@ const [rateLoading, setRateLoading] = useState(false);
                         type="number"
                         min="0"
                         step="0.01"
+                        data-enter-required="true"
+                        data-enter-type="weight"
                         value={item.weight}
                         onChange={(e) =>
                           handlePackageChange(index, "weight", e.target.value)
