@@ -2,13 +2,16 @@ const express = require("express");
 
 const router = express.Router();
 
+
 const {
   createWarehouse,
   getWarehouses,
   getWarehouseById,
   updateWarehouse,
   deleteWarehouse,
+  setDefaultWarehouse,
 } = require("../controllers/warehouseController");
+
 
 
 // ======================================================
@@ -39,6 +42,13 @@ router.get(
   "/:id",
   getWarehouseById
 );
+
+
+router.put(
+  "/default/:id",
+  setDefaultWarehouse
+);
+
 
 
 // ======================================================

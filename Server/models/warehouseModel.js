@@ -322,22 +322,43 @@ const deleteWarehouse = (
 };
 
 
+
+
+
+const setDefaultWarehouse = (userId, warehouseId, callback) => {
+  const query = `
+    UPDATE users
+    SET default_warehouse_id = ?
+    WHERE id = ?
+      AND EXISTS (
+        SELECT 1
+        FROM warehouses
+        WHERE warehouses.id = ?
+          AND warehouses.user_id = users.id
+          AND UPPER(TRIM(warehouses.status)) = 'ACTIVE'
+      )
+  `;
+
+  db.query(
+    query,
+    [warehouseId, userId, warehouseId],
+    callback
+  );
+};
+
+
+
 // ======================================================
 // EXPORT
 // ======================================================
 
+
 module.exports = {
-
   getWarehousesByUser,
-
   getWarehouseById,
-
   createWarehouse,
-
   updateWarehouse,
-
   updateDelhiveryStatus,
-
-  deleteWarehouse
-
+  deleteWarehouse,
+  setDefaultWarehouse
 };

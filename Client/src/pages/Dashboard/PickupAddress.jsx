@@ -263,40 +263,65 @@ function PickupAddress() {
   // SET DEFAULT
   // ====================================================
 
-  const setAsDefault = (
-    warehouseId
-  ) => {
+ 
+const setAsDefault = async (warehouseId) => {
+  const userId = getUserId();
 
-    const warehouse = warehouses.find(
-      (item) => String(item.id) === String(warehouseId)
-    );
+  if (!userId) {
+    toast.error("Please login again");
+    return;
+  }
 
-    if (
-      warehouse &&
-      String(warehouse.status || "ACTIVE").toUpperCase() !== "ACTIVE"
-    ) {
-      toast.error("Inactive pickup address cannot be set as default");
-      return;
+  const warehouse = warehouses.find(
+    (item) => String(item.id) === String(warehouseId)
+  );
+
+  if (!warehouse) {
+    toast.error("Pickup address not found");
+    return;
+  }
+
+  if (
+    String(warehouse.status || "ACTIVE").toUpperCase() !== "ACTIVE"
+  ) {
+    toast.error("Inactive pickup address cannot be set as default");
+    return;
+  }
+
+  const id = String(warehouseId);
+
+  try {
+    const response = await api.put(`/warehouses/default/${id}`, {
+      user_id: userId,
+    });
+
+    if (!response.data?.success) {
+      throw new Error(
+        response.data?.message || "Unable to save default pickup address"
+      );
     }
 
-    const id =
-      String(warehouseId);
-
-
+    // Update the UI only after the backend confirms success.
     setDefaultWarehouseId(id);
 
+    // Keep localStorage for compatibility with the current frontend.
+    localStorage.setItem(getDefaultStorageKey(), id);
 
-    localStorage.setItem(
-      getDefaultStorageKey(),
-      id
+    // Notify CreateOrder in the same browser.
+    window.dispatchEvent(new Event("warehouseDefaultChanged"));
+
+    toast.success("Default pickup address saved successfully");
+  } catch (error) {
+    console.error("Set default warehouse error:", error);
+
+    toast.error(
+      error.response?.data?.message ||
+      error.message ||
+      "Unable to save default pickup address"
     );
+  }
+};
 
-
-    toast.success(
-      "Default pickup address updated"
-    );
-
-  };
 
 
   // ====================================================

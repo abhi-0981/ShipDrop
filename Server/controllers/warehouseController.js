@@ -1628,20 +1628,70 @@ const deleteWarehouse = (
 };
 
 
+
+
+
+
+
+
+
+const setDefaultWarehouse = (req, res) => {
+  const warehouseId = Number(req.params.id);
+  const userId = Number(req.body.user_id);
+
+  if (
+    !Number.isInteger(userId) ||
+    userId <= 0 ||
+    !Number.isInteger(warehouseId) ||
+    warehouseId <= 0
+  ) {
+    return res.status(400).json({
+      success: false,
+      message: "Valid user ID and warehouse ID are required",
+    });
+  }
+
+  warehouseModel.setDefaultWarehouse(
+    userId,
+    warehouseId,
+    (err, result) => {
+      if (err) {
+        console.error("Set default warehouse error:", err);
+
+        return res.status(500).json({
+          success: false,
+          message: "Unable to save default pickup address",
+        });
+      }
+
+      if (result.affectedRows === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Warehouse not found, inactive, or not owned by this user",
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "Default pickup address saved successfully",
+        default_warehouse_id: warehouseId,
+      });
+    }
+  );
+};
+
+
+
 // ======================================================
 // EXPORT
 // ======================================================
 
+
 module.exports = {
-
   createWarehouse,
-
   getWarehouses,
-
   getWarehouseById,
-
   updateWarehouse,
-
   deleteWarehouse,
-
+  setDefaultWarehouse,
 };
