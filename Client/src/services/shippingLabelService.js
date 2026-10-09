@@ -2292,51 +2292,18 @@ export const downloadShippingLabels = async (orders) => {
       // CHECK ACTUAL CONTENT SIZE
       // ---------------------------------------------------
 
-      const contentWidth =
-        Math.max(
-          label.scrollWidth,
-          pageWidth
-        );
+     
 
-      const contentHeight =
-        Math.max(
-          label.scrollHeight,
-          pageHeight
-        );
-
-      // ---------------------------------------------------
-      // IF CONTENT IS TOO BIG,
-      // SCALE IT DOWN INSIDE THE LABEL
-      // ---------------------------------------------------
-
-      const fitScale = Math.min(
-        pageWidth / contentWidth,
-        pageHeight / contentHeight,
-        1
-      );
+     
 
       const labelBorder =
         label.querySelector(
           ".label-border"
         );
 
-      // Temporarily allow complete content
-      label.style.overflow = "visible";
+      
 
-      if (labelBorder) {
-        labelBorder.style.overflow =
-          "visible";
-      }
-
-      // Keep scaling inside the original page
-      label.style.transformOrigin =
-        "top left";
-
-      label.style.transform =
-        fitScale < 1
-          ? `scale(${fitScale})`
-          : "none";
-
+     
       // ---------------------------------------------------
       // WAIT FOR TRANSFORM
       // ---------------------------------------------------
