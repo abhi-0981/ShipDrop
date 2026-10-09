@@ -1400,6 +1400,11 @@ const buildLabelHtml = (
                       : ""
                   }
 
+                  ${
+                    fromMobileValue
+                      ? `<div class="phone">☎ ${esc(fromMobileValue)}</div>`
+                      : ""
+                  }
                 </div>
               `
               : ""
