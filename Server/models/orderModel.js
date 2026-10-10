@@ -388,34 +388,7 @@ const getProcessingOrders = (user_id, callback) => {
 // GET ALL ORDERS
 // ======================================================
 
-const getAllOrders = (
-  user_id,
-  page = 1,
-  limit = 50,
-  search = "",
-  callback
-) => {
-  const safePage = Math.max(1, Number(page) || 1);
-  const safeLimit = Math.min(100, Math.max(1, Number(limit) || 50));
-  const offset = (safePage - 1) * safeLimit;
-
-  const searchTerm = String(search || "").trim();
-  const searchValue = `%${searchTerm}%`;
-
-  // Search conditions: apply before pagination
-  const searchCondition = `
-    o.user_id = ?
-    AND UPPER(TRIM(COALESCE(o.status, ''))) <> 'PROCESSING'
-    AND (
-      ? = ''
-      OR CAST(o.order_id AS CHAR) LIKE ?
-      OR UPPER(TRIM(COALESCE(o.awb, ''))) LIKE UPPER(?)
-      OR UPPER(TRIM(COALESCE(o.consignee_name, ''))) LIKE UPPER(?)
-      OR TRIM(COALESCE(o.mobile, '')) LIKE ?
-    )
-  `;
-
-  // Fetch unique order IDs first, then fetch their details.
+const getAllOrders = (user_id, page = 1, limit = 50, search = "", callback) => {
   const query = `
     SELECT
       o.id,
@@ -439,32 +412,39 @@ const getAllOrders = (
 
       o.awb,
 
-      (
-        SELECT COALESCE(
-          pr.delhivery_request_id,
-          m_pickup.pickup_request_id
-        )
-        FROM manifests m_pickup
-        LEFT JOIN pickup_requests pr
-          ON pr.id = m_pickup.pickup_request_id
-        WHERE m_pickup.order_id = o.id
-          AND m_pickup.user_id = o.user_id
-          AND UPPER(TRIM(COALESCE(m_pickup.status, ''))) = 'CONFIRMED'
-        ORDER BY m_pickup.id DESC
-        LIMIT 1
-      ) AS pickup_id,
+(
+  SELECT COALESCE(
+    pr.delhivery_request_id,
+    m_pickup.pickup_request_id
+  )
+  FROM manifests m_pickup
+  LEFT JOIN pickup_requests pr
+    ON pr.id = m_pickup.pickup_request_id
+  WHERE m_pickup.order_id = o.id
+    AND m_pickup.user_id = o.user_id
+    AND UPPER(
+      COALESCE(m_pickup.status, '')
+    ) = 'CONFIRMED'
+  ORDER BY m_pickup.id DESC
+  LIMIT 1
+) AS pickup_id,
+ 
+o.consignee_name,
 
       o.consignee_name,
       o.mobile,
       o.alternate_mobile,
       o.email,
+
       o.gstin,
       o.company_name,
 
       o.floor_no,
       o.landmark,
+
       o.address_line1,
       o.address_line2,
+
       o.pincode,
       o.city,
       o.state,
@@ -472,26 +452,31 @@ const getAllOrders = (
 
       o.payment_type,
       o.risk_type,
+
       o.status,
       o.created_at,
 
-      (
-        SELECT m2.shipping_charge
-        FROM manifests m2
-        WHERE m2.order_id = o.id
-          AND m2.user_id = o.user_id
-          AND UPPER(TRIM(COALESCE(m2.status, ''))) = 'CONFIRMED'
-        ORDER BY m2.id DESC
-        LIMIT 1
-      ) AS shipping_charge,
+      /* ==========================================
+   MANIFEST / SHIPPING CHARGE
+========================================== */
 
+m.shipping_charge AS shipping_charge,
+
+      -- ==================================================
+      -- ACTUAL SERVICE USED DURING MANIFEST
+      -- This is required for AIR / ROAD filter.
+      -- ==================================================
       (
-        SELECT m3.service_type
-        FROM manifests m3
-        WHERE m3.order_id = o.id
-          AND m3.user_id = o.user_id
-          AND UPPER(TRIM(COALESCE(m3.status, ''))) = 'CONFIRMED'
-        ORDER BY m3.id DESC
+        SELECT
+          m.service_type
+        FROM manifests m
+        WHERE
+          m.order_id = o.id
+          AND m.user_id = o.user_id
+          AND UPPER(
+            COALESCE(m.status, '')
+          ) = 'CONFIRMED'
+        ORDER BY m.id DESC
         LIMIT 1
       ) AS manifest_service_type,
 
@@ -528,16 +513,14 @@ const getAllOrders = (
       pkg.weight,
       pkg.package_count
 
-    FROM (
-      SELECT o.id
-      FROM orders o
-      WHERE ${searchCondition}
-      ORDER BY o.id DESC
-      LIMIT ? OFFSET ?
-    ) AS page_orders
+    FROM orders o
 
-    INNER JOIN orders o
-      ON o.id = page_orders.id
+    LEFT JOIN manifests m
+  ON m.order_id = o.id
+  AND m.user_id = o.user_id
+  AND UPPER(
+    COALESCE(m.status, '')
+  ) = 'CONFIRMED'
 
     LEFT JOIN pickup_addresses pa
       ON pa.id = o.pickup_address_id
@@ -552,42 +535,84 @@ const getAllOrders = (
     LEFT JOIN order_packages pkg
       ON pkg.order_id = o.id
 
-    ORDER BY o.id DESC
+  WHERE
+  o.user_id = ?
+  AND UPPER(TRIM(COALESCE(o.status, ''))) <> 'PROCESSING'
+  AND (
+    ? = ''
+    OR CAST(o.order_id AS CHAR) LIKE ?
+    OR UPPER(TRIM(COALESCE(o.awb, ''))) LIKE UPPER(?)
+    OR UPPER(TRIM(COALESCE(o.consignee_name, ''))) LIKE UPPER(?)
+    OR TRIM(COALESCE(o.mobile, '')) LIKE ?
+  )
+
+ORDER BY o.id DESC
+LIMIT ? OFFSET ?
   `;
+
+  const safePage = Math.max(1, Number(page) || 1);
+
+  const safeLimit = Math.min(100, Math.max(1, Number(limit) || 50));
+
+  const offset = (safePage - 1) * safeLimit;
+
+  const searchTerm = String(search || "").trim();
+
+  const searchValue = `%${searchTerm}%`;
 
   const countQuery = `
-    SELECT COUNT(*) AS total
-    FROM orders o
-    WHERE ${searchCondition}
-  `;
-
-  const searchParams = [
-    user_id,
-    searchTerm,
-    searchValue,
-    searchValue,
-    searchValue,
-    searchValue,
-  ];
+  SELECT COUNT(DISTINCT o.id) AS total
+  FROM orders o
+  WHERE
+    o.user_id = ?
+    AND UPPER(TRIM(COALESCE(o.status, ''))) <> 'PROCESSING'
+    AND (
+      ? = ''
+      OR CAST(o.order_id AS CHAR) LIKE ?
+      OR UPPER(TRIM(COALESCE(o.awb, ''))) LIKE UPPER(?)
+      OR UPPER(TRIM(COALESCE(o.consignee_name, ''))) LIKE UPPER(?)
+      OR TRIM(COALESCE(o.mobile, '')) LIKE ?
+    )
+`;
 
   db.query(
     query,
-    [...searchParams, safeLimit, offset],
+    [
+      user_id,
+      searchTerm,
+      searchValue,
+      searchValue,
+      searchValue,
+      searchValue,
+      safeLimit,
+      offset,
+    ],
     (error, rows) => {
       if (error) {
         return callback(error);
       }
 
-      db.query(countQuery, searchParams, (countError, countRows) => {
-        if (countError) {
-          return callback(countError);
-        }
+      db.query(
+        countQuery,
+        [
+          user_id,
+          searchTerm,
+          searchValue,
+          searchValue,
+          searchValue,
+          searchValue,
+        ],
+        (countError, countRows) => {
+          if (countError) {
+            return callback(countError);
+          }
 
-        const totalOrders = Number(countRows?.[0]?.total) || 0;
+          const totalOrders = Number(countRows?.[0]?.total) || 0;
 
-        return callback(null, rows || [], totalOrders);
-      });
-    }
+          return callback(null, rows || [], totalOrders);
+        },
+      );
+    },
   );
 };
 
