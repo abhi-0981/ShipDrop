@@ -1074,7 +1074,7 @@
 
             {(isCollapsed || (typeof window !== "undefined" && window.innerWidth < 1024)) && (
               <div className="flex items-center gap-1.5">
-                <span className="text-[17px] sm:text-[20px] font-black tracking-tight text-[#008dd2]">
+                <span className="text-[17px] sm:text-[20px] font-black tracking-tight text-red-600">
                   ParcelDrop
                 </span>
               </div>

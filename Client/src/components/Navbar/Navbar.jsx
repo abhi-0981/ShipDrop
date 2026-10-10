@@ -22,7 +22,7 @@ function Navbar() {
           
 
           <div className="flex items-center text-[25px] leading-none tracking-tight">
-            <span className="font-extrabold text-[#008dd2]">
+            <span className="font-extrabold text-red-600">
               Parcel
             </span>
             <span className="font-bold text-slate-900 ">
