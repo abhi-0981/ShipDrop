@@ -322,7 +322,7 @@ function Register() {
         "Please enter your mobile number"
       );
 
-      inputRefs.current[2]?.focus();
+      inputRefs.current[1]?.focus();
       return;
     }
 
@@ -331,7 +331,7 @@ function Register() {
         "Please enter a valid 10-digit mobile number"
       );
 
-      inputRefs.current[2]?.focus();
+      inputRefs.current[1]?.focus();
       return;
     }
 
@@ -341,7 +341,7 @@ function Register() {
         "Please enter your email address"
       );
 
-      inputRefs.current[3]?.focus();
+      inputRefs.current[2]?.focus();
       return;
     }
 
@@ -354,7 +354,7 @@ function Register() {
         "Please enter a valid email address"
       );
 
-      inputRefs.current[3]?.focus();
+      inputRefs.current[2]?.focus();
       return;
     }
 

@@ -201,6 +201,18 @@ app.use(
   })
 );
 
+// ======================================================
+// SECURITY HEADERS
+// ======================================================
+
+app.use((req, res, next) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "SAMEORIGIN");
+  res.setHeader("X-XSS-Protection", "1; mode=block");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  next();
+});
+
 
 // ======================================================
 // HOME
@@ -383,6 +395,52 @@ app.use(
 
 
 // ======================================================
+// CRON TRIGGER ENDPOINTS (FOR VERCEL / EXTERNAL CRON)
+// ======================================================
+
+const verifyCronSecret = (req, res, next) => {
+  const secret = process.env.CRON_SECRET;
+  if (!secret) return next();
+  const authHeader = req.headers.authorization;
+  const provided =
+    req.query.secret ||
+    (authHeader ? authHeader.replace(/^Bearer\s+/i, "") : null);
+  if (provided !== secret) {
+    return res.status(401).json({
+      success: false,
+      message: "Unauthorized cron trigger",
+    });
+  }
+  next();
+};
+
+app.get("/api/cron/track-orders", verifyCronSecret, async (req, res, next) => {
+  try {
+    const { runTrackingJob } = require("./jobs/trackActiveOrders");
+    await runTrackingJob();
+    return res.status(200).json({
+      success: true,
+      message: "Tracking job executed successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get("/api/cron/auto-cancel", verifyCronSecret, async (req, res, next) => {
+  try {
+    const { runAutoCancel } = require("./jobs/autoCancelManifestedOrders");
+    await runAutoCancel();
+    return res.status(200).json({
+      success: true,
+      message: "Auto-cancel job executed successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ======================================================
 // GLOBAL ERROR HANDLER
 // ======================================================
 
@@ -393,61 +451,19 @@ app.use(
     res,
     next
   ) => {
-
     console.log(
       "Global server error:",
       error
     );
 
     return res.status(500).json({
-
       success: false,
-
       message:
         error.message ||
         "Internal server error",
-
     });
-
   }
 );
-
-
-// ======================================================
-// CRON TRIGGER ENDPOINTS (FOR VERCEL / EXTERNAL CRON)
-// ======================================================
-
-app.get("/api/cron/track-orders", async (req, res) => {
-  try {
-    const { runTrackingJob } = require("./jobs/trackActiveOrders");
-    await runTrackingJob();
-    return res.status(200).json({
-      success: true,
-      message: "Tracking job executed successfully",
-    });
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-});
-
-app.get("/api/cron/auto-cancel", async (req, res) => {
-  try {
-    const { runAutoCancel } = require("./jobs/autoCancelManifestedOrders");
-    await runAutoCancel();
-    return res.status(200).json({
-      success: true,
-      message: "Auto-cancel job executed successfully",
-    });
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-});
 
 
 // ======================================================
