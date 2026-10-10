@@ -374,10 +374,10 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
         {/* HEADER: LOGO + TOGGLE / CLOSE BUTTON */}
         <div className="flex h-[64px] shrink-0 items-center justify-between border-b border-slate-100 px-4">
           <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-600 text-white font-bold text-base shadow-sm">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#008dd2] text-white font-bold text-base shadow-sm">
               S
             </div>
-            <h1 className="text-[21px] font-bold tracking-tight text-red-600">
+            <h1 className="text-[21px] font-bold tracking-tight text-[#008dd2]">
               ParcelDrop
             </h1>
           </div>
