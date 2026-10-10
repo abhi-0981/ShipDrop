@@ -1,9 +1,0 @@
-User-agent: *
-Allow: /
-Disallow: /dashboard
-Disallow: /create-order
-Disallow: /processing-orders
-Disallow: /settings/
-Disallow: /orders/
-
-Sitemap: https://parceldrop.in/sitemap.xml

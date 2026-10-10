@@ -17,15 +17,15 @@ function Home() {
 
       <PublicTracking />
 
-      {/* Temporarily hidden sections preserved safely */}
-      {/* <Slider /> */}
-      {/* <Banner /> */}
-      {/* <RTO /> */}
-      {/* <Partners /> */}
-      {/* <AppDownload /> */}
-      {/* <Testimonials /> */}
-      {/* <CTA /> */}
-      {/* <Footer /> */}
+      {/* Temporarily hidden */}
+      {false && <Slider />}
+      {false && <Banner />}
+      {false && <RTO />}
+      {false && <Partners />}
+      {false && <AppDownload />}
+      {false && <Testimonials />}
+      {false && <CTA />}
+      {false && <Footer />}
     </>
   );
 }

@@ -31,21 +31,6 @@ function WarehouseMapClickHandler({ onSelect }) {
   return null;
 }
 
-const getWarehouseDisplayAddress = (warehouse) => {
-  if (!warehouse) return "";
-
-  const parts = [
-    warehouse.address_line1,
-    warehouse.address_line2,
-    warehouse.landmark,
-    warehouse.city,
-    warehouse.state,
-  ].filter(Boolean);
-
-  const address = parts.join(", ");
-  return warehouse.pincode ? `${address} - ${warehouse.pincode}` : address;
-};
-
 function CreateOrder() {
   const initialFormData = {
     pickup_address: "",
@@ -461,6 +446,21 @@ function CreateOrder() {
     } catch {
       return null;
     }
+  };
+
+  const getWarehouseDisplayAddress = (warehouse) => {
+    if (!warehouse) return "";
+
+    const parts = [
+      warehouse.address_line1,
+      warehouse.address_line2,
+      warehouse.landmark,
+      warehouse.city,
+      warehouse.state,
+    ].filter(Boolean);
+
+    const address = parts.join(", ");
+    return warehouse.pincode ? `${address} - ${warehouse.pincode}` : address;
   };
 
   const applyWarehouseToPickup = (warehouse) => {

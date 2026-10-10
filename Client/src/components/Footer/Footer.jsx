@@ -35,25 +35,15 @@ function Footer() {
             </h3>
 
             <div className="flex gap-4 text-lg text-gray-300">
-              <span role="button" tabIndex={0} aria-label="ParcelDrop on Facebook" className="cursor-pointer hover:text-[#008dd2] transition">
-                <FaFacebookF />
-              </span>
+              <FaFacebookF className="cursor-pointer hover:text-[#008dd2]" />
 
-              <span role="button" tabIndex={0} aria-label="ParcelDrop on X Twitter" className="cursor-pointer hover:text-[#008dd2] transition">
-                <FaXTwitter />
-              </span>
+              <FaXTwitter className="cursor-pointer hover:text-[#008dd2]" />
 
-              <span role="button" tabIndex={0} aria-label="ParcelDrop on YouTube" className="cursor-pointer hover:text-[#008dd2] transition">
-                <FaYoutube />
-              </span>
+              <FaYoutube className="cursor-pointer hover:text-[#008dd2]" />
 
-              <span role="button" tabIndex={0} aria-label="ParcelDrop on Instagram" className="cursor-pointer hover:text-[#008dd2] transition">
-                <FaInstagram />
-              </span>
+              <FaInstagram className="cursor-pointer hover:text-[#008dd2]" />
 
-              <span role="button" tabIndex={0} aria-label="ParcelDrop on LinkedIn" className="cursor-pointer hover:text-[#008dd2] transition">
-                <FaLinkedinIn />
-              </span>
+              <FaLinkedinIn className="cursor-pointer hover:text-[#008dd2]" />
             </div>
           </div>
 
@@ -173,17 +163,13 @@ function Footer() {
             <div className="flex gap-3">
               <img
                 src={googleStore}
-                alt="Get ParcelDrop on Google Play Store"
-                loading="lazy"
-                decoding="async"
+                alt=""
                 className="h-9 rounded-md"
               />
 
               <img
                 src={appStore}
-                alt="Download ParcelDrop on Apple App Store"
-                loading="lazy"
-                decoding="async"
+                alt=""
                 className="h-9 rounded-md"
               />
             </div>

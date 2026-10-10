@@ -1,88 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import api from "../../services/api";
 
-const SearchIcon = () => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.7"
-    className="h-4 w-4"
-  >
-    <circle cx="11" cy="11" r="7" />
-    <path strokeLinecap="round" d="m20 20-4-4" />
-  </svg>
-);
-
-const FilterIcon = () => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.7"
-    className="h-4 w-4"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M4 6h16M7 12h10M10 18h4"
-    />
-  </svg>
-);
-
-const CalendarIcon = () => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.7"
-    className="h-4 w-4"
-  >
-    <rect x="3" y="5" width="18" height="16" rx="2" />
-    <path strokeLinecap="round" d="M16 3v4M8 3v4M3 10h18" />
-  </svg>
-);
-
-const RefreshIcon = ({ loading }) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.8"
-    className={`h-4 w-4 ${loading ? "animate-spin" : ""}`}
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M20 11a8.1 8.1 0 00-14.9-4M4 5v4h4"
-    />
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      d="M4 13a8.1 8.1 0 0014.9 4M20 19v-4h-4"
-    />
-  </svg>
-);
-
-const WalletIcon = () => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.7"
-    className="h-5 w-5"
-  >
-    <rect x="3" y="6" width="18" height="13" rx="2" />
-    <path strokeLinecap="round" strokeLinejoin="round" d="M3 9h18" />
-    <path strokeLinecap="round" strokeLinejoin="round" d="M16 14h2" />
-  </svg>
-);
-
 const WalletHistory = () => {
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -308,6 +226,88 @@ const WalletHistory = () => {
     );
   };
 
+  const SearchIcon = () => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      className="h-4 w-4"
+    >
+      <circle cx="11" cy="11" r="7" />
+      <path strokeLinecap="round" d="m20 20-4-4" />
+    </svg>
+  );
+
+  const FilterIcon = () => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      className="h-4 w-4"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M4 6h16M7 12h10M10 18h4"
+      />
+    </svg>
+  );
+
+  const CalendarIcon = () => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      className="h-4 w-4"
+    >
+      <rect x="3" y="5" width="18" height="16" rx="2" />
+      <path strokeLinecap="round" d="M16 3v4M8 3v4M3 10h18" />
+    </svg>
+  );
+
+  const RefreshIcon = () => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      className={`h-4 w-4 ${loading ? "animate-spin" : ""}`}
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M20 11a8.1 8.1 0 00-14.9-4M4 5v4h4"
+      />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M4 13a8.1 8.1 0 0014.9 4M20 19v-4h-4"
+      />
+    </svg>
+  );
+
+  const WalletIcon = () => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      className="h-5 w-5"
+    >
+      <rect x="3" y="6" width="18" height="13" rx="2" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3 9h18" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M16 14h2" />
+    </svg>
+  );
+
   const filteredTransactions = useMemo(() => {
     const query = search.trim().toLowerCase();
 
@@ -479,9 +479,8 @@ const WalletHistory = () => {
               disabled={loading}
               className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 active:scale-95 disabled:opacity-50"
               title="Refresh"
-              aria-label="Refresh wallet transactions"
             >
-              <RefreshIcon loading={loading} />
+              <RefreshIcon />
             </button>
           </div>
         </div>

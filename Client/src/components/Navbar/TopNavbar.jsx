@@ -98,16 +98,8 @@
     const [amount, setAmount] = useState("");
     const [loading, setLoading] = useState(false);
 
-    const [user, setUser] = useState(() => {
-      try {
-        return JSON.parse(localStorage.getItem("user") || "null");
-      } catch {
-        return null;
-      }
-    });
-
     // ======================================================
-    // TRACKING SEARCH STATE & HANDLER
+    // TRACKING SEARCH STATE
     // ======================================================
 
     const [trackingSearch, setTrackingSearch] = useState("");
@@ -115,95 +107,40 @@
     const [trackingOrder, setTrackingOrder] = useState(null);
     const [showTrackingDetails, setShowTrackingDetails] = useState(false);
 
-    const handleTrackingSearch = async (event) => {
-      event?.preventDefault();
 
-      const search = String(trackingSearch || "").trim();
+  useEffect(() => {
+    const search = String(trackingSearch || "").trim();
 
-      if (!search) {
-        toast.error("Enter Tracking ID or Order ID");
-        return;
-      }
+    if (!search || trackingSearchLoading) {
+      return;
+    }
 
-      const userId = user?.id;
+    // ============================================
+    // 14 DIGITS = AWB
+    // IMMEDIATELY SEARCH
+    // ============================================
+    if (/^\d{14}$/.test(search)) {
+      handleTrackingSearch();
+      return;
+    }
 
-      if (!userId) {
-        toast.error("Please login again");
-        return;
-      }
-
-      setTrackingSearchLoading(true);
-
-      try {
-        const response = await api.get("/orders/tracking-search", {
-          params: {
-            user_id: userId,
-            search,
-          },
-        });
-
-        const order = response.data?.order;
-
-        if (!order) {
-          toast.error("Shipment not found");
-          return;
-        }
-
-        setTrackingOrder(order);
-        setTrackingSearch("");
-        setShowTrackingDetails(true);
-      } catch (error) {
-        toast.error(
-          error.response?.data?.message ||
-            "Unable to search shipment"
-        );
-      } finally {
-        setTrackingSearchLoading(false);
-      }
-    };
-
-    useEffect(() => {
-      const search = String(trackingSearch || "").trim();
-
-      if (!search || trackingSearchLoading) {
-        return;
-      }
-
-      // ============================================
-      // 14 DIGITS = AWB
-      // IMMEDIATELY SEARCH
-      // ============================================
-      if (/^\d{14}$/.test(search)) {
+    // ============================================
+    // 6 DIGITS = ORDER ID
+    // WAIT 700ms AFTER TYPING STOPS
+    // ============================================
+    if (/^\d{6}$/.test(search)) {
+      const timer = setTimeout(() => {
         handleTrackingSearch();
-        return;
-      }
+      }, 700);
 
-      // ============================================
-      // 6 DIGITS = ORDER ID
-      // WAIT 700ms AFTER TYPING STOPS
-      // ============================================
-      if (/^\d{6}$/.test(search)) {
-        const timer = setTimeout(() => {
-          handleTrackingSearch();
-        }, 700);
+      return () => clearTimeout(timer);
+    }
 
-        return () => clearTimeout(timer);
-      }
-    }, [trackingSearch]);
-
-    // Handle Escape key to close open overlays
-    useEffect(() => {
-      const handleEscapeKey = (e) => {
-        if (e.key === "Escape") {
-          setShowProfile(false);
-          setShowRecharge(false);
-          setShowTrackingDetails(false);
-          setShowImportOrder(false);
-        }
-      };
-      window.addEventListener("keydown", handleEscapeKey);
-      return () => window.removeEventListener("keydown", handleEscapeKey);
-    }, []);
+    // ============================================
+    // ANY OTHER LENGTH
+    // DO NOTHING
+    // ============================================
+  }, [trackingSearch]);
 
     // ======================================================
     // IMPORT ORDER STATE
@@ -221,6 +158,10 @@
     const [importMessage, setImportMessage] = useState("");
     const [importImportedCount, setImportImportedCount] = useState(0);
     const importFileRef = useRef(null);
+
+    const [user, setUser] = useState(() => {
+      return JSON.parse(localStorage.getItem("user") || "null");
+    });
 
     useEffect(() => {
       if (propCollapsed !== undefined) {
@@ -394,6 +335,58 @@
         setLoading(false);
       }
     };
+
+    // ======================================================
+    // TRACKING HELPERS
+    // ======================================================
+
+    const handleTrackingSearch = async (event) => {
+      event?.preventDefault();
+
+      const search = String(trackingSearch || "").trim();
+
+      if (!search) {
+        toast.error("Enter Tracking ID or Order ID");
+        return;
+      }
+
+      const userId = user?.id;
+
+      if (!userId) {
+        toast.error("Please login again");
+        return;
+      }
+
+      setTrackingSearchLoading(true);
+
+      try {
+        const response = await api.get("/orders/tracking-search", {
+          params: {
+            user_id: userId,
+            search,
+          },
+        });
+
+        const order = response.data?.order;
+
+        if (!order) {
+          toast.error("Shipment not found");
+          return;
+        }
+
+        setTrackingOrder(order);
+  setTrackingSearch("");
+  setShowTrackingDetails(true);
+      } catch (error) {
+        toast.error(
+          error.response?.data?.message ||
+            "Unable to search shipment"
+        );
+      } finally {
+        setTrackingSearchLoading(false);
+      }
+    };
+
 
     useEffect(() => {
   const handleOpenTracking = async (event) => {
@@ -1013,6 +1006,18 @@
         "Excel import failed"
     );
   }
+
+        setImportMessage(
+          responseData?.message ||
+            "Excel import failed. Please fix the errors and try again."
+        );
+
+        if (!backendErrors.length) {
+          toast.error(
+            responseData?.message ||
+              "Excel import failed"
+          );
+        }
       } finally {
         setImportLoading(false);
       }
@@ -1126,7 +1131,6 @@
                 onClick={() => setShowRecharge(true)}
                 className="ml-1.5 flex h-5 w-5 sm:h-6 sm:w-6 items-center justify-center rounded-full bg-[#008dd2] text-xs font-bold text-white transition hover:bg-violet-700 active:scale-90 shrink-0 shadow-xs"
                 title="Recharge Wallet"
-                aria-label="Recharge Wallet"
               >
                 +
               </button>
@@ -1136,7 +1140,6 @@
             <button
               type="button"
               title="Chat"
-              aria-label="Open support chat"
               onClick={() => toast("Chat coming soon")}
               className="hidden sm:flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full text-slate-600 transition hover:bg-slate-100 shrink-0"
             >
@@ -1147,7 +1150,6 @@
             <button
               type="button"
               title="Notifications"
-              aria-label="View notifications"
               onClick={() => toast("No new notifications")}
               className="relative flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full text-slate-600 transition hover:bg-slate-100 active:scale-90 shrink-0"
             >
@@ -1159,7 +1161,6 @@
             <button
               type="button"
               title="Theme"
-              aria-label="Toggle dark/light theme"
               onClick={handleTheme}
               className="hidden sm:flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full text-slate-600 transition hover:bg-slate-100 shrink-0"
             >
@@ -1170,7 +1171,6 @@
             <button
               type="button"
               title="Fullscreen"
-              aria-label="Toggle fullscreen display"
               onClick={handleFullscreen}
               className="hidden md:flex h-9 w-9 items-center justify-center rounded-full text-slate-600 transition hover:bg-slate-100 shrink-0"
             >
@@ -1181,8 +1181,6 @@
             <div ref={profileRef} className="relative shrink-0">
               <button
                 type="button"
-                aria-label="User profile menu"
-                aria-expanded={showProfile}
                 onClick={() => setShowProfile((prev) => !prev)}
                 className="flex items-center gap-2 rounded-full p-0.5 sm:p-1 transition hover:bg-slate-100 active:scale-95"
               >

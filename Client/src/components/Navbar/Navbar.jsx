@@ -32,18 +32,17 @@ function Navbar() {
         </Link>
 
         {/* Old navigation kept safely, currently hidden */}
-        {/*
         <ul className="hidden items-center gap-8 lg:flex">
-          {navItems.map((item) => (
-            <li
-              key={item}
-              className="cursor-pointer text-[15px] font-medium text-slate-700 transition-all duration-300 hover:text-[#008dd2]"
-            >
-              {item}
-            </li>
-          ))}
+          {false &&
+            navItems.map((item) => (
+              <li
+                key={item}
+                className="cursor-pointer text-[15px] font-medium text-slate-700 transition-all duration-300 hover:text-[#008dd2]"
+              >
+                {item}
+              </li>
+            ))}
         </ul>
-        */}
 
         {/* Auth Buttons */}
         <div className="flex items-center gap-3">
