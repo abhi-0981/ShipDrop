@@ -458,6 +458,8 @@ function AllOrders() {
   const [loading, setLoading] = useState(true);
 
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+const hasLoadedRef = useRef(false);
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [serviceFilter, setServiceFilter] = useState("ALL");
   const [paymentFilter, setPaymentFilter] = useState("ALL");
@@ -498,14 +500,16 @@ function AllOrders() {
     }
 
     try {
-      setLoading(true);
+      if (!hasLoadedRef.current) {
+  setLoading(true);
+}
 
       const response = await api.get("/orders/all", {
         params: {
           user_id: userId,
           page: currentPage,
           limit: 50,
-          search: search.trim(),
+          search: debouncedSearch.trim(),
         },
       });
 
@@ -538,12 +542,24 @@ function AllOrders() {
       );
     } finally {
       setLoading(false);
+      hasLoadedRef.current = true;
     }
   };
 
-  useEffect(() => {
-    fetchAllOrders();
-  }, [currentPage, search]);
+ // Wait until the user pauses typing before searching
+useEffect(() => {
+  const timer = setTimeout(() => {
+    setDebouncedSearch(search);
+    setCurrentPage(1);
+  }, 350);
+
+  return () => clearTimeout(timer);
+}, [search]);
+
+// Fetch orders when page or debounced search changes
+useEffect(() => {
+  fetchAllOrders();
+}, [currentPage, debouncedSearch]);
 
   const isProcessingOrder = (order) => {
     const normalizeStatus = (value) =>
