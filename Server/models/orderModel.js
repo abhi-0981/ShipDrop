@@ -230,6 +230,16 @@ const createProduct = (productData, callback) => {
 // ======================================================
 
 const createPackage = (packageData, callback) => {
+  const length = Number(packageData.length) || 0;
+  const width = Number(packageData.width) || 0;
+  const height = Number(packageData.height) || 0;
+  const weight = Number(packageData.weight) || 0;
+  const packageCount = Number(packageData.package_count) || 1;
+
+  const volumetricWeight = Number(
+    ((length * width * height) / 5000).toFixed(2)
+  );
+
   const query = `
     INSERT INTO order_packages
     (
@@ -238,22 +248,24 @@ const createPackage = (packageData, callback) => {
       width,
       height,
       weight,
-      package_count
+      package_count,
+      volumetric_weight
     )
-    VALUES (?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
   `;
 
   db.query(
     query,
     [
       packageData.order_id,
-      packageData.length || 0,
-      packageData.width || 0,
-      packageData.height || 0,
-      packageData.weight || 0,
-      packageData.package_count || 1,
+      length,
+      width,
+      height,
+      weight,
+      packageCount,
+      volumetricWeight,
     ],
-    callback,
+    callback
   );
 };
 
@@ -357,7 +369,8 @@ const getProcessingOrders = (user_id, callback) => {
       pkg.width,
       pkg.height,
       pkg.weight,
-      pkg.package_count
+      pkg.package_count,
+      pkg.volumetric_weight
 
     FROM orders o
 
@@ -511,7 +524,8 @@ m.shipping_charge AS shipping_charge,
       pkg.width,
       pkg.height,
       pkg.weight,
-      pkg.package_count
+      pkg.package_count,
+      pkg.volumetric_weight
 
     FROM orders o
 
@@ -718,7 +732,8 @@ const getOrderById = (orderId, userId) => {
           pkg.width,
           pkg.height,
           pkg.weight,
-          pkg.package_count
+          pkg.package_count,
+          pkg.volumetric_weight
 
         FROM orders o
 
@@ -916,16 +931,22 @@ const getOrderById = (orderId, userId) => {
             packageKeys.add(packageKey);
 
             order.packages.push({
-              length: row.length,
-
-              width: row.width,
-
-              height: row.height,
-
-              weight: row.weight,
-
-              package_count: row.package_count,
-            });
+  length: row.length,
+  width: row.width,
+  height: row.height,
+  weight: row.weight,
+  package_count: row.package_count,
+  volumetric_weight:
+    row.volumetric_weight ??
+    Number(
+      (
+        ((Number(row.length) || 0) *
+          (Number(row.width) || 0) *
+          (Number(row.height) || 0)) /
+        5000
+      ).toFixed(2)
+    ),
+});
           }
         }
       });
@@ -1174,37 +1195,46 @@ const updateOrder = (
         [orderId],
       );
 
-      if (Array.isArray(packages)) {
-        for (const pkg of packages) {
-          await txQuery(
-            `
-                INSERT INTO order_packages
-                (
-                  order_id,
-                  length,
-                  width,
-                  height,
-                  weight,
-                  package_count
-                )
-                VALUES (?, ?, ?, ?, ?, ?)
-              `,
-            [
-              orderId,
+  
+if (Array.isArray(packages)) {
+  for (const pkg of packages) {
+    const length = Number(pkg?.length) || 0;
+    const width = Number(pkg?.width) || 0;
+    const height = Number(pkg?.height) || 0;
+    const weight = Number(pkg?.weight) || 0;
+    const packageCount = Number(pkg?.package_count) || 1;
 
-              Number(pkg?.length) || 0,
+    const volumetricWeight = Number(
+      ((length * width * height) / 5000).toFixed(2)
+    );
 
-              Number(pkg?.width) || 0,
+    await txQuery(
+      `
+        INSERT INTO order_packages
+        (
+          order_id,
+          length,
+          width,
+          height,
+          weight,
+          package_count,
+          volumetric_weight
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `,
+      [
+        orderId,
+        length,
+        width,
+        height,
+        weight,
+        packageCount,
+        volumetricWeight,
+      ]
+    );
+  }
+}
 
-              Number(pkg?.height) || 0,
-
-              Number(pkg?.weight) || 0,
-
-              Number(pkg?.package_count) || 1,
-            ],
-          );
-        }
-      }
 
       await connection.commit();
 
