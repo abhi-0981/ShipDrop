@@ -426,20 +426,16 @@ const getAllOrders = (user_id, page = 1, limit = 50, search = "", callback) => {
       o.awb,
 
 (
-  SELECT COALESCE(
-    pr.delhivery_request_id,
-    m_pickup.pickup_request_id
-  )
-  FROM manifests m_pickup
-  LEFT JOIN pickup_requests pr
-    ON pr.id = m_pickup.pickup_request_id
-  WHERE m_pickup.order_id = o.id
-    AND m_pickup.user_id = o.user_id
-    AND UPPER(
-      COALESCE(m_pickup.status, '')
-    ) = 'CONFIRMED'
-  ORDER BY m_pickup.id DESC
-  LIMIT 1
+ (
+    SELECT COALESCE(
+        NULLIF(o.pickup_request_id, ''),
+        NULLIF(m_pickup.pickup_request_id, '')
+    )
+    FROM manifests m_pickup
+    WHERE m_pickup.order_id = o.id
+      AND m_pickup.user_id = o.user_id
+    ORDER BY m_pickup.id DESC
+    LIMIT 1
 ) AS pickup_id,
  
 o.consignee_name,
@@ -473,8 +469,14 @@ o.consignee_name,
    MANIFEST / SHIPPING CHARGE
 ========================================== */
 
-m.shipping_charge AS shipping_charge,
-
+(
+    SELECT m_charge.shipping_charge
+    FROM manifests m_charge
+    WHERE m_charge.order_id = o.id
+      AND m_charge.user_id = o.user_id
+    ORDER BY m_charge.id DESC
+    LIMIT 1
+) AS shipping_charge,
       -- ==================================================
       -- ACTUAL SERVICE USED DURING MANIFEST
       -- This is required for AIR / ROAD filter.
