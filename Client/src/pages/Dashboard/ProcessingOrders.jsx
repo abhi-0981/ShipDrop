@@ -1116,12 +1116,21 @@ function ProcessingOrders() {
             <tbody className="divide-y divide-slate-100 text-xs">
               {filteredOrders.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="py-16 text-center text-slate-400">
-                    <Icon name="file" size={26} />
-                    <p className="mt-2 text-sm font-semibold text-slate-600">
-                      No Processing Orders
-                    </p>
-                  </td>
+<td colSpan={7} className="p-0">
+  <div className="flex min-h-[280px] w-full flex-col items-center justify-center px-4 py-10 text-center">
+    <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-slate-400">
+      <Icon name="file" size={30} />
+    </div>
+
+    <p className="text-sm font-bold text-slate-700">
+      No Processing Orders
+    </p>
+
+    <p className="mt-1 max-w-xs text-xs leading-5 text-slate-400">
+      Create a new order to see it processing here.
+    </p>
+  </div>
+</td>
                 </tr>
               ) : (
                 filteredOrders.map((order, index) => {
