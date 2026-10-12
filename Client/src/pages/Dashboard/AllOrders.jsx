@@ -117,6 +117,17 @@ const Icon = ({ name, size = 17, strokeWidth = 1.8 }) => {
         </svg>
       );
 
+      
+    case "more":
+      return (
+        <svg {...common}>
+          <circle cx="12" cy="5" r="1" fill="currentColor" stroke="none" />
+          <circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" />
+          <circle cx="12" cy="19" r="1" fill="currentColor" stroke="none" />
+        </svg>
+      );
+
+
     default:
       return null;
   }
@@ -454,6 +465,7 @@ function AllOrders() {
 
   const [selectedIds, setSelectedIds] = useState([]);
   const [viewingOrder, setViewingOrder] = useState(null);
+  const [openActionMenuId, setOpenActionMenuId] = useState(null);
 
   // Mobile Touch tracking reference
   const lastTapRef = useRef({});
@@ -1486,45 +1498,80 @@ function AllOrders() {
                           </p>
                         </td>
 
-                        <td className="px-1 py-2.5 break-words">
-                          <div className="flex items-center justify-start gap-1">
-                            <button
-                              type="button"
-                              onClick={() => handlePrintSingleLabel(order)}
-                              title="Print Shipping Label"
-                              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[#008dd2] bg-[#008dd2] text-white transition hover:bg-[#007dbb]"
-                            >
-                              <Icon name="printer" size={15} />
-                            </button>
+                      
+<td className="px-1 py-2.5">
+  <div className="flex items-center justify-start gap-1">
+    {/* Print */}
+    <button
+      type="button"
+      onClick={() => handlePrintSingleLabel(order)}
+      title="Print Shipping Label"
+      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[#008dd2] bg-[#008dd2] text-white transition hover:bg-[#007dbb]"
+    >
+      <Icon name="printer" size={15} />
+    </button>
 
-                            <button
-                              type="button"
-                              onClick={() => handleDownloadSingleLabel(order)}
-                              title="Download Shipping Label"
-                              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[#008dd2] bg-[#008dd2] text-white transition hover:bg-[#007dbb]"
-                            >
-                              <Icon name="download" size={13} />
-                            </button>
+    {/* Download */}
+    <button
+      type="button"
+      onClick={() => handleDownloadSingleLabel(order)}
+      title="Download Shipping Label"
+      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[#008dd2] bg-[#008dd2] text-white transition hover:bg-[#007dbb]"
+    >
+      <Icon name="download" size={13} />
+    </button>
 
-                            <button
-                              type="button"
-                              onClick={() => handleDuplicate(order)}
-                              title="Duplicate Order"
-                              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-violet-200 bg-white text-violet-500 transition hover:border-violet-300 hover:bg-violet-50"
-                            >
-                              <Icon name="copy" size={15} />
-                            </button>
+    {/* More Actions */}
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() =>
+          setOpenActionMenuId((prev) => (prev === id ? null : id))
+        }
+        title="More Actions"
+        aria-label="More Actions"
+        aria-expanded={openActionMenuId === id}
+        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md border transition ${
+          openActionMenuId === id
+            ? "border-[#008dd2] bg-[#edf8ff] text-[#008dd2]"
+            : "border-slate-200 bg-white text-slate-500 hover:border-[#008dd2] hover:bg-[#edf8ff] hover:text-[#008dd2]"
+        }`}
+      >
+        <Icon name="more" size={16} />
+      </button>
 
-                            <button
-                              type="button"
-                              onClick={() => handleView(order)}
-                              title="View Order"
-                              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-500 transition hover:border-[#008dd2] hover:bg-[#edf8ff] hover:text-[#008dd2]"
-                            >
-                              <Icon name="eye" size={15} />
-                            </button>
-                          </div>
-                        </td>
+      {openActionMenuId === id && (
+        <div className="absolute right-0 top-full z-50 mt-1 w-44 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
+          <button
+            type="button"
+            onClick={() => {
+              setOpenActionMenuId(null);
+              handleView(order);
+            }}
+            className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-xs font-medium text-slate-700 transition hover:bg-slate-50"
+          >
+            <Icon name="eye" size={15} />
+            Details
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setOpenActionMenuId(null);
+              handleDuplicate(order);
+            }}
+            className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-xs font-medium text-slate-700 transition hover:bg-slate-50"
+          >
+            <Icon name="copy" size={15} />
+            Duplicate Order
+          </button>
+        </div>
+      )}
+    </div>
+  </div>
+</td>
+
+
                       </tr>
                     );
                   })
