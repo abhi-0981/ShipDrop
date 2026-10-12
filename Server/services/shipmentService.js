@@ -2391,9 +2391,28 @@ try {
         manifest_id,
     });
 
+      // Save Delhivery pickup ID in orders table too
+  if (pickupResult?.delhiveryPickupId) {
+    await query(
+      `
+        UPDATE orders
+        SET pickup_request_id = ?
+        WHERE id = ?
+          AND user_id = ?
+      `,
+      [
+        pickupResult.delhiveryPickupId,
+        lockedOrder.id,
+        user_id,
+      ]
+    );
+  }
+
   console.log(
     "=============================================="
   );
+
+
 
   console.log(
     "✅ PICKUP READY"
