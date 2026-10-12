@@ -459,7 +459,7 @@ function AllOrders() {
 
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-const hasLoadedRef = useRef(false);
+  const [isFetching, setIsFetching] = useState(false);
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [serviceFilter, setServiceFilter] = useState("ALL");
   const [paymentFilter, setPaymentFilter] = useState("ALL");
@@ -469,6 +469,8 @@ const hasLoadedRef = useRef(false);
 
   // Mobile Touch tracking reference
   const lastTapRef = useRef({});
+  const hasLoadedRef = useRef(false);
+  const requestIdRef = useRef(0);
 
   // Trigger global tracking event
   const triggerTracking = (awb) => {
@@ -493,16 +495,24 @@ const hasLoadedRef = useRef(false);
 
   const fetchAllOrders = async () => {
     const userId = getUserId();
+
     if (!userId) {
       setLoading(false);
+      setIsFetching(false);
       toast.error("User ID is required");
       return;
     }
 
+    // Ignore older responses if a newer search/page request has started.
+    const requestId = ++requestIdRef.current;
+
     try {
+      setIsFetching(true);
+
+      // Only show the full-page skeleton on the very first load.
       if (!hasLoadedRef.current) {
-  setLoading(true);
-}
+        setLoading(true);
+      }
 
       const response = await api.get("/orders/all", {
         params: {
@@ -513,9 +523,9 @@ const hasLoadedRef = useRef(false);
         },
       });
 
+      if (requestId !== requestIdRef.current) return;
+
       const data = response?.data;
-      setTotalPages(Number(data?.pagination?.totalPages) || 1);
-      setTotalOrderCount(Number(data?.pagination?.totalOrders) || 0);
 
       if (!data?.success) {
         throw new Error(data?.message || "Unable to fetch all orders");
@@ -531,35 +541,43 @@ const hasLoadedRef = useRef(false);
         ).values(),
       );
 
+      setTotalPages(Number(data?.pagination?.totalPages) || 1);
+      setTotalOrderCount(Number(data?.pagination?.totalOrders) || 0);
       setOrders(uniqueOrders);
       setSelectedIds([]);
     } catch (error) {
-      setOrders([]);
+      if (requestId !== requestIdRef.current) return;
+
+      // Keep the previous list visible if a refresh/search request fails.
       toast.error(
         error?.response?.data?.message ||
           error?.message ||
           "Unable to load all orders",
       );
     } finally {
-      setLoading(false);
-      hasLoadedRef.current = true;
+      if (requestId === requestIdRef.current) {
+        setLoading(false);
+        setIsFetching(false);
+        hasLoadedRef.current = true;
+      }
     }
   };
 
- // Wait until the user pauses typing before searching
-useEffect(() => {
-  const timer = setTimeout(() => {
-    setDebouncedSearch(search);
-    setCurrentPage(1);
-  }, 350);
+  // Debounce typing so the API is called only after the user pauses.
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setCurrentPage(1);
+      setDebouncedSearch(search.trim());
+    }, 300);
 
-  return () => clearTimeout(timer);
-}, [search]);
+    return () => clearTimeout(timeoutId);
+  }, [search]);
 
-// Fetch orders when page or debounced search changes
-useEffect(() => {
-  fetchAllOrders();
-}, [currentPage, debouncedSearch]);
+  useEffect(() => {
+    fetchAllOrders();
+    // fetchAllOrders intentionally reads the current page and debounced search.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage, debouncedSearch]);
 
   const isProcessingOrder = (order) => {
     const normalizeStatus = (value) =>
@@ -580,32 +598,17 @@ useEffect(() => {
   );
 
   const filteredOrders = nonProcessingOrders.filter((order) => {
-    const query = search.trim().toLowerCase();
     const status = getStatus(order);
     const service = getServiceType(order);
     const payment = getPaymentType(order);
 
-    const searchable = [
-      getCustomerName(order),
-      getMobile(order),
-      getAWB(order),
-      getOrderId(order),
-      getShipmentName(order),
-      getPickupCity(order),
-      getDeliveryCity(order),
-      status,
-      service,
-      payment,
-    ]
-      .join(" ")
-      .toLowerCase();
-
-    const searchMatch = !query || searchable.includes(query);
+    // Text search is handled by the API so results can match across all pages.
+    // These dropdown filters remain local to the currently loaded result page.
     const statusMatch = statusFilter === "ALL" || status === statusFilter;
     const serviceMatch = serviceFilter === "ALL" || service === serviceFilter;
     const paymentMatch = paymentFilter === "ALL" || payment === paymentFilter;
 
-    return searchMatch && statusMatch && serviceMatch && paymentMatch;
+    return statusMatch && serviceMatch && paymentMatch;
   });
 
   const getOrderKey = (order) => String(order?.id ?? order?.order_id);
@@ -1019,8 +1022,13 @@ useEffect(() => {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search customer, AWB, Order ID or mobile..."
-                className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-xs text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#008dd2] focus:ring-2 focus:ring-[#008dd2]/10"
+                className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-24 text-xs text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#008dd2] focus:ring-2 focus:ring-[#008dd2]/10"
               />
+              {isFetching && hasLoadedRef.current && (
+                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-medium text-slate-400">
+                  Updating…
+                </span>
+              )}
             </div>
 
             {/* FILTER DROPDOWNS */}
