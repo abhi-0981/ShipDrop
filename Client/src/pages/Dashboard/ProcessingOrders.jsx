@@ -1008,19 +1008,27 @@ function ProcessingOrders() {
                   </div>
 
                   {/* ROUTE */}
-                  <div className="rounded-xl bg-slate-50/80 p-2 flex items-center justify-between text-[11px] text-slate-600">
-                    <div className="truncate">
-                      <span className="font-semibold">{getPickupCity(order)}</span>
-                      <span className="text-slate-400 ml-1">
-                        ({getPickupPincode(order)})
+                  <div className="rounded-xl bg-slate-50/80 p-2.5 flex flex-col gap-1 text-[11px]">
+                    <div className="flex items-center gap-2">
+                      <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-sky-100 text-sky-600">
+                        <svg className="h-2.5 w-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                          <circle cx="12" cy="12" r="3" />
+                          <circle cx="12" cy="12" r="8" />
+                        </svg>
                       </span>
+                      <span className="font-semibold text-slate-800">{getPickupCity(order)}</span>
+                      <span className="text-slate-400">({getPickupPincode(order)})</span>
                     </div>
-                    <span className="text-slate-400 font-bold px-1.5">→</span>
-                    <div className="truncate text-right">
-                      <span className="font-semibold">{getDeliveryCity(order)}</span>
-                      <span className="text-slate-400 ml-1">
-                        ({getDeliveryPincode(order)})
+                    <div className="ml-2 h-2.5 w-0 border-l border-dashed border-slate-300" />
+                    <div className="flex items-center gap-2">
+                      <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-slate-200 text-slate-600">
+                        <svg className="h-2.5 w-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                          <circle cx="12" cy="12" r="3" />
+                          <circle cx="12" cy="12" r="8" />
+                        </svg>
                       </span>
+                      <span className="font-semibold text-slate-800">{getDeliveryCity(order)}</span>
+                      <span className="text-slate-400">({getDeliveryPincode(order)})</span>
                     </div>
                   </div>
 
@@ -1086,12 +1094,12 @@ function ProcessingOrders() {
       </div>
 
       {/* TABLET & DESKTOP: TABLE VIEW */}
-      <div className="hidden sm:block overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-[0_4px_20px_-4px_rgba(15,23,42,0.05)]">
+      <div className="hidden sm:block overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_4px_rgba(15,23,42,0.03)]">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-slate-100 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                <th className="py-3.5 px-4 w-12 text-center">
+              <tr className="border-b border-slate-100 bg-slate-50/70 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                <th className="py-3 px-4 w-12 text-center">
                   <input
                     type="checkbox"
                     checked={allSelected}
@@ -1099,12 +1107,12 @@ function ProcessingOrders() {
                     className="h-4 w-4 rounded accent-[#7451ff] cursor-pointer"
                   />
                 </th>
-                <th className="py-3.5 px-4">Order Details</th>
-                <th className="py-3.5 px-4">Customer</th>
-                <th className="py-3.5 px-4">Route & Pincodes</th>
-                <th className="py-3.5 px-4">Payment & Date</th>
-                <th className="py-3.5 px-4">Package & Weight</th>
-                <th className="py-3.5 px-4 text-right">Actions</th>
+                <th className="py-3 px-4">Customer</th>
+                <th className="py-3 px-4">Route</th>
+                <th className="py-3 px-4">Payment</th>
+                <th className="py-3 px-4">Order & Item</th>
+                <th className="py-3 px-4">Weight</th>
+                <th className="py-3 px-4 text-right">Actions</th>
               </tr>
             </thead>
 
@@ -1112,12 +1120,14 @@ function ProcessingOrders() {
               {filteredOrders.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="p-0">
-                    <div className="flex min-h-[300px] w-full flex-col items-center justify-center px-4 py-12 text-center">
-                      <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl border border-slate-200/70 bg-slate-50 text-slate-400">
-                        <Icon name="file" size={26} />
+                    <div className="flex min-h-[280px] w-full flex-col items-center justify-center px-4 py-10 text-center">
+                      <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-slate-400">
+                        <Icon name="file" size={30} />
                       </div>
-                      <p className="text-sm font-bold text-slate-700">No Processing Orders Found</p>
-                      <p className="mt-1 max-w-xs text-xs text-slate-400">
+                      <p className="text-sm font-bold text-slate-700">
+                        No Processing Orders
+                      </p>
+                      <p className="mt-1 max-w-xs text-xs leading-5 text-slate-400">
                         Create a new order to see it processing here.
                       </p>
                     </div>
@@ -1131,14 +1141,12 @@ function ProcessingOrders() {
                   return (
                     <tr
                       key={id}
-                      className={`group transition-all duration-150 ${
-                        selected
-                          ? "bg-[#7451ff]/[0.03] hover:bg-[#7451ff]/[0.06]"
-                          : "hover:bg-slate-50/80"
+                      className={`transition-colors ${
+                        selected ? "bg-[#7451ff]/[0.03]" : "hover:bg-slate-50/70"
                       }`}
                     >
-                      {/* CHECKBOX */}
-                      <td className="py-4 px-4 text-center align-middle">
+                      {/* 1. CHECKBOX */}
+                      <td className="py-3 px-4 text-center align-middle">
                         <input
                           type="checkbox"
                           checked={selected}
@@ -1147,125 +1155,156 @@ function ProcessingOrders() {
                         />
                       </td>
 
-                      {/* ORDER DETAILS */}
-                      <td className="py-4 px-4 align-middle">
-                        <div className="flex flex-col gap-1">
-                          <span className="font-mono font-bold text-slate-900 group-hover:text-[#7451ff] transition-colors">
-                            #{order.order_id || id}
-                          </span>
-                          <span className="text-[11px] font-medium text-slate-700 truncate max-w-[170px]" title={getProduct(order)}>
-                            {getProduct(order)}
-                          </span>
-                          <span className="inline-flex w-fit items-center rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
-                            Qty: {getQty(order)}
-                          </span>
+                      {/* 2. CUSTOMER */}
+                      <td className="py-3 px-4 align-middle">
+                        <div className="font-bold text-slate-900">
+                          {getCustomer(order)}
                         </div>
+                        <div className="text-[11px] text-slate-400">
+                          {getMobile(order)}
+                        </div>
+                        <span className="mt-1 inline-flex rounded-full bg-[#f2edff] px-2 py-0.5 text-[9px] font-bold text-[#6847ed]">
+                          {getStatus(order)}
+                        </span>
                       </td>
 
-                      {/* CUSTOMER */}
-                      <td className="py-4 px-4 align-middle">
-                        <div className="flex flex-col gap-0.5">
-                          <span className="font-semibold text-slate-900 truncate max-w-[150px]">
-                            {getCustomer(order)}
-                          </span>
-                          <span className="font-mono text-[11px] text-slate-400">
-                            {getMobile(order)}
-                          </span>
-                          <div className="mt-1">
-                            <span className="inline-flex rounded-md bg-[#f2edff] px-2 py-0.5 text-[9px] font-bold text-[#6847ed] tracking-wide">
-                              {getStatus(order)}
-                            </span>
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* ROUTE */}
-                      <td className="py-4 px-4 align-middle">
-                        <div className="flex flex-col gap-1.5 min-w-[190px]">
+                      {/* 3. ROUTE (SCREENSHOT DESIGN) */}
+                      <td className="py-3 px-4 align-middle">
+                        <div className="flex flex-col py-1">
+                          {/* Pickup Node */}
                           <div className="flex items-center gap-2">
-                            <div className="flex items-center gap-1.5 font-semibold text-slate-800 text-[11px]">
-                              <span className="truncate max-w-[85px]">{getPickupCity(order)}</span>
-                              <span className="text-slate-300 font-bold">→</span>
-                              <span className="truncate max-w-[85px]">{getDeliveryCity(order)}</span>
+                            <span className="flex h-4 w-4 shrink-0 items-center justify-center text-sky-500">
+                              <svg
+                                className="h-3.5 w-3.5"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
+                                <circle cx="12" cy="10" r="3" />
+                                <path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 0 0-8-8z" />
+                              </svg>
+                            </span>
+                            <div className="flex items-baseline gap-1 text-[13px]">
+                              <span className="font-medium text-slate-900">
+                                {getPickupCity(order)}
+                              </span>
+                              <span className="text-[12px] text-slate-400">
+                                ({getPickupPincode(order)})
+                              </span>
                             </div>
                           </div>
-                          <div className="flex items-center gap-1.5 font-mono text-[10px] text-slate-400">
-                            <span className="rounded bg-slate-100 px-1.5 py-0.5">{getPickupPincode(order)}</span>
-                            <span>to</span>
-                            <span className="rounded bg-slate-100 px-1.5 py-0.5">{getDeliveryPincode(order)}</span>
+
+                          {/* Dashed Connecting Line */}
+                          <div className="ml-[7px] my-0.5 h-3.5 w-0 border-l border-dashed border-slate-300" />
+
+                          {/* Delivery Node */}
+                          <div className="flex items-center gap-2">
+                            <span className="flex h-4 w-4 shrink-0 items-center justify-center text-slate-400">
+                              <svg
+                                className="h-3.5 w-3.5"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
+                                <circle cx="12" cy="10" r="3" />
+                                <path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 0 0-8-8z" />
+                              </svg>
+                            </span>
+                            <div className="flex items-baseline gap-1 text-[13px]">
+                              <span className="font-medium text-slate-900">
+                                {getDeliveryCity(order)}
+                              </span>
+                              <span className="text-[12px] text-slate-400">
+                                ({getDeliveryPincode(order)})
+                              </span>
+                            </div>
                           </div>
                         </div>
                       </td>
 
-                      {/* PAYMENT & DATE */}
-                      <td className="py-4 px-4 align-middle">
-                        <div className="flex flex-col gap-1">
-                          <span
-                            className={`inline-flex w-fit items-center rounded-md border px-2 py-0.5 text-[10px] font-bold tracking-wide ${
-                              getPayment(order) === "COD"
-                                ? "border-rose-200 bg-rose-50 text-rose-600"
-                                : "border-emerald-200 bg-emerald-50 text-emerald-600"
-                            }`}
-                          >
-                            {getPayment(order)}
-                          </span>
-                          <span className="text-[10px] font-medium text-slate-400">
-                            {getDate(order)}
-                          </span>
+                      {/* 4. PAYMENT */}
+                      <td className="py-3 px-4 align-middle">
+                        <span
+                          className={`inline-flex rounded-md border px-2 py-0.5 text-[10px] font-bold ${
+                            getPayment(order) === "COD"
+                              ? "border-rose-100 bg-rose-50 text-rose-600"
+                              : "border-emerald-100 bg-emerald-50 text-emerald-600"
+                          }`}
+                        >
+                          {getPayment(order)}
+                        </span>
+                        <div className="mt-1 text-[10px] text-slate-400">
+                          {getDate(order)}
                         </div>
                       </td>
 
-                      {/* WEIGHT & BOX */}
-                      <td className="py-4 px-4 align-middle">
-                        <div className="flex flex-col gap-0.5">
-                          <span className="font-bold text-slate-800">
-                            {getTotalWeight(order)}
-                          </span>
-                          <span className="text-[11px] text-slate-500">
-                            {getBoxCount(order)} {getBoxCount(order) > 1 ? "Boxes" : "Box"}
-                          </span>
+                      {/* 5. ORDER & ITEM */}
+                      <td className="py-3 px-4 align-middle">
+                        <div className="font-bold text-slate-800">
+                          #{order.order_id || id}
+                        </div>
+                        <div className="text-slate-600 truncate max-w-[150px]">
+                          {getProduct(order)}
+                        </div>
+                        <div className="text-[10px] text-slate-400">
+                          Qty: {getQty(order)}
                         </div>
                       </td>
 
-                      {/* ACTIONS */}
-                      <td className="py-4 px-4 align-middle text-right">
+                      {/* 6. WEIGHT */}
+                      <td className="py-3 px-4 align-middle">
+                        <div className="font-semibold text-slate-700">
+                          {getTotalWeight(order)}
+                        </div>
+                        <div className="text-[10px] text-slate-400">
+                          {getBoxCount(order)} Box
+                        </div>
+                      </td>
+
+                      {/* 7. ACTIONS */}
+                      <td className="py-3 px-4 align-middle text-right">
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             type="button"
                             onClick={() => openShipPopup([id])}
-                            className="flex h-8 items-center gap-1.5 rounded-lg bg-[#7451ff] px-2.5 text-[11px] font-bold text-white shadow-xs hover:bg-[#6340f0] transition active:scale-95"
+                            className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#f0ecff] text-[#7451ff] hover:bg-[#7451ff] hover:text-white transition active:scale-95"
                             title="Ship Order"
                           >
-                            <Icon name="truck" size={13} />
-                            <span>Ship</span>
+                            <Icon name="truck" size={14} />
                           </button>
 
                           <button
                             type="button"
                             onClick={() => handleEdit(order)}
                             disabled={editingOrder}
-                            className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:border-sky-300 hover:bg-sky-50 hover:text-sky-600 transition active:scale-95 disabled:opacity-50"
+                            className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-50 text-sky-600 hover:bg-sky-600 hover:text-white transition active:scale-95 disabled:opacity-50"
                             title="Edit Order"
                           >
-                            <Icon name="edit" size={13} />
+                            <Icon name="edit" size={14} />
                           </button>
 
                           <button
                             type="button"
                             onClick={() => handleDuplicate(order)}
-                            className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:border-violet-300 hover:bg-violet-50 hover:text-violet-600 transition active:scale-95"
+                            className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-50 text-violet-600 hover:bg-violet-600 hover:text-white transition active:scale-95"
                             title="Duplicate Order"
                           >
-                            <Icon name="copy" size={13} />
+                            <Icon name="copy" size={14} />
                           </button>
 
                           <button
                             type="button"
                             onClick={() => handleDelete([id])}
-                            className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:border-rose-300 hover:bg-rose-50 hover:text-rose-600 transition active:scale-95"
+                            className="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white transition active:scale-95"
                             title="Delete Order"
                           >
-                            <Icon name="trash" size={13} />
+                            <Icon name="trash" size={14} />
                           </button>
                         </div>
                       </td>
