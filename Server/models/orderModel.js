@@ -426,11 +426,8 @@ const getAllOrders = (user_id, page = 1, limit = 50, search = "", callback) => {
       o.awb,
 
 (
- (
-    SELECT COALESCE(
-        NULLIF(o.pickup_request_id, ''),
-        NULLIF(m_pickup.pickup_request_id, '')
-    )
+(
+    SELECT m_pickup.pickup_request_id
     FROM manifests m_pickup
     WHERE m_pickup.order_id = o.id
       AND m_pickup.user_id = o.user_id
@@ -438,7 +435,6 @@ const getAllOrders = (user_id, page = 1, limit = 50, search = "", callback) => {
     LIMIT 1
 ) AS pickup_id,
  
-o.consignee_name,
 
       o.consignee_name,
       o.mobile,
