@@ -373,27 +373,11 @@ const getStatus = (order) => {
 };
 
 const getStatusLabel = (status) => {
-  switch (status) {
-    case "PROCESSING":
-      return "Processing";
-    case "MANIFESTED":
-      return "Manifested";
-    case "IN TRANSIT":
-    case "IN_TRANSIT":
-      return "In Transit";
-    case "DELIVERED":
-      return "Delivered";
-    case "CANCELLED":
-    case "CANCELED":
-      return "Cancelled";
-    case "PENDING":
-      return "Pending";
-    default:
-      return (
-        status?.toLowerCase()?.replace(/\b\w/g, (char) => char.toUpperCase()) ||
-        "Processing"
-      );
-  }
+  return String(status || "PROCESSING")
+    .trim()
+    .toUpperCase()
+    .replace(/[-_]+/g, " ")
+    .replace(/\s+/g, " ");
 };
 
 const StatusBadge = ({ status }) => {
