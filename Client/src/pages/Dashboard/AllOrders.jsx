@@ -1116,7 +1116,7 @@ function AllOrders() {
                     <div className="flex items-center justify-between font-mono text-[11px] text-slate-600 bg-slate-50/70 px-2 py-1.5 rounded-lg border border-slate-100">
                       <span
                         onTouchEnd={() => handleTouchTracking(awb)}
-                        onDoubleClick={() => triggerTracking(awb)}
+                        onClick={() => triggerTracking(awb)}
                         className="truncate font-semibold select-none cursor-pointer"
                         title="Double-tap or click Track to track order"
                       >
@@ -1352,8 +1352,8 @@ function AllOrders() {
                               <>
                                 <div className="flex items-center gap-1.5 min-w-0">
                                   <p
-                                    onDoubleClick={() => triggerTracking(awb)}
-                                    title="Double click to track"
+                                    onClick={() => triggerTracking(awb)}
+                                    title="click to track"
                                     className="truncate text-[13px] font-semibold text-slate-800 cursor-pointer select-none"
                                   >
                                     {awb}
