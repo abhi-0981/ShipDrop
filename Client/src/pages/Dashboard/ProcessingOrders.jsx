@@ -990,7 +990,7 @@ function ProcessingOrders() {
                     >
                       {getPayment(order)}
                     </span>
-                    <span className="rounded-full bg-[#f2edff] px-2 py-0.5 text-[10px] font-semibold text-[#6847ed]">
+                    <span className="rounded-full bg-[#f2edff] px-2 py-0.5 text-[10px] font-semibold text-[#008dd2]">
                       {getStatus(order)}
                     </span>
                   </div>
@@ -1163,7 +1163,7 @@ function ProcessingOrders() {
                         <div className="text-[11px] text-slate-400">
                           {getMobile(order)}
                         </div>
-                        <span className="mt-1 inline-flex rounded-full bg-[#f2edff] px-2 py-0.5 text-[9px] font-bold text-[#6847ed]">
+                        <span className="mt-1 inline-flex rounded-full bg-[#f2edff] px-2 py-0.5 text-[9px] font-bold text-[#008dd2]">
                           {getStatus(order)}
                         </span>
                       </td>
