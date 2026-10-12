@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { toast } from "react-hot-toast";
 import api from "../../services/api";
+import { printShippingLabels } from "../../services/shippingLabelService";
 
 // ======================================================
 // COLORS
@@ -649,118 +650,25 @@ function AllOrders() {
     setViewingOrder(order);
   };
 
-  const buildLabel = (order) => {
-    const service = getServiceType(order);
-    const address = [
-      order?.address_line1,
-      order?.address_line2,
-      order?.city,
-      order?.state,
-    ]
-      .filter(Boolean)
-      .join(", ");
+  const handlePrintSingleLabel = async (order) => {
+    if (!order) {
+      toast.error("Unable to print this label");
+      return;
+    }
 
-    return `
-      <div
-        style="
-          width:420px;
-          margin:0 auto 24px;
-          padding:24px;
-          border:1px solid #dbe3ef;
-          border-radius:12px;
-          font-family:Arial,sans-serif;
-          color:#172033;
-          page-break-after:always;
-        "
-      >
-        <div
-          style="
-            display:flex;
-            justify-content:space-between;
-            align-items:center;
-            border-bottom:1px solid #e8edf4;
-            padding-bottom:14px;
-            margin-bottom:18px;
-          "
-        >
-          <div>
-            <div style="font-size:20px; font-weight:700; color:${PRIMARY};">
-              ShipDrop
-            </div>
-            <div style="font-size:11px; color:#718096; margin-top:4px;">
-              Shipping Label
-            </div>
-          </div>
-          <div style="font-size:12px; font-weight:700;">
-            AWB ${getAWB(order)}
-          </div>
-        </div>
-
-        <div style="font-size:10px; color:#718096; margin-bottom:5px;">
-          CONSIGNEE
-        </div>
-        <div style="font-size:16px; font-weight:700;">
-          ${getCustomerName(order)}
-        </div>
-        <div style="font-size:12px; margin-top:5px; margin-bottom:16px;">
-          ${getMobile(order)}
-        </div>
-
-        <div style="background:#f7f9fc; border-radius:8px; padding:12px; margin-bottom:16px;">
-          <div style="font-size:10px; color:#718096; margin-bottom:5px;">
-            DELIVERY ADDRESS
-          </div>
-          <div style="font-size:12px; line-height:1.5;">
-            ${address || "—"}<br />${getDeliveryPincode(order)}
-          </div>
-        </div>
-
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-          <div style="border:1px solid #e4eaf2; border-radius:8px; padding:10px;">
-            <div style="font-size:10px; color:#718096;">SERVICE</div>
-            <div style="font-size:12px; font-weight:700; margin-top:4px;">
-              ${service === "AIR" ? "By Air" : "By Road"}
-            </div>
-          </div>
-          <div style="border:1px solid #e4eaf2; border-radius:8px; padding:10px;">
-            <div style="font-size:10px; color:#718096;">WEIGHT</div>
-            <div style="font-size:12px; font-weight:700; margin-top:4px;">
-              ${getWeight(order).toFixed(2)} Kg
-            </div>
-          </div>
-        </div>
-
-        <div style="margin-top:18px; padding-top:12px; border-top:1px dashed #cbd5e1; font-size:10px; color:#718096; text-align:center;">
-          ShipDrop • Handle with care
-        </div>
-      </div>
-    `;
+    await printShippingLabels([order], "ParcelDrop Shipping Label");
   };
 
-  const handlePrintLabels = () => {
+  const handlePrintLabels = async () => {
     if (selectedOrders.length === 0) {
       toast.error("Please select at least one order");
       return;
     }
 
-    const printWindow = window.open("", "_blank", "width=900,height=700");
-    if (!printWindow) {
-      toast.error("Please allow pop-ups to print labels");
-      return;
-    }
-
-    const html = selectedOrders.map(buildLabel).join("");
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-        <head><title>ShipDrop Shipping Labels</title></head>
-        <body style="margin:30px; background:#fff;">${html}</body>
-      </html>
-    `);
-
-    printWindow.document.close();
-    printWindow.focus();
-    setTimeout(() => printWindow.print(), 300);
+    await printShippingLabels(
+      selectedOrders,
+      "ParcelDrop Shipping Labels",
+    );
   };
 
   const handleExport = () => {
@@ -1276,29 +1184,7 @@ function AllOrders() {
 
                     <button
                       type="button"
-                      onClick={() => {
-                        const printWindow = window.open(
-                          "",
-                          "_blank",
-                          "width=900,height=700",
-                        );
-                        if (!printWindow) {
-                          toast.error("Please allow pop-ups to print labels");
-                          return;
-                        }
-                        printWindow.document.write(`
-                          <!DOCTYPE html>
-                          <html>
-                            <head><title>Shipping Label</title></head>
-                            <body style="margin:30px; background:#fff;">${buildLabel(
-                              order,
-                            )}</body>
-                          </html>
-                        `);
-                        printWindow.document.close();
-                        printWindow.focus();
-                        setTimeout(() => printWindow.print(), 300);
-                      }}
+                      onClick={() => handlePrintSingleLabel(order)}
                       className="flex h-8 items-center gap-1 rounded-lg bg-[#008dd2] px-3 text-xs font-bold text-white shadow-xs active:scale-95"
                     >
                       <Icon name="printer" size={13} />
@@ -1579,34 +1465,7 @@ function AllOrders() {
                           <div className="flex items-center gap-1.5">
                             <button
                               type="button"
-                              onClick={() => {
-                                const printWindow = window.open(
-                                  "",
-                                  "_blank",
-                                  "width=900,height=700",
-                                );
-
-                                if (!printWindow) {
-                                  toast.error(
-                                    "Please allow pop-ups to print labels",
-                                  );
-                                  return;
-                                }
-
-                                printWindow.document.write(`
-                                  <!DOCTYPE html>
-                                  <html>
-                                    <head><title>ShipDrop Shipping Label</title></head>
-                                    <body style="margin:30px; background:#fff;">
-                                      ${buildLabel(order)}
-                                    </body>
-                                  </html>
-                                `);
-
-                                printWindow.document.close();
-                                printWindow.focus();
-                                setTimeout(() => printWindow.print(), 300);
-                              }}
+                              onClick={() => handlePrintSingleLabel(order)}
                               title="Print Shipping Label"
                               className="flex h-8 w-8 items-center justify-center rounded-md border border-[#b9dff0] bg-white text-[#008dd2] transition hover:bg-[#edf8ff]"
                             >
@@ -1849,32 +1708,7 @@ function AllOrders() {
 
               <button
                 type="button"
-                onClick={() => {
-                  const order = viewingOrder;
-                  setViewingOrder(null);
-
-                  const printWindow = window.open(
-                    "",
-                    "_blank",
-                    "width=900,height=700",
-                  );
-                  if (!printWindow) {
-                    toast.error("Please allow pop-ups to print labels");
-                    return;
-                  }
-                  printWindow.document.write(`
-                    <!DOCTYPE html>
-                    <html>
-                      <head><title>ShipDrop Shipping Label</title></head>
-                      <body style="margin:30px; background:#fff;">
-                        ${buildLabel(order)}
-                      </body>
-                    </html>
-                  `);
-                  printWindow.document.close();
-                  printWindow.focus();
-                  setTimeout(() => printWindow.print(), 300);
-                }}
+                onClick={() => handlePrintSingleLabel(viewingOrder)}
                 className="inline-flex h-9.5 items-center gap-1.5 rounded-xl bg-[#008dd2] px-4 text-xs font-bold text-white shadow-xs hover:bg-[#007dbb] active:scale-95"
               >
                 <Icon name="printer" size={14} />
