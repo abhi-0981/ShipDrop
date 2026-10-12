@@ -916,7 +916,7 @@ function AllOrders() {
                 type="button"
                 onClick={handlePrintLabels}
                 disabled={selectedOrders.length === 0}
-                className="inline-flex h-9 flex-1 sm:flex-initial items-center justify-center gap-1.5 rounded-xl bg-[#8fcce8] px-3.5 text-xs font-semibold text-white transition hover:bg-[#7fc2e1] active:scale-95 disabled:cursor-not-allowed disabled:opacity-55"
+                className="inline-flex h-9 flex-1 sm:flex-initial items-center justify-center gap-1.5 whitespace-nowrap rounded-xl bg-[#008dd2] px-3.5 text-xs font-semibold text-white transition hover:bg-[#007dbb] active:scale-95 disabled:cursor-not-allowed disabled:opacity-55"
               >
                 <Icon name="printer" size={15} />
                 <span>Print Labels ({selectedOrders.length})</span>
@@ -926,7 +926,7 @@ function AllOrders() {
                 type="button"
                 onClick={handleDownloadLabels}
                 disabled={selectedOrders.length === 0}
-                className="inline-flex h-9 flex-1 sm:flex-initial items-center justify-center gap-1.5 rounded-xl bg-[#008dd2] px-3.5 text-xs font-semibold text-white transition hover:bg-[#007dbb] active:scale-95 disabled:cursor-not-allowed disabled:opacity-55"
+                className="inline-flex h-9 flex-1 sm:flex-initial items-center justify-center gap-1.5 whitespace-nowrap rounded-xl bg-[#008dd2] px-3.5 text-xs font-semibold text-white transition hover:bg-[#007dbb] active:scale-95 disabled:cursor-not-allowed disabled:opacity-55"
               >
                 <Icon name="download" size={15} />
                 <span>Download Labels ({selectedOrders.length})</span>
@@ -1103,7 +1103,7 @@ function AllOrders() {
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center justify-center gap-1">
                       <span
                         className={`rounded-md border px-2 py-0.5 text-[10px] font-bold ${
                           payment === "COD"
@@ -1260,31 +1260,31 @@ function AllOrders() {
                     </button>
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[15%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[17%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Customer
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[16%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[17%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Shipment
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[16%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[17%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Route
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[12%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[11%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Payment
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[10%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[9%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Weight
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[155px] bg-white px-3 py-3.5 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[12%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Created
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[105px] bg-white px-3 py-3.5 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[13%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Actions
                   </th>
                 </tr>
@@ -1502,13 +1502,13 @@ function AllOrders() {
                           </p>
                         </td>
 
-                        <td className="px-2 py-2.5 break-words">
-                          <div className="flex items-center gap-1.5">
+                        <td className="px-1 py-2.5 break-words">
+                          <div className="flex items-center justify-start gap-1">
                             <button
                               type="button"
                               onClick={() => handlePrintSingleLabel(order)}
                               title="Print Shipping Label"
-                              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[#b9dff0] bg-white text-[#008dd2] transition hover:bg-[#edf8ff]"
+                              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[#008dd2] bg-[#008dd2] text-white transition hover:bg-[#007dbb]"
                             >
                               <Icon name="printer" size={15} />
                             </button>
@@ -1517,7 +1517,7 @@ function AllOrders() {
                               type="button"
                               onClick={() => handleDownloadSingleLabel(order)}
                               title="Download Shipping Label"
-                              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[#b9dff0] bg-white text-[#008dd2] transition hover:bg-[#edf8ff]"
+                              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[#008dd2] bg-[#008dd2] text-white transition hover:bg-[#007dbb]"
                             >
                               <Icon name="download" size={13} />
                             </button>
