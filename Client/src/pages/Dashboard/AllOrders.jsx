@@ -1383,7 +1383,7 @@ function AllOrders() {
 
                                 <p className="mt-0.5 text-[10px] text-slate-400">
                                   Pickup ID:{" "}
-                                  order?.pickup_id || order?.pickupId || order?.pickup_request_id || "—"
+                                  {order?.pickup_id || order?.pickupId || order?.pickup_request_id || "—"}
                                 </p>
                               </>
                             )}
