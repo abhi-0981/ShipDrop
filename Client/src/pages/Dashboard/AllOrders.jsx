@@ -1340,9 +1340,9 @@ function AllOrders() {
                               </p>
                             )}
 
-                            <div className="mt-1.5">
-                              <StatusBadge status={status} />
-                            </div>
+                            <div className="mt-0.5 -ml-0.5">
+  <StatusBadge status={status} />
+</div>
                           </div>
                         </td>
 
