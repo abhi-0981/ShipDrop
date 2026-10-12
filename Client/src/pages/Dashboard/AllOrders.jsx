@@ -1,7 +1,10 @@
 import React, { useEffect, useState, useRef } from "react";
 import { toast } from "react-hot-toast";
 import api from "../../services/api";
-import { printShippingLabels } from "../../services/shippingLabelService";
+import {
+  printShippingLabels,
+  downloadShippingLabels,
+} from "../../services/shippingLabelService";
 
 // ======================================================
 // COLORS
@@ -671,6 +674,24 @@ function AllOrders() {
     );
   };
 
+  const handleDownloadSingleLabel = async (order) => {
+    if (!order) {
+      toast.error("Unable to download this label");
+      return;
+    }
+
+    await downloadShippingLabels([order]);
+  };
+
+  const handleDownloadLabels = async () => {
+    if (selectedOrders.length === 0) {
+      toast.error("Please select at least one order");
+      return;
+    }
+
+    await downloadShippingLabels(selectedOrders);
+  };
+
   const handleExport = () => {
     if (orders.length === 0) {
       toast.error("No orders to export");
@@ -890,7 +911,7 @@ function AllOrders() {
             </div>
 
             {/* ACTION BUTTONS */}
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
                 onClick={handlePrintLabels}
@@ -899,6 +920,16 @@ function AllOrders() {
               >
                 <Icon name="printer" size={15} />
                 <span>Print Labels ({selectedOrders.length})</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleDownloadLabels}
+                disabled={selectedOrders.length === 0}
+                className="inline-flex h-9 flex-1 sm:flex-initial items-center justify-center gap-1.5 rounded-xl bg-[#008dd2] px-3.5 text-xs font-semibold text-white transition hover:bg-[#007dbb] active:scale-95 disabled:cursor-not-allowed disabled:opacity-55"
+              >
+                <Icon name="download" size={15} />
+                <span>Download Labels ({selectedOrders.length})</span>
               </button>
 
               <button
@@ -1185,10 +1216,20 @@ function AllOrders() {
                     <button
                       type="button"
                       onClick={() => handlePrintSingleLabel(order)}
+                      title="Print Shipping Label"
                       className="flex h-8 items-center gap-1 rounded-lg bg-[#008dd2] px-3 text-xs font-bold text-white shadow-xs active:scale-95"
                     >
                       <Icon name="printer" size={13} />
-                      Label
+                      Print
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDownloadSingleLabel(order)}
+                      title="Download Shipping Label"
+                      className="flex h-8 items-center gap-1 rounded-lg border border-[#b9dff0] bg-white px-3 text-xs font-bold text-[#008dd2] active:scale-95"
+                    >
+                      <Icon name="download" size={13} />
+                      Download
                     </button>
                   </div>
                 </div>
@@ -1201,11 +1242,11 @@ function AllOrders() {
             2. TABLET & DESKTOP: STRUCTURED TABLE
         ================================================== */}
         <div className="hidden sm:block overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
-          <div className="max-h-[calc(100vh-180px)] overflow-auto">
-            <table className="w-full min-w-[1120px] border-collapse">
+          <div className="max-h-[calc(100vh-180px)] overflow-y-auto overflow-x-hidden">
+            <table className="w-full table-fixed border-collapse">
               <thead className="sticky top-0 z-20 bg-white">
                 <tr className="border-b border-slate-200 bg-white">
-                  <th className="sticky top-0 z-20 w-[52px] bg-white px-4 py-3.5 text-left">
+                  <th className="sticky top-0 z-20 w-[4%] bg-white px-2 py-3 text-left">
                     <button
                       type="button"
                       onClick={handleSelectAll}
@@ -1219,23 +1260,23 @@ function AllOrders() {
                     </button>
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[190px] bg-white px-3 py-3.5 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[15%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Customer
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[175px] bg-white px-3 py-3.5 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[16%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Shipment
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[165px] bg-white px-3 py-3.5 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[16%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Route
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[145px] bg-white px-3 py-3.5 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[12%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Payment
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[125px] bg-white px-3 py-3.5 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[10%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Weight
                   </th>
 
@@ -1289,7 +1330,7 @@ function AllOrders() {
                           selected ? "bg-[#f8fcff]" : "bg-white"
                         } hover:bg-slate-50`}
                       >
-                        <td className="px-4 py-3">
+                        <td className="px-2 py-2.5">
                           <button
                             type="button"
                             onClick={() => handleSelect(order)}
@@ -1303,7 +1344,7 @@ function AllOrders() {
                           </button>
                         </td>
 
-                        <td className="px-3 py-3">
+                        <td className="px-2 py-2.5 break-words">
                           <div className="min-w-0">
                             <p className="truncate text-[13px] font-semibold text-slate-800">
                               {getCustomerName(order)}
@@ -1321,7 +1362,7 @@ function AllOrders() {
                           </div>
                         </td>
 
-                        <td className="px-3 py-3">
+                        <td className="px-2 py-2.5 break-words">
                           <div className="min-w-0">
                             {status !== "PROCESSING" && (
                               <>
@@ -1370,7 +1411,7 @@ function AllOrders() {
                           </div>
                         </td>
 
-                        <td className="px-3 py-3">
+                        <td className="px-2 py-2.5 break-words">
                           <div>
                             <p className="text-[12px] font-medium text-slate-700">
                               {getPickupCity(order)}
@@ -1403,7 +1444,7 @@ function AllOrders() {
                           </div>
                         </td>
 
-                        <td className="px-3 py-3">
+                        <td className="px-2 py-2.5 break-words">
                           <div>
                             <p
                               className={`text-[12px] font-semibold ${
@@ -1428,7 +1469,7 @@ function AllOrders() {
                           </div>
                         </td>
 
-                        <td className="px-3 py-3">
+                        <td className="px-2 py-2.5 break-words">
                           <div>
                             <p className="text-[12px] font-semibold text-slate-700">
                               Box: {getPackageCount(order)}
@@ -1444,7 +1485,7 @@ function AllOrders() {
                           </div>
                         </td>
 
-                        <td className="px-3 py-3">
+                        <td className="px-2 py-2.5 break-words">
                           <p className="text-[12px] font-medium text-slate-700">
                             #{getOrderId(order)}
                           </p>
@@ -1461,22 +1502,31 @@ function AllOrders() {
                           </p>
                         </td>
 
-                        <td className="px-3 py-3">
+                        <td className="px-2 py-2.5 break-words">
                           <div className="flex items-center gap-1.5">
                             <button
                               type="button"
                               onClick={() => handlePrintSingleLabel(order)}
                               title="Print Shipping Label"
-                              className="flex h-8 w-8 items-center justify-center rounded-md border border-[#b9dff0] bg-white text-[#008dd2] transition hover:bg-[#edf8ff]"
+                              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[#b9dff0] bg-white text-[#008dd2] transition hover:bg-[#edf8ff]"
                             >
                               <Icon name="printer" size={15} />
                             </button>
 
                             <button
                               type="button"
+                              onClick={() => handleDownloadSingleLabel(order)}
+                              title="Download Shipping Label"
+                              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[#b9dff0] bg-white text-[#008dd2] transition hover:bg-[#edf8ff]"
+                            >
+                              <Icon name="download" size={13} />
+                            </button>
+
+                            <button
+                              type="button"
                               onClick={() => handleDuplicate(order)}
                               title="Duplicate Order"
-                              className="flex h-8 w-8 items-center justify-center rounded-md border border-violet-200 bg-white text-violet-500 transition hover:border-violet-300 hover:bg-violet-50"
+                              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-violet-200 bg-white text-violet-500 transition hover:border-violet-300 hover:bg-violet-50"
                             >
                               <Icon name="copy" size={15} />
                             </button>
@@ -1485,7 +1535,7 @@ function AllOrders() {
                               type="button"
                               onClick={() => handleView(order)}
                               title="View Order"
-                              className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-500 transition hover:border-[#008dd2] hover:bg-[#edf8ff] hover:text-[#008dd2]"
+                              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-500 transition hover:border-[#008dd2] hover:bg-[#edf8ff] hover:text-[#008dd2]"
                             >
                               <Icon name="eye" size={15} />
                             </button>
@@ -1706,6 +1756,14 @@ function AllOrders() {
                 Close
               </button>
 
+              <button
+                type="button"
+                onClick={() => handleDownloadSingleLabel(viewingOrder)}
+                className="inline-flex h-9.5 items-center gap-1.5 rounded-xl border border-[#b9dff0] bg-white px-4 text-xs font-bold text-[#008dd2] hover:bg-[#edf8ff] active:scale-95"
+              >
+                <Icon name="download" size={14} />
+                Download Label
+              </button>
               <button
                 type="button"
                 onClick={() => handlePrintSingleLabel(viewingOrder)}
