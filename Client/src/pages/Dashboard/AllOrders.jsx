@@ -428,7 +428,7 @@ const StatusBadge = ({ status }) => {
     <span
       className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-semibold ${className}`}
     >
-      <span className="h-1 w-1 rounded-full bg-current" />
+      {/* <span className="h-1 w-1 rounded-full bg-current" /> */}
       {getStatusLabel(status)}
     </span>
   );
