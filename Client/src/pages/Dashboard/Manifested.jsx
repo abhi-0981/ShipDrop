@@ -388,6 +388,18 @@ function Manifested() {
      FETCH MANIFESTED
   ========================================================== */
 
+  
+const triggerTracking = (awb) => {
+  if (!awb || awb === "AWB unavailable" || awb === "—") return;
+
+  window.dispatchEvent(
+    new CustomEvent("shipdrop:openTracking", {
+      detail: String(awb),
+    })
+  );
+};
+
+
   const fetchManifestedOrders = async () => {
     const userId = getUserId();
     if (!userId) {
@@ -1627,9 +1639,37 @@ function Manifested() {
 
                         <td className="px-3 py-4 align-middle">
                           <div className="min-w-0 break-words">
-                            <div className="text-[13px] font-semibold leading-5 text-slate-800">
-                              {getAWB(order)}
-                            </div>
+                            
+<div className="flex min-w-0 items-center gap-1">
+  <button
+    type="button"
+    onClick={() => triggerTracking(getAWB(order))}
+    title="Click to track shipment"
+    className="truncate text-left text-[13px] font-semibold leading-5 text-slate-800 hover:text-[#008dd2] cursor-pointer"
+  >
+    {getAWB(order)}
+  </button>
+
+  {getAWB(order) !== "AWB unavailable" &&
+    getAWB(order) !== "—" && (
+      <button
+        type="button"
+        title="Copy AWB"
+        onClick={async () => {
+          try {
+            await navigator.clipboard.writeText(String(getAWB(order)));
+            toast.success("AWB copied");
+          } catch {
+            toast.error("Unable to copy AWB");
+          }
+        }}
+        className="shrink-0 p-0.5 text-slate-400 hover:text-[#008dd2]"
+      >
+        <Icon name="copy" size={13} />
+      </button>
+    )}
+</div>
+
 
                             <div className="text-[11px] leading-4 text-slate-500">
                               Pickup ID: {getPickupId(order)}
