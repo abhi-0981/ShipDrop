@@ -1,22 +1,35 @@
 import { useEffect, useMemo, useState } from "react";
+
 import { toast } from "react-hot-toast";
 
 import api from "../../services/api";
-import { DEFAULT_LABEL_SETTINGS, printShippingLabels, downloadShippingLabels } from "../../services/shippingLabelService";
 
+import {
+  DEFAULT_LABEL_SETTINGS,
+  printShippingLabels,
+  downloadShippingLabels,
+} from "../../services/shippingLabelService";
 
 const PRIMARY = "#0788ca";
+
 const PRIMARY_DARK = "#0579b1";
 
 const Icon = ({ name, size = 15 }) => {
   const common = {
     width: size,
+
     height: size,
+
     viewBox: "0 0 24 24",
+
     fill: "none",
+
     stroke: "currentColor",
+
     strokeWidth: "1.8",
+
     strokeLinecap: "round",
+
     strokeLinejoin: "round",
   };
 
@@ -31,8 +44,11 @@ const Icon = ({ name, size = 15 }) => {
     return (
       <svg {...common}>
         <path d="M6 9V3h12v6" />
+
         <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+
         <path d="M6 14h12v7H6z" />
+
         <path d="M18 12h.01" />
       </svg>
     );
@@ -41,7 +57,9 @@ const Icon = ({ name, size = 15 }) => {
     return (
       <svg {...common}>
         <path d="M12 3v12" />
+
         <path d="m7 10 5 5 5-5" />
+
         <path d="M5 21h14" />
       </svg>
     );
@@ -50,7 +68,9 @@ const Icon = ({ name, size = 15 }) => {
     return (
       <svg {...common}>
         <path d="M12 16V4" />
+
         <path d="m7 9 5-5 5 5" />
+
         <path d="M5 20h14" />
       </svg>
     );
@@ -59,6 +79,7 @@ const Icon = ({ name, size = 15 }) => {
     return (
       <svg {...common}>
         <path d="M18 6 6 18" />
+
         <path d="m6 6 12 12" />
       </svg>
     );
@@ -67,6 +88,7 @@ const Icon = ({ name, size = 15 }) => {
     return (
       <svg {...common}>
         <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z" />
+
         <circle cx="12" cy="12" r="2.5" />
       </svg>
     );
@@ -75,6 +97,7 @@ const Icon = ({ name, size = 15 }) => {
     return (
       <svg {...common}>
         <circle cx="11" cy="11" r="7" />
+
         <path d="m20 20-4-4" />
       </svg>
     );
@@ -83,8 +106,11 @@ const Icon = ({ name, size = 15 }) => {
     return (
       <svg {...common}>
         <path d="M20 11a8.1 8.1 0 0 0-14.8-4L3 10" />
+
         <path d="M3 5v5h5" />
+
         <path d="M4 13a8.1 8.1 0 0 0 14.8 4L21 14" />
+
         <path d="M21 19v-5h-5" />
       </svg>
     );
@@ -93,7 +119,9 @@ const Icon = ({ name, size = 15 }) => {
     return (
       <svg {...common}>
         <path d="m21 8-9-5-9 5 9 5 9-5Z" />
+
         <path d="M3 8v9l9 5 9-5V8" />
+
         <path d="M12 13v9" />
       </svg>
     );
@@ -102,6 +130,7 @@ const Icon = ({ name, size = 15 }) => {
     return (
       <svg {...common}>
         <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" />
+
         <circle cx="12" cy="10" r="2.5" />
       </svg>
     );
@@ -110,7 +139,9 @@ const Icon = ({ name, size = 15 }) => {
     return (
       <svg {...common}>
         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
+
         <path d="M14 2v6h6" />
+
         <path d="M8 13h8M8 17h6" />
       </svg>
     );
@@ -119,6 +150,7 @@ const Icon = ({ name, size = 15 }) => {
     return (
       <svg {...common}>
         <rect x="9" y="9" width="10" height="10" rx="2" />
+
         <path d="M15 9V7a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2" />
       </svg>
     );
@@ -127,8 +159,19 @@ const Icon = ({ name, size = 15 }) => {
     return (
       <svg {...common}>
         <path d="M12 9v4" />
+
         <path d="M12 17h.01" />
+
         <path d="M10.3 3.8 2.8 17a2 2 0 0 0 1.7 3h15a2 2 0 0 0 1.7-3L13.7 3.8a2 2 0 0 0-3.4 0Z" />
+      </svg>
+    );
+
+  if (name === "more")
+    return (
+      <svg {...common}>
+        <circle cx="12" cy="5" r="1" fill="currentColor" stroke="none" />
+        <circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" />
+        <circle cx="12" cy="19" r="1" fill="currentColor" stroke="none" />
       </svg>
     );
 
@@ -136,7 +179,9 @@ const Icon = ({ name, size = 15 }) => {
 };
 
 /* ============================================================
+
    BASIC HELPERS
+
    ============================================================ */
 
 const getUserId = () => {
@@ -164,9 +209,13 @@ const text = (value, fallback = "—") => {
 const escapeHtml = (value) => {
   return String(value ?? "")
     .replace(/&/g, "&amp;")
+
     .replace(/</g, "&lt;")
+
     .replace(/>/g, "&gt;")
+
     .replace(/"/g, "&quot;")
+
     .replace(/'/g, "&#039;");
 };
 
@@ -193,12 +242,14 @@ const getMobile = (order) =>
       order.customer_mobile ||
       order.consignee_phone ||
       order.buyer_mobile,
+
     "",
   );
 
 const getShipmentName = (order) =>
   text(
     order.product_name || order.products?.[0]?.product_name || order.shipment,
+
     "Shipment",
   );
 
@@ -217,6 +268,7 @@ const getDeliveryCity = (order) =>
 const getDeliveryPincode = (order) =>
   text(
     order.pincode || order.delivery_pincode || order.destination_pincode,
+
     "",
   );
 
@@ -231,30 +283,41 @@ const getTrackingStatus = (order) =>
       "MANIFESTED",
   )
     .trim()
+
     .toUpperCase();
 
 const getStatusBadgeClass = (status) => {
   switch (String(status || "").toUpperCase()) {
     case "MANIFESTED":
       return "bg-blue-50 text-blue-600";
+
     case "NOT PICKED":
       return "bg-orange-50 text-orange-600";
+
     case "IN TRANSIT":
       return "bg-violet-50 text-violet-600";
+
     case "OUT FOR DELIVERY":
       return "bg-cyan-50 text-cyan-600";
+
     case "DELIVERED":
       return "bg-emerald-50 text-emerald-600";
+
     case "RTO IN TRANSIT":
       return "bg-rose-50 text-rose-600";
+
     case "RTO DELIVERED":
       return "bg-red-50 text-red-600";
+
     case "RETURNED":
       return "bg-amber-50 text-amber-700";
+
     case "CANCELLED":
       return "bg-red-50 text-red-600";
+
     case "PENDING":
       return "bg-yellow-50 text-yellow-700";
+
     default:
       return "bg-slate-100 text-slate-600";
   }
@@ -268,6 +331,7 @@ const getWeight = (order) => {
     order.packages?.reduce(
       (total, pkg) =>
         total + (Number(pkg.weight) || 0) * (Number(pkg.package_count) || 1),
+
       0,
     ) || 0;
 
@@ -281,8 +345,33 @@ const getWeight = (order) => {
   );
 };
 
-const getDistance = (order) =>
-  Number(order.distance_km ?? order.distance ?? 0) || 0;
+const getVolumetricWeight = (order) => {
+  const packages = Array.isArray(order?.packages) ? order.packages : [];
+
+  const total = packages.reduce((sum, pkg) => {
+    const count = Number(pkg?.package_count) || 1;
+    const supplied = Number(pkg?.volumetric_weight);
+    const volumetric =
+      Number.isFinite(supplied) && supplied > 0
+        ? supplied
+        : Number(
+            (
+              ((Number(pkg?.length) || 0) *
+                (Number(pkg?.width) || 0) *
+                (Number(pkg?.height) || 0)) /
+              5000
+            ).toFixed(2),
+          );
+
+    return sum + volumetric * count;
+  }, 0);
+
+  const orderValue = Number(
+    order?.volumetric_weight ?? order?.vol_weight ?? order?.volumetricWeight,
+  );
+
+  return Number.isFinite(orderValue) && orderValue > 0 ? orderValue : total;
+};
 
 const getCreatedAt = (order) =>
   order.manifest_created_at ||
@@ -302,7 +391,9 @@ const formatDate = (value) => {
 
   return date.toLocaleDateString("en-IN", {
     day: "2-digit",
+
     month: "short",
+
     year: "numeric",
   });
 };
@@ -318,6 +409,7 @@ const formatTime = (value) => {
 
   return date.toLocaleTimeString("en-IN", {
     hour: "2-digit",
+
     minute: "2-digit",
   });
 };
@@ -326,12 +418,16 @@ const getSelectedKey = (order) =>
   order.manifest_id || order.id || order.order_id;
 
 /* ============================================================
+
    COMPONENT/* ============================================================
+
    COMPONENT
+
    ============================================================ */
 
 function Manifested() {
   const [orders, setOrders] = useState([]);
+
   const [loading, setLoading] = useState(true);
 
   const [selectedIds, setSelectedIds] = useState([]);
@@ -339,11 +435,15 @@ function Manifested() {
   const [actionLoading, setActionLoading] = useState(false);
 
   const [search, setSearch] = useState("");
+
   const [statusFilter, setStatusFilter] = useState("ALL");
+
   const [paymentFilter, setPaymentFilter] = useState("ALL");
+
   const [serviceFilter, setServiceFilter] = useState("ALL");
 
   const [viewingOrder, setViewingOrder] = useState(null);
+  const [openActionMenuId, setOpenActionMenuId] = useState(null);
 
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
@@ -354,7 +454,9 @@ function Manifested() {
   const [customLogo, setCustomLogo] = useState(null);
 
   /* ==========================================================
+
      FETCH MANIFESTED
+
      ========================================================== */
 
   const fetchManifestedOrders = async () => {
@@ -364,6 +466,7 @@ function Manifested() {
       toast.error("User session not found. Please login again.");
 
       setLoading(false);
+
       return;
     }
 
@@ -401,7 +504,9 @@ function Manifested() {
   };
 
   /* ==========================================================
+
      FETCH LABEL SETTINGS
+
      ========================================================== */
 
   const fetchLabelSettings = async () => {
@@ -409,6 +514,7 @@ function Manifested() {
 
     if (!userId) {
       setLabelSettingsLoading(false);
+
       return;
     }
 
@@ -426,14 +532,23 @@ function Manifested() {
 
         setLabelSettings({
           orderValue: Boolean(data.order_value),
+
           codAmount: Boolean(data.cod_amount),
+
           buyerMobile: Boolean(data.buyer_mobile),
+
           shipperMobiles: Boolean(data.shipper_mobiles),
+
           shipperAddress: Boolean(data.shipper_address),
+
           productName: Boolean(data.product_name),
+
           servicesTnc: Boolean(data.services_tnc),
+
           orderId: Boolean(data.order_id),
+
           orderWeight: Boolean(data.order_weight),
+
           labelSize: data.label_size || "4x6",
         });
 
@@ -448,21 +563,25 @@ function Manifested() {
 
   useEffect(() => {
     fetchManifestedOrders();
+
     fetchLabelSettings();
   }, []);
 
   /* ==========================================================
+
      MANIFESTED COUNT
+
      ========================================================== */
 
   const manifestedCount = useMemo(() => {
-    return orders.filter(
-      (order) => getTrackingStatus(order) === "MANIFESTED"
-    ).length;
+    return orders.filter((order) => getTrackingStatus(order) === "MANIFESTED")
+      .length;
   }, [orders]);
 
   /* ==========================================================
+
      FILTER
+
      ========================================================== */
 
   const filteredOrders = useMemo(() => {
@@ -471,14 +590,22 @@ function Manifested() {
     return orders.filter((order) => {
       const searchable = [
         getCustomerName(order),
+
         getMobile(order),
+
         getAWB(order),
+
         getOrderId(order),
+
         getShipmentName(order),
+
         getPickupCity(order),
+
         getDeliveryCity(order),
       ]
+
         .join(" ")
+
         .toLowerCase();
 
       const status = getTrackingStatus(order);
@@ -488,7 +615,7 @@ function Manifested() {
       const service = getServiceType(order);
 
       return (
-        (status === "MANIFESTED") &&
+        status === "MANIFESTED" &&
         (!q || searchable.includes(q)) &&
         (statusFilter === "ALL" || status === statusFilter) &&
         (paymentFilter === "ALL" || payment === paymentFilter) &&
@@ -498,11 +625,14 @@ function Manifested() {
   }, [orders, search, statusFilter, paymentFilter, serviceFilter]);
 
   /* ==========================================================
+
      SELECTION
+
      ========================================================== */
 
   const selectedOrders = useMemo(
     () => orders.filter((order) => selectedIds.includes(getSelectedKey(order))),
+
     [orders, selectedIds],
   );
 
@@ -535,24 +665,40 @@ function Manifested() {
   };
 
   /* ==========================================================
+
      SHIPPING LABELS
+
   ========================================================== */
 
   const handlePrintLabels = async () => {
     if (!selectedOrders.length) {
       toast.error("Please select at least one shipment");
+
       return;
     }
+
     if (labelSettingsLoading) {
       toast.error("Label settings are still loading");
+
       return;
     }
+
     try {
       setActionLoading(true);
-      await printShippingLabels(selectedOrders, labelSettings, customLogo, "ShipDrop Shipping Labels");
-      toast.success(`${selectedOrders.length} ${selectedOrders.length === 1 ? "label" : "labels"} ready to print`);
+
+      await printShippingLabels(
+        selectedOrders,
+        labelSettings,
+        customLogo,
+        "ShipDrop Shipping Labels",
+      );
+
+      toast.success(
+        `${selectedOrders.length} ${selectedOrders.length === 1 ? "label" : "labels"} ready to print`,
+      );
     } catch (error) {
       // console.error("Print label error:", error);
+
       toast.error(error.message || "Unable to print labels");
     } finally {
       setActionLoading(false);
@@ -562,14 +708,24 @@ function Manifested() {
   const handlePrintSingle = async (order) => {
     if (labelSettingsLoading) {
       toast.error("Label settings are still loading");
+
       return;
     }
+
     try {
       setActionLoading(true);
-      await printShippingLabels([order], labelSettings, customLogo, "ShipDrop Shipping Label");
+
+      await printShippingLabels(
+        [order],
+        labelSettings,
+        customLogo,
+        "ShipDrop Shipping Label",
+      );
+
       toast.success("1 label ready to print");
     } catch (error) {
       // console.error("Print label error:", error);
+
       toast.error(error.message || "Unable to print label");
     } finally {
       setActionLoading(false);
@@ -579,18 +735,27 @@ function Manifested() {
   const handleDownloadLabels = async () => {
     if (!selectedOrders.length) {
       toast.error("Please select at least one shipment");
+
       return;
     }
+
     if (labelSettingsLoading) {
       toast.error("Label settings are still loading");
+
       return;
     }
+
     try {
       setActionLoading(true);
+
       await downloadShippingLabels(selectedOrders, labelSettings, customLogo);
-      toast.success(`${selectedOrders.length} ${selectedOrders.length === 1 ? "label" : "labels"} downloaded`);
+
+      toast.success(
+        `${selectedOrders.length} ${selectedOrders.length === 1 ? "label" : "labels"} downloaded`,
+      );
     } catch (error) {
       // console.error("Download label error:", error);
+
       toast.error(error.message || "Unable to download labels");
     } finally {
       setActionLoading(false);
@@ -600,14 +765,19 @@ function Manifested() {
   const handleDownloadSingle = async (order) => {
     if (labelSettingsLoading) {
       toast.error("Label settings are still loading");
+
       return;
     }
+
     try {
       setActionLoading(true);
+
       await downloadShippingLabels([order], labelSettings, customLogo);
+
       toast.success("1 label downloaded");
     } catch (error) {
       // console.error("Download label error:", error);
+
       toast.error(error.message || "Unable to download label");
     } finally {
       setActionLoading(false);
@@ -615,134 +785,256 @@ function Manifested() {
   };
 
   /* ==========================================================
+
      MANIFEST PRINT
+
      ========================================================== */
 
   const handlePrintManifests = () => {
     if (!selectedOrders.length) {
       toast.error("Please select at least one shipment");
+
       return;
     }
 
     const builder = (order) => `
+
       <div
+
         style="
+
           font-family:Arial,sans-serif;
+
           width:760px;
+
           margin:0 auto 24px;
+
           padding:28px;
+
           border:1px solid #dbe3ef;
+
           border-radius:10px;
+
           page-break-after:always;
+
           color:#172033;
+
         "
+
       >
 
+
+
         <div
+
           style="
+
             display:flex;
+
             justify-content:space-between;
+
             align-items:flex-start;
+
             border-bottom:2px solid ${PRIMARY};
+
             padding-bottom:14px;
+
             margin-bottom:18px;
+
           "
+
         >
+
           <div>
-            <div
-              style="
-                font-size:20px;
-                font-weight:700;
-                color:${PRIMARY};
-              "
-            >
-              ShipDrop
-            </div>
 
             <div
+
               style="
-                font-size:12px;
-                color:#718096;
-                margin-top:4px;
+
+                font-size:20px;
+
+                font-weight:700;
+
+                color:${PRIMARY};
+
               "
+
             >
-              Shipment Manifest
+
+              ShipDrop
+
             </div>
+
+
+
+            <div
+
+              style="
+
+                font-size:12px;
+
+                color:#718096;
+
+                margin-top:4px;
+
+              "
+
+            >
+
+              Shipment Manifest
+
+            </div>
+
           </div>
+
+
 
           <div
+
             style="
+
               font-size:12px;
+
               font-weight:700;
+
             "
+
           >
+
             AWB ${escapeHtml(getAWB(order))}
+
           </div>
+
         </div>
 
+
+
         <table
+
           style="
+
             width:100%;
+
             border-collapse:collapse;
+
             font-size:12px;
+
           "
+
         >
+
           <tr>
+
             <td style="padding:8px;border-bottom:1px solid #edf1f6;color:#718096">
+
               Order ID
+
             </td>
 
+
+
             <td style="padding:8px;border-bottom:1px solid #edf1f6;font-weight:700">
+
               #${escapeHtml(getOrderId(order))}
+
             </td>
+
           </tr>
 
+
+
           <tr>
+
             <td style="padding:8px;border-bottom:1px solid #edf1f6;color:#718096">
+
               Customer
+
             </td>
+
+
 
             <td style="padding:8px;border-bottom:1px solid #edf1f6;font-weight:700">
+
               ${escapeHtml(getCustomerName(order))}
+
             </td>
+
           </tr>
 
+
+
           <tr>
+
             <td style="padding:8px;border-bottom:1px solid #edf1f6;color:#718096">
+
               Route
+
             </td>
 
+
+
             <td style="padding:8px;border-bottom:1px solid #edf1f6">
+
               ${escapeHtml(getPickupCity(order))}
+
               (${escapeHtml(getPickupPincode(order))})
+
               →
+
               ${escapeHtml(getDeliveryCity(order))}
+
               (${escapeHtml(getDeliveryPincode(order))})
+
             </td>
+
           </tr>
 
+
+
           <tr>
+
             <td style="padding:8px;border-bottom:1px solid #edf1f6;color:#718096">
+
               Payment
+
             </td>
+
+
 
             <td style="padding:8px;border-bottom:1px solid #edf1f6">
+
               ${escapeHtml(getPaymentType(order))}
+
             </td>
+
           </tr>
 
+
+
           <tr>
+
             <td style="padding:8px;color:#718096">
+
               Weight
+
             </td>
+
+
 
             <td style="padding:8px;font-weight:700">
+
               ${getWeight(order).toFixed(2)} Kg
+
             </td>
+
           </tr>
+
         </table>
 
+
+
       </div>
+
     `;
 
     const html = selectedOrders.map(builder).join("");
@@ -751,28 +1043,46 @@ function Manifested() {
 
     if (!win) {
       toast.error("Please allow pop-ups to print");
+
       return;
     }
 
     win.document.write(`
+
       <!doctype html>
+
       <html>
+
         <head>
+
           <title>Shipment Manifests</title>
+
         </head>
 
+
+
         <body
+
           style="
+
             margin:30px;
+
             background:white;
+
           "
+
         >
+
           ${html}
+
         </body>
+
       </html>
+
     `);
 
     win.document.close();
+
     win.focus();
 
     setTimeout(() => {
@@ -781,12 +1091,15 @@ function Manifested() {
   };
 
   /* ==========================================================
+
      CANCEL
+
      ========================================================== */
 
   const openCancelConfirmation = () => {
     if (!selectedOrders.length) {
       toast.error("Please select at least one shipment");
+
       return;
     }
 
@@ -800,6 +1113,7 @@ function Manifested() {
 
     if (!userId) {
       toast.error("User session not found");
+
       return;
     }
 
@@ -807,11 +1121,14 @@ function Manifested() {
       setActionLoading(true);
 
       const orderIds = selectedOrders
+
         .map((order) => Number(order.order_id || order.id))
+
         .filter(Boolean);
 
       const response = await api.post("/manifests/cancel", {
         user_id: userId,
+
         order_ids: orderIds,
       });
 
@@ -848,6 +1165,7 @@ function Manifested() {
           } cancelled successfully. ₹${refundAmount.toFixed(
             2,
           )} has been refunded to your wallet.`,
+
           {
             duration: 4500,
           },
@@ -858,6 +1176,7 @@ function Manifested() {
             `${
               orderIds.length === 1 ? "Shipment" : "Shipments"
             } cancelled successfully`,
+
           {
             duration: 4000,
           },
@@ -865,6 +1184,7 @@ function Manifested() {
       }
 
       await fetchManifestedOrders();
+
       window.dispatchEvent(new Event("orderStatusUpdated"));
     } catch (error) {
       // console.error("Cancel manifest error:", error);
@@ -880,9 +1200,13 @@ function Manifested() {
   };
 
   /* ==========================================================
+
      DUPLICATE ORDER
+
      Creates a fresh PROCESSING order from the manifested
+
      shipment. Original manifested shipment remains unchanged.
+
      ========================================================== */
 
   const handleDuplicate = async (order) => {
@@ -890,18 +1214,15 @@ function Manifested() {
 
     if (!userId) {
       toast.error("User session not found");
+
       return;
     }
 
-    const orderId = Number(
-      order?.order_id ||
-        order?.id ||
-        order?.orderId ||
-        0,
-    );
+    const orderId = Number(order?.order_id || order?.id || order?.orderId || 0);
 
     if (!orderId) {
       toast.error("Unable to identify this order");
+
       return;
     }
 
@@ -909,25 +1230,19 @@ function Manifested() {
       setActionLoading(true);
 
       // Get complete original order details.
-      const response = await api.get(
-        `/orders/${orderId}?user_id=${userId}`,
-      );
+
+      const response = await api.get(`/orders/${orderId}?user_id=${userId}`);
 
       const result = response?.data;
 
       if (!result?.success || !result?.order) {
-        throw new Error(
-          result?.message ||
-            "Unable to load order details",
-        );
+        throw new Error(result?.message || "Unable to load order details");
       }
 
       const source = result.order;
 
       const warehouseId = Number(
-        source?.warehouse_id ||
-          order?.warehouse_id ||
-          0,
+        source?.warehouse_id || order?.warehouse_id || 0,
       );
 
       if (!warehouseId) {
@@ -937,141 +1252,81 @@ function Manifested() {
       const payload = {
         user_id: Number(userId),
 
-        pickup_address:
-          source?.pickup_address ||
-          order?.pickup_address ||
-          null,
+        pickup_address: source?.pickup_address || order?.pickup_address || null,
 
-        pickup_pincode:
-          source?.pickup_pincode ||
-          order?.pickup_pincode ||
-          null,
+        pickup_pincode: source?.pickup_pincode || order?.pickup_pincode || null,
 
-        pickup_city:
-          source?.pickup_city ||
-          order?.pickup_city ||
-          null,
+        pickup_city: source?.pickup_city || order?.pickup_city || null,
 
         warehouse_id: warehouseId,
 
         pickup_address_id:
-          source?.pickup_address_id ||
-          order?.pickup_address_id ||
-          null,
+          source?.pickup_address_id || order?.pickup_address_id || null,
 
         orderData: {
-          consignee_name:
-            source?.consignee_name ||
-            source?.customer_name ||
-            "",
+          consignee_name: source?.consignee_name || source?.customer_name || "",
 
-          mobile:
-            source?.mobile ||
-            source?.phone ||
-            "",
+          mobile: source?.mobile || source?.phone || "",
 
-          alternate_mobile:
-            source?.alternate_mobile ||
-            null,
+          alternate_mobile: source?.alternate_mobile || null,
 
-          email:
-            source?.email ||
-            null,
+          email: source?.email || null,
 
-          gstin:
-            source?.gstin ||
-            null,
+          gstin: source?.gstin || null,
 
-          company_name:
-            source?.company_name ||
-            null,
+          company_name: source?.company_name || null,
 
-          floor_no:
-            source?.floor_no ||
-            null,
+          floor_no: source?.floor_no || null,
 
-          landmark:
-            source?.landmark ||
-            null,
+          landmark: source?.landmark || null,
 
           address_line1:
-            source?.address_line1 ||
-            source?.delivery_address ||
-            "",
+            source?.address_line1 || source?.delivery_address || "",
 
-          address_line2:
-            source?.address_line2 ||
-            null,
+          address_line2: source?.address_line2 || null,
 
-          pincode:
-            source?.pincode ||
-            source?.delivery_pincode ||
-            "",
+          pincode: source?.pincode || source?.delivery_pincode || "",
 
-          city:
-            source?.city ||
-            source?.delivery_city ||
-            "",
+          city: source?.city || source?.delivery_city || "",
 
-          state:
-            source?.state ||
-            source?.delivery_state ||
-            "",
+          state: source?.state || source?.delivery_state || "",
 
-          country:
-            source?.country ||
-            "India",
+          country: source?.country || "India",
 
-          payment_type:
-            source?.payment_type ||
-            "Prepaid",
+          payment_type: source?.payment_type || "Prepaid",
 
-          risk_type:
-            source?.risk_type ||
-            "Owner Risk",
+          risk_type: source?.risk_type || "Owner Risk",
 
           warehouse_id: warehouseId,
         },
 
-        products: Array.isArray(source?.products)
-          ? source.products
-          : [],
+        products: Array.isArray(source?.products) ? source.products : [],
 
-        packages: Array.isArray(source?.packages)
-          ? source.packages
-          : [],
+        packages: Array.isArray(source?.packages) ? source.packages : [],
       };
 
       const createResponse = await api.post(
         "/orders/create",
+
         payload,
       );
 
       const createResult = createResponse?.data;
 
-      if (
-        !createResult?.success ||
-        !createResult?.order_id
-      ) {
-        throw new Error(
-          createResult?.message ||
-            "Unable to duplicate order",
-        );
+      if (!createResult?.success || !createResult?.order_id) {
+        throw new Error(createResult?.message || "Unable to duplicate order");
       }
 
       toast.success(
         `Order duplicated successfully. New order #${createResult.order_id} is in Processing.`,
+
         { duration: 4500 },
       );
 
       await fetchManifestedOrders();
 
-      window.dispatchEvent(
-        new Event("orderStatusUpdated"),
-      );
+      window.dispatchEvent(new Event("orderStatusUpdated"));
     } catch (error) {
-      
-
       toast.error(
         error?.response?.data?.message ||
           error?.message ||
@@ -1083,12 +1338,15 @@ function Manifested() {
   };
 
   /* ==========================================================
+
      EXPORT
+
      ========================================================== */
 
   const handleExport = () => {
     if (!orders.length) {
       toast.error("No manifested orders to export");
+
       return;
     }
 
@@ -1096,35 +1354,61 @@ function Manifested() {
 
     const headers = [
       "AWB",
+
       "Order ID",
+
       "Customer",
+
       "Mobile",
+
       "Pickup ID",
+
       "Shipment",
+
       "Service Type",
+
       "From",
+
       "To",
+
       "Payment",
+
       "Weight (Kg)",
+
       "Shipping Charge",
+
       "Created",
+
       "Status",
     ];
 
     const rows = exportOrders.map((order) => [
       getAWB(order),
+
       getOrderId(order),
+
       getCustomerName(order),
+
       getMobile(order),
+
       getPickupId(order),
+
       getShipmentName(order),
+
       getServiceType(order),
+
       getPickupCity(order),
+
       getDeliveryCity(order),
+
       getPaymentType(order),
+
       getWeight(order).toFixed(2),
+
       Number(order.shipping_charge || 0).toFixed(2),
+
       getCreatedAt(order) || "",
+
       order.order_status || order.status || "MANIFESTED",
     ]);
 
@@ -1135,7 +1419,9 @@ function Manifested() {
     };
 
     const csv = [headers, ...rows]
+
       .map((row) => row.map(escapeCsv).join(","))
+
       .join("\n");
 
     const blob = new Blob([csv], {
@@ -1149,12 +1435,15 @@ function Manifested() {
     link.href = url;
 
     link.download = `shipdrop-manifest-${new Date()
+
       .toISOString()
+
       .slice(0, 10)}.csv`;
 
     document.body.appendChild(link);
 
     link.click();
+
     link.remove();
 
     URL.revokeObjectURL(url);
@@ -1167,7 +1456,9 @@ function Manifested() {
   };
 
   /* ==========================================================
+
      LOADING
+
      ========================================================== */
 
   if (loading) {
@@ -1194,14 +1485,18 @@ function Manifested() {
   }
 
   /* ==========================================================
+
      UI
+
      ========================================================== */
 
   return (
     <div className="min-h-screen bg-[#f7f8fb] px-4 py-4">
       <div className="mx-auto max-w-[1450px]">
         {/* =====================================================
+
             HEADER
+
         ===================================================== */}
 
         <div className="mb-3 rounded-xl border border-slate-200 bg-white px-5 py-3.5">
@@ -1295,7 +1590,9 @@ function Manifested() {
         </div>
 
         {/* =====================================================
+
             FILTERS
+
         ===================================================== */}
 
         <div className="mb-3 rounded-xl border border-slate-200 bg-white p-3">
@@ -1312,7 +1609,6 @@ function Manifested() {
                 className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50 pl-9 pr-3 text-[12px] text-slate-700 outline-none transition focus:border-[#0788ca] focus:bg-white"
               />
             </div>
-
 
             <select
               value={serviceFilter}
@@ -1351,15 +1647,17 @@ function Manifested() {
         </div>
 
         {/* =====================================================
+
             TABLE
+
         ===================================================== */}
 
         <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[1120px] border-collapse">
+          <div className="w-full min-w-0">
+            <table className="w-full table-fixed border-collapse">
               <thead>
                 <tr className="border-b border-slate-200 bg-white">
-                  <th className="w-[52px] px-4 py-3.5 text-left">
+                  <th className="w-[4%] px-4 py-3.5 text-left">
                     <button
                       type="button"
                       onClick={toggleAll}
@@ -1368,12 +1666,16 @@ function Manifested() {
                         allVisibleSelected
                           ? {
                               borderColor: PRIMARY,
+
                               background: PRIMARY,
+
                               color: "white",
                             }
                           : {
                               borderColor: "#cbd5e1",
+
                               background: "white",
+
                               color: "transparent",
                             }
                       }
@@ -1382,31 +1684,31 @@ function Manifested() {
                     </button>
                   </th>
 
-                  <th className="w-[190px] px-3 py-3.5 text-left text-[13px] font-medium text-slate-700">
+                  <th className="w-[17%] px-3 py-3.5 text-left text-[13px] font-medium text-slate-700">
                     Customer
                   </th>
 
-                  <th className="w-[175px] px-3 py-3.5 text-left text-[13px] font-medium text-slate-700">
+                  <th className="w-[15%] px-3 py-3.5 text-left text-[13px] font-medium text-slate-700">
                     Shipment
                   </th>
 
-                  <th className="w-[165px] px-3 py-3.5 text-left text-[13px] font-medium text-slate-700">
+                  <th className="w-[15%] px-3 py-3.5 text-left text-[13px] font-medium text-slate-700">
                     Route
                   </th>
 
-                  <th className="w-[150px] px-3 py-3.5 text-left text-[13px] font-medium text-slate-700">
+                  <th className="w-[12%] px-3 py-3.5 text-left text-[13px] font-medium text-slate-700">
                     Payment
                   </th>
 
-                  <th className="w-[135px] px-3 py-3.5 text-left text-[13px] font-medium text-slate-700">
+                  <th className="w-[12%] px-3 py-3.5 text-left text-[13px] font-medium text-slate-700">
                     Weight
                   </th>
 
-                  <th className="w-[155px] px-3 py-3.5 text-left text-[13px] font-medium text-slate-700">
+                  <th className="w-[13%] px-3 py-3.5 text-left text-[13px] font-medium text-slate-700">
                     Created
                   </th>
 
-                  <th className="w-[125px] px-3 py-3.5 text-left text-[13px] font-medium text-slate-700">
+                  <th className="w-[12%] px-3 py-3.5 text-left text-[13px] font-medium text-slate-700">
                     Actions
                   </th>
                 </tr>
@@ -1465,12 +1767,16 @@ function Manifested() {
                               selected
                                 ? {
                                     borderColor: PRIMARY,
+
                                     background: PRIMARY,
+
                                     color: "white",
                                   }
                                 : {
                                     borderColor: "#cbd5e1",
+
                                     background: "white",
+
                                     color: "transparent",
                                   }
                             }
@@ -1480,7 +1786,7 @@ function Manifested() {
                         </td>
 
                         <td className="px-3 py-4 align-middle">
-                          <div className="min-w-[160px]">
+                          <div className="min-w-0 break-words">
                             <div className="text-[13px] font-medium leading-5 text-slate-800">
                               {getCustomerName(order)}
                             </div>
@@ -1492,7 +1798,7 @@ function Manifested() {
                             )}
 
                             <span
-                              className={`mt-1.5 inline-flex rounded-full px-2.5 py-1 text-[10px] font-medium leading-none ${getStatusBadgeClass(getTrackingStatus(order))}`}
+                              className={`-ml-1 mt-1 inline-flex rounded-full px-2.5 py-1 text-[10px] font-medium leading-none ${getStatusBadgeClass(getTrackingStatus(order))}`}
                             >
                               {getTrackingStatus(order)}
                             </span>
@@ -1500,7 +1806,7 @@ function Manifested() {
                         </td>
 
                         <td className="px-3 py-4 align-middle">
-                          <div className="min-w-[145px]">
+                          <div className="min-w-0 break-words">
                             <div className="text-[13px] font-semibold leading-5 text-slate-800">
                               {getAWB(order)}
                             </div>
@@ -1511,13 +1817,13 @@ function Manifested() {
 
                             <div className="text-[11px] leading-4 text-slate-500">
                               {getShipmentName(order)} ·{" "}
-                              {service === "AIR" ? "Air" : "Road"}
+                              {service === "AIR" ? "By Air" : "By Surface"}
                             </div>
                           </div>
                         </td>
 
                         <td className="px-3 py-4 align-middle">
-                          <div className="min-w-[145px]">
+                          <div className="min-w-0 break-words">
                             <div className="flex items-center gap-2">
                               <span
                                 className="mt-[1px]"
@@ -1579,6 +1885,7 @@ function Manifested() {
                             {Number(
                               order.packages?.reduce(
                                 (t, p) => t + (Number(p.package_count) || 1),
+
                                 0,
                               ) || 1,
                             )}
@@ -1589,7 +1896,7 @@ function Manifested() {
                           </div>
 
                           <div className="text-[10px] text-slate-400">
-                            Dist: {getDistance(order).toFixed(0)} km
+                            Vol: {getVolumetricWeight(order).toFixed(2)} kg
                           </div>
                         </td>
 
@@ -1609,68 +1916,75 @@ function Manifested() {
 
                         {/* ACTIONS */}
 
-                        <td className="px-3 py-4 align-middle">
-                          <div className="flex items-center gap-1.5">
-                            {/* PRINT */}
-
+                        <td className="px-2 py-4 align-middle">
+                          <div className="flex items-center justify-start gap-1">
                             <button
                               type="button"
                               onClick={() => handlePrintSingle(order)}
                               disabled={actionLoading}
                               title="Print Shipping Label"
-                              className="flex h-8 w-8 items-center justify-center rounded-md text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-                              style={{
-                                background: PRIMARY,
-                              }}
+                              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                              style={{ background: PRIMARY }}
                             >
-                              <Icon name="printer" size={14} />
+                              <Icon name="printer" size={13} />
                             </button>
-
-                            {/* DOWNLOAD */}
 
                             <button
                               type="button"
                               onClick={() => handleDownloadSingle(order)}
                               disabled={actionLoading}
                               title="Download Shipping Label"
-                              className="flex h-8 w-8 items-center justify-center rounded-md text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-                              style={{
-                                background: PRIMARY_DARK,
-                              }}
+                              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                              style={{ background: PRIMARY_DARK }}
                             >
-                              <Icon name="download" size={14} />
+                              <Icon name="download" size={13} />
                             </button>
 
-                            {/* DUPLICATE */}
+                            <div className="relative">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setOpenActionMenuId((previous) =>
+                                    previous === key ? null : key,
+                                  )
+                                }
+                                title="More Actions"
+                                aria-label="More Actions"
+                                aria-expanded={openActionMenuId === key}
+                                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-500 transition hover:border-[#0788ca] hover:bg-[#edf8ff] hover:text-[#0788ca]"
+                              >
+                                <Icon name="more" size={15} />
+                              </button>
 
-                            <button
-                              type="button"
-                              onClick={() => handleDuplicate(order)}
-                              disabled={actionLoading}
-                              title="Duplicate Order"
-                              className="flex h-8 w-8 items-center justify-center rounded-md border bg-white transition hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-50"
-                              style={{
-                                borderColor: "#c4b5fd",
-                                color: "#7c3aed",
-                              }}
-                            >
-                              <Icon name="copy" size={14} />
-                            </button>
+                              {openActionMenuId === key && (
+                                <div className="absolute right-0 top-full z-50 mt-1 w-44 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 text-left shadow-lg">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setOpenActionMenuId(null);
+                                      setViewingOrder(order);
+                                    }}
+                                    className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-xs font-medium text-slate-700 hover:bg-slate-50"
+                                  >
+                                    <Icon name="eye" size={15} />
+                                    Details
+                                  </button>
 
-                            {/* VIEW */}
-
-                            <button
-                              type="button"
-                              onClick={() => setViewingOrder(order)}
-                              title="View Shipment"
-                              className="flex h-8 w-8 items-center justify-center rounded-md border bg-white transition hover:bg-[#f3faff]"
-                              style={{
-                                borderColor: PRIMARY,
-                                color: PRIMARY,
-                              }}
-                            >
-                              <Icon name="eye" size={14} />
-                            </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setOpenActionMenuId(null);
+                                      handleDuplicate(order);
+                                    }}
+                                    disabled={actionLoading}
+                                    className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                                  >
+                                    <Icon name="copy" size={15} />
+                                    Duplicate Order
+                                  </button>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </td>
                       </tr>
@@ -1712,7 +2026,9 @@ function Manifested() {
       </div>
 
       {/* =======================================================
+
           CANCEL MODAL
+
       ======================================================= */}
 
       {showCancelConfirm && (
@@ -1798,7 +2114,9 @@ function Manifested() {
       )}
 
       {/* =======================================================
+
           VIEW MODAL
+
       ======================================================= */}
 
       {viewingOrder && (
@@ -1842,15 +2160,25 @@ function Manifested() {
             <div className="grid grid-cols-2 gap-3 p-5">
               {[
                 ["Order ID", `#${getOrderId(viewingOrder)}`],
+
                 ["Customer", getCustomerName(viewingOrder)],
+
                 ["Mobile", getMobile(viewingOrder)],
+
                 ["Pickup ID", getPickupId(viewingOrder)],
+
                 ["Payment", getPaymentType(viewingOrder)],
+
                 [
                   "Service",
-                  getServiceType(viewingOrder) === "AIR" ? "By Air" : "By Road",
+
+                  getServiceType(viewingOrder) === "AIR"
+                    ? "By Air"
+                    : "By Surface",
                 ],
+
                 ["Weight", `${getWeight(viewingOrder).toFixed(2)} Kg`],
+
                 ["Distance", `${getDistance(viewingOrder).toFixed(0)} Km`],
               ].map(([label, value]) => (
                 <div
@@ -1875,12 +2203,18 @@ function Manifested() {
                 <div className="mt-1 text-[12px] leading-5 text-slate-700">
                   {[
                     viewingOrder.address_line1,
+
                     viewingOrder.address_line2,
+
                     viewingOrder.city,
+
                     viewingOrder.state,
+
                     viewingOrder.pincode,
                   ]
+
                     .filter(Boolean)
+
                     .join(", ") || "—"}
                 </div>
               </div>
