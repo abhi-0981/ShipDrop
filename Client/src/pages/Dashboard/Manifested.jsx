@@ -1090,6 +1090,24 @@ function Manifested() {
   };
 
   /* ==========================================================
+     COPY HELPER
+  ========================================================== */
+
+  const copyAWB = async (awb) => {
+    if (!awb || awb === "AWB unavailable") {
+      toast.error("AWB not available");
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(String(awb));
+      toast.success("AWB copied to clipboard");
+    } catch {
+      toast.error("Unable to copy AWB");
+    }
+  };
+
+  /* ==========================================================
      LOADING STATE
   ========================================================== */
 
@@ -1291,7 +1309,7 @@ function Manifested() {
         </div>
 
         {/* =====================================================
-            1. MOBILE VIEW: TOUCH-FRIENDLY APP CARDS
+            1. MOBILE VIEW: TOUCH-FRIENDLY APP CARDS (WITH 1-TAP COPY)
         ===================================================== */}
         <div className="space-y-2.5 sm:hidden">
           {!filteredOrders.length ? (
@@ -1317,6 +1335,7 @@ function Manifested() {
               const service = getServiceType(order);
               const payment = getPaymentType(order);
               const created = getCreatedAt(order);
+              const awb = getAWB(order);
 
               return (
                 <div
@@ -1376,7 +1395,7 @@ function Manifested() {
                     </div>
                   </div>
 
-                  {/* CUSTOMER & AWB */}
+                  {/* CUSTOMER & AWB BAR WITH 1-TAP COPY */}
                   <div className="space-y-1 text-xs">
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-slate-800 truncate">
@@ -1387,13 +1406,28 @@ function Manifested() {
                       </span>
                     </div>
 
-                    <div className="flex items-center justify-between font-mono text-[11px] text-slate-600 bg-slate-50/80 px-2 py-1 rounded-lg border border-slate-100">
-                      <span className="truncate font-semibold">
-                        AWB: {getAWB(order)}
-                      </span>
-                      <span className="text-[10px] text-slate-400 font-sans">
-                        Pickup: {getPickupId(order)}
-                      </span>
+                    {/* AWB + COPY BUTTON DOCK */}
+                    <div className="flex items-center justify-between font-mono text-[11px] text-slate-700 bg-slate-50/80 px-2.5 py-1.5 rounded-xl border border-slate-100">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="font-sans text-[10px] text-slate-400 font-semibold uppercase">
+                          AWB:
+                        </span>
+                        <span className="truncate font-semibold text-slate-800">
+                          {awb}
+                        </span>
+                      </div>
+
+                      {awb && awb !== "AWB unavailable" && (
+                        <button
+                          type="button"
+                          onClick={() => copyAWB(awb)}
+                          className="flex items-center gap-1 rounded-md bg-[#0788ca]/10 px-2 py-0.5 text-[10px] font-bold text-[#0788ca] active:scale-95 transition shrink-0"
+                          title="Copy AWB"
+                        >
+                          <Icon name="copy" size={12} />
+                          <span>Copy</span>
+                        </button>
+                      )}
                     </div>
 
                     {/* ROUTE */}
@@ -1431,7 +1465,7 @@ function Manifested() {
                         onClick={() => handlePrintSingle(order)}
                         disabled={actionLoading}
                         title="Print Label"
-                        className="flex h-7 w-7 items-center justify-center rounded-lg text-white transition active:scale-95 disabled:opacity-50"
+                        className="flex h-7 w-7 items-center justify-center rounded-lg text-white transition active:scale-95 disabled:opacity-50 shadow-2xs"
                         style={{ background: PRIMARY }}
                       >
                         <Icon name="printer" size={13} />
@@ -1442,7 +1476,7 @@ function Manifested() {
                         onClick={() => handleDownloadSingle(order)}
                         disabled={actionLoading}
                         title="Download Label"
-                        className="flex h-7 w-7 items-center justify-center rounded-lg text-white transition active:scale-95 disabled:opacity-50"
+                        className="flex h-7 w-7 items-center justify-center rounded-lg text-white transition active:scale-95 disabled:opacity-50 shadow-2xs"
                         style={{ background: PRIMARY_DARK }}
                       >
                         <Icon name="download" size={13} />
