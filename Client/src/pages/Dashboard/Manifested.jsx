@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "react-hot-toast";
 
 import api from "../../services/api";
@@ -2073,60 +2073,131 @@ function Manifested() {
               <button type="button" onClick={() => setViewingOrder(null)} className="ml-3 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100"><Icon name="x" size={16} /></button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
+            <div className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-5">
+              {detailsLoading && (
+                <div className="mb-4 flex items-center gap-2 rounded-xl border border-sky-100 bg-sky-50 px-3 py-2 text-xs text-sky-700">
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-sky-200 border-t-sky-600" />
+                  Loading complete order details…
+                </div>
+              )}
               {(() => {
                 const o = viewingOrder;
-                const value = (...items) => text(items.find((v) => v !== undefined && v !== null && String(v).trim() !== ""));
-                const address = (...items) => items.filter((v) => v !== undefined && v !== null && String(v).trim() !== "").join(", ") || "—";
+                const raw = (...items) => items.find((v) => v !== undefined && v !== null && String(v).trim() !== "");
+                const value = (...items) => {
+                  const found = raw(...items);
+                  return found === undefined ? "" : String(found).trim();
+                };
+                const address = (...items) => items.filter((v) => v !== undefined && v !== null && String(v).trim() !== "").map(String).join(", ");
+                const money = (...items) => {
+                  const found = raw(...items);
+                  if (found === undefined || found === "") return "";
+                  const amount = Number(found);
+                  return Number.isFinite(amount) ? `₹${amount.toFixed(2)}` : "";
+                };
                 const buyerAddress = address(o.address_line1, o.address_line2, o.floor_no && `Floor ${o.floor_no}`, o.landmark, o.city || o.delivery_city, o.state || o.delivery_state, o.pincode || o.delivery_pincode, o.country);
                 const pickupAddress = address(o.pickup_address, o.pickup_address_line1, o.pickup_address_line2, o.pickup_landmark, o.pickup_city, o.pickup_state, o.pickup_pincode);
                 const products = Array.isArray(o.products) ? o.products : [];
                 const packages = Array.isArray(o.packages) ? o.packages : [];
-                const Info = ({ label, children }) => <div className="min-w-0 rounded-xl border border-slate-100 bg-slate-50/70 p-3"><div className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</div><div className="mt-1 break-words text-xs leading-5 font-medium text-slate-800">{children || "—"}</div></div>;
-                const Section = ({ title, children }) => <section><h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500">{title}</h3><div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">{children}</div></section>;
-                return <>
-                  <Section title="Buyer / Delivery Details">
+                const Info = ({ label, children, wide = false }) => {
+                  if (children === undefined || children === null || String(children).trim() === "") return null;
+                  return <div className={`${wide ? "sm:col-span-2" : ""} min-w-0 max-w-full overflow-hidden rounded-xl border border-slate-100 bg-white p-3 shadow-sm`}>
+                    <div className="text-[9px] font-bold uppercase tracking-[0.12em] text-slate-400">{label}</div>
+                    <div className="mt-1 break-words [overflow-wrap:anywhere] text-xs leading-5 font-medium text-slate-800">{children}</div>
+                  </div>;
+                };
+                const Section = ({ title, icon, children }) => {
+                  const visible = React.Children.toArray(children).filter((child) => {
+                    if (!child) return false;
+                    if (child.type === Info) {
+                      const childValue = child.props.children;
+                      return childValue !== undefined && childValue !== null && String(childValue).trim() !== "";
+                    }
+                    return true;
+                  });
+                  if (!visible.length) return null;
+                  return <section className="min-w-0 rounded-2xl border border-slate-200/80 bg-slate-50/60 p-3 sm:p-4">
+                    <div className="mb-3 flex items-center gap-2">
+                      <span className="h-1.5 w-1.5 rounded-full bg-[#0788ca]" />
+                      <h3 className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-600">{title}</h3>
+                    </div>
+                    <div className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2">{visible}</div>
+                  </section>;
+                };
+                const status = value(o.tracking_status, o.order_status, o.status);
+                const service = value(o.service_type, o.serviceType) ? (getServiceType(o) === "AIR" ? "By Air" : "By Surface") : "";
+                const weightAvailable = raw(o.total_weight, o.weight, o.package_weight, packages.length ? getWeight(o) : undefined);
+                const volAvailable = raw(o.volumetric_weight, o.vol_weight, o.volumetricWeight, packages.some((p) => raw(p.volumetric_weight, p.length, p.width, p.height) !== undefined) ? getVolumetricWeight(o) : undefined);
+                const billingAvailable = raw(o.billing_weight, o.chargeable_weight);
+                const boxCount = packages.length ? packages.reduce((sum, pkg) => sum + (Number(pkg.package_count) || 1), 0) : raw(o.box_count);
+                const hasAny = (...items) => raw(...items) !== undefined;
+                return <div className="grid min-w-0 gap-3">
+                  <Section title="Buyer & Delivery">
                     <Info label="Buyer Name">{value(o.consignee_name, o.customer_name, o.customer, o.name)}</Info>
-                    <Info label="Mobile">{value(o.mobile, o.phone, o.customer_mobile, o.consignee_phone)}</Info>
+                    <Info label="Mobile">{value(o.mobile, o.phone, o.customer_mobile, o.consignee_phone, o.buyer_mobile)}</Info>
                     <Info label="Alternate Mobile">{value(o.alternate_mobile, o.alternate_phone, o.customer_alternate_mobile)}</Info>
                     <Info label="Email">{value(o.email, o.customer_email)}</Info>
-                    <Info label="Company / GSTIN">{address(o.company_name, o.gstin)}</Info>
-                    <div className="sm:col-span-2"><Info label="Complete Delivery Address">{buyerAddress}</Info></div>
+                    <Info label="Company">{value(o.company_name)}</Info>
+                    <Info label="GSTIN">{value(o.gstin)}</Info>
+                    <Info label="Delivery Address" wide>{buyerAddress}</Info>
                   </Section>
 
-                  <Section title="Pickup / Shipper Details">
-                    <Info label="Pickup Name">{value(o.shipper_name, o.seller_name, o.pickup_name, o.company_name)}</Info>
+                  <Section title="Pickup & Shipper">
+                    <Info label="Pickup Name">{value(o.shipper_name, o.seller_name, o.pickup_name, o.pickup_contact_name)}</Info>
                     <Info label="Pickup Contact">{value(o.shipper_mobile, o.pickup_mobile, o.seller_mobile, o.pickup_phone, o.contact_person)}</Info>
                     <Info label="Pickup Alternate Mobile">{value(o.shipper_alternate_mobile, o.pickup_alternate_mobile, o.alternate_pickup_mobile)}</Info>
-                    <div className="sm:col-span-2"><Info label="Complete Pickup Address">{pickupAddress}</Info></div>
+                    <Info label="Pickup Address" wide>{pickupAddress}</Info>
                   </Section>
 
-                  <Section title="Shipment Details">
-                    <Info label="Order ID">#{getOrderId(o)}</Info>
-                    <Info label="AWB / Waybill">{getAWB(o)}</Info>
-                    <Info label="Pickup ID">{getPickupId(o)}</Info>
-                    <Info label="Status">{value(o.tracking_status, o.order_status, o.status)}</Info>
-                    <Info label="Payment Mode">{getPaymentType(o)}</Info>
-                    <Info label="Service Type">{getServiceType(o) === "AIR" ? "By Air" : "By Surface"}</Info>
-                    <Info label="Order / Product Value">₹{Number(o.order_value ?? o.product_value ?? o.total_amount ?? o.amount ?? 0).toFixed(2)}</Info>
-                    <Info label="COD Collectable Amount">₹{Number(o.cod_amount ?? o.cod_value ?? o.collectable_amount ?? 0).toFixed(2)}</Info>
-                    <Info label="Shipping Charge">₹{Number(o.shipping_charge ?? o.shippingCharge ?? 0).toFixed(2)}</Info>
-                    <Info label="Distance">{getDistance(o).toFixed(0)} Km</Info>
-                    <Info label="Created At">{value(o.created_at, o.createdAt, o.manifest_created_at)}</Info>
+                  <Section title="Shipment & Payment">
+                    <Info label="Order ID">{getOrderId(o) && getOrderId(o) !== "—" ? `#${getOrderId(o)}` : ""}</Info>
+                    <Info label="AWB / Waybill">{getAWB(o) !== "AWB unavailable" ? getAWB(o) : ""}</Info>
+                    <Info label="Pickup ID">{getPickupId(o) !== "—" ? getPickupId(o) : ""}</Info>
+                    <Info label="Status">{status}</Info>
+                    <Info label="Payment Mode">{value(o.payment_type, o.paymentType, o.payment_mode)}</Info>
+                    <Info label="Service Type">{service}</Info>
+                    <Info label="Order / Product Value">{money(o.order_value, o.product_value, o.total_amount, o.amount)}</Info>
+                    <Info label="COD Collectable Amount">{money(o.cod_amount, o.cod_value, o.collectable_amount)}</Info>
+                    <Info label="Shipping Charge">{money(o.shipping_charge, o.shippingCharge)}</Info>
+                    <Info label="Distance">{hasAny(o.distance, o.distance_km) ? `${getDistance(o).toFixed(0)} Km` : ""}</Info>
+                    <Info label="Created At">{value(o.created_at, o.createdAt, o.manifest_created_at) ? `${formatDate(o.created_at || o.createdAt || o.manifest_created_at)} ${formatTime(o.created_at || o.createdAt || o.manifest_created_at)}`.trim() : ""}</Info>
                   </Section>
 
                   <Section title="Products">
-                    {products.length ? products.map((product, index) => <div key={product.id || index} className="sm:col-span-2 rounded-xl border border-slate-100 bg-white p-3"><div className="flex flex-wrap items-start justify-between gap-2"><div className="text-xs font-semibold text-slate-800">{index + 1}. {value(product.product_name, product.name, product.title, "Product")}</div><div className="text-xs font-semibold text-slate-700">₹{Number(product.price ?? product.product_value ?? product.amount ?? 0).toFixed(2)}</div></div><div className="mt-1 text-[11px] text-slate-500">SKU: {value(product.sku, product.product_sku)} · Qty: {value(product.quantity, product.qty, 1)}</div></div>) : <div className="sm:col-span-2"><Info label="Products">{value(o.product_name, o.shipment, o.item_description)}{` · Qty: ${value(o.quantity, o.qty, 1)}`}</Info></div>}
+                    {products.length ? products.map((product, index) => {
+                      const productName = value(product.product_name, product.name, product.title);
+                      const sku = value(product.sku, product.product_sku);
+                      const quantity = value(product.quantity, product.qty);
+                      const price = money(product.price, product.product_value, product.amount);
+                      if (!productName && !sku && !quantity && !price) return null;
+                      return <div key={product.id || index} className="sm:col-span-2 min-w-0 rounded-xl border border-slate-100 bg-white p-3 shadow-sm">
+                        <div className="flex min-w-0 flex-wrap items-start justify-between gap-2">
+                          {productName && <div className="min-w-0 break-words [overflow-wrap:anywhere] text-xs font-semibold text-slate-800">{index + 1}. {productName}</div>}
+                          {price && <div className="shrink-0 text-xs font-semibold text-slate-700">{price}</div>}
+                        </div>
+                        {(sku || quantity) && <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-slate-500">{sku && <span>SKU: {sku}</span>}{quantity && <span>Qty: {quantity}</span>}</div>}
+                      </div>;
+                    }) : <Info label="Product">{value(o.product_name, o.shipment, o.item_description)}</Info>}
                   </Section>
 
                   <Section title="Dimensions & Weight">
-                    <Info label="Total Weight">{getWeight(o).toFixed(2)} Kg</Info>
-                    <Info label="Volumetric Weight">{getVolumetricWeight(o).toFixed(2)} Kg</Info>
-                    <Info label="Billing Weight">{Number(o.billing_weight ?? o.chargeable_weight ?? Math.max(getWeight(o), getVolumetricWeight(o))).toFixed(2)} Kg</Info>
-                    <Info label="Total Boxes">{packages.reduce((sum, pkg) => sum + (Number(pkg.package_count) || 1), 0) || Number(o.box_count) || 1}</Info>
-                    {packages.length ? packages.map((pkg, index) => <div key={pkg.id || index} className="sm:col-span-2 rounded-xl border border-slate-100 bg-slate-50/70 p-3"><div className="text-[11px] font-bold text-slate-700">Box {index + 1} · Qty {Number(pkg.package_count) || 1}</div><div className="mt-1 text-xs text-slate-600">L: {value(pkg.length, 0)} × W: {value(pkg.width, 0)} × H: {value(pkg.height, 0)} cm · Actual wt: {value(pkg.weight, 0)} Kg · Volumetric wt: {value(pkg.volumetric_weight, 0)} Kg</div></div>) : <div className="sm:col-span-2"><Info label="Dimensions">{address(o.length && `L ${o.length} cm`, o.width && `W ${o.width} cm`, o.height && `H ${o.height} cm`)}</Info></div>}
+                    <Info label="Actual Weight">{weightAvailable !== undefined ? `${getWeight(o).toFixed(2)} Kg` : ""}</Info>
+                    <Info label="Volumetric Weight">{volAvailable !== undefined ? `${getVolumetricWeight(o).toFixed(2)} Kg` : ""}</Info>
+                    <Info label="Billing Weight">{billingAvailable !== undefined ? `${Number(billingAvailable).toFixed(2)} Kg` : ""}</Info>
+                    <Info label="Total Boxes">{boxCount !== undefined && boxCount !== null && boxCount !== "" ? String(boxCount) : ""}</Info>
+                    {packages.map((pkg, index) => {
+                      const dims = [pkg.length && `L ${pkg.length} cm`, pkg.width && `W ${pkg.width} cm`, pkg.height && `H ${pkg.height} cm`].filter(Boolean).join(" × ");
+                      const wt = pkg.weight !== undefined && pkg.weight !== null && pkg.weight !== "" ? `${pkg.weight} Kg actual` : "";
+                      const vol = pkg.volumetric_weight !== undefined && pkg.volumetric_weight !== null && pkg.volumetric_weight !== "" ? `${pkg.volumetric_weight} Kg volumetric` : "";
+                      const meta = [dims, wt, vol].filter(Boolean).join(" · ");
+                      if (!meta && !pkg.package_count) return null;
+                      return <div key={pkg.id || index} className="sm:col-span-2 min-w-0 rounded-xl border border-slate-100 bg-white p-3 shadow-sm">
+                        <div className="text-[11px] font-bold text-slate-700">Box {index + 1}{pkg.package_count ? ` · Qty ${pkg.package_count}` : ""}</div>
+                        {meta && <div className="mt-1 break-words [overflow-wrap:anywhere] text-xs leading-5 text-slate-600">{meta}</div>}
+                      </div>;
+                    })}
+                    {!packages.length && <Info label="Dimensions">{address(o.length && `L ${o.length} cm`, o.width && `W ${o.width} cm`, o.height && `H ${o.height} cm`)}</Info>}
                   </Section>
-                </>;
+                </div>;
               })()}
             </div>
 
