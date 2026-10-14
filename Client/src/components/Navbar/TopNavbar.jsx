@@ -3,6 +3,7 @@
   import { useNavigate } from "react-router-dom";
   import { FiMenu, FiSearch } from "react-icons/fi";
   import api from "../../services/api";
+  import { notifyOrderChange } from "../../services/orderEvents";
 
   const ImportIcon = () => (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -948,16 +949,11 @@
           importFileRef.current.value = "";
         }
 
-        // Notify every order screen immediately after import.
-        // Keep both event names for backward compatibility with
-        // older ProcessingOrders.jsx versions.
-        window.dispatchEvent(
-          new CustomEvent("shipdrop:orders-updated")
-        );
-
-        window.dispatchEvent(
-          new CustomEvent("processingOrderCreated")
-        );
+        // Notify every order screen and sidebar immediately after import.
+        notifyOrderChange({
+          type: "created",
+          count: importedCount,
+        });
 
         toast.success(
           `${importedCount} orders moved to Processing`

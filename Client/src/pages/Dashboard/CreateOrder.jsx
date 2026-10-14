@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { toast } from "react-hot-toast";
 import api from "../../services/api";
+import { notifyOrderChange } from "../../services/orderEvents";
 import L from "leaflet";
 import { MapContainer, Marker, TileLayer, useMapEvents } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
@@ -1435,7 +1436,7 @@ function CreateOrder() {
 
       toast.success(`Order #${editingOrderId} updated successfully!`);
       sessionStorage.removeItem("editingProcessingOrder");
-      window.dispatchEvent(new Event("processingOrderUpdated"));
+      notifyOrderChange({ type: "updated", orderId: editingOrderId });
 
       setIsEditMode(false);
       setEditingOrderId(null);
@@ -1646,7 +1647,7 @@ const handleRequiredFieldEnter = (e) => {
       if (!response.data?.order_id) throw new Error("Order creation failed");
 
       toast.success(`Order #${response.data.order_id} created successfully!`);
-      window.dispatchEvent(new Event("processingOrderCreated"));
+      notifyOrderChange({ type: "created", orderId: response.data?.order_id });
       resetForm(true);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (error) {
@@ -1734,7 +1735,7 @@ const handleRequiredFieldEnter = (e) => {
 
       toast.success(`Shipment confirmed for Order #${orderId}`);
       window.dispatchEvent(new Event("walletUpdated"));
-      window.dispatchEvent(new Event("orderStatusUpdated"));
+      notifyOrderChange({ type: "status_changed", action: "shipped", orderId });
       resetShippingRate();
       resetForm(true);
       window.scrollTo({ top: 0, behavior: "smooth" });

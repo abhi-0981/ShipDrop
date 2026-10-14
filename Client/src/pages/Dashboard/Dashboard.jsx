@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import api from "../../services/api";
+import { subscribeToOrderUpdates } from "../../services/orderEvents";
 import { useNavigate } from "react-router-dom";
 
 // ======================================================
@@ -363,6 +364,15 @@ function Dashboard() {
     window.addEventListener("walletUpdated", handleWalletUpdated);
     return () => {
       window.removeEventListener("walletUpdated", handleWalletUpdated);
+    };
+  }, []);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToOrderUpdates(() => {
+      loadDashboard(false);
+    });
+    return () => {
+      unsubscribe();
     };
   }, []);
 

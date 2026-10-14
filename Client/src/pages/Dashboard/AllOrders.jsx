@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { toast } from "react-hot-toast";
 import api from "../../services/api";
+import { notifyOrderChange, subscribeToOrderUpdates } from "../../services/orderEvents";
 import {
   printShippingLabels,
   downloadShippingLabels,
@@ -581,6 +582,16 @@ function AllOrders() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, debouncedSearch]);
 
+  useEffect(() => {
+    const unsubscribe = subscribeToOrderUpdates(() => {
+      fetchAllOrders();
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [currentPage, debouncedSearch]);
+
   
 useEffect(() => {
   const handleOutsideClick = (event) => {
@@ -890,6 +901,7 @@ useEffect(() => {
         `Order duplicated successfully. New order #${createResult.order_id} is in Processing.`,
       );
       await fetchAllOrders();
+      notifyOrderChange({ type: "created", orderId: createResult.order_id });
     } catch (error) {
       toast.error(
         error?.response?.data?.message ||

@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "react-hot-toast";
 
 import api from "../../services/api";
+import { notifyOrderChange, subscribeToOrderUpdates } from "../../services/orderEvents";
 
 import {
   DEFAULT_LABEL_SETTINGS,
@@ -534,6 +535,16 @@ function Manifested() {
   }, []);
 
   useEffect(() => {
+    const unsubscribe = subscribeToOrderUpdates(() => {
+      fetchManifestedOrders();
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
     const handleOutsideClick = (event) => {
       if (
         actionMenuRef.current &&
@@ -961,7 +972,11 @@ function Manifested() {
       }
 
       await fetchManifestedOrders();
-      window.dispatchEvent(new Event("orderStatusUpdated"));
+      notifyOrderChange({
+        type: "status_changed",
+        action: "cancelled",
+        orderIds,
+      });
     } catch (error) {
       toast.error(
         error.response?.data?.message ||
@@ -1056,7 +1071,7 @@ function Manifested() {
       );
 
       await fetchManifestedOrders();
-      window.dispatchEvent(new Event("orderStatusUpdated"));
+      notifyOrderChange({ type: "created", orderId: createResult.order_id });
     } catch (error) {
       toast.error(
         error?.response?.data?.message ||

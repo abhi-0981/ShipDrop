@@ -10,6 +10,7 @@ const {
   deleteProcessingOrders,
   searchPreviousCustomers,
   searchOrderForTracking,
+  getOrderStatusCounts,
 } = require("../models/orderModel");
 
 const {
@@ -944,6 +945,42 @@ const searchTrackingController = async (req, res) => {
 };
 
 // ======================================================
+// GET ORDER STATUS COUNTS
+// ======================================================
+
+const getOrderStatusCountsController = async (req, res) => {
+  try {
+    const userId = Number(
+      req.query?.user_id ||
+      req.user?.id ||
+      req.user?.user_id ||
+      req.user?.userId
+    );
+
+    if (!userId || !Number.isInteger(userId) || userId <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Valid user ID is required",
+      });
+    }
+
+    const counts = await getOrderStatusCounts(userId);
+
+    return res.status(200).json({
+      success: true,
+      counts,
+    });
+  } catch (error) {
+    console.error("Get order status counts error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Unable to fetch order status counts",
+    });
+  }
+};
+
+// ======================================================
 // EXPORT
 // ======================================================
 
@@ -963,4 +1000,6 @@ module.exports = {
   searchPreviousCustomers: searchPreviousCustomersController,
 
   searchTracking: searchTrackingController,
+
+  getOrderStatusCounts: getOrderStatusCountsController,
 };

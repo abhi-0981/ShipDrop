@@ -12,6 +12,7 @@ const {
   deleteOrders,
   searchPreviousCustomers,
   searchTracking,
+  getOrderStatusCounts,
 } = require("../controllers/orderController");
 
 const {
@@ -84,6 +85,17 @@ router.get(
 router.get(
   "/tracking-search",
   searchTracking
+);
+
+// ======================================================
+// STATUS COUNTS
+// IMPORTANT:
+// Ye /:id se PEHLE hona chahiye.
+// ======================================================
+
+router.get(
+  "/status-counts",
+  getOrderStatusCounts
 );
 
 // ======================================================

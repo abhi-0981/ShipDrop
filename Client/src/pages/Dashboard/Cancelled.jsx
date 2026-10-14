@@ -5,6 +5,7 @@ import React, {
 } from "react";
 import { toast } from "react-hot-toast";
 import api from "../../services/api";
+import { subscribeToOrderUpdates } from "../../services/orderEvents";
 
 // ======================================================
 // COLORS
@@ -612,6 +613,16 @@ function Cancelled() {
 
   useEffect(() => {
     fetchAllOrders();
+  }, []);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToOrderUpdates(() => {
+      fetchAllOrders();
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   // ====================================================

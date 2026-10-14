@@ -19,6 +19,7 @@ import {
 } from "react-icons/hi";
 import { FiMenu } from "react-icons/fi";
 import api from "../../services/api";
+import { fetchOrderStatusCounts } from "../../services/orderEvents";
 
 function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
   const location = useLocation();
@@ -205,7 +206,9 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
   };
 
   useEffect(() => {
-    const fetchStatusCounts = async () => {
+    let isMounted = true;
+
+    const fetchStatusCounts = async (force = false) => {
       try {
         const storedUser = localStorage.getItem("user");
         if (!storedUser) return;
@@ -214,101 +217,20 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
         const userId = user?.id || user?.user_id || user?.userId;
         if (!userId) return;
 
-        /*
-         * /orders/all = order table status.
-         * /manifests = actual confirmed manifest list.
-         *
-         * Manifested count MUST come from /manifests because
-         * an order can have status=Manifested while its manifest
-         * has already been cancelled/missing.
-         */
-        const [ordersResponse, manifestsResponse] = await Promise.all([
-          api.get("/orders/all", {
-            params: { user_id: userId },
-          }),
-          api.get("/manifests", {
-            params: { user_id: userId },
-          }),
-        ]);
-
-        const orders = Array.isArray(ordersResponse?.data?.orders)
-          ? ordersResponse.data.orders
-          : [];
-
-        const manifests = Array.isArray(manifestsResponse?.data?.manifests)
-          ? manifestsResponse.data.manifests
-          : [];
-
-        const counts = {
-          ALL: 0,
-          PROCESSING: 0,
-          MANIFESTED: manifests.length,
-          "NOT PICKED": 0,
-          "IN TRANSIT": 0,
-          "OUT FOR DELIVERY": 0,
-          DELIVERED: 0,
-          "RTO IN TRANSIT": 0,
-          "RTO DELIVERED": 0,
-          RETURNED: 0,
-          CANCELLED: 0,
-          PENDING: 0,
-        };
-
-        const seenOrderIds = new Set();
-
-        orders.forEach((order) => {
-          const orderId = order?.id ?? order?.order_id ?? order?.orderId;
-
-          const key =
-            orderId !== undefined && orderId !== null
-              ? String(orderId)
-              : `row-${seenOrderIds.size}`;
-
-          if (seenOrderIds.has(key)) return;
-          seenOrderIds.add(key);
-
-          const trackingStatus = String(order?.tracking_status || "")
-            .trim()
-            .toUpperCase()
-            .replace(/_/g, " ");
-
-          const orderStatus = String(
-            order?.status || order?.order_status || "PROCESSING",
-          )
-            .trim()
-            .toUpperCase()
-            .replace(/_/g, " ");
-
-          // Processing orders belong ONLY to Processing Orders.
-          // They must NOT be included in the All Orders count.
-          if (orderStatus === "PROCESSING") {
-            counts.PROCESSING += 1;
-            return;
-          }
-
-          // All Orders = every non-Processing order.
-          counts.ALL += 1;
-
-          // Manifested is already counted from /manifests.
-          if (orderStatus === "MANIFESTED") return;
-
-          // NDR is a tracking state and has no separate sidebar bucket.
-          if (trackingStatus === "NDR") return;
-
-          if (Object.prototype.hasOwnProperty.call(counts, orderStatus)) {
-            counts[orderStatus] += 1;
-          }
-        });
-
-        setStatusCounts(counts);
+        const counts = await fetchOrderStatusCounts(userId, force);
+        if (isMounted && counts) {
+          setStatusCounts(counts);
+        }
       } catch (error) {
         console.error("Sidebar status count error:", error);
       }
     };
 
-    fetchStatusCounts();
+    fetchStatusCounts(true);
 
-    const handleUpdate = () => fetchStatusCounts();
+    const handleUpdate = () => {
+      fetchStatusCounts(true);
+    };
 
     const updateEvents = [
       "shipdrop:orders-updated",
@@ -326,17 +248,25 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") {
-        fetchStatusCounts();
+        fetchStatusCounts(true);
       }
     };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
+    // Live background sync: check status updates every 12 seconds when tab is active
+    const pollInterval = setInterval(() => {
+      if (document.visibilityState === "visible") {
+        fetchStatusCounts(false);
+      }
+    }, 12000);
+
     return () => {
+      isMounted = false;
+      clearInterval(pollInterval);
       updateEvents.forEach((eventName) => {
         window.removeEventListener(eventName, handleUpdate);
       });
-
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, []);

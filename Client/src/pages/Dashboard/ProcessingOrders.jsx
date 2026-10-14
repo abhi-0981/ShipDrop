@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
+import { notifyOrderChange, subscribeToOrderUpdates } from "../../services/orderEvents";
 
 const Icon = ({ name, size = 16 }) => {
   const common = {
@@ -145,17 +146,12 @@ function ProcessingOrders() {
   }, []);
 
   useEffect(() => {
-    const handleNewOrder = () => fetchOrders(false);
-    window.addEventListener("processingOrderCreated", handleNewOrder);
-    return () =>
-      window.removeEventListener("processingOrderCreated", handleNewOrder);
-  }, []);
-
-  useEffect(() => {
-    const handleOrderUpdated = () => fetchOrders(false);
-    window.addEventListener("processingOrderUpdated", handleOrderUpdated);
-    return () =>
-      window.removeEventListener("processingOrderUpdated", handleOrderUpdated);
+    const unsubscribe = subscribeToOrderUpdates(() => {
+      fetchOrders(false);
+    });
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   const getId = (order, index = 0) => order.id ?? order.order_id ?? index;
@@ -425,6 +421,7 @@ function ProcessingOrders() {
         "success"
       );
       await fetchOrders(false);
+      notifyOrderChange({ type: "created", orderId: createResult.order_id });
     } catch (error) {
       showToast(
         error?.response?.data?.message || error?.message || "Unable to duplicate order",
@@ -715,8 +712,8 @@ function ProcessingOrders() {
       await fetchOrders(false);
 
       window.dispatchEvent(new Event("walletBalanceUpdated"));
-      window.dispatchEvent(new Event("orderStatusUpdated"));
       window.dispatchEvent(new Event("walletUpdated"));
+      notifyOrderChange({ type: "status_changed", action: "shipped" });
 
       showToast(
         `${shippedCount} order${
@@ -783,6 +780,7 @@ function ProcessingOrders() {
       rateCacheRef.current.clear();
 
       await fetchOrders(false);
+      notifyOrderChange({ type: "deleted", orderIds: deleteIds });
       showToast(`${deletedCount} order(s) deleted successfully.`, "success");
     } catch (error) {
       showToast(error.message || "Failed to delete orders", "error");

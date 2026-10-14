@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 
 import Sidebar from "../../components/Sidebar/Sidebar";
 import TopNavbar from "../../components/Navbar/TopNavbar";
+import { setupOrderCrossTabSync } from "../../services/orderEvents";
 
 function DashboardLayout() {
   const [collapsed, setCollapsed] = useState(() => {
@@ -11,6 +12,13 @@ function DashboardLayout() {
     }
     return false;
   });
+
+  useEffect(() => {
+    const cleanupSync = setupOrderCrossTabSync();
+    return () => {
+      cleanupSync();
+    };
+  }, []);
 
   useEffect(() => {
     const handleSync = (e) => {

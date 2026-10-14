@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
+import { notifyOrderChange, subscribeToOrderUpdates } from "../../services/orderEvents";
 
 // ======================================================
 // ICON
@@ -213,34 +214,14 @@ function ProcessingOrders() {
   // ====================================================
 
   useEffect(() => {
-    const handleNewOrder = () => {
+    const unsubscribe = subscribeToOrderUpdates(() => {
       fetchOrders(false);
-    };
-
-    window.addEventListener("processingOrderCreated", handleNewOrder);
+    });
 
     return () => {
-      window.removeEventListener("processingOrderCreated", handleNewOrder);
+      unsubscribe();
     };
   }, []);
-
-  // ====================================================
-  // ORDER UPDATED EVENT
-  // ====================================================
-
- useEffect(() => {
-  const handleOrderUpdated = () => {
-    fetchOrders(false);
-  };
-
-  window.addEventListener("processingOrderUpdated", handleOrderUpdated);
-  window.addEventListener("shipdrop:orders-updated", handleOrderUpdated);
-
-  return () => {
-    window.removeEventListener("processingOrderUpdated", handleOrderUpdated);
-    window.removeEventListener("shipdrop:orders-updated", handleOrderUpdated);
-  };
-}, []);
 
   // ====================================================
   // HELPERS
@@ -1052,10 +1033,10 @@ function ProcessingOrders() {
       await fetchOrders(false);
 
       // ==========================================
-// ORDER STATUS UPDATE
-// ==========================================
+      // NOTIFY ORDER STATUS UPDATE
+      // ==========================================
 
-window.dispatchEvent(new Event("orderStatusUpdated"));
+      notifyOrderChange({ type: "status_changed", action: "shipped" });
 
       // ==========================================
       // WALLET EVENTS
@@ -1166,6 +1147,8 @@ window.dispatchEvent(new Event("orderStatusUpdated"));
       rateCacheRef.current.clear();
 
       await fetchOrders(false);
+
+      notifyOrderChange({ type: "deleted", orderIds: deleteIds });
 
       showToast(
         `${deletedCount} order${

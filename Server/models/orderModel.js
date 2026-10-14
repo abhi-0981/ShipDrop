@@ -1406,6 +1406,72 @@ const searchOrderForTracking = (userId, search) => {
 };
 
 // ======================================================
+// GET ORDER STATUS COUNTS
+// ======================================================
+
+const getOrderStatusCounts = (userId) => {
+  return new Promise((resolve, reject) => {
+    const ordersQuery = `
+      SELECT
+        SUM(CASE WHEN UPPER(TRIM(COALESCE(o.status, ''))) = 'PROCESSING' THEN 1 ELSE 0 END) AS processing_count,
+        SUM(CASE WHEN UPPER(TRIM(COALESCE(o.status, ''))) <> 'PROCESSING' THEN 1 ELSE 0 END) AS all_count,
+        SUM(CASE WHEN UPPER(TRIM(COALESCE(o.status, ''))) IN ('CANCELLED', 'CANCELED') OR UPPER(TRIM(COALESCE(o.tracking_status, ''))) IN ('CANCELLED', 'CANCELED') THEN 1 ELSE 0 END) AS cancelled_count,
+        SUM(CASE WHEN UPPER(TRIM(COALESCE(o.status, ''))) <> 'PROCESSING' AND UPPER(TRIM(COALESCE(o.status, ''))) NOT IN ('CANCELLED', 'CANCELED') AND (UPPER(TRIM(COALESCE(o.tracking_status, ''))) = 'NOT PICKED' OR UPPER(TRIM(COALESCE(o.status, ''))) = 'NOT PICKED') THEN 1 ELSE 0 END) AS not_picked_count,
+        SUM(CASE WHEN UPPER(TRIM(COALESCE(o.status, ''))) <> 'PROCESSING' AND UPPER(TRIM(COALESCE(o.status, ''))) NOT IN ('CANCELLED', 'CANCELED') AND (UPPER(TRIM(COALESCE(o.tracking_status, ''))) IN ('IN TRANSIT', 'IN_TRANSIT') OR UPPER(TRIM(COALESCE(o.status, ''))) IN ('IN TRANSIT', 'IN_TRANSIT')) THEN 1 ELSE 0 END) AS in_transit_count,
+        SUM(CASE WHEN UPPER(TRIM(COALESCE(o.status, ''))) <> 'PROCESSING' AND UPPER(TRIM(COALESCE(o.status, ''))) NOT IN ('CANCELLED', 'CANCELED') AND (UPPER(TRIM(COALESCE(o.tracking_status, ''))) IN ('OUT FOR DELIVERY', 'OUT_FOR_DELIVERY', 'OFD') OR UPPER(TRIM(COALESCE(o.status, ''))) IN ('OUT FOR DELIVERY', 'OUT_FOR_DELIVERY', 'OFD')) THEN 1 ELSE 0 END) AS out_for_delivery_count,
+        SUM(CASE WHEN UPPER(TRIM(COALESCE(o.status, ''))) <> 'PROCESSING' AND UPPER(TRIM(COALESCE(o.status, ''))) NOT IN ('CANCELLED', 'CANCELED') AND (UPPER(TRIM(COALESCE(o.tracking_status, ''))) = 'DELIVERED' OR UPPER(TRIM(COALESCE(o.status, ''))) = 'DELIVERED') THEN 1 ELSE 0 END) AS delivered_count,
+        SUM(CASE WHEN UPPER(TRIM(COALESCE(o.status, ''))) <> 'PROCESSING' AND UPPER(TRIM(COALESCE(o.status, ''))) NOT IN ('CANCELLED', 'CANCELED') AND (UPPER(TRIM(COALESCE(o.tracking_status, ''))) IN ('RTO IN TRANSIT', 'RTO_IN_TRANSIT') OR UPPER(TRIM(COALESCE(o.status, ''))) IN ('RTO IN TRANSIT', 'RTO_IN_TRANSIT')) THEN 1 ELSE 0 END) AS rto_in_transit_count,
+        SUM(CASE WHEN UPPER(TRIM(COALESCE(o.status, ''))) <> 'PROCESSING' AND UPPER(TRIM(COALESCE(o.status, ''))) NOT IN ('CANCELLED', 'CANCELED') AND (UPPER(TRIM(COALESCE(o.tracking_status, ''))) IN ('RTO DELIVERED', 'RTO_DELIVERED') OR UPPER(TRIM(COALESCE(o.status, ''))) IN ('RTO DELIVERED', 'RTO_DELIVERED')) THEN 1 ELSE 0 END) AS rto_delivered_count,
+        SUM(CASE WHEN UPPER(TRIM(COALESCE(o.status, ''))) <> 'PROCESSING' AND UPPER(TRIM(COALESCE(o.status, ''))) NOT IN ('CANCELLED', 'CANCELED') AND (UPPER(TRIM(COALESCE(o.tracking_status, ''))) = 'RETURNED' OR UPPER(TRIM(COALESCE(o.status, ''))) = 'RETURNED') THEN 1 ELSE 0 END) AS returned_count,
+        SUM(CASE WHEN UPPER(TRIM(COALESCE(o.status, ''))) <> 'PROCESSING' AND UPPER(TRIM(COALESCE(o.status, ''))) NOT IN ('CANCELLED', 'CANCELED') AND (UPPER(TRIM(COALESCE(o.tracking_status, ''))) = 'PENDING' OR UPPER(TRIM(COALESCE(o.status, ''))) = 'PENDING') THEN 1 ELSE 0 END) AS pending_count
+      FROM orders o
+      WHERE o.user_id = ?
+    `;
+
+    const manifestsQuery = `
+      SELECT COUNT(DISTINCT m.order_id) AS manifested_count
+      FROM manifests m
+      INNER JOIN orders o
+        ON o.id = m.order_id
+       AND o.user_id = m.user_id
+      WHERE m.user_id = ?
+        AND UPPER(TRIM(COALESCE(m.status, ''))) = 'CONFIRMED'
+        AND UPPER(TRIM(COALESCE(o.status, ''))) = 'MANIFESTED'
+    `;
+
+    db.query(ordersQuery, [userId], (err, orderRows) => {
+      if (err) {
+        return reject(err);
+      }
+
+      db.query(manifestsQuery, [userId], (manifestErr, manifestRows) => {
+        if (manifestErr) {
+          return reject(manifestErr);
+        }
+
+        const row = orderRows?.[0] || {};
+        const manifestedRow = manifestRows?.[0] || {};
+
+        return resolve({
+          ALL: Number(row.all_count || 0),
+          PROCESSING: Number(row.processing_count || 0),
+          MANIFESTED: Number(manifestedRow.manifested_count || 0),
+          "NOT PICKED": Number(row.not_picked_count || 0),
+          "IN TRANSIT": Number(row.in_transit_count || 0),
+          "OUT FOR DELIVERY": Number(row.out_for_delivery_count || 0),
+          DELIVERED: Number(row.delivered_count || 0),
+          "RTO IN TRANSIT": Number(row.rto_in_transit_count || 0),
+          "RTO DELIVERED": Number(row.rto_delivered_count || 0),
+          RETURNED: Number(row.returned_count || 0),
+          CANCELLED: Number(row.cancelled_count || 0),
+          PENDING: Number(row.pending_count || 0),
+        });
+      });
+    });
+  });
+};
+
+// ======================================================
 // EXPORTS
 // ======================================================
 
@@ -1420,6 +1486,6 @@ module.exports = {
   updateOrder,
   deleteProcessingOrders,
   searchPreviousCustomers,
-
   searchOrderForTracking,
+  getOrderStatusCounts,
 };

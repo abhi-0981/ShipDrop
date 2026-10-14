@@ -16,6 +16,7 @@ import {
 import toast from "react-hot-toast";
 
 import api from "../../services/api";
+import { subscribeToOrderUpdates } from "../../services/orderEvents";
 
 /* =========================================================
    USER ID
@@ -1318,6 +1319,16 @@ function Pending() {
 
   useEffect(() => {
     fetchOrders();
+  }, []);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToOrderUpdates(() => {
+      fetchOrders();
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   /* =======================================================
