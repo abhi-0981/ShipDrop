@@ -1517,16 +1517,13 @@ function AllOrders() {
                             #{getOrderId(order)}
                           </p>
 
-                          <p className="mt-0.5 text-[10px] text-slate-400">
-                            {status === "MANIFESTED"
-                              ? "Manifested: "
-                              : "Created: "}
-                            {formatDate(getCreatedAt(order))}
-                          </p>
+                         
+<p className="mt-0.5 whitespace-nowrap text-[10px] text-slate-400">
+  {status === "MANIFESTED" ? "Manifested: " : "Created: "}
+  {formatDate(getCreatedAt(order))}{" "}
+  {formatTime(getCreatedAt(order))}
+</p>
 
-                          <p className="text-[10px] text-slate-400">
-                            {formatTime(getCreatedAt(order))}
-                          </p>
                         </td>
 
                       
