@@ -368,6 +368,7 @@ function Manifested() {
   const [paymentFilter, setPaymentFilter] = useState("ALL");
   const [serviceFilter, setServiceFilter] = useState("ALL");
   const [viewingOrder, setViewingOrder] = useState(null);
+  const [detailsLoading, setDetailsLoading] = useState(false);
   const [openActionMenuId, setOpenActionMenuId] = useState(null);
   const actionMenuRef = useRef(null);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
@@ -430,6 +431,55 @@ function Manifested() {
       setOrders([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  /* ==========================================================
+     LOAD COMPLETE ORDER DETAILS FOR VIEW MODAL
+  ========================================================== */
+
+  const openShipmentDetails = async (manifestOrder) => {
+    setViewingOrder(manifestOrder);
+    setDetailsLoading(true);
+
+    const userId = getUserId();
+    const orderId = manifestOrder?.order_id || manifestOrder?.id || manifestOrder?.orderId;
+
+    if (!userId || !orderId) {
+      setDetailsLoading(false);
+      return;
+    }
+
+    try {
+      const response = await api.get(`/orders/${orderId}`, {
+        params: { user_id: userId },
+      });
+      const data = response?.data;
+      const fullOrder = data?.order || data?.result?.order || data?.result || null;
+
+      if (fullOrder && typeof fullOrder === "object") {
+        setViewingOrder((current) => {
+          if (!current) return current;
+          // Keep manifest/shipment values, while filling in complete order fields.
+          const merged = { ...fullOrder, ...current };
+          Object.entries(fullOrder).forEach(([key, value]) => {
+            if (value !== undefined && value !== null && value !== "") merged[key] = value;
+          });
+          // Manifest-specific values are authoritative for shipment details.
+          ["awb", "waybill", "pickup_id", "pickup_request_id", "shipping_charge",
+           "service_type", "manifest_created_at", "manifest_id", "order_status", "tracking_status"].forEach((key) => {
+            if (current[key] !== undefined && current[key] !== null && current[key] !== "") {
+              merged[key] = current[key];
+            }
+          });
+          return merged;
+        });
+      }
+    } catch (error) {
+      console.warn("Could not load complete shipment details:", error);
+      toast.error(error.response?.data?.message || "Some order details could not be loaded");
+    } finally {
+      setDetailsLoading(false);
     }
   };
 
@@ -1512,7 +1562,7 @@ function Manifested() {
                       {/* VIEW DETAILS */}
                       <button
                         type="button"
-                        onClick={() => setViewingOrder(order)}
+                        onClick={() => openShipmentDetails(order)}
                         className="flex h-7.5 items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 active:scale-95"
                       >
                         <Icon name="eye" size={13} />
@@ -1856,7 +1906,7 @@ function Manifested() {
                                     type="button"
                                     onClick={() => {
                                       setOpenActionMenuId(null);
-                                      setViewingOrder(order);
+                                      openShipmentDetails(order);
                                     }}
                                     className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-xs font-medium text-slate-700 hover:bg-slate-50"
                                   >
@@ -2002,119 +2052,87 @@ function Manifested() {
       )}
 
       {/* =======================================================
-          VIEW MODAL (RESPONSIVE WITH DUPLICATE ACTION)
+          VIEW MODAL - COMPLETE ORDER & SHIPMENT DETAILS
       ======================================================= */}
       {viewingOrder && (
         <div
           className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-slate-950/45 p-0 sm:p-4 backdrop-blur-[2px]"
           onMouseDown={(e) => {
-            if (e.target === e.currentTarget) {
-              setViewingOrder(null);
-            }
+            if (e.target === e.currentTarget) setViewingOrder(null);
           }}
         >
-          <div className="w-full max-w-[650px] max-h-[90vh] flex flex-col rounded-t-3xl sm:rounded-2xl border border-slate-200 bg-white shadow-2xl overflow-hidden animate-in slide-in-from-bottom duration-200">
+          <div className="w-full max-w-[900px] max-h-[92vh] flex flex-col rounded-t-3xl sm:rounded-2xl border border-slate-200 bg-white shadow-2xl overflow-hidden">
             <div className="flex shrink-0 items-center justify-between border-b border-slate-200 px-5 py-4">
-              <div>
-                <h2 className="text-base font-semibold text-slate-900">
-                  Shipment Details
-                </h2>
-
-                <p className="mt-0.5 text-[11px] text-slate-400">
-                  AWB:{" "}
-                  <button
-                    type="button"
-                    onClick={() => triggerTracking(getAWB(viewingOrder))}
-                    className="font-semibold font-mono hover:underline cursor-pointer"
-                    style={{ color: PRIMARY }}
-                  >
-                    {getAWB(viewingOrder)}
-                  </button>
+              <div className="min-w-0">
+                <h2 className="text-base font-semibold text-slate-900">Order & Shipment Details — #{getOrderId(viewingOrder)}</h2>
+                <p className="mt-1 text-[11px] text-slate-400">
+                  AWB: <button type="button" onClick={() => triggerTracking(getAWB(viewingOrder))} className="font-semibold font-mono hover:underline" style={{ color: PRIMARY }}>{getAWB(viewingOrder)}</button>
+                  {detailsLoading && <span className="ml-2 text-sky-600">Loading complete details…</span>}
                 </p>
               </div>
-
-              <button
-                type="button"
-                onClick={() => setViewingOrder(null)}
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100"
-              >
-                <Icon name="x" size={16} />
-              </button>
+              <button type="button" onClick={() => setViewingOrder(null)} className="ml-3 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100"><Icon name="x" size={16} /></button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 sm:p-5">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
-                {[
-                  ["Order ID", `#${getOrderId(viewingOrder)}`],
-                  ["Customer", getCustomerName(viewingOrder)],
-                  ["Mobile", getMobile(viewingOrder)],
-                  ["Pickup ID", getPickupId(viewingOrder)],
-                  ["Payment", getPaymentType(viewingOrder)],
-                  [
-                    "Service",
-                    getServiceType(viewingOrder) === "AIR"
-                      ? "By Air"
-                      : "By Surface",
-                  ],
-                  ["Weight", `${getWeight(viewingOrder).toFixed(2)} Kg`],
-                  ["Distance", `${getDistance(viewingOrder).toFixed(0)} Km`],
-                ].map(([label, value]) => (
-                  <div
-                    key={label}
-                    className="rounded-xl border border-slate-100 bg-slate-50/70 p-3"
-                  >
-                    <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-                      {label}
-                    </div>
+            <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
+              {(() => {
+                const o = viewingOrder;
+                const value = (...items) => text(items.find((v) => v !== undefined && v !== null && String(v).trim() !== ""));
+                const address = (...items) => items.filter((v) => v !== undefined && v !== null && String(v).trim() !== "").join(", ") || "—";
+                const buyerAddress = address(o.address_line1, o.address_line2, o.floor_no && `Floor ${o.floor_no}`, o.landmark, o.city || o.delivery_city, o.state || o.delivery_state, o.pincode || o.delivery_pincode, o.country);
+                const pickupAddress = address(o.pickup_address, o.pickup_address_line1, o.pickup_address_line2, o.pickup_landmark, o.pickup_city, o.pickup_state, o.pickup_pincode);
+                const products = Array.isArray(o.products) ? o.products : [];
+                const packages = Array.isArray(o.packages) ? o.packages : [];
+                const Info = ({ label, children }) => <div className="min-w-0 rounded-xl border border-slate-100 bg-slate-50/70 p-3"><div className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</div><div className="mt-1 break-words text-xs leading-5 font-medium text-slate-800">{children || "—"}</div></div>;
+                const Section = ({ title, children }) => <section><h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500">{title}</h3><div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">{children}</div></section>;
+                return <>
+                  <Section title="Buyer / Delivery Details">
+                    <Info label="Buyer Name">{value(o.consignee_name, o.customer_name, o.customer, o.name)}</Info>
+                    <Info label="Mobile">{value(o.mobile, o.phone, o.customer_mobile, o.consignee_phone)}</Info>
+                    <Info label="Alternate Mobile">{value(o.alternate_mobile, o.alternate_phone, o.customer_alternate_mobile)}</Info>
+                    <Info label="Email">{value(o.email, o.customer_email)}</Info>
+                    <Info label="Company / GSTIN">{address(o.company_name, o.gstin)}</Info>
+                    <div className="sm:col-span-2"><Info label="Complete Delivery Address">{buyerAddress}</Info></div>
+                  </Section>
 
-                    <div className="mt-1 text-xs font-semibold text-slate-800">
-                      {text(value)}
-                    </div>
-                  </div>
-                ))}
+                  <Section title="Pickup / Shipper Details">
+                    <Info label="Pickup Name">{value(o.shipper_name, o.seller_name, o.pickup_name, o.company_name)}</Info>
+                    <Info label="Pickup Contact">{value(o.shipper_mobile, o.pickup_mobile, o.seller_mobile, o.pickup_phone, o.contact_person)}</Info>
+                    <Info label="Pickup Alternate Mobile">{value(o.shipper_alternate_mobile, o.pickup_alternate_mobile, o.alternate_pickup_mobile)}</Info>
+                    <div className="sm:col-span-2"><Info label="Complete Pickup Address">{pickupAddress}</Info></div>
+                  </Section>
 
-                <div className="sm:col-span-2 rounded-xl border border-slate-100 bg-slate-50/70 p-3">
-                  <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-                    Delivery Address
-                  </div>
+                  <Section title="Shipment Details">
+                    <Info label="Order ID">#{getOrderId(o)}</Info>
+                    <Info label="AWB / Waybill">{getAWB(o)}</Info>
+                    <Info label="Pickup ID">{getPickupId(o)}</Info>
+                    <Info label="Status">{value(o.tracking_status, o.order_status, o.status)}</Info>
+                    <Info label="Payment Mode">{getPaymentType(o)}</Info>
+                    <Info label="Service Type">{getServiceType(o) === "AIR" ? "By Air" : "By Surface"}</Info>
+                    <Info label="Order / Product Value">₹{Number(o.order_value ?? o.product_value ?? o.total_amount ?? o.amount ?? 0).toFixed(2)}</Info>
+                    <Info label="COD Collectable Amount">₹{Number(o.cod_amount ?? o.cod_value ?? o.collectable_amount ?? 0).toFixed(2)}</Info>
+                    <Info label="Shipping Charge">₹{Number(o.shipping_charge ?? o.shippingCharge ?? 0).toFixed(2)}</Info>
+                    <Info label="Distance">{getDistance(o).toFixed(0)} Km</Info>
+                    <Info label="Created At">{value(o.created_at, o.createdAt, o.manifest_created_at)}</Info>
+                  </Section>
 
-                  <div className="mt-1 text-xs leading-5 text-slate-700 font-medium">
-                    {[
-                      viewingOrder.address_line1,
-                      viewingOrder.address_line2,
-                      viewingOrder.city,
-                      viewingOrder.state,
-                      viewingOrder.pincode,
-                    ]
-                      .filter(Boolean)
-                      .join(", ") || "—"}
-                  </div>
-                </div>
-              </div>
+                  <Section title="Products">
+                    {products.length ? products.map((product, index) => <div key={product.id || index} className="sm:col-span-2 rounded-xl border border-slate-100 bg-white p-3"><div className="flex flex-wrap items-start justify-between gap-2"><div className="text-xs font-semibold text-slate-800">{index + 1}. {value(product.product_name, product.name, product.title, "Product")}</div><div className="text-xs font-semibold text-slate-700">₹{Number(product.price ?? product.product_value ?? product.amount ?? 0).toFixed(2)}</div></div><div className="mt-1 text-[11px] text-slate-500">SKU: {value(product.sku, product.product_sku)} · Qty: {value(product.quantity, product.qty, 1)}</div></div>) : <div className="sm:col-span-2"><Info label="Products">{value(o.product_name, o.shipment, o.item_description)}{` · Qty: ${value(o.quantity, o.qty, 1)}`}</Info></div>}
+                  </Section>
+
+                  <Section title="Dimensions & Weight">
+                    <Info label="Total Weight">{getWeight(o).toFixed(2)} Kg</Info>
+                    <Info label="Volumetric Weight">{getVolumetricWeight(o).toFixed(2)} Kg</Info>
+                    <Info label="Billing Weight">{Number(o.billing_weight ?? o.chargeable_weight ?? Math.max(getWeight(o), getVolumetricWeight(o))).toFixed(2)} Kg</Info>
+                    <Info label="Total Boxes">{packages.reduce((sum, pkg) => sum + (Number(pkg.package_count) || 1), 0) || Number(o.box_count) || 1}</Info>
+                    {packages.length ? packages.map((pkg, index) => <div key={pkg.id || index} className="sm:col-span-2 rounded-xl border border-slate-100 bg-slate-50/70 p-3"><div className="text-[11px] font-bold text-slate-700">Box {index + 1} · Qty {Number(pkg.package_count) || 1}</div><div className="mt-1 text-xs text-slate-600">L: {value(pkg.length, 0)} × W: {value(pkg.width, 0)} × H: {value(pkg.height, 0)} cm · Actual wt: {value(pkg.weight, 0)} Kg · Volumetric wt: {value(pkg.volumetric_weight, 0)} Kg</div></div>) : <div className="sm:col-span-2"><Info label="Dimensions">{address(o.length && `L ${o.length} cm`, o.width && `W ${o.width} cm`, o.height && `H ${o.height} cm`)}</Info></div>}
+                  </Section>
+                </>;
+              })()}
             </div>
 
-            <div className="flex shrink-0 items-center justify-between border-t border-slate-200 px-5 py-3.5 bg-slate-50/60">
-              <button
-                type="button"
-                onClick={() => {
-                  const target = viewingOrder;
-                  setViewingOrder(null);
-                  handleDuplicate(target);
-                }}
-                disabled={actionLoading}
-                className="h-9 inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition active:scale-95 disabled:opacity-50"
-              >
-                <Icon name="copy" size={13} />
-                <span>Duplicate Order</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setViewingOrder(null)}
-                className="h-9 rounded-xl border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition active:scale-95"
-              >
-                Close
-              </button>
+            <div className="flex shrink-0 items-center justify-between gap-2 border-t border-slate-200 px-5 py-3.5 bg-slate-50/60">
+              <button type="button" onClick={() => { const target = viewingOrder; setViewingOrder(null); handleDuplicate(target); }} disabled={actionLoading} className="h-9 inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition active:scale-95 disabled:opacity-50"><Icon name="copy" size={13} /><span>Duplicate Order</span></button>
+              <button type="button" onClick={() => setViewingOrder(null)} className="h-9 rounded-xl border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition active:scale-95">Close</button>
             </div>
           </div>
         </div>
