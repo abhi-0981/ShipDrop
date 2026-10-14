@@ -1407,38 +1407,68 @@ function AllOrders() {
                           </div>
                         </td>
 
-                        <td className="px-2 py-2.5 break-words">
-                          <div>
-                            <p className="text-[12px] font-medium text-slate-700">
-                              {getPickupCity(order)}
-                              {getPickupPincode(order) && (
-                                <span className="text-[10px] text-slate-400">
-                                  {" "}
-                                  ({getPickupPincode(order)})
-                                </span>
-                              )}
-                            </p>
+                        
+<td className="px-2 py-2.5">
+  <div className="flex flex-col gap-1">
+    {/* Pickup */}
+    <div className="flex min-w-0 items-center gap-1.5">
+      <svg
+        width="13"
+        height="13"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="#008dd2"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="shrink-0"
+      >
+        <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" />
+        <circle cx="12" cy="10" r="2.5" />
+      </svg>
 
-                            <p className="my-0.5 text-[10px] text-slate-300">
-                              ↓
-                            </p>
+      <p className="truncate text-[12px] font-medium text-slate-700">
+        {getPickupCity(order)}
+        {getPickupPincode(order) && (
+          <span className="ml-1 text-[10px] text-slate-400">
+            ({getPickupPincode(order)})
+          </span>
+        )}
+      </p>
+    </div>
 
-                            <p className="text-[12px] font-medium text-slate-700">
-                              {getDeliveryCity(order)}
-                              {getDeliveryPincode(order) && (
-                                <span className="text-[10px] text-slate-400">
-                                  {" "}
-                                  ({getDeliveryPincode(order)})
-                                </span>
-                              )}
-                            </p>
+    {/* Route connector */}
+    <div className="ml-[5px] h-2.5 border-l border-dashed border-slate-300" />
 
-                            <p className="mt-1 text-[9px] text-slate-400">
-                              {getPickupPincode(order) || "—"} →{" "}
-                              {getDeliveryPincode(order) || "—"}
-                            </p>
-                          </div>
-                        </td>
+    {/* Delivery */}
+    <div className="flex min-w-0 items-center gap-1.5">
+      <svg
+        width="13"
+        height="13"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="#94a3b8"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="shrink-0"
+      >
+        <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" />
+        <circle cx="12" cy="10" r="2.5" />
+      </svg>
+
+      <p className="truncate text-[12px] font-medium text-slate-700">
+        {getDeliveryCity(order)}
+        {getDeliveryPincode(order) && (
+          <span className="ml-1 text-[10px] text-slate-400">
+            ({getDeliveryPincode(order)})
+          </span>
+        )}
+      </p>
+    </div>
+  </div>
+</td>
+
 
                         <td className="px-2 py-2.5 break-words">
                           <div>
