@@ -1438,9 +1438,10 @@ function AllOrders() {
     </div>
 
     {/* Route connector */}
-    <div className="ml-[5px] h-2.5 border-l border-dashed border-slate-300" />
-
-    {/* Delivery */}
+<div className="ml-[5px] flex h-2.5 flex-col justify-between">
+  <span className="h-1 border-l border-dashed border-slate-300" />
+  <span className="h-1 border-l border-dashed border-slate-300" />
+</div>    {/* Delivery */}
     <div className="flex min-w-0 items-center gap-1.5">
       <svg
         width="13"
