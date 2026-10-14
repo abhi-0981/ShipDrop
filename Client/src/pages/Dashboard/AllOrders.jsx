@@ -465,6 +465,7 @@ function AllOrders() {
 
   const [selectedIds, setSelectedIds] = useState([]);
   const [viewingOrder, setViewingOrder] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
   const [openActionMenuId, setOpenActionMenuId] = useState(null);
   const actionMenuRef = useRef(null);
 
@@ -665,8 +666,31 @@ useEffect(() => {
     });
   };
 
-  const handleView = (order) => {
+  const handleView = async (order) => {
     setViewingOrder(order);
+    const orderId = order?.id ?? order?.order_id;
+    const userId = getUserId();
+
+    if (!orderId || !userId) return;
+
+    setDetailLoading(true);
+    try {
+      const response = await api.get(`/orders/${orderId}`, {
+        params: { user_id: userId },
+      });
+      if (response?.data?.success && response?.data?.order) {
+        setViewingOrder((current) =>
+          current && String(current?.id ?? current?.order_id) === String(orderId)
+            ? { ...current, ...response.data.order }
+            : current
+        );
+      }
+    } catch (error) {
+      // Keep the list data visible if detailed data cannot be loaded.
+      console.error("Unable to load full order details:", error);
+    } finally {
+      setDetailLoading(false);
+    }
   };
 
   const handlePrintSingleLabel = async (order) => {
@@ -1687,169 +1711,212 @@ useEffect(() => {
       </div>
 
       {/* ====================================================
-          VIEW ORDER MODAL (RESPONSIVE)
+          VIEW ORDER MODAL — COMPACT FULL DETAILS
       ==================================================== */}
       {viewingOrder && (
         <div
-          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-slate-900/40 p-0 sm:p-4 backdrop-blur-[2px]"
-          onClick={() => setViewingOrder(null)}
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/45 p-2 sm:p-4 backdrop-blur-[2px]"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setViewingOrder(null);
+          }}
         >
-          <div
-            className="w-full max-w-[620px] max-h-[90vh] flex flex-col rounded-t-3xl sm:rounded-2xl border border-slate-200 bg-white shadow-2xl overflow-hidden animate-in slide-in-from-bottom duration-200"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* MODAL HEADER */}
-            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-              <div>
-                <h2 className="text-base font-semibold text-slate-900">
-                  Order Details
+          <div className="flex max-h-[94vh] w-full max-w-[980px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+            {/* Header */}
+            <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-4 py-3 sm:px-5">
+              <div className="min-w-0">
+                <h2 className="text-[15px] font-semibold text-slate-900 sm:text-base">
+                  Order Details <span className="text-slate-400">— #{getOrderId(viewingOrder)}</span>
                 </h2>
-                <p className="mt-0.5 text-[11px] text-slate-400">
-                  Order #{getOrderId(viewingOrder)}
-                </p>
+                {getAWB(viewingOrder) && getAWB(viewingOrder) !== "—" && (
+                  <p className="mt-0.5 truncate text-[11px] text-slate-500">
+                    AWB: <button type="button" onClick={() => triggerTracking(getAWB(viewingOrder))} className="font-mono font-semibold text-[#008dd2] hover:underline">{getAWB(viewingOrder)}</button>
+                  </p>
+                )}
               </div>
-
-              <button
-                type="button"
-                onClick={() => setViewingOrder(null)}
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
-              >
+              <button type="button" onClick={() => setViewingOrder(null)} aria-label="Close details" className="ml-3 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700">
                 <Icon name="x" size={17} />
               </button>
             </div>
 
-            {/* MODAL BODY */}
-            <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3">
-              <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-                <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
-                  <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
-                    Customer
-                  </p>
-                  <p className="mt-1 text-[13px] font-semibold text-slate-800">
-                    {getCustomerName(viewingOrder)}
-                  </p>
-                  <p className="mt-0.5 text-[11px] text-slate-500">
-                    {getMobile(viewingOrder)}
-                  </p>
+            {/* Compact body: no forced horizontal scroll; absent values are omitted */}
+            <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4">
+              {detailLoading && (
+                <div className="mb-3 flex items-center gap-2 rounded-lg bg-sky-50 px-3 py-2 text-[11px] font-medium text-sky-700">
+                  <span className="h-3 w-3 animate-spin rounded-full border-2 border-sky-200 border-t-sky-600" />
+                  Loading complete order details…
                 </div>
+              )}
 
-                <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
-                  <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
-                    AWB
-                  </p>
-                  <p className="mt-1 text-[13px] font-semibold text-slate-800 font-mono">
-                    {getAWB(viewingOrder)}
-                  </p>
-                </div>
+              {(() => {
+                const o = viewingOrder;
+                const present = (value) =>
+                  value !== null && value !== undefined && String(value).trim() !== "";
+                const address = [
+                  o.address_line1, o.address_line2, o.floor_no, o.landmark,
+                  o.city, o.state, o.pincode, o.country
+                ].filter(present).join(", ");
+                const pickupAddress = [
+                  o.pickup_address,
+                  o.warehouse?.address,
+                  o.warehouse?.address_line1,
+                  o.warehouse?.address_line2,
+                  o.pickup_city,
+                  o.pickup_state,
+                  o.pickup_pincode
+                ].filter(present).join(", ");
+                const pickupName = o.pickup_name || o.warehouse_name || o.warehouse?.name || o.pickup_contact_name;
+                const pickupPhone = o.pickup_phone || o.pickup_mobile || o.warehouse?.phone || o.pickup_contact;
+                const buyerFields = [
+                  ["Name", o.consignee_name || o.customer_name || o.name],
+                  ["Mobile", o.mobile || o.phone || o.consignee_phone],
+                  ["Alternate Mobile", o.alternate_mobile],
+                  ["Email", o.email],
+                  ["Company", o.company_name],
+                  ["GSTIN", o.gstin],
+                ].filter(([, value]) => present(value));
+                const pickupFields = [
+                  ["Pickup Name", pickupName],
+                  ["Contact", pickupPhone],
+                  ["Pickup Address", pickupAddress],
+                ].filter(([, value]) => present(value));
+                const shipmentFields = [
+                  ["Order ID", `#${getOrderId(o)}`],
+                  ["AWB", getAWB(o)],
+                  ["Pickup ID", o.pickup_id || o.pickupId || o.pickup_request_id],
+                  ["Status", getStatusLabel(getStatus(o))],
+                  ["Payment", getPaymentType(o)],
+                  ["Service", getServiceType(o) === "AIR" ? "By Air" : "By Surface"],
+                  ["Shipping Charge", present(o.shipping_charge) ? `₹${Number(o.shipping_charge).toFixed(2)}` : ""],
+                  ["Order Value", present(o.total_amount ?? o.total ?? o.amount) ? `₹${Number(o.total_amount ?? o.total ?? o.amount).toFixed(2)}` : ""],
+                  ["COD Amount", present(o.cod_amount) ? `₹${Number(o.cod_amount).toFixed(2)}` : ""],
+                  ["Distance", present(o.distance) ? `${o.distance} Km` : ""],
+                  ["Risk Type", o.risk_type],
+                  ["Created", present(getCreatedAt(o)) ? `${formatDate(getCreatedAt(o))} ${formatTime(getCreatedAt(o))}`.trim() : ""],
+                ].filter(([, value]) => present(value) && value !== "—");
 
-                <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
-                  <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
-                    Shipment
-                  </p>
-                  <p className="mt-1 text-[13px] font-semibold text-slate-800">
-                    {getShipmentName(viewingOrder)}
-                  </p>
-                  <p className="mt-0.5 text-[11px] text-slate-500">
-                    {getServiceType(viewingOrder) === "AIR"
-                      ? "By Air"
-                      : "By Road"}
-                  </p>
-                </div>
+                const products = Array.isArray(o.products) ? o.products : [];
+                const packages = Array.isArray(o.packages) ? o.packages : [];
+                const hasWeight = present(o.total_weight ?? o.weight ?? o.shipment_weight) ||
+                  present(o.volumetric_weight ?? o.vol_weight ?? o.volumetricWeight) ||
+                  present(o.billing_weight);
+                const hasAddress = present(address);
 
-                <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
-                  <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
-                    Payment
-                  </p>
-                  <p className="mt-1 text-[13px] font-semibold text-slate-800">
-                    {getPaymentType(viewingOrder)}
-                  </p>
-                  <p className="mt-0.5 text-[11px] text-slate-500">
-                    ₹{getAmount(viewingOrder).toFixed(2)}
-                  </p>
-                </div>
-              </div>
-
-              {/* ADDRESS */}
-              <div className="rounded-xl border border-slate-200 bg-white p-3.5">
-                <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
-                  Delivery Address
-                </p>
-                <p className="mt-1 text-[13px] font-medium leading-6 text-slate-700">
-                  {[
-                    viewingOrder?.address_line1,
-                    viewingOrder?.address_line2,
-                    viewingOrder?.city,
-                    viewingOrder?.state,
-                  ]
-                    .filter(Boolean)
-                    .join(", ") || "—"}
-                  {viewingOrder?.pincode ? ` - ${viewingOrder.pincode}` : ""}
-                </p>
-              </div>
-
-              {/* ROUTE */}
-              <div className="rounded-xl border border-slate-200 bg-white p-3.5">
-                <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
-                  Route
-                </p>
-                <div className="mt-2 flex items-center gap-2.5">
-                  <div className="rounded-lg bg-[#edf8ff] px-2.5 py-1.5 text-xs font-semibold text-[#008dd2]">
-                    {getPickupCity(viewingOrder)}
+                const Section = ({ title, children, className = "" }) => (
+                  <section className={`min-w-0 rounded-xl border border-slate-200 bg-white p-3 ${className}`}>
+                    <h3 className="mb-2 text-[10px] font-bold uppercase tracking-[0.08em] text-slate-400">{title}</h3>
+                    {children}
+                  </section>
+                );
+                const FieldGrid = ({ fields }) => (
+                  <div className="grid min-w-0 grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2 lg:grid-cols-3">
+                    {fields.map(([label, value]) => (
+                      <div key={label} className="min-w-0">
+                        <p className="text-[10px] text-slate-400">{label}</p>
+                        <p className="mt-0.5 break-words text-[12px] font-medium leading-4 text-slate-700">{value}</p>
+                      </div>
+                    ))}
                   </div>
-                  <span className="text-slate-300 font-bold">→</span>
-                  <div className="rounded-lg bg-[#f0ecff] px-2.5 py-1.5 text-xs font-semibold text-[#7052ff]">
-                    {getDeliveryCity(viewingOrder)}
-                  </div>
-                </div>
-              </div>
+                );
 
-              {/* WEIGHT & STATUS */}
-              <div className="grid grid-cols-2 gap-2.5">
-                <div className="rounded-xl border border-slate-200 p-3">
-                  <p className="text-[10px] uppercase tracking-wide text-slate-400">
-                    Weight
-                  </p>
-                  <p className="mt-1 text-sm font-semibold text-slate-800">
-                    {getWeight(viewingOrder).toFixed(2)} Kg
-                  </p>
-                </div>
+                return (
+                  <div className="space-y-2.5">
+                    {(buyerFields.length > 0 || hasAddress) && (
+                      <Section title="Buyer / Delivery Details">
+                        {buyerFields.length > 0 && <FieldGrid fields={buyerFields} />}
+                        {hasAddress && (
+                          <div className={buyerFields.length > 0 ? "mt-2 border-t border-slate-100 pt-2" : ""}>
+                            <p className="text-[10px] text-slate-400">Delivery Address</p>
+                            <p className="mt-0.5 break-words text-[12px] leading-5 text-slate-700">{address}</p>
+                          </div>
+                        )}
+                      </Section>
+                    )}
 
-                <div className="rounded-xl border border-slate-200 p-3">
-                  <p className="text-[10px] uppercase tracking-wide text-slate-400">
-                    Status
-                  </p>
-                  <div className="mt-1">
-                    <StatusBadge status={getStatus(viewingOrder)} />
+                    {pickupFields.length > 0 && (
+                      <Section title="Pickup Details">
+                        <FieldGrid fields={pickupFields} />
+                      </Section>
+                    )}
+
+                    {shipmentFields.length > 0 && (
+                      <Section title="Shipment & Payment">
+                        <FieldGrid fields={shipmentFields} />
+                      </Section>
+                    )}
+
+                    {products.length > 0 && (
+                      <Section title="Products">
+                        <div className="space-y-1.5">
+                          {products.map((product, index) => {
+                            const details = [
+                              product?.sku ? `SKU: ${product.sku}` : "",
+                              present(product?.qty) ? `Qty: ${product.qty}` : "",
+                              present(product?.price) ? `Price: ₹${Number(product.price).toFixed(2)}` : "",
+                              present(product?.tax) ? `Tax: ₹${Number(product.tax).toFixed(2)}` : "",
+                            ].filter(Boolean);
+                            const name = product?.product_name || product?.name;
+                            if (!present(name) && details.length === 0) return null;
+                            return (
+                              <div key={product?.id || index} className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-3 gap-y-1 border-b border-slate-100 pb-1.5 last:border-0 last:pb-0">
+                                {present(name) && <p className="min-w-0 break-words text-[12px] font-medium text-slate-700">{name}</p>}
+                                {details.length > 0 && <p className="text-[11px] text-slate-500">{details.join(" · ")}</p>}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </Section>
+                    )}
+
+                    {(packages.length > 0 || hasWeight) && (
+                      <Section title="Dimensions & Weight">
+                        {hasWeight && (
+                          <div className="mb-2 flex flex-wrap gap-x-5 gap-y-1">
+                            {present(o.total_weight ?? o.weight ?? o.shipment_weight) && (
+                              <p className="text-[11px] text-slate-600">Actual Weight: <span className="font-semibold text-slate-800">{Number(o.total_weight ?? o.weight ?? o.shipment_weight).toFixed(2)} kg</span></p>
+                            )}
+                            {present(o.volumetric_weight ?? o.vol_weight ?? o.volumetricWeight) && (
+                              <p className="text-[11px] text-slate-600">Volumetric Weight: <span className="font-semibold text-slate-800">{Number(o.volumetric_weight ?? o.vol_weight ?? o.volumetricWeight).toFixed(2)} kg</span></p>
+                            )}
+                            {present(o.billing_weight) && (
+                              <p className="text-[11px] text-slate-600">Billing Weight: <span className="font-semibold text-slate-800">{Number(o.billing_weight).toFixed(2)} kg</span></p>
+                            )}
+                          </div>
+                        )}
+                        {packages.length > 0 && (
+                          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                            {packages.map((pkg, index) => {
+                              const dims = [pkg?.length, pkg?.width, pkg?.height].every(present)
+                                ? `${pkg.length} × ${pkg.width} × ${pkg.height} cm`
+                                : "";
+                              const fields = [
+                                present(pkg?.package_count ?? pkg?.count) ? `${pkg.package_count ?? pkg.count} box(es)` : "",
+                                dims,
+                                present(pkg?.weight) ? `${pkg.weight} kg` : "",
+                              ].filter(Boolean);
+                              if (!fields.length) return null;
+                              return <div key={pkg?.id || index} className="rounded-lg bg-slate-50 px-2.5 py-2 text-[11px] text-slate-600">{fields.join(" · ")}</div>;
+                            })}
+                          </div>
+                        )}
+                      </Section>
+                    )}
                   </div>
-                </div>
-              </div>
+                );
+              })()}
             </div>
 
-            {/* MODAL FOOTER */}
-            <div className="flex items-center justify-end gap-2 border-t border-slate-100 bg-[#fafbfc] px-4 sm:px-5 py-3">
-              <button
-                type="button"
-                onClick={() => setViewingOrder(null)}
-                className="h-9.5 rounded-xl border border-slate-200 bg-white px-4 text-xs font-medium text-slate-600 hover:bg-slate-50"
-              >
+            {/* Footer */}
+            <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-slate-100 bg-slate-50/70 px-3 py-2.5 sm:px-4">
+              <div className="flex flex-wrap gap-2">
+                <button type="button" onClick={() => handleDownloadSingleLabel(viewingOrder)} className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[#b9dff0] bg-white px-3 text-[11px] font-semibold text-[#008dd2] hover:bg-[#edf8ff]">
+                  <Icon name="download" size={13} /> Download Label
+                </button>
+                <button type="button" onClick={() => handlePrintSingleLabel(viewingOrder)} className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-[#008dd2] px-3 text-[11px] font-semibold text-white hover:bg-[#007dbb]">
+                  <Icon name="printer" size={13} /> Print Label
+                </button>
+              </div>
+              <button type="button" onClick={() => setViewingOrder(null)} className="h-8 rounded-lg border border-slate-200 bg-white px-4 text-[11px] font-semibold text-slate-600 hover:bg-slate-50">
                 Close
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleDownloadSingleLabel(viewingOrder)}
-                className="inline-flex h-9.5 items-center gap-1.5 rounded-xl border border-[#b9dff0] bg-white px-4 text-xs font-bold text-[#008dd2] hover:bg-[#edf8ff] active:scale-95"
-              >
-                <Icon name="download" size={14} />
-                Download Label
-              </button>
-              <button
-                type="button"
-                onClick={() => handlePrintSingleLabel(viewingOrder)}
-                className="inline-flex h-9.5 items-center gap-1.5 rounded-xl bg-[#008dd2] px-4 text-xs font-bold text-white shadow-xs hover:bg-[#007dbb] active:scale-95"
-              >
-                <Icon name="printer" size={14} />
-                Print Label
               </button>
             </div>
           </div>
