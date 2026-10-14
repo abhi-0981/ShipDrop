@@ -1595,7 +1595,11 @@ useEffect(() => {
     </button>
 
     {/* More Actions */}
-<div ref={actionMenuRef} className="relative">      <button
+<div
+      ref={actionMenuRef}
+      className="relative"
+      onMouseDown={(event) => event.stopPropagation()}
+    >      <button
         type="button"
         onClick={() =>
           setOpenActionMenuId((prev) => (prev === id ? null : id))
