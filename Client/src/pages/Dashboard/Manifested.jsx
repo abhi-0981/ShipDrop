@@ -1313,16 +1313,6 @@ function Manifested() {
               />
             </div>
 
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-[12px] text-slate-600 outline-none"
-            >
-              <option value="ALL">All Status</option>
-
-              <option value="MANIFESTED">Manifested</option>
-
-            </select>
 
             <select
               value={serviceFilter}
@@ -1331,7 +1321,7 @@ function Manifested() {
             >
               <option value="ALL">All Services</option>
 
-              <option value="ROAD">Surface</option>
+              <option value="ROAD">Road</option>
 
               <option value="AIR">Air</option>
             </select>
@@ -1521,7 +1511,7 @@ function Manifested() {
 
                             <div className="text-[11px] leading-4 text-slate-500">
                               {getShipmentName(order)} ·{" "}
-                              {service === "AIR" ? "By Air" : "By Surface"}
+                              {service === "AIR" ? "Air" : "Road"}
                             </div>
                           </div>
                         </td>
@@ -1858,7 +1848,7 @@ function Manifested() {
                 ["Payment", getPaymentType(viewingOrder)],
                 [
                   "Service",
-                  getServiceType(viewingOrder) === "AIR" ? "By Air" : "By Surface",
+                  getServiceType(viewingOrder) === "AIR" ? "By Air" : "By Road",
                 ],
                 ["Weight", `${getWeight(viewingOrder).toFixed(2)} Kg`],
                 ["Distance", `${getDistance(viewingOrder).toFixed(0)} Km`],
