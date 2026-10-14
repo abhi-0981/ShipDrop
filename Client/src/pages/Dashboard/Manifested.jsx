@@ -1906,12 +1906,12 @@ function Manifested() {
                           </div>
 
                           <div className="text-[10px] leading-4 text-slate-400">
-                            Manifested: {formatDate(created)}
+                            Manifested: {formatDate(created)}{" "}{formatTime(created)}
                           </div>
 
-                          <div className="text-[10px] leading-4 text-slate-400">
-                            {formatTime(created)}
-                          </div>
+                          {/* <div className="text-[10px] leading-4 text-slate-400">
+                            
+                          </div> */}
                         </td>
 
                         {/* ACTIONS */}
