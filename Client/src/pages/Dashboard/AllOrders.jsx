@@ -1409,7 +1409,7 @@ function AllOrders() {
 
                         
 <td className="px-2 py-2.5">
-  <div className="flex flex-col gap-1">
+  <div className="flex flex-col gap-0">
     {/* Pickup */}
     <div className="flex min-w-0 items-center gap-1.5">
       <svg
