@@ -127,15 +127,6 @@ const Icon = ({ name, size = 15 }) => {
       </svg>
     );
 
-  if (name === "alert")
-    return (
-      <svg {...common}>
-        <path d="M12 9v4" />
-        <path d="M12 17h.01" />
-        <path d="M10.3 3.8 2.8 17a2 2 0 0 0 1.7 3h15a2 2 0 0 0 1.7-3L13.7 3.8a2 2 0 0 0-3.4 0Z" />
-      </svg>
-    );
-
   if (name === "more")
     return (
       <svg {...common}>
@@ -385,20 +376,25 @@ function Manifested() {
   const [customLogo, setCustomLogo] = useState(null);
 
   /* ==========================================================
-     FETCH MANIFESTED
+     TRACKING DISPATCH
   ========================================================== */
 
-  
-const triggerTracking = (awb) => {
-  if (!awb || awb === "AWB unavailable" || awb === "—") return;
+  const triggerTracking = (awb) => {
+    if (!awb || awb === "AWB unavailable" || awb === "—") {
+      toast.error("Valid tracking number not found");
+      return;
+    }
 
-  window.dispatchEvent(
-    new CustomEvent("shipdrop:openTracking", {
-      detail: String(awb),
-    })
-  );
-};
+    window.dispatchEvent(
+      new CustomEvent("shipdrop:openTracking", {
+        detail: String(awb).trim(),
+      })
+    );
+  };
 
+  /* ==========================================================
+     FETCH MANIFESTED
+  ========================================================== */
 
   const fetchManifestedOrders = async () => {
     const userId = getUserId();
@@ -1102,6 +1098,24 @@ const triggerTracking = (awb) => {
   };
 
   /* ==========================================================
+     COPY AWB HELPER
+  ========================================================== */
+
+  const copyAWB = async (awb) => {
+    if (!awb || awb === "AWB unavailable" || awb === "—") {
+      toast.error("AWB not available");
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(String(awb).trim());
+      toast.success("AWB copied to clipboard");
+    } catch {
+      toast.error("Unable to copy AWB");
+    }
+  };
+
+  /* ==========================================================
      LOADING STATE
   ========================================================== */
 
@@ -1303,7 +1317,7 @@ const triggerTracking = (awb) => {
         </div>
 
         {/* =====================================================
-            1. MOBILE VIEW: TOUCH-FRIENDLY APP CARDS
+            1. MOBILE VIEW: APPLIKE SHIPMENT CARDS
         ===================================================== */}
         <div className="space-y-2.5 sm:hidden">
           {!filteredOrders.length ? (
@@ -1329,6 +1343,7 @@ const triggerTracking = (awb) => {
               const service = getServiceType(order);
               const payment = getPaymentType(order);
               const created = getCreatedAt(order);
+              const awb = getAWB(order);
 
               return (
                 <div
@@ -1388,7 +1403,7 @@ const triggerTracking = (awb) => {
                     </div>
                   </div>
 
-                  {/* CUSTOMER & AWB */}
+                  {/* CUSTOMER & AWB BAR WITH CLICK-TO-TRACK & COPY */}
                   <div className="space-y-1 text-xs">
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-slate-800 truncate">
@@ -1399,13 +1414,33 @@ const triggerTracking = (awb) => {
                       </span>
                     </div>
 
-                    <div className="flex items-center justify-between font-mono text-[11px] text-slate-600 bg-slate-50/80 px-2 py-1 rounded-lg border border-slate-100">
-                      <span className="truncate font-semibold">
-                        AWB: {getAWB(order)}
-                      </span>
-                      <span className="text-[10px] text-slate-400 font-sans">
-                        Pickup: {getPickupId(order)}
-                      </span>
+                    {/* AWB BAR: CLICK TO TRACK + COPY BUTTON */}
+                    <div className="flex items-center justify-between font-mono text-[11px] text-slate-700 bg-slate-50/80 px-2.5 py-1.5 rounded-xl border border-slate-100">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="font-sans text-[10px] text-slate-400 font-semibold uppercase">
+                          AWB:
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => triggerTracking(awb)}
+                          className="truncate font-bold text-[#0788ca] hover:underline cursor-pointer text-left active:scale-[0.99]"
+                          title="Click to track live"
+                        >
+                          {awb}
+                        </button>
+                      </div>
+
+                      {awb && awb !== "AWB unavailable" && awb !== "—" && (
+                        <button
+                          type="button"
+                          onClick={() => copyAWB(awb)}
+                          className="flex items-center gap-1 rounded-md bg-[#0788ca]/10 px-2 py-0.5 text-[10px] font-bold text-[#0788ca] active:scale-95 transition shrink-0"
+                          title="Copy AWB"
+                        >
+                          <Icon name="copy" size={11} />
+                          <span>Copy</span>
+                        </button>
+                      )}
                     </div>
 
                     {/* ROUTE */}
@@ -1431,39 +1466,54 @@ const triggerTracking = (awb) => {
                     </div>
                   </div>
 
-                  {/* CARD ACTIONS */}
+                  {/* CARD ACTIONS: PRINT, DOWNLOAD, DUPLICATE & DETAILS */}
                   <div className="flex items-center justify-between border-t border-slate-100 pt-2 text-[10px] text-slate-400">
-                    <span>
-                      {formatDate(created)} {formatTime(created)}
+                    <span className="truncate max-w-[100px]">
+                      {formatDate(created)}
                     </span>
 
                     <div className="flex items-center gap-1.5">
+                      {/* PRINT */}
                       <button
                         type="button"
                         onClick={() => handlePrintSingle(order)}
                         disabled={actionLoading}
                         title="Print Label"
-                        className="flex h-7 w-7 items-center justify-center rounded-lg text-white transition active:scale-95 disabled:opacity-50"
+                        className="flex h-7.5 w-7.5 items-center justify-center rounded-lg text-white transition active:scale-95 disabled:opacity-50 shadow-2xs"
                         style={{ background: PRIMARY }}
                       >
                         <Icon name="printer" size={13} />
                       </button>
 
+                      {/* DOWNLOAD */}
                       <button
                         type="button"
                         onClick={() => handleDownloadSingle(order)}
                         disabled={actionLoading}
                         title="Download Label"
-                        className="flex h-7 w-7 items-center justify-center rounded-lg text-white transition active:scale-95 disabled:opacity-50"
+                        className="flex h-7.5 w-7.5 items-center justify-center rounded-lg text-white transition active:scale-95 disabled:opacity-50 shadow-2xs"
                         style={{ background: PRIMARY_DARK }}
                       >
                         <Icon name="download" size={13} />
                       </button>
 
+                      {/* DUPLICATE ORDER */}
+                      <button
+                        type="button"
+                        onClick={() => handleDuplicate(order)}
+                        disabled={actionLoading}
+                        title="Duplicate Order"
+                        className="flex h-7.5 items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 active:scale-95 disabled:opacity-50"
+                      >
+                        <Icon name="copy" size={13} />
+                        <span className="hidden xs:inline">Duplicate</span>
+                      </button>
+
+                      {/* VIEW DETAILS */}
                       <button
                         type="button"
                         onClick={() => setViewingOrder(order)}
-                        className="flex h-7 items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 active:scale-95"
+                        className="flex h-7.5 items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 active:scale-95"
                       >
                         <Icon name="eye" size={13} />
                         <span>Details</span>
@@ -1582,6 +1632,7 @@ const triggerTracking = (awb) => {
                     const service = getServiceType(order);
                     const payment = getPaymentType(order);
                     const created = getCreatedAt(order);
+                    const awb = getAWB(order);
 
                     return (
                       <tr
@@ -1639,37 +1690,27 @@ const triggerTracking = (awb) => {
 
                         <td className="px-3 py-4 align-middle">
                           <div className="min-w-0 break-words">
-                            
-<div className="flex min-w-0 items-center gap-1">
-  <button
-    type="button"
-    onClick={() => triggerTracking(getAWB(order))}
-    title="Click to track shipment"
-    className="truncate text-left text-[13px] font-semibold leading-5 text-slate-800 hover:text-[#008dd2] cursor-pointer"
-  >
-    {getAWB(order)}
-  </button>
+                            <div className="flex min-w-0 items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() => triggerTracking(awb)}
+                                title="Click to track shipment"
+                                className="truncate text-left text-[13px] font-semibold leading-5 text-slate-800 hover:text-[#008dd2] cursor-pointer"
+                              >
+                                {awb}
+                              </button>
 
-  {getAWB(order) !== "AWB unavailable" &&
-    getAWB(order) !== "—" && (
-      <button
-        type="button"
-        title="Copy AWB"
-        onClick={async () => {
-          try {
-            await navigator.clipboard.writeText(String(getAWB(order)));
-            toast.success("AWB copied");
-          } catch {
-            toast.error("Unable to copy AWB");
-          }
-        }}
-        className="shrink-0 p-0.5 text-slate-400 hover:text-[#008dd2]"
-      >
-        <Icon name="copy" size={13} />
-      </button>
-    )}
-</div>
-
+                              {awb !== "AWB unavailable" && awb !== "—" && (
+                                <button
+                                  type="button"
+                                  title="Copy AWB"
+                                  onClick={() => copyAWB(awb)}
+                                  className="shrink-0 p-0.5 text-slate-400 hover:text-[#008dd2]"
+                                >
+                                  <Icon name="copy" size={13} />
+                                </button>
+                              )}
+                            </div>
 
                             <div className="text-[11px] leading-4 text-slate-500">
                               Pickup ID: {getPickupId(order)}
@@ -1877,7 +1918,7 @@ const triggerTracking = (awb) => {
       </div>
 
       {/* =======================================================
-          CANCEL MODAL
+          CANCEL CONFIRM MODAL
       ======================================================= */}
       {showCancelConfirm && (
         <div
@@ -1961,7 +2002,7 @@ const triggerTracking = (awb) => {
       )}
 
       {/* =======================================================
-          VIEW MODAL (RESPONSIVE)
+          VIEW MODAL (RESPONSIVE WITH DUPLICATE ACTION)
       ======================================================= */}
       {viewingOrder && (
         <div
@@ -1981,12 +2022,14 @@ const triggerTracking = (awb) => {
 
                 <p className="mt-0.5 text-[11px] text-slate-400">
                   AWB:{" "}
-                  <span
-                    className="font-semibold font-mono"
+                  <button
+                    type="button"
+                    onClick={() => triggerTracking(getAWB(viewingOrder))}
+                    className="font-semibold font-mono hover:underline cursor-pointer"
                     style={{ color: PRIMARY }}
                   >
                     {getAWB(viewingOrder)}
-                  </span>
+                  </button>
                 </p>
               </div>
 
@@ -2050,7 +2093,21 @@ const triggerTracking = (awb) => {
               </div>
             </div>
 
-            <div className="flex shrink-0 justify-end border-t border-slate-200 px-5 py-3.5 bg-slate-50/60">
+            <div className="flex shrink-0 items-center justify-between border-t border-slate-200 px-5 py-3.5 bg-slate-50/60">
+              <button
+                type="button"
+                onClick={() => {
+                  const target = viewingOrder;
+                  setViewingOrder(null);
+                  handleDuplicate(target);
+                }}
+                disabled={actionLoading}
+                className="h-9 inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition active:scale-95 disabled:opacity-50"
+              >
+                <Icon name="copy" size={13} />
+                <span>Duplicate Order</span>
+              </button>
+
               <button
                 type="button"
                 onClick={() => setViewingOrder(null)}
