@@ -1,5 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
-
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "react-hot-toast";
 
 import api from "../../services/api";
@@ -444,7 +443,7 @@ function Manifested() {
 
   const [viewingOrder, setViewingOrder] = useState(null);
   const [openActionMenuId, setOpenActionMenuId] = useState(null);
-
+  const actionMenuRef = useRef(null);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
   const [labelSettings, setLabelSettings] = useState(DEFAULT_LABEL_SETTINGS);
@@ -566,6 +565,28 @@ function Manifested() {
 
     fetchLabelSettings();
   }, []);
+
+
+
+  
+useEffect(() => {
+  const handleOutsideClick = (event) => {
+    if (
+      actionMenuRef.current &&
+      !actionMenuRef.current.contains(event.target)
+    ) {
+      setOpenActionMenuId(null);
+    }
+  };
+
+  document.addEventListener("mousedown", handleOutsideClick);
+
+  return () => {
+    document.removeEventListener("mousedown", handleOutsideClick);
+  };
+}, []);
+
+
 
   /* ==========================================================
 
@@ -1940,7 +1961,7 @@ function Manifested() {
                               <Icon name="download" size={13} />
                             </button>
 
-                            <div className="relative">
+                            <div ref={actionMenuRef} className="relative">
                               <button
                                 type="button"
                                 onClick={() =>
