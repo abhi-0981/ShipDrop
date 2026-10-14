@@ -1276,9 +1276,9 @@ function AllOrders() {
                     Weight
                   </th>
 
-                 <th className="sticky top-0 z-20 w-[15%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
-  Created
-</th>
+                  <th className="sticky top-0 z-20 w-[12%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                    Created
+                  </th>
 
                   <th className="sticky top-0 z-20 w-[13%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Actions
@@ -1517,13 +1517,14 @@ function AllOrders() {
                             #{getOrderId(order)}
                           </p>
 
-                         
-<p className="mt-0.5 whitespace-nowrap text-[10px] text-slate-400">
-  {status === "MANIFESTED" ? "Manifested: " : "Created: "}
-  {formatDate(getCreatedAt(order))}{" "}
-  {formatTime(getCreatedAt(order))}
-</p>
+                          <p className="mt-0.5 text-[10px] text-slate-400">
+                            {status === "MANIFESTED"
+                              ? "Manifested: "
+                              : "Created: "}
+                            {formatDate(getCreatedAt(order))}{" "}{formatTime(getCreatedAt(order))}
+                          </p>
 
+                          
                         </td>
 
                       
