@@ -466,6 +466,7 @@ function AllOrders() {
   const [selectedIds, setSelectedIds] = useState([]);
   const [viewingOrder, setViewingOrder] = useState(null);
   const [openActionMenuId, setOpenActionMenuId] = useState(null);
+  const actionMenuRef = useRef(null);
 
   // Mobile Touch tracking reference
   const lastTapRef = useRef({});
@@ -578,6 +579,25 @@ function AllOrders() {
     // fetchAllOrders intentionally reads the current page and debounced search.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, debouncedSearch]);
+
+  
+useEffect(() => {
+  const handleOutsideClick = (event) => {
+    if (
+      actionMenuRef.current &&
+      !actionMenuRef.current.contains(event.target)
+    ) {
+      setOpenActionMenuId(null);
+    }
+  };
+
+  document.addEventListener("mousedown", handleOutsideClick);
+
+  return () => {
+    document.removeEventListener("mousedown", handleOutsideClick);
+  };
+}, []);
+
 
   const isProcessingOrder = (order) => {
     const normalizeStatus = (value) =>
@@ -1551,8 +1571,7 @@ function AllOrders() {
     </button>
 
     {/* More Actions */}
-    <div className="relative">
-      <button
+<div ref={actionMenuRef} className="relative">      <button
         type="button"
         onClick={() =>
           setOpenActionMenuId((prev) => (prev === id ? null : id))
