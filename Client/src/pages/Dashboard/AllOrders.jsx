@@ -1393,14 +1393,14 @@ function AllOrders() {
                                   )}
                                 </div>
 
-                                <p className="mt-0.5 text-[10px] text-slate-400">
+                                <p className="mt-0.5 text-[11px] text-slate-500">
                                   Pickup ID:{" "}
                                   {order?.pickup_id || order?.pickupId || order?.pickup_request_id || "—"}
                                 </p>
                               </>
                             )}
 
-                            <p className="mt-0.5 text-[10px] text-slate-400">
+                            <p className="mt-0.5 text-[11px] text-slate-500">
                               {getShipmentName(order)} -{" "}
                               {service === "AIR" ? "By Air" : "By Surface"}
                             </p>
