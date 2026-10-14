@@ -1276,9 +1276,9 @@ function AllOrders() {
                     Weight
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[12%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
-                    Created
-                  </th>
+                 <th className="sticky top-0 z-20 w-[15%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+  Created
+</th>
 
                   <th className="sticky top-0 z-20 w-[13%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Actions
