@@ -223,7 +223,7 @@ const getServiceType = (order) => {
     return "ROAD";
   }
 
-  return "";
+  return "ROAD";
 };
 
 const getPaymentType = (order) => {
@@ -992,7 +992,7 @@ function AllOrders() {
                 className="h-10 w-full sm:min-w-[110px] rounded-xl border border-slate-200 bg-white px-2.5 text-xs text-slate-600 outline-none focus:border-[#008dd2]"
               >
                 <option value="ALL">All Mode</option>
-                <option value="ROAD">Road</option>
+                <option value="ROAD">Surface</option>
                 <option value="AIR">Air</option>
               </select>
 
