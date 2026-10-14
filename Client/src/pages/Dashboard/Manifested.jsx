@@ -1331,7 +1331,7 @@ function Manifested() {
             >
               <option value="ALL">All Services</option>
 
-              <option value="ROAD">Road</option>
+              <option value="ROAD">Surface</option>
 
               <option value="AIR">Air</option>
             </select>
@@ -1521,7 +1521,7 @@ function Manifested() {
 
                             <div className="text-[11px] leading-4 text-slate-500">
                               {getShipmentName(order)} ·{" "}
-                              {service === "AIR" ? "Air" : "Road"}
+                              {service === "AIR" ? "By Air" : "By Surface"}
                             </div>
                           </div>
                         </td>
@@ -1858,7 +1858,7 @@ function Manifested() {
                 ["Payment", getPaymentType(viewingOrder)],
                 [
                   "Service",
-                  getServiceType(viewingOrder) === "AIR" ? "By Air" : "By Road",
+                  getServiceType(viewingOrder) === "AIR" ? "By Air" : "By Surface",
                 ],
                 ["Weight", `${getWeight(viewingOrder).toFixed(2)} Kg`],
                 ["Distance", `${getDistance(viewingOrder).toFixed(0)} Km`],
