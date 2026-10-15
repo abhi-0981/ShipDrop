@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import {
   HiOutlineViewGrid,
@@ -12,120 +12,13 @@ import {
   HiOutlineX,
   HiMenuAlt2,
   HiOutlineCurrencyRupee,
-  HiOutlineSearch,
 } from "react-icons/hi";
+import { FiSearch } from "react-icons/fi";
 
+// Public tracking is served by the CLIENT backend, not the AdminPanel backend.
 const CLIENT_API_BASE_URL =
   import.meta.env.VITE_CLIENT_API_URL ||
-  (import.meta.env.DEV
-    ? "http://localhost:5000/api"
-    : "https://parceldropbackend.vercel.app/api");
-
-function getScanDetail(scan) {
-  return (
-    scan?.ScanDetail ||
-    scan?.scan_detail ||
-    scan?.scanDetail ||
-    scan?.status_detail ||
-    scan?.details ||
-    scan
-  );
-}
-
-function firstText(...values) {
-  for (const value of values) {
-    if (typeof value === "string" && value.trim()) return value.trim();
-    if (typeof value === "number") return String(value);
-  }
-  return "";
-}
-
-function getScanStatus(scan) {
-  const detail = getScanDetail(scan);
-  return firstText(
-    detail?.Instructions,
-    detail?.instructions,
-    detail?.status_description,
-    detail?.statusDescription,
-    detail?.Scan,
-    detail?.scan,
-    detail?.status,
-    detail?.status_type,
-    detail?.statusType,
-    scan?.Instructions,
-    scan?.instructions,
-    scan?.status_description,
-    scan?.statusDescription,
-    scan?.Scan,
-    scan?.scan,
-    scan?.status,
-    scan?.status_type,
-    scan?.activity,
-    "Shipment update"
-  );
-}
-
-function getScanLocation(scan) {
-  const detail = getScanDetail(scan);
-  return firstText(
-    detail?.ScanLocation,
-    detail?.scan_location,
-    detail?.scanLocation,
-    detail?.location,
-    detail?.status_location,
-    detail?.statusLocation,
-    scan?.ScanLocation,
-    scan?.scan_location,
-    scan?.scanLocation,
-    scan?.location,
-    scan?.status_location,
-    scan?.statusLocation,
-    scan?.origin
-  );
-}
-
-function getScanDate(scan) {
-  const detail = getScanDetail(scan);
-  return firstText(
-    detail?.ScanDateTime,
-    detail?.ScanDate,
-    detail?.scan_datetime,
-    detail?.scan_date_time,
-    detail?.scanDateTime,
-    detail?.status_datetime,
-    detail?.status_date_time,
-    detail?.datetime,
-    detail?.date_time,
-    detail?.date,
-    scan?.ScanDateTime,
-    scan?.ScanDate,
-    scan?.scan_datetime,
-    scan?.scan_date_time,
-    scan?.scanDateTime,
-    scan?.status_datetime,
-    scan?.status_date_time,
-    scan?.datetime,
-    scan?.date_time,
-    scan?.date
-  );
-}
-
-function formatTrackingDate(value) {
-  if (!value) return "";
-  const raw = String(value).trim();
-  const date = new Date(raw);
-  if (Number.isNaN(date.getTime())) return raw;
-
-  return new Intl.DateTimeFormat("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: true,
-  }).format(date);
-}
+  "https://parceldropbackend.vercel.app/api";
 
 function AdminLayout({ children }) {
   const navigate = useNavigate();
@@ -133,107 +26,33 @@ function AdminLayout({ children }) {
 
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [trackingId, setTrackingId] = useState("");
+  const [usersOpen, setUsersOpen] = useState(() => location.pathname.startsWith("/users"));
+
+  // Tracking bar + modal
+  const [trackingSearch, setTrackingSearch] = useState("");
   const [trackingLoading, setTrackingLoading] = useState(false);
   const [trackingError, setTrackingError] = useState("");
-  const [trackingData, setTrackingData] = useState(null);
-  const [trackingModalOpen, setTrackingModalOpen] = useState(false);
+  const [tracking, setTracking] = useState(null);
+  const [showTrackingDetails, setShowTrackingDetails] = useState(false);
 
-  const [usersOpen, setUsersOpen] = useState(() =>
-    location.pathname.startsWith("/users")
-  );
-
+  useEffect(() => setMobileOpen(false), [location.pathname]);
   useEffect(() => {
-    setMobileOpen(false);
+    if (location.pathname.startsWith("/users")) setUsersOpen(true);
   }, [location.pathname]);
 
   useEffect(() => {
-    if (location.pathname.startsWith("/users")) {
-      setUsersOpen(true);
-    }
-  }, [location.pathname]);
-
-  // Close tracking popup with Escape and prevent background scrolling.
-  useEffect(() => {
-    if (!trackingModalOpen) return undefined;
-
-    const handleKeyDown = (event) => {
-      if (event.key === "Escape") setTrackingModalOpen(false);
+    if (!showTrackingDetails) return;
+    const onKeyDown = (event) => {
+      if (event.key === "Escape") closeTrackingDetails();
     };
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    window.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [trackingModalOpen]);
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [showTrackingDetails]);
 
   const logout = () => {
     localStorage.removeItem("adminToken");
     localStorage.removeItem("admin");
     navigate("/login");
-  };
-
-  const trackShipment = async (event) => {
-    event?.preventDefault();
-
-    const awb = trackingId.trim();
-
-    setTrackingModalOpen(true);
-
-    if (!awb) {
-      setTrackingError("Please enter an AWB / tracking number.");
-      setTrackingData(null);
-      return;
-    }
-
-    // The existing public tracking endpoint currently accepts numeric AWBs only.
-    if (!/^\d+$/.test(awb)) {
-      setTrackingError(
-        "Please enter a numeric AWB. Order ID lookup is not supported by this tracking endpoint yet."
-      );
-      setTrackingData(null);
-      return;
-    }
-
-    setTrackingLoading(true);
-    setTrackingError("");
-    setTrackingData(null);
-
-    try {
-      const response = await fetch(
-        `${CLIENT_API_BASE_URL}/public/tracking/${encodeURIComponent(awb)}`
-      );
-
-      let data;
-      try {
-        data = await response.json();
-      } catch {
-        throw new Error("Tracking service returned an invalid response.");
-      }
-
-      if (!response.ok || !data?.success || !data?.tracking) {
-        throw new Error(data?.message || "Shipment tracking details not found.");
-      }
-
-      setTrackingData(data.tracking);
-    } catch (error) {
-      console.error("Admin tracking lookup failed:", error);
-      setTrackingError(
-        error?.message || "Unable to fetch tracking. Please try again."
-      );
-    } finally {
-      setTrackingLoading(false);
-    }
-  };
-
-  const clearTracking = () => {
-    setTrackingId("");
-    setTrackingError("");
-    setTrackingData(null);
   };
 
   const isUsersActive = location.pathname.startsWith("/users");
@@ -250,7 +69,6 @@ function AdminLayout({ children }) {
   const renderNavItem = (item) => {
     const Icon = item.icon;
     const isDesktopCollapsed = collapsed && !mobileOpen;
-
     return (
       <NavLink
         key={item.path}
@@ -259,401 +77,199 @@ function AdminLayout({ children }) {
         className={({ isActive }) =>
           `group relative flex items-center rounded-xl transition-all duration-150 ${
             isDesktopCollapsed ? "h-11 justify-center px-0" : "h-11 px-3.5 gap-3"
-          } ${
-            isActive
-              ? "bg-[#008dd2]/10 text-[#008dd2] font-semibold"
-              : "text-slate-600 hover:bg-slate-100/70 hover:text-slate-900 font-medium"
-          }`
+          } ${isActive ? "bg-[#008dd2]/10 text-[#008dd2] font-semibold" : "text-slate-600 hover:bg-slate-100/70 hover:text-slate-900 font-medium"}`
         }
       >
         {({ isActive }) => (
           <>
-            {isActive && (
-              <span className="absolute left-0 top-2 bottom-2 w-1 rounded-r-md bg-[#008dd2]" />
-            )}
-            <Icon
-              size={20}
-              className={`shrink-0 transition-colors ${
-                isActive
-                  ? "text-[#008dd2]"
-                  : "text-slate-400 group-hover:text-slate-700"
-              }`}
-            />
-            {!isDesktopCollapsed && (
-              <span className="truncate text-[13px] tracking-tight">{item.name}</span>
-            )}
+            {isActive && <span className="absolute left-0 top-2 bottom-2 w-1 rounded-r-md bg-[#008dd2]" />}
+            <Icon size={20} className={`shrink-0 transition-colors ${isActive ? "text-[#008dd2]" : "text-slate-400 group-hover:text-slate-700"}`} />
+            {!isDesktopCollapsed && <span className="text-[13px] tracking-tight truncate">{item.name}</span>}
           </>
         )}
       </NavLink>
     );
   };
 
+  const closeTrackingDetails = () => {
+    setShowTrackingDetails(false);
+    setTracking(null);
+    setTrackingError("");
+  };
+
+  const handleTrackingSearch = async (event) => {
+    event?.preventDefault();
+    const awb = String(trackingSearch || "").trim();
+    if (!awb) {
+      setTrackingError("Enter Tracking ID or AWB number.");
+      return;
+    }
+    if (!/^\d+$/.test(awb)) {
+      setTrackingError("Please enter a valid numeric AWB number.");
+      return;
+    }
+
+    setTrackingLoading(true);
+    setTrackingError("");
+    try {
+      const response = await fetch(
+        `${CLIENT_API_BASE_URL}/public/tracking/${encodeURIComponent(awb)}`,
+        { method: "GET", headers: { Accept: "application/json" } }
+      );
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data?.success || !data?.tracking) {
+        throw new Error(data?.message || "Shipment not found");
+      }
+      // Normalize the public tracking response to the same fields used by the client popup.
+      const item = data.tracking;
+      setTracking({
+        order_id: item.order_id ?? item.orderId ?? null,
+        id: item.id ?? null,
+        tracking_awb: item.awb || item.tracking_awb || awb,
+        courier_name: item.courier_name || item.courier || "Delhivery",
+        tracking_status: item.status || item.tracking_status || item.raw_status || "Tracking unavailable",
+        tracking_location: item.location || item.tracking_location || "—",
+        tracking_status_datetime: item.status_datetime || item.tracking_status_datetime || null,
+        tracking_expected_delivery: item.expected_delivery || item.tracking_expected_delivery || null,
+        tracking_instructions: item.instructions || item.tracking_instructions || "—",
+        tracking_scans: Array.isArray(item.scans) ? item.scans : Array.isArray(item.tracking_scans) ? item.tracking_scans : [],
+      });
+      setTrackingSearch("");
+      setShowTrackingDetails(true);
+    } catch (error) {
+      setTrackingError(error.message || "Unable to search shipment");
+    } finally {
+      setTrackingLoading(false);
+    }
+  };
+
+  const formatTrackingDateTime = (value) => {
+    if (!value) return "—";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+    return date.toLocaleString("en-IN", {
+      day: "2-digit", month: "short", year: "numeric",
+      hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true,
+    });
+  };
+
+  const formatTrackingDate = (value) => {
+    if (!value) return "—";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+    return date.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+  };
+
+  const humanizeTrackingStatus = (value) => {
+    const text = String(value || "").trim();
+    if (!text) return "Tracking unavailable";
+    return text.toLowerCase().split(" ").map((word) => word ? word.charAt(0).toUpperCase() + word.slice(1) : word).join(" ");
+  };
+
+  const trackingScans = useMemo(() => {
+    const scans = Array.isArray(tracking?.tracking_scans) ? tracking.tracking_scans : [];
+    return scans.map((scan, index) => {
+      const detail = scan?.ScanDetail || scan?.scanDetail || scan?.scan_detail || scan || {};
+      const status = detail?.Instructions || detail?.instructions || detail?.ScanType || detail?.scan_type || detail?.ScanGroup || detail?.Status || detail?.status || "Shipment update";
+      const location = detail?.ScannedLocation || detail?.scanned_location || detail?.ScanLocation || detail?.scan_location || detail?.StatusLocation || detail?.status_location || detail?.Location || detail?.location || "";
+      const dateTime = detail?.ScanDateTime || detail?.scan_date_time || detail?.StatusDateTime || detail?.status_date_time || detail?.DateTime || detail?.date_time || null;
+      return { id: `${index}-${dateTime || status}`, status, location, dateTime, instructions: detail?.Instructions || detail?.instructions || "" };
+    }).sort((a, b) => new Date(b.dateTime || 0).getTime() - new Date(a.dateTime || 0).getTime());
+  }, [tracking]);
+
+  const expectedDelivery = tracking?.tracking_expected_delivery || null;
+
   return (
     <div className="min-h-screen bg-[#f6f8fb] text-slate-800">
       {/* MOBILE HEADER */}
       <header className="sticky top-0 z-30 flex h-14 w-full items-center justify-between border-b border-slate-200 bg-white px-4 lg:hidden">
         <div className="flex items-center gap-2.5">
-          <button
-            type="button"
-            onClick={() => setMobileOpen(true)}
-            className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-700 active:scale-95"
-            aria-label="Open sidebar"
-          >
-            <HiMenuAlt2 size={20} />
-          </button>
-          <span className="text-lg font-black tracking-tight text-[#008dd2]">ShipDrop</span>
+          <button type="button" onClick={() => setMobileOpen(true)} className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-700 active:scale-95" aria-label="Open sidebar"><HiMenuAlt2 size={20} /></button>
+          <span className="text-lg font-black tracking-tight text-[#008dd2]">ParcelDrop</span>
         </div>
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#008dd2]/10 text-xs font-bold text-[#008dd2]">
-          A
-        </div>
+        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#008dd2]/10 text-xs font-bold text-[#008dd2]">A</div>
       </header>
 
-      {/* MOBILE BACKDROP */}
-      {mobileOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-sm transition-opacity lg:hidden"
-          onClick={() => setMobileOpen(false)}
-        />
-      )}
+      {mobileOpen && <div className="fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-sm transition-opacity lg:hidden" onClick={() => setMobileOpen(false)} />}
 
       {/* SIDEBAR */}
-      <aside
-        className={`fixed top-0 bottom-0 left-0 z-50 flex flex-col border-r border-slate-200 bg-white shadow-xl transition-all duration-300 ease-in-out lg:shadow-[2px_0_12px_rgba(15,23,42,0.03)] ${
-          mobileOpen
-            ? "translate-x-0 w-[260px]"
-            : "-translate-x-full lg:translate-x-0"
-        } ${collapsed ? "lg:w-[76px]" : "lg:w-[250px]"}`}
-      >
-        {/* LOGO AREA */}
-        <div
-          className={`flex h-16 shrink-0 items-center border-b border-slate-100 px-4 ${
-            collapsed && !mobileOpen ? "justify-center" : "justify-between"
-          }`}
-        >
-          {(!collapsed || mobileOpen) && (
-            <span className="text-xl font-black tracking-tight text-[#008dd2]">ShipDrop</span>
-          )}
-          <button
-            type="button"
-            onClick={() => setCollapsed(!collapsed)}
-            className="hidden h-9 w-9 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 lg:flex"
-            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          >
-            <HiMenuAlt2 size={20} />
-          </button>
-          <button
-            type="button"
-            onClick={() => setMobileOpen(false)}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 lg:hidden"
-            aria-label="Close sidebar"
-          >
-            <HiOutlineX size={20} />
-          </button>
+      <aside className={`fixed top-0 bottom-0 left-0 z-50 flex flex-col border-r border-slate-200 bg-white shadow-xl transition-all duration-300 ease-in-out lg:shadow-[2px_0_12px_rgba(15,23,42,0.03)] ${mobileOpen ? "translate-x-0 w-[260px]" : "-translate-x-full lg:translate-x-0"} ${collapsed ? "lg:w-[76px]" : "lg:w-[250px]"}`}>
+        <div className={`flex h-16 shrink-0 items-center border-b border-slate-100 px-4 ${collapsed && !mobileOpen ? "justify-center" : "justify-between"}`}>
+          {(!collapsed || mobileOpen) && <span className="text-xl font-black tracking-tight text-[#008dd2]">ParcelDrop</span>}
+          <button type="button" onClick={() => setCollapsed(!collapsed)} className="hidden h-9 w-9 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 lg:flex" title={collapsed ? "Expand sidebar" : "Collapse sidebar"} aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}><HiMenuAlt2 size={20} /></button>
+          <button type="button" onClick={() => setMobileOpen(false)} className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 lg:hidden" aria-label="Close sidebar"><HiOutlineX size={20} /></button>
         </div>
 
-        {/* NAVIGATION LIST */}
         <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto px-3 py-3 [scrollbar-width:thin]">
-          {menuItems.map((item) => renderNavItem(item))}
-
-          {/* USERS DROPDOWN */}
+          {menuItems.map(renderNavItem)}
           <div>
-            <button
-              type="button"
-              onClick={() => {
-                if (collapsed && !mobileOpen) {
-                  setCollapsed(false);
-                  setUsersOpen(true);
-                  return;
-                }
-                setUsersOpen((previous) => !previous);
-              }}
-              className={`group relative flex h-11 w-full items-center rounded-xl transition-all duration-150 ${
-                collapsed && !mobileOpen ? "justify-center px-0" : "gap-3 px-3.5"
-              } ${
-                isUsersActive
-                  ? "bg-[#008dd2]/10 text-[#008dd2] font-semibold"
-                  : "text-slate-600 hover:bg-slate-100/70 hover:text-slate-900 font-medium"
-              }`}
-              title={collapsed && !mobileOpen ? "Users" : ""}
-              aria-expanded={usersOpen}
-            >
-              {isUsersActive && (
-                <span className="absolute left-0 top-2 bottom-2 w-1 rounded-r-md bg-[#008dd2]" />
-              )}
-              <HiOutlineUsers
-                size={20}
-                className={`shrink-0 transition-colors ${
-                  isUsersActive
-                    ? "text-[#008dd2]"
-                    : "text-slate-400 group-hover:text-slate-700"
-                }`}
-              />
-              {(!collapsed || mobileOpen) && (
-                <>
-                  <span className="flex-1 text-left text-[13px] tracking-tight">Users</span>
-                  <HiOutlineChevronDown
-                    size={15}
-                    className={`text-slate-400 transition-transform duration-200 ${
-                      usersOpen ? "rotate-180" : ""
-                    }`}
-                  />
-                </>
-              )}
+            <button type="button" onClick={() => { if (collapsed && !mobileOpen) { setCollapsed(false); setUsersOpen(true); return; } setUsersOpen((previous) => !previous); }} className={`group relative flex h-11 w-full items-center rounded-xl transition-all duration-150 ${collapsed && !mobileOpen ? "justify-center px-0" : "gap-3 px-3.5"} ${isUsersActive ? "bg-[#008dd2]/10 text-[#008dd2] font-semibold" : "text-slate-600 hover:bg-slate-100/70 hover:text-slate-900 font-medium"}`} title={collapsed && !mobileOpen ? "Users" : ""} aria-expanded={usersOpen}>
+              {isUsersActive && <span className="absolute left-0 top-2 bottom-2 w-1 rounded-r-md bg-[#008dd2]" />}
+              <HiOutlineUsers size={20} className={`shrink-0 transition-colors ${isUsersActive ? "text-[#008dd2]" : "text-slate-400 group-hover:text-slate-700"}`} />
+              {(!collapsed || mobileOpen) && <><span className="flex-1 text-left text-[13px] tracking-tight">Users</span><HiOutlineChevronDown size={15} className={`text-slate-400 transition-transform duration-200 ${usersOpen ? "rotate-180" : ""}`} /></>}
             </button>
-
-            {(!collapsed || mobileOpen) && usersOpen && (
-              <div className="ml-5 mt-1 space-y-1 border-l-2 border-slate-100 pl-3">
-                <NavLink
-                  to="/users"
-                  className={({ isActive }) =>
-                    `flex h-9 items-center rounded-lg px-3 text-xs font-semibold transition ${
-                      isActive
-                        ? "bg-[#008dd2]/10 text-[#008dd2]"
-                        : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
-                    }`
-                  }
-                >
-                  All Users
-                </NavLink>
-              </div>
-            )}
+            {(!collapsed || mobileOpen) && usersOpen && <div className="ml-5 mt-1 space-y-1 border-l-2 border-slate-100 pl-3"><NavLink to="/users" className={({ isActive }) => `flex h-9 items-center rounded-lg px-3 text-xs font-semibold transition ${isActive ? "bg-[#008dd2]/10 text-[#008dd2]" : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"}`}>All Users</NavLink></div>}
           </div>
         </nav>
 
-        {/* LOGOUT BUTTON */}
-        <div className="shrink-0 border-t border-slate-100 bg-slate-50/50 p-3">
-          <button
-            type="button"
-            onClick={logout}
-            className={`flex h-10 w-full items-center rounded-xl text-rose-600 transition-colors hover:bg-rose-50 ${
-              collapsed && !mobileOpen
-                ? "justify-center px-0"
-                : "gap-2.5 px-3.5 text-xs font-bold"
-            }`}
-            title="Logout"
-          >
-            <HiOutlineLogout size={19} className="shrink-0" />
-            {(!collapsed || mobileOpen) && <span>Logout</span>}
-          </button>
-        </div>
+        <div className="shrink-0 border-t border-slate-100 bg-slate-50/50 p-3"><button type="button" onClick={logout} className={`flex h-10 w-full items-center rounded-xl text-rose-600 transition-colors hover:bg-rose-50 ${collapsed && !mobileOpen ? "justify-center px-0" : "gap-2.5 px-3.5 text-xs font-bold"}`} title="Logout"><HiOutlineLogout size={19} className="shrink-0" />{(!collapsed || mobileOpen) && <span>Logout</span>}</button></div>
       </aside>
 
-      {/* MAIN CONTAINER + TRACKING BAR ON EVERY ADMIN PAGE */}
-      <main
-        className={`min-h-[calc(100vh-56px)] transition-all duration-300 lg:min-h-screen ${
-          collapsed ? "lg:ml-[76px]" : "lg:ml-[250px]"
-        }`}
-      >
-        <div className="sticky top-14 z-30 flex min-h-[64px] items-center border-b border-slate-200 bg-white px-4 sm:px-6 lg:top-0">
-          <form onSubmit={trackShipment} className="flex w-full max-w-[520px] items-center gap-2">
-            <div className="relative min-w-0 flex-1">
-              <HiOutlineSearch
-                size={18}
-                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-              />
-              <input
-                type="text"
-                value={trackingId}
-                onChange={(e) => setTrackingId(e.target.value)}
-                placeholder="Enter AWB / Tracking ID..."
-                aria-label="Enter AWB or tracking ID"
-                autoComplete="off"
-                className="h-[42px] w-full rounded-xl border border-slate-200 bg-[#fbfcfe] pl-10 pr-3 text-[13px] text-slate-700 placeholder:text-slate-400 outline-none transition focus:border-[#008dd2] focus:ring-2 focus:ring-[#008dd2]/10"
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={trackingLoading}
-              className="inline-flex h-[42px] shrink-0 items-center justify-center gap-2 rounded-xl bg-[#008dd2] px-4 text-sm font-semibold text-white transition hover:bg-[#007fbd] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <HiOutlineSearch size={17} />
-              <span className="hidden sm:inline">{trackingLoading ? "Tracking..." : "Track"}</span>
-            </button>
-            {(trackingData || trackingError) && (
-              <button
-                type="button"
-                onClick={clearTracking}
-                className="h-[42px] rounded-xl px-2 text-sm text-slate-500 hover:bg-slate-100"
-                aria-label="Clear tracking result"
-                title="Clear tracking result"
-              >
-                <HiOutlineX size={18} />
-              </button>
-            )}
+      {/* MAIN CONTENT + FIXED TOPBAR */}
+      <main className={`min-h-screen transition-all duration-300 ${collapsed ? "lg:ml-[76px]" : "lg:ml-[250px]"}`}>
+        <header className="fixed top-0 right-0 z-30 flex h-[64px] items-center justify-between border-b border-slate-200 bg-white px-4 sm:px-6 transition-all duration-300 left-0 lg:left-[250px]">
+          <div className="flex min-w-0 items-center gap-3">
+            <button type="button" onClick={() => { setCollapsed(false); setMobileOpen(true); }} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 lg:hidden" aria-label="Open sidebar"><HiMenuAlt2 size={20} /></button>
+            <span className="hidden text-lg font-black tracking-tight text-[#008dd2] sm:block lg:hidden">ParcelDrop</span>
+          </div>
+          <form onSubmit={handleTrackingSearch} className="relative ml-auto flex w-full max-w-[370px]">
+            <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={17} />
+            <input type="text" value={trackingSearch} onChange={(event) => { setTrackingSearch(event.target.value); setTrackingError(""); }} placeholder="Enter Tracking ID or Order ID..." disabled={trackingLoading} className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/70 pl-10 pr-4 text-xs font-medium text-slate-700 placeholder:text-slate-400 outline-none transition-all duration-200 focus:border-[#008dd2] focus:bg-white focus:ring-4 focus:ring-[#008dd2]/10 disabled:cursor-not-allowed disabled:opacity-70" />
+            {trackingLoading && <span className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin rounded-full border-2 border-slate-200 border-t-[#008dd2]" />}
+            {trackingError && <span className="absolute left-0 top-11 z-40 rounded-lg border border-rose-100 bg-white px-3 py-2 text-xs text-rose-600 shadow-lg">{trackingError}</span>}
           </form>
-        </div>
+        </header>
 
-        {children}
+        <div className="pt-[64px] w-full max-w-[1600px] mx-auto">{children}</div>
       </main>
 
-      {/* TRACKING DETAILS MODAL */}
-      {trackingModalOpen && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/55 p-3 backdrop-blur-[3px] sm:p-6"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) {
-              setTrackingModalOpen(false);
-            }
-          }}
-        >
-          <section
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="tracking-modal-title"
-            className="flex max-h-[90vh] w-full max-w-[1024px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
-          >
-            {/* MODAL HEADER */}
-            <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-5 py-4 sm:px-6">
-              <div className="flex min-w-0 items-center gap-3">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-sky-50 text-sky-600">
-                  <HiOutlineSearch size={20} />
+      {/* TRACKING DETAILS MODAL — structure/classes matched to the client-side popup */}
+      {showTrackingDetails && tracking && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/55 px-3 py-4 backdrop-blur-[2px]" onMouseDown={(event) => { if (event.target === event.currentTarget) closeTrackingDetails(); }}>
+          <div className="flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-100 bg-white px-5 py-4 sm:px-6">
+              <div className="min-w-0"><div className="flex items-center gap-2"><div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-sky-50 text-[#008dd2]"><FiSearch size={17} /></div><div className="min-w-0"><h2 className="truncate text-base font-bold text-slate-800 sm:text-lg">Tracking Details</h2><p className="mt-0.5 truncate text-[10px] text-slate-400 sm:text-xs">Live shipment status and Delhivery scan history</p></div></div></div>
+              <button type="button" onClick={closeTrackingDetails} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-700" aria-label="Close tracking details">×</button>
+            </div>
+
+            <div className="overflow-y-auto bg-slate-50/60 px-4 py-4 sm:px-6 sm:py-5">
+              <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <div className="grid grid-cols-1 divide-y divide-slate-100 sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
+                  <div className="px-4 py-3.5"><p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Order ID</p><p className="mt-1 truncate text-sm font-bold text-slate-800">{tracking.order_id ?? tracking.id ?? "—"}</p></div>
+                  <div className="px-4 py-3.5"><p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Tracking No</p><p className="mt-1 truncate text-sm font-bold text-slate-800">{tracking.tracking_awb || "—"}</p></div>
+                  <div className="px-4 py-3.5"><p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Courier</p><p className="mt-1 truncate text-sm font-bold text-slate-800">{tracking.courier_name || "Delhivery"}</p></div>
+                  <div className="px-4 py-3.5"><p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Current Status</p><div className="mt-1 flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-emerald-500" /><p className="truncate text-sm font-bold text-emerald-600">{humanizeTrackingStatus(tracking.tracking_status)}</p></div></div>
                 </div>
-                <div className="min-w-0">
-                  <h2 id="tracking-modal-title" className="text-lg font-bold tracking-tight text-slate-800">
-                    Tracking Details
-                  </h2>
-                  <p className="mt-0.5 text-xs text-slate-400 sm:text-[13px]">
-                    Live shipment status and Delhivery scan history
-                  </p>
+                <div className="grid grid-cols-1 border-t border-slate-100 md:grid-cols-2 lg:grid-cols-4">
+                  <div className="border-b border-slate-100 px-4 py-3.5 md:border-b-0 md:border-r lg:border-r"><p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Status Location</p><p className="mt-1 text-xs font-semibold text-slate-700">{tracking.tracking_location || "—"}</p></div>
+                  <div className="border-b border-slate-100 px-4 py-3.5 lg:border-b-0 lg:border-r"><p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Status Date &amp; Time</p><p className="mt-1 text-xs font-semibold text-slate-700">{formatTrackingDateTime(tracking.tracking_status_datetime)}</p></div>
+                  <div className="border-b border-slate-100 px-4 py-3.5 md:border-r lg:border-b-0"><p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Expected Delivery</p><p className="mt-1 text-xs font-semibold text-slate-700">{formatTrackingDate(expectedDelivery)}</p></div>
+                  <div className="px-4 py-3.5"><p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Update</p><p className="mt-1 line-clamp-2 text-xs font-semibold text-slate-700">{tracking.tracking_instructions || "—"}</p></div>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => setTrackingModalOpen(false)}
-                className="ml-3 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
-                aria-label="Close tracking details"
-              >
-                <HiOutlineX size={20} />
-              </button>
+
+              <div className="mt-4 rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm sm:px-5 sm:py-5">
+                <div className="mb-5 flex items-center justify-between gap-3"><div><h3 className="text-sm font-bold text-slate-800 sm:text-base">Shipment Timeline</h3><p className="mt-0.5 text-[10px] text-slate-400 sm:text-xs">Complete tracking history from Delhivery</p></div><span className="shrink-0 rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-bold text-slate-500">{trackingScans.length} {trackingScans.length === 1 ? "event" : "events"}</span></div>
+                {trackingScans.length > 0 ? (
+                  <div className="relative"><div className="absolute bottom-4 left-[7px] top-4 w-px bg-slate-200" /><div className="space-y-3.5">
+                    {trackingScans.map((scan, index) => <div key={scan.id} className="relative flex gap-3"><div className="relative z-10 mt-4 flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full border-2 border-[#008dd2] bg-white">{index === 0 && <span className="h-1.5 w-1.5 rounded-full bg-[#008dd2]" />}</div><div className={`min-w-0 flex-1 rounded-xl border px-4 py-3 transition ${index === 0 ? "border-sky-200 bg-sky-50/50 shadow-sm" : "border-slate-200 bg-white"}`}><div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-4"><div className="min-w-0"><p className="text-sm font-bold text-slate-800">{scan.status || "Shipment update"}</p>{scan.location && <p className="mt-1 text-[11px] font-medium text-slate-500">{scan.location}</p>}{scan.instructions && scan.instructions !== scan.status && <p className="mt-1 text-[11px] leading-5 text-slate-500">{scan.instructions}</p>}</div><p className="shrink-0 text-[10px] font-semibold text-slate-400 sm:text-right">{formatTrackingDateTime(scan.dateTime)}</p></div></div></div>)}
+                  </div></div>
+                ) : <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center"><p className="text-sm font-semibold text-slate-600">No tracking scan history available</p><p className="mt-1 text-[11px] text-slate-400">The latest shipment status is shown above.</p></div>}
+              </div>
             </div>
 
-            {/* MODAL BODY */}
-            <div className="min-h-0 flex-1 overflow-y-auto bg-[#f8fafc] p-4 sm:p-6">
-              {trackingLoading && (
-                <div className="flex min-h-[220px] flex-col items-center justify-center gap-3 text-center">
-                  <span className="h-9 w-9 animate-spin rounded-full border-[3px] border-slate-200 border-t-[#008dd2]" />
-                  <p className="text-sm font-semibold text-slate-700">Fetching tracking details...</p>
-                  <p className="text-xs text-slate-400">Please wait while we contact the tracking service.</p>
-                </div>
-              )}
-
-              {!trackingLoading && trackingError && (
-                <div className="flex min-h-[180px] items-center justify-center">
-                  <div className="w-full max-w-lg rounded-xl border border-red-200 bg-red-50 px-5 py-4 text-center">
-                    <p className="text-sm font-semibold text-red-700">Unable to load tracking</p>
-                    <p className="mt-1 text-sm text-red-600">{trackingError}</p>
-                    <button
-                      type="button"
-                      onClick={trackShipment}
-                      className="mt-4 rounded-lg bg-[#008dd2] px-4 py-2 text-sm font-semibold text-white hover:bg-[#007fbd]"
-                    >
-                      Try Again
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {!trackingLoading && trackingData && (
-                <>
-                  {/* SUMMARY GRID - similar to user-side tracking popup */}
-                  <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-                      <div className="min-h-[68px] border-b border-slate-100 px-4 py-3 lg:border-r">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Order ID</p>
-                        <p className="mt-1 break-words text-sm font-bold text-slate-800">—</p>
-                      </div>
-                      <div className="min-h-[68px] border-b border-slate-100 px-4 py-3 lg:border-r">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Tracking No</p>
-                        <p className="mt-1 break-all text-sm font-bold text-slate-800">{trackingData.awb || trackingId.trim()}</p>
-                      </div>
-                      <div className="min-h-[68px] border-b border-slate-100 px-4 py-3 lg:border-r">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Courier</p>
-                        <p className="mt-1 text-sm font-bold text-slate-800">Delhivery</p>
-                      </div>
-                      <div className="min-h-[68px] border-b border-slate-100 px-4 py-3">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Current Status</p>
-                        <p className="mt-1 flex items-center gap-2 text-sm font-bold text-emerald-600">
-                          <span className="h-2 w-2 shrink-0 rounded-full bg-emerald-500" />
-                          {trackingData.status || trackingData.raw_status || "Status unavailable"}
-                        </p>
-                      </div>
-
-                      <div className="min-h-[68px] border-b border-slate-100 px-4 py-3 lg:border-r lg:border-b-0">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Status Location</p>
-                        <p className="mt-1 break-words text-xs font-medium leading-5 text-slate-600">{trackingData.location || "—"}</p>
-                      </div>
-                      <div className="min-h-[68px] border-b border-slate-100 px-4 py-3 lg:border-r lg:border-b-0">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Status Date &amp; Time</p>
-                        <p className="mt-1 break-words text-xs font-medium leading-5 text-slate-600">{formatTrackingDate(trackingData.status_datetime) || "—"}</p>
-                      </div>
-                      <div className="min-h-[68px] border-b border-slate-100 px-4 py-3 lg:border-r lg:border-b-0">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Expected Delivery</p>
-                        <p className="mt-1 text-xs font-medium leading-5 text-slate-600">{trackingData.expected_delivery || "—"}</p>
-                      </div>
-                      <div className="min-h-[68px] px-4 py-3">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Update</p>
-                        <p className="mt-1 break-words text-xs font-medium leading-5 text-slate-600">{trackingData.instructions || trackingData.status || "—"}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* SHIPMENT TIMELINE */}
-                  <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-                    <div className="mb-5 flex flex-wrap items-center justify-between gap-2">
-                      <div>
-                        <h3 className="text-base font-bold text-slate-800">Shipment Timeline</h3>
-                        <p className="mt-0.5 text-xs text-slate-400 sm:text-[13px]">Complete tracking history from Delhivery</p>
-                      </div>
-                      <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-bold text-slate-500">
-                        {Array.isArray(trackingData.scans) ? trackingData.scans.length : 0} events
-                      </span>
-                    </div>
-
-                    {Array.isArray(trackingData.scans) && trackingData.scans.length > 0 ? (
-                      <div className="ml-2">
-                        {trackingData.scans.map((scan, index) => {
-                          const status = getScanStatus(scan);
-                          const scanLocation = getScanLocation(scan);
-                          const scanDate = getScanDate(scan);
-                          const isLatest = index === 0;
-
-                          return (
-                            <div
-                              key={`${trackingData.awb || trackingId}-${index}`}
-                              className={`relative ml-0 border-l-2 pb-4 pl-5 last:border-l-transparent last:pb-0 sm:pl-7 ${isLatest ? "border-sky-200" : "border-slate-200"}`}
-                            >
-                              <span className={`absolute -left-[7px] top-4 h-3 w-3 rounded-full border-2 border-white ring-1 ${isLatest ? "bg-[#008dd2] ring-[#008dd2]" : "bg-white ring-sky-500"}`} />
-                              <div className={`rounded-xl border px-4 py-3 ${isLatest ? "border-sky-200 bg-sky-50/60 shadow-sm" : "border-slate-200 bg-white"}`}>
-                                <div className="flex flex-wrap items-start justify-between gap-2">
-                                  <p className="text-sm font-bold text-slate-800">{status}</p>
-                                  {scanDate && <p className="text-[10px] font-semibold text-slate-400 sm:text-[11px]">{formatTrackingDate(scanDate)}</p>}
-                                </div>
-                                {scanLocation && <p className="mt-1.5 text-xs text-slate-500">{scanLocation}</p>}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <p className="rounded-xl bg-slate-50 px-4 py-5 text-sm text-slate-500">No scan history is available for this shipment.</p>
-                    )}
-                  </div>
-                </>
-              )}
-            </div>
-
-            {/* MODAL FOOTER */}
-            <div className="flex shrink-0 justify-end border-t border-slate-100 bg-white px-5 py-3 sm:px-6">
-              <button
-                type="button"
-                onClick={() => setTrackingModalOpen(false)}
-                className="rounded-xl border border-slate-200 bg-white px-5 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
-              >
-                Close
-              </button>
-            </div>
-          </section>
+            <div className="flex items-center justify-end border-t border-slate-100 bg-white px-5 py-3.5 sm:px-6"><button type="button" onClick={closeTrackingDetails} className="h-9 rounded-xl border border-slate-200 bg-white px-5 text-xs font-bold text-slate-600 transition hover:bg-slate-50 hover:text-slate-800">Close</button></div>
+          </div>
         </div>
       )}
     </div>
