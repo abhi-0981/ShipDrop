@@ -190,6 +190,21 @@ function AdminLayout({ children }) {
     return () => window.removeEventListener("parceldrop:track-awb", handleTrackAwbEvent);
   }, [handleTrackingSearch]);
 
+  useEffect(() => {
+    const handleTrackAwbFromOrders = (event) => {
+      const awb = String(event?.detail?.awb || "").trim();
+      if (!awb || awb === "-") return;
+
+      setTrackingSearch(awb);
+      setTrackingError("");
+      handleTrackingSearch(null, awb);
+    };
+
+    window.addEventListener("parceldrop:track-awb", handleTrackAwbFromOrders);
+    return () =>
+      window.removeEventListener("parceldrop:track-awb", handleTrackAwbFromOrders);
+  }, []);
+
   const formatTrackingDateTime = (value) => {
     if (!value) return "—";
     const date = new Date(value);
@@ -269,7 +284,7 @@ function AdminLayout({ children }) {
             <button type="button" onClick={() => { setCollapsed(false); setMobileOpen(true); }} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 lg:hidden" aria-label="Open sidebar"><HiMenuAlt2 size={20} /></button>
             <span className="hidden text-lg font-black tracking-tight text-[#008dd2] sm:block lg:hidden">ParcelDrop</span>
           </div>
-          <form onSubmit={handleTrackingSearch} className="relative ml-auto flex w-full max-w-[370px]">
+          <form onSubmit={handleTrackingSearch} className="relative flex min-w-0 w-full max-w-none flex-1">
             <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={17} />
             <input type="text" value={trackingSearch} onChange={(event) => { setTrackingSearch(event.target.value); setTrackingError(""); }} placeholder="Enter Tracking ID or Order ID..." disabled={trackingLoading} className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/70 pl-10 pr-4 text-xs font-medium text-slate-700 placeholder:text-slate-400 outline-none transition-all duration-200 focus:border-[#008dd2] focus:bg-white focus:ring-4 focus:ring-[#008dd2]/10 disabled:cursor-not-allowed disabled:opacity-70" />
             {trackingLoading && <span className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin rounded-full border-2 border-slate-200 border-t-[#008dd2]" />}
