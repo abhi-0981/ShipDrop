@@ -13,8 +13,48 @@ import {
   HiOutlineX,
   HiMenuAlt2,
   HiOutlineCurrencyRupee,
-  HiOutlineSearch
+  HiOutlineSearch,
+  HiOutlineClock,
+  HiOutlineLocationMarker,
 } from "react-icons/hi";
+
+// Client backend URL
+const CLIENT_API_BASE_URL =
+  import.meta.env.VITE_CLIENT_API_URL ||
+  (import.meta.env.DEV
+    ? "http://localhost:5000/api"
+    : "https://parceldropbackend.vercel.app/api");
+
+// Tracking history helpers
+function getScanStatus(scan) {
+  return (
+    scan?.status ||
+    scan?.status_type ||
+    scan?.scan ||
+    scan?.instructions ||
+    "Shipment update"
+  );
+}
+
+function getScanLocation(scan) {
+  return (
+    scan?.location ||
+    scan?.scan_location ||
+    scan?.origin ||
+    ""
+  );
+}
+
+function getScanDate(scan) {
+  return (
+    scan?.status_datetime ||
+    scan?.datetime ||
+    scan?.date_time ||
+    scan?.date ||
+    scan?.scan_datetime ||
+    ""
+  );
+}
 
 function AdminLayout({ children }) {
   const navigate = useNavigate();
@@ -22,7 +62,12 @@ function AdminLayout({ children }) {
 
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Tracking state
   const [trackingId, setTrackingId] = useState("");
+  const [trackingLoading, setTrackingLoading] = useState(false);
+  const [trackingError, setTrackingError] = useState("");
+  const [trackingData, setTrackingData] = useState(null);
 
   const [usersOpen, setUsersOpen] = useState(() =>
     location.pathname.startsWith("/users")
@@ -38,10 +83,77 @@ function AdminLayout({ children }) {
     }
   }, [location.pathname]);
 
+  // Logout
   const logout = () => {
     localStorage.removeItem("adminToken");
     localStorage.removeItem("admin");
     navigate("/login");
+  };
+
+  // Track shipment using client backend
+  const trackShipment = async (event) => {
+    event?.preventDefault();
+
+    const awb = trackingId.trim();
+
+    if (!awb) {
+      setTrackingError("Please enter an AWB / tracking number.");
+      setTrackingData(null);
+      return;
+    }
+
+    // Current public tracking endpoint accepts numeric AWBs only.
+    if (!/^\d+$/.test(awb)) {
+      setTrackingError(
+        "Please enter a numeric AWB. Order ID lookup is not supported yet."
+      );
+      setTrackingData(null);
+      return;
+    }
+
+    setTrackingLoading(true);
+    setTrackingError("");
+    setTrackingData(null);
+
+    try {
+      const response = await fetch(
+        `${CLIENT_API_BASE_URL}/public/tracking/${encodeURIComponent(awb)}`
+      );
+
+      let data;
+
+      try {
+        data = await response.json();
+      } catch {
+        throw new Error(
+          "Tracking service returned an invalid response."
+        );
+      }
+
+      if (!response.ok || !data?.success || !data?.tracking) {
+        throw new Error(
+          data?.message || "Shipment tracking details not found."
+        );
+      }
+
+      setTrackingData(data.tracking);
+    } catch (error) {
+      console.error("Admin tracking lookup failed:", error);
+
+      setTrackingError(
+        error?.message ||
+          "Unable to fetch tracking. Please try again."
+      );
+    } finally {
+      setTrackingLoading(false);
+    }
+  };
+
+  // Clear tracking result
+  const clearTracking = () => {
+    setTrackingId("");
+    setTrackingError("");
+    setTrackingData(null);
   };
 
   const isUsersActive = location.pathname.startsWith("/users");
@@ -116,7 +228,7 @@ function AdminLayout({ children }) {
             />
 
             {!isDesktopCollapsed && (
-              <span className="text-[13px] tracking-tight truncate">
+              <span className="truncate text-[13px] tracking-tight">
                 {item.name}
               </span>
             )}
@@ -185,7 +297,9 @@ function AdminLayout({ children }) {
             onClick={() => setCollapsed(!collapsed)}
             className="hidden h-9 w-9 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 lg:flex"
             title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            aria-label={
+              collapsed ? "Expand sidebar" : "Collapse sidebar"
+            }
           >
             <HiMenuAlt2 size={20} />
           </button>
@@ -200,7 +314,7 @@ function AdminLayout({ children }) {
           </button>
         </div>
 
-        {/* NAVIGATION LIST */}
+        {/* NAVIGATION */}
         <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto px-3 py-3 [scrollbar-width:thin]">
           {menuItems.map((item) => renderNavItem(item))}
 
@@ -277,7 +391,7 @@ function AdminLayout({ children }) {
           </div>
         </nav>
 
-        {/* LOGOUT BUTTON */}
+        {/* LOGOUT */}
         <div className="shrink-0 border-t border-slate-100 bg-slate-50/50 p-3">
           <button
             type="button"
@@ -291,40 +405,258 @@ function AdminLayout({ children }) {
           >
             <HiOutlineLogout size={19} className="shrink-0" />
 
-            {(!collapsed || mobileOpen) && <span>Logout</span>}
+            {(!collapsed || !mobileOpen) && (
+              <span>Logout</span>
+            )}
           </button>
         </div>
       </aside>
 
-      {/* MAIN CONTAINER */}
-     
-<main
-  className={`min-h-[calc(100vh-56px)] transition-all duration-300 lg:min-h-screen ${
-    collapsed ? "lg:ml-[76px]" : "lg:ml-[250px]"
-  }`}
->
-  {/* TRACKING TOPBAR */}
-  <div className="sticky top-14 lg:top-0 z-20 h-[64px] border-b border-slate-200 bg-white px-4 sm:px-6 flex items-center">
-    <div className="relative w-full max-w-[370px]">
-      <HiOutlineSearch
-        size={18}
-        className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-      />
+      {/* MAIN CONTENT + TRACKING TOPBAR */}
+      <main
+        className={`min-h-[calc(100vh-56px)] transition-all duration-300 lg:min-h-screen ${
+          collapsed ? "lg:ml-[76px]" : "lg:ml-[250px]"
+        }`}
+      >
+        {/* TRACKING BAR - visible on every page */}
+        <div className="sticky top-14 z-30 flex min-h-[64px] items-center border-b border-slate-200 bg-white px-4 sm:px-6 lg:top-0">
+          <form
+            onSubmit={trackShipment}
+            className="flex w-full max-w-[520px] items-center gap-2"
+          >
+            <div className="relative min-w-0 flex-1">
+              <HiOutlineSearch
+                size={18}
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+              />
 
-      <input
-        type="text"
-        value={trackingId}
-        onChange={(e) => setTrackingId(e.target.value)}
-        placeholder="Enter Tracking ID or Order ID..."
-        aria-label="Enter Tracking ID or Order ID"
-        className="h-[42px] w-full rounded-xl border border-slate-200 bg-[#fbfcfe] pl-10 pr-4 text-[13px] text-slate-700 placeholder:text-slate-400 outline-none transition focus:border-[#008dd2] focus:ring-2 focus:ring-[#008dd2]/10"
-      />
-    </div>
-  </div>
+              <input
+                type="text"
+                value={trackingId}
+                onChange={(e) => setTrackingId(e.target.value)}
+                placeholder="Enter AWB / Tracking ID..."
+                aria-label="Enter AWB or tracking ID"
+                autoComplete="off"
+                className="h-[42px] w-full rounded-xl border border-slate-200 bg-[#fbfcfe] pl-10 pr-3 text-[13px] text-slate-700 placeholder:text-slate-400 outline-none transition focus:border-[#008dd2] focus:ring-2 focus:ring-[#008dd2]/10"
+              />
+            </div>
 
-  {children}
-</main>
+            <button
+              type="submit"
+              disabled={trackingLoading}
+              className="inline-flex h-[42px] shrink-0 items-center justify-center gap-2 rounded-xl bg-[#008dd2] px-4 text-sm font-semibold text-white transition hover:bg-[#007fbd] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {trackingLoading ? (
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+              ) : (
+                <HiOutlineSearch size={17} />
+              )}
 
+              <span className="hidden sm:inline">
+                {trackingLoading ? "Tracking..." : "Track"}
+              </span>
+            </button>
+
+            {(trackingData || trackingError) && (
+              <button
+                type="button"
+                onClick={clearTracking}
+                className="h-[42px] rounded-xl px-2 text-sm text-slate-500 hover:bg-slate-100"
+                aria-label="Clear tracking result"
+                title="Clear tracking result"
+              >
+                <HiOutlineX size={18} />
+              </button>
+            )}
+          </form>
+        </div>
+
+        {/* TRACKING RESULT */}
+        {(trackingLoading || trackingError || trackingData) && (
+          <section className="mx-4 mt-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:mx-6 sm:p-5">
+            {trackingLoading && (
+              <div
+                className="flex items-center gap-3 text-sm text-slate-600"
+                role="status"
+              >
+                <span className="h-5 w-5 animate-spin rounded-full border-2 border-slate-200 border-t-[#008dd2]" />
+                Fetching live shipment tracking...
+              </div>
+            )}
+
+            {trackingError && (
+              <div
+                className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+                role="alert"
+              >
+                {trackingError}
+              </div>
+            )}
+
+            {trackingData && !trackingLoading && (
+              <>
+                {/* SUMMARY */}
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div>
+                    <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                      AWB Number
+                    </p>
+
+                    <p className="mt-1 text-base font-bold text-slate-900">
+                      {trackingData.awb || trackingId.trim()}
+                    </p>
+                  </div>
+
+                  <div className="min-w-[160px]">
+                    <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                      Current Status
+                    </p>
+
+                    <span className="mt-1 inline-flex rounded-full bg-[#008dd2]/10 px-3 py-1 text-sm font-semibold text-[#007fbd]">
+                      {trackingData.status ||
+                        trackingData.raw_status ||
+                        "Status unavailable"}
+                    </span>
+                  </div>
+                </div>
+
+                {/* SHIPMENT DETAILS */}
+                <div className="mt-4 grid gap-3 border-t border-slate-100 pt-4 sm:grid-cols-2 lg:grid-cols-3">
+                  <div className="flex items-start gap-2 text-sm text-slate-600">
+                    <HiOutlineLocationMarker
+                      className="mt-0.5 shrink-0 text-slate-400"
+                      size={18}
+                    />
+
+                    <div>
+                      <p className="text-xs text-slate-500">
+                        Current Location
+                      </p>
+
+                      <p className="mt-0.5 font-medium text-slate-800">
+                        {trackingData.location || "Not available"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-2 text-sm text-slate-600">
+                    <HiOutlineClock
+                      className="mt-0.5 shrink-0 text-slate-400"
+                      size={18}
+                    />
+
+                    <div>
+                      <p className="text-xs text-slate-500">
+                        Last Update
+                      </p>
+
+                      <p className="mt-0.5 font-medium text-slate-800">
+                        {trackingData.status_datetime || "Not available"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="text-sm">
+                    <p className="text-xs text-slate-500">
+                      Expected Delivery
+                    </p>
+
+                    <p className="mt-0.5 font-medium text-slate-800">
+                      {trackingData.expected_delivery || "Not available"}
+                    </p>
+                  </div>
+
+                  {trackingData.pickup_date && (
+                    <div className="text-sm">
+                      <p className="text-xs text-slate-500">
+                        Pickup Date
+                      </p>
+
+                      <p className="mt-0.5 font-medium text-slate-800">
+                        {trackingData.pickup_date}
+                      </p>
+                    </div>
+                  )}
+
+                  {trackingData.delivery_date && (
+                    <div className="text-sm">
+                      <p className="text-xs text-slate-500">
+                        Delivery Date
+                      </p>
+
+                      <p className="mt-0.5 font-medium text-slate-800">
+                        {trackingData.delivery_date}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* INSTRUCTIONS */}
+                {trackingData.instructions && (
+                  <p className="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">
+                    {trackingData.instructions}
+                  </p>
+                )}
+
+                {/* TRACKING HISTORY */}
+                <div className="mt-5 border-t border-slate-100 pt-4">
+                  <div className="mb-3 flex items-center justify-between gap-2">
+                    <h3 className="text-sm font-bold text-slate-900">
+                      Tracking History
+                    </h3>
+
+                    <span className="text-xs text-slate-500">
+                      {Array.isArray(trackingData.scans)
+                        ? trackingData.scans.length
+                        : 0}{" "}
+                      updates
+                    </span>
+                  </div>
+
+                  {Array.isArray(trackingData.scans) &&
+                  trackingData.scans.length > 0 ? (
+                    <div className="space-y-0">
+                      {trackingData.scans.map((scan, index) => {
+                        const status = getScanStatus(scan);
+                        const scanLocation = getScanLocation(scan);
+                        const scanDate = getScanDate(scan);
+
+                        return (
+                          <div
+                            key={`${trackingData.awb || trackingId}-${index}`}
+                            className="relative border-l-2 border-[#008dd2]/25 pb-4 pl-4 last:pb-0"
+                          >
+                            <span className="absolute -left-[5px] top-1 h-2 w-2 rounded-full bg-[#008dd2]" />
+
+                            <p className="text-sm font-semibold text-slate-800">
+                              {status}
+                            </p>
+
+                            {(scanLocation || scanDate) && (
+                              <p className="mt-1 text-xs leading-5 text-slate-500">
+                                {[scanLocation, scanDate]
+                                  .filter(Boolean)
+                                  .join(" · ")}
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-slate-500">
+                      No scan history is available for this shipment.
+                    </p>
+                  )}
+                </div>
+              </>
+            )}
+          </section>
+        )}
+
+        {/* EXISTING PAGE CONTENT */}
+        {children}
+      </main>
     </div>
   );
 }
