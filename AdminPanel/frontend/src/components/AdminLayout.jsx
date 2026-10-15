@@ -20,6 +20,11 @@ const CLIENT_API_BASE_URL =
   import.meta.env.VITE_CLIENT_API_URL ||
   "https://parceldropbackend.vercel.app/api";
 
+// Admin backend is used only to look up the database Order ID by AWB.
+const ADMIN_API_BASE_URL =
+  import.meta.env.VITE_API_URL ||
+  "https://parceldropadminapi-blond.vercel.app/api";
+
 function AdminLayout({ children }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -120,11 +125,41 @@ function AdminLayout({ children }) {
       if (!response.ok || !data?.success || !data?.tracking) {
         throw new Error(data?.message || "Shipment not found");
       }
-      // Normalize the public tracking response to the same fields used by the client popup.
+      // Public tracking provides live Delhivery details. Look up Order ID
+      // separately from the shared orders database through the Admin backend.
       const item = data.tracking;
+      let orderRecord = null;
+
+      try {
+        const adminToken = localStorage.getItem("adminToken");
+        const orderResponse = await fetch(
+          `${ADMIN_API_BASE_URL}/orders/tracking-lookup/${encodeURIComponent(awb)}`,
+          {
+            method: "GET",
+            headers: {
+              Accept: "application/json",
+              ...(adminToken ? { Authorization: `Bearer ${adminToken}` } : {}),
+            },
+          }
+        );
+
+        const orderData = await orderResponse.json().catch(() => ({}));
+        if (orderResponse.ok && orderData?.success) {
+          orderRecord = orderData.order || orderData.data || orderData;
+        }
+      } catch (orderLookupError) {
+        // Tracking still opens if the separate Order ID lookup fails.
+        console.error("Admin Order ID lookup failed:", orderLookupError);
+      }
+
       setTracking({
-        order_id: item.order_id ?? item.orderId ?? null,
-        id: item.id ?? null,
+        order_id:
+          item.order_id ??
+          item.orderId ??
+          orderRecord?.order_id ??
+          orderRecord?.orderId ??
+          null,
+        id: item.id ?? orderRecord?.id ?? null,
         tracking_awb: item.awb || item.tracking_awb || awb,
         courier_name: item.courier_name || item.courier || "Delhivery",
         tracking_status: item.status || item.tracking_status || item.raw_status || "Tracking unavailable",
