@@ -858,6 +858,22 @@ const AllOrders = () => {
     }
   };
 
+  // Open live shipment tracking when the AWB number is clicked.
+  const trackAwb = (awb) => {
+    const trackingNumber = String(awb || "").trim();
+
+    if (!trackingNumber || trackingNumber === "-") {
+      toast.error("AWB not available");
+      return;
+    }
+
+    window.open(
+      `https://www.delhivery.com/track/package/${encodeURIComponent(trackingNumber)}`,
+      "_blank",
+      "noopener,noreferrer",
+    );
+  };
+
   const resetFilters = () => {
     setSearch("");
     setActiveStatus("All");
@@ -1120,9 +1136,15 @@ const AllOrders = () => {
 
                   {/* AWB ACTION BAR */}
                   <div className="flex items-center justify-between font-mono text-[11px] text-slate-700 bg-slate-50/80 px-2.5 py-1.5 rounded-xl border border-slate-100">
-                    <span className="truncate font-semibold">
+                    <button
+                      type="button"
+                      onClick={() => trackAwb(order.awb)}
+                      disabled={!order.awb || order.awb === "-"}
+                      title="Track shipment"
+                      className="min-w-0 truncate text-left font-semibold text-[#008dd2] hover:underline disabled:cursor-default disabled:text-slate-700"
+                    >
                       AWB: {order.awb}
-                    </span>
+                    </button>
 
                     {order.awb !== "-" && (
                       <button
@@ -1293,9 +1315,15 @@ const AllOrders = () => {
 
                       <td className="border-r border-slate-100 px-3 py-3 align-top">
                         <div className="flex items-center gap-1.5">
-                          <span className="text-[11px] font-medium text-slate-700 font-mono">
+                          <button
+                            type="button"
+                            onClick={() => trackAwb(order.awb)}
+                            disabled={!order.awb || order.awb === "-"}
+                            title="Track shipment"
+                            className="text-left text-[11px] font-medium font-mono text-[#008dd2] hover:underline disabled:cursor-default disabled:text-slate-700"
+                          >
                             {order.awb}
-                          </span>
+                          </button>
                           {order.awb !== "-" && (
                             <button
                               type="button"
