@@ -157,12 +157,11 @@ LEFT JOIN order_products op
           )
         ) = 'CONFIRMED'
 
-        AND UPPER(
-          COALESCE(
-            o.status,
-            ''
-          )
-        ) = 'MANIFESTED'
+       AND UPPER(
+  TRIM(
+    COALESCE(o.status, '')
+  )
+) IN ('MANIFESTED', 'NOT PICKED')
 
       ORDER BY
         m.created_at DESC
