@@ -564,10 +564,13 @@ function Manifested() {
      MANIFESTED COUNT
   ========================================================== */
 
-  const manifestedCount = useMemo(() => {
-    return orders.filter((order) => getTrackingStatus(order) === "MANIFESTED")
-      .length;
-  }, [orders]);
+const manifestedCount = useMemo(() => {
+  return orders.filter((order) =>
+    ["MANIFESTED", "NOT PICKED"].includes(
+      getTrackingStatus(order)
+    )
+  ).length;
+}, [orders]);
 
   /* ==========================================================
      FILTER
