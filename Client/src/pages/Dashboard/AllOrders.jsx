@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { toast } from "react-hot-toast";
 import api from "../../services/api";
-import OrderDetailsModal from "../../components/OrderDetailsModal";
+import OrderDetailsModal from "../../components/Common/OrderDetailsModal";
 import { notifyOrderChange, subscribeToOrderUpdates } from "../../services/orderEvents";
 import {
   printShippingLabels,
