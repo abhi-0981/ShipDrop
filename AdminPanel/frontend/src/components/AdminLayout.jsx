@@ -21,34 +21,110 @@ const CLIENT_API_BASE_URL =
     ? "http://localhost:5000/api"
     : "https://parceldropbackend.vercel.app/api");
 
-function getScanStatus(scan) {
+function getScanDetail(scan) {
   return (
-    scan?.status ||
-    scan?.status_type ||
-    scan?.scan ||
-    scan?.instructions ||
+    scan?.ScanDetail ||
+    scan?.scan_detail ||
+    scan?.scanDetail ||
+    scan?.status_detail ||
+    scan?.details ||
+    scan
+  );
+}
+
+function firstText(...values) {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) return value.trim();
+    if (typeof value === "number") return String(value);
+  }
+  return "";
+}
+
+function getScanStatus(scan) {
+  const detail = getScanDetail(scan);
+  return firstText(
+    detail?.Instructions,
+    detail?.instructions,
+    detail?.status_description,
+    detail?.statusDescription,
+    detail?.Scan,
+    detail?.scan,
+    detail?.status,
+    detail?.status_type,
+    detail?.statusType,
+    scan?.Instructions,
+    scan?.instructions,
+    scan?.status_description,
+    scan?.statusDescription,
+    scan?.Scan,
+    scan?.scan,
+    scan?.status,
+    scan?.status_type,
+    scan?.activity,
     "Shipment update"
   );
 }
 
 function getScanLocation(scan) {
-  return (
-    scan?.location ||
-    scan?.scan_location ||
-    scan?.origin ||
-    ""
+  const detail = getScanDetail(scan);
+  return firstText(
+    detail?.ScanLocation,
+    detail?.scan_location,
+    detail?.scanLocation,
+    detail?.location,
+    detail?.status_location,
+    detail?.statusLocation,
+    scan?.ScanLocation,
+    scan?.scan_location,
+    scan?.scanLocation,
+    scan?.location,
+    scan?.status_location,
+    scan?.statusLocation,
+    scan?.origin
   );
 }
 
 function getScanDate(scan) {
-  return (
-    scan?.status_datetime ||
-    scan?.datetime ||
-    scan?.date_time ||
-    scan?.date ||
-    scan?.scan_datetime ||
-    ""
+  const detail = getScanDetail(scan);
+  return firstText(
+    detail?.ScanDateTime,
+    detail?.ScanDate,
+    detail?.scan_datetime,
+    detail?.scan_date_time,
+    detail?.scanDateTime,
+    detail?.status_datetime,
+    detail?.status_date_time,
+    detail?.datetime,
+    detail?.date_time,
+    detail?.date,
+    scan?.ScanDateTime,
+    scan?.ScanDate,
+    scan?.scan_datetime,
+    scan?.scan_date_time,
+    scan?.scanDateTime,
+    scan?.status_datetime,
+    scan?.status_date_time,
+    scan?.datetime,
+    scan?.date_time,
+    scan?.date
   );
+}
+
+function formatTrackingDate(value) {
+  if (!value) return "";
+  const raw = String(value).trim();
+  const date = new Date(raw);
+  if (Number.isNaN(date.getTime())) return raw;
+
+  return new Intl.DateTimeFormat("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true,
+  }).format(date);
 }
 
 function AdminLayout({ children }) {
@@ -509,7 +585,7 @@ function AdminLayout({ children }) {
                       </div>
                       <div className="min-h-[68px] border-b border-slate-100 px-4 py-3 lg:border-r lg:border-b-0">
                         <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Status Date &amp; Time</p>
-                        <p className="mt-1 break-words text-xs font-medium leading-5 text-slate-600">{trackingData.status_datetime || "—"}</p>
+                        <p className="mt-1 break-words text-xs font-medium leading-5 text-slate-600">{formatTrackingDate(trackingData.status_datetime) || "—"}</p>
                       </div>
                       <div className="min-h-[68px] border-b border-slate-100 px-4 py-3 lg:border-r lg:border-b-0">
                         <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Expected Delivery</p>
@@ -551,7 +627,7 @@ function AdminLayout({ children }) {
                               <div className={`rounded-xl border px-4 py-3 ${isLatest ? "border-sky-200 bg-sky-50/60 shadow-sm" : "border-slate-200 bg-white"}`}>
                                 <div className="flex flex-wrap items-start justify-between gap-2">
                                   <p className="text-sm font-bold text-slate-800">{status}</p>
-                                  {scanDate && <p className="text-[10px] font-semibold text-slate-400 sm:text-[11px]">{scanDate}</p>}
+                                  {scanDate && <p className="text-[10px] font-semibold text-slate-400 sm:text-[11px]">{formatTrackingDate(scanDate)}</p>}
                                 </div>
                                 {scanLocation && <p className="mt-1.5 text-xs text-slate-500">{scanLocation}</p>}
                               </div>
