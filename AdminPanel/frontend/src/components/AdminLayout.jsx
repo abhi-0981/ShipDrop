@@ -13,6 +13,7 @@ import {
   HiOutlineX,
   HiMenuAlt2,
   HiOutlineCurrencyRupee,
+  HiOutlineSearch
 } from "react-icons/hi";
 
 function AdminLayout({ children }) {
@@ -21,6 +22,7 @@ function AdminLayout({ children }) {
 
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [trackingId, setTrackingId] = useState("");
 
   const [usersOpen, setUsersOpen] = useState(() =>
     location.pathname.startsWith("/users")
@@ -295,13 +297,34 @@ function AdminLayout({ children }) {
       </aside>
 
       {/* MAIN CONTAINER */}
-      <main
-        className={`min-h-[calc(100vh-56px)] transition-all duration-300 lg:min-h-screen ${
-          collapsed ? "lg:ml-[76px]" : "lg:ml-[250px]"
-        }`}
-      >
-        {children}
-      </main>
+     
+<main
+  className={`min-h-[calc(100vh-56px)] transition-all duration-300 lg:min-h-screen ${
+    collapsed ? "lg:ml-[76px]" : "lg:ml-[250px]"
+  }`}
+>
+  {/* TRACKING TOPBAR */}
+  <div className="sticky top-14 lg:top-0 z-20 h-[64px] border-b border-slate-200 bg-white px-4 sm:px-6 flex items-center">
+    <div className="relative w-full max-w-[370px]">
+      <HiOutlineSearch
+        size={18}
+        className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+      />
+
+      <input
+        type="text"
+        value={trackingId}
+        onChange={(e) => setTrackingId(e.target.value)}
+        placeholder="Enter Tracking ID or Order ID..."
+        aria-label="Enter Tracking ID or Order ID"
+        className="h-[42px] w-full rounded-xl border border-slate-200 bg-[#fbfcfe] pl-10 pr-4 text-[13px] text-slate-700 placeholder:text-slate-400 outline-none transition focus:border-[#008dd2] focus:ring-2 focus:ring-[#008dd2]/10"
+      />
+    </div>
+  </div>
+
+  {children}
+</main>
+
     </div>
   );
 }
