@@ -102,9 +102,9 @@ function AdminLayout({ children }) {
     setTrackingError("");
   };
 
-  const handleTrackingSearch = async (event) => {
+  const handleTrackingSearch = async (event, awbOverride = "") => {
     event?.preventDefault();
-    const awb = String(trackingSearch || "").trim();
+    const awb = String(awbOverride || trackingSearch || "").trim();
     if (!awb) {
       setTrackingError("Enter Tracking ID or AWB number.");
       return;
@@ -177,6 +177,18 @@ function AdminLayout({ children }) {
       setTrackingLoading(false);
     }
   };
+
+  // Allow an AWB click anywhere inside AdminLayout (including All Orders)
+  // to open the same in-app tracking popup used by the top tracking search.
+  useEffect(() => {
+    const handleTrackAwbEvent = (event) => {
+      const awb = String(event?.detail?.awb || "").trim();
+      if (awb) handleTrackingSearch(undefined, awb);
+    };
+
+    window.addEventListener("parceldrop:track-awb", handleTrackAwbEvent);
+    return () => window.removeEventListener("parceldrop:track-awb", handleTrackAwbEvent);
+  }, [handleTrackingSearch]);
 
   const formatTrackingDateTime = (value) => {
     if (!value) return "—";
@@ -280,7 +292,7 @@ function AdminLayout({ children }) {
             <div className="overflow-y-auto bg-slate-50/60 px-4 py-4 sm:px-6 sm:py-5">
               <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
                 <div className="grid grid-cols-1 divide-y divide-slate-100 sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
-                
+                  <div className="px-4 py-3.5"><p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Order ID</p><p className="mt-1 truncate text-sm font-bold text-slate-800">{tracking.order_id ?? tracking.id ?? "—"}</p></div>
                   <div className="px-4 py-3.5"><p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Tracking No</p><p className="mt-1 truncate text-sm font-bold text-slate-800">{tracking.tracking_awb || "—"}</p></div>
                   <div className="px-4 py-3.5"><p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Courier</p><p className="mt-1 truncate text-sm font-bold text-slate-800">{tracking.courier_name || "Delhivery"}</p></div>
                   <div className="px-4 py-3.5"><p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Current Status</p><div className="mt-1 flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-emerald-500" /><p className="truncate text-sm font-bold text-emerald-600">{humanizeTrackingStatus(tracking.tracking_status)}</p></div></div>

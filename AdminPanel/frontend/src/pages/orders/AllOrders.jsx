@@ -858,7 +858,7 @@ const AllOrders = () => {
     }
   };
 
-  // Open live shipment tracking when the AWB number is clicked.
+  // Open ParcelDrop's existing in-app tracking popup for this AWB.
   const trackAwb = (awb) => {
     const trackingNumber = String(awb || "").trim();
 
@@ -867,10 +867,10 @@ const AllOrders = () => {
       return;
     }
 
-    window.open(
-      `https://www.delhivery.com/track/package/${encodeURIComponent(trackingNumber)}`,
-      "_blank",
-      "noopener,noreferrer",
+    window.dispatchEvent(
+      new CustomEvent("parceldrop:track-awb", {
+        detail: { awb: trackingNumber },
+      }),
     );
   };
 
