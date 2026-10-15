@@ -307,7 +307,7 @@ function AdminLayout({ children }) {
             <div className="overflow-y-auto bg-slate-50/60 px-4 py-4 sm:px-6 sm:py-5">
               <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
                 <div className="grid grid-cols-1 divide-y divide-slate-100 sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
-                  <div className="px-4 py-3.5"><p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Order ID</p><p className="mt-1 truncate text-sm font-bold text-slate-800">{tracking.order_id ?? tracking.id ?? "—"}</p></div>
+                 
                   <div className="px-4 py-3.5"><p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Tracking No</p><p className="mt-1 truncate text-sm font-bold text-slate-800">{tracking.tracking_awb || "—"}</p></div>
                   <div className="px-4 py-3.5"><p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Courier</p><p className="mt-1 truncate text-sm font-bold text-slate-800">{tracking.courier_name || "Delhivery"}</p></div>
                   <div className="px-4 py-3.5"><p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Current Status</p><div className="mt-1 flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-emerald-500" /><p className="truncate text-sm font-bold text-emerald-600">{humanizeTrackingStatus(tracking.tracking_status)}</p></div></div>
