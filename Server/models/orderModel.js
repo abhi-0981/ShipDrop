@@ -1436,7 +1436,8 @@ const getOrderStatusCounts = (userId) => {
        AND o.user_id = m.user_id
       WHERE m.user_id = ?
         AND UPPER(TRIM(COALESCE(m.status, ''))) = 'CONFIRMED'
-        AND UPPER(TRIM(COALESCE(o.status, ''))) = 'MANIFESTED'
+      AND UPPER(TRIM(COALESCE(o.status, '')))
+    IN ('MANIFESTED', 'NOT PICKED')
     `;
 
     db.query(ordersQuery, [userId], (err, orderRows) => {
