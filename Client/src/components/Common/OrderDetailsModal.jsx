@@ -43,7 +43,7 @@ const Icon = ({ name, size = 17, strokeWidth = 1.8 }) => {
   return null;
 };
 
-export default function OrderDetailsModal({ order, loading = false, onClose, onTrack, onDownload, onPrint }) {
+export default function OrderDetailsModal({ order, loading = false, onClose, onTrack, onDownload, onPrint, onDuplicate, actionLoading = false }) {
   if (!order) return null;
 
   return (
@@ -241,6 +241,11 @@ export default function OrderDetailsModal({ order, loading = false, onClose, onT
             {/* Footer */}
             <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-slate-100 bg-slate-50/70 px-3 py-2.5 sm:px-4">
               <div className="flex flex-wrap gap-2">
+                {onDuplicate && (
+                  <button type="button" onClick={() => onDuplicate(order)} disabled={actionLoading} className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50">
+                    Duplicate Order
+                  </button>
+                )}
                 <button type="button" onClick={() => onDownload(order)} className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[#b9dff0] bg-white px-3 text-[11px] font-semibold text-[#008dd2] hover:bg-[#edf8ff]">
                   <Icon name="download" size={13} /> Download Label
                 </button>
