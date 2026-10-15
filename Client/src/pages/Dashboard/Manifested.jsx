@@ -594,7 +594,7 @@ function Manifested() {
       const service = getServiceType(order);
 
       return (
-        status === "MANIFESTED" &&
+        ["MANIFESTED", "NOT PICKED"].includes(status) &&
         (!q || searchable.includes(q)) &&
         (statusFilter === "ALL" || status === statusFilter) &&
         (paymentFilter === "ALL" || payment === paymentFilter) &&

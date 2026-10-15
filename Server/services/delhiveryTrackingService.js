@@ -137,18 +137,15 @@ const normalizeTrackingStatus = (
     return "IN TRANSIT";
   }
 
-  // ----------------------------------------------
-  // NOT PICKED
-  // Delhivery: Ready for Pickup
-  // ----------------------------------------------
+// NOT PICKED
+// Delhivery: Shipment not ready for pickup
 
-  if (
-    rawUpper.includes(
-      "READY FOR PICKUP"
-    )
-  ) {
-    return "NOT PICKED";
-  }
+if (
+  instructions.includes("shipment not ready for pickup") ||
+  rawUpper.includes("READY FOR PICKUP")
+) {
+  return "NOT PICKED";
+}
 
   // ----------------------------------------------
   // PENDING
