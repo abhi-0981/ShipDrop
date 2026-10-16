@@ -2094,7 +2094,7 @@ function InTransit() {
       </button>
 
       {openActionMenuId === id && (
-        <div className="absolute right-0 top-full z-50 mt-2 w-44 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
+       <div className="absolute right-0 top-full z-50 mt-2 w-44 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
                     <button
             type="button"
             onClick={() => {
