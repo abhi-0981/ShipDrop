@@ -1672,7 +1672,7 @@ function InTransit() {
             TABLE
         ================================================== */}
 
-        <div className="overflow-visible rounded-xl border border-slate-200 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
+        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
 
           <div className="max-h-[calc(100vh-180px)] overflow-y-auto overflow-x-hidden">
 
@@ -2097,7 +2097,7 @@ function InTransit() {
       </button>
 
       {openActionMenuId === id && (
-       <div className="absolute right-0 top-full z-[100] mt-1 w-44 overflow-visible rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
+        <div className="absolute right-0 top-full z-50 mt-1 w-44 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
                     <button
             type="button"
             onClick={() => {
