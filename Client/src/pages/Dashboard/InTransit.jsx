@@ -1672,7 +1672,7 @@ function InTransit() {
             TABLE
         ================================================== */}
 
-        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
+        <div className="overflow-visible rounded-xl border border-slate-200 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
 
           <div className="max-h-[calc(100vh-180px)] overflow-y-auto overflow-x-hidden">
 
