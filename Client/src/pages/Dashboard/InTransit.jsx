@@ -6,6 +6,7 @@ import React, {
 } from "react";
 import { toast } from "react-hot-toast";
 import api from "../../services/api";
+import OrderDetailsModal from "../../components/Common/OrderDetailsModal";
 import { notifyOrderChange, subscribeToOrderUpdates } from "../../services/orderEvents";
 import { printShippingLabels, downloadShippingLabels } from "../../services/shippingLabelService";
 
@@ -109,6 +110,15 @@ const Icon = ({
         <svg {...common}>
           <path d="M6 6l12 12" />
           <path d="M18 6 6 18" />
+        </svg>
+      );
+
+    case "more":
+      return (
+        <svg {...common}>
+          <circle cx="12" cy="5" r="1" fill="currentColor" stroke="none" />
+          <circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" />
+          <circle cx="12" cy="19" r="1" fill="currentColor" stroke="none" />
         </svg>
       );
 
@@ -546,6 +556,7 @@ function InTransit() {
 
   const [viewingOrder, setViewingOrder] =
     useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
   const [openActionMenuId, setOpenActionMenuId] = useState(null);
   const actionMenuRef = useRef(null);
 
@@ -613,6 +624,16 @@ function InTransit() {
     }
   };
 
+  useEffect(() => {
+    const handleOutsideClick = (event) => {
+      if (actionMenuRef.current && !actionMenuRef.current.contains(event.target)) {
+        setOpenActionMenuId(null);
+      }
+    };
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, []);
+
   // ====================================================
   // INITIAL LOAD
   // ====================================================
@@ -629,16 +650,6 @@ function InTransit() {
     return () => {
       unsubscribe();
     };
-  }, []);
-
-  useEffect(() => {
-    const handleOutsideClick = (event) => {
-      if (actionMenuRef.current && !actionMenuRef.current.contains(event.target)) {
-        setOpenActionMenuId(null);
-      }
-    };
-    document.addEventListener("mousedown", handleOutsideClick);
-    return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, []);
 
   // ====================================================
@@ -793,121 +804,48 @@ function InTransit() {
     });
   };
 
-  // ====================================================
-  // VIEW
-  // ====================================================
-
-  const handleView = (order) => {
-    setOpenActionMenuId(null);
-    setViewingOrder(order);
-  };
-
   const handlePrintSingleLabel = async (order) => {
-    if (!order) return toast.error("Unable to print this label");
+    if (!order) {
+      toast.error("Unable to print this label");
+      return;
+    }
     await printShippingLabels([order], "ParcelDrop Shipping Label");
   };
 
   const handleDownloadSingleLabel = async (order) => {
-    if (!order) return toast.error("Unable to download this label");
+    if (!order) {
+      toast.error("Unable to download this label");
+      return;
+    }
     await downloadShippingLabels([order]);
   };
 
-  const handleDuplicate = async (order) => {
-    setOpenActionMenuId(null);
-    const orderId = order?.id;
+  // ====================================================
+  // VIEW
+  // ====================================================
+
+  const handleView = async (order) => {
+    setViewingOrder(order);
+    const orderId = order?.id ?? order?.order_id;
     const userId = getUserId();
+    if (!orderId || !userId) return;
 
-    if (!orderId || !userId) {
-      toast.error("Unable to duplicate this order");
-      return;
-    }
-
+    setDetailLoading(true);
     try {
       const response = await api.get(`/orders/${orderId}`, {
         params: { user_id: userId },
       });
-
-      const result = response?.data;
-      if (!result?.success || !result?.order) {
-        throw new Error(result?.message || "Unable to load order details");
+      if (response?.data?.success && response?.data?.order) {
+        setViewingOrder((current) =>
+          current && String(current?.id ?? current?.order_id) === String(orderId)
+            ? { ...current, ...response.data.order }
+            : current
+        );
       }
-
-      const source = result.order;
-      const warehouseId = Number(
-        source?.warehouse_id ||
-          source?.warehouse?.id ||
-          order?.warehouse_id ||
-          0,
-      );
-
-      if (!warehouseId) {
-        throw new Error("Pickup warehouse is missing");
-      }
-
-      const payload = {
-        user_id: Number(userId),
-        pickup_address: source?.pickup_address || null,
-        pickup_pincode: source?.pickup_pincode || null,
-        pickup_city: source?.pickup_city || null,
-        warehouse_id: warehouseId,
-        pickup_address_id: source?.pickup_address_id || null,
-        orderData: {
-          consignee_name: source?.consignee_name || "",
-          mobile: source?.mobile || "",
-          alternate_mobile: source?.alternate_mobile || null,
-          email: source?.email || null,
-          gstin: source?.gstin || null,
-          company_name: source?.company_name || null,
-          floor_no: source?.floor_no || null,
-          landmark: source?.landmark || null,
-          address_line1: source?.address_line1 || "",
-          address_line2: source?.address_line2 || null,
-          pincode: source?.pincode || "",
-          city: source?.city || "",
-          state: source?.state || "",
-          country: source?.country || "India",
-          payment_type: source?.payment_type || "Prepaid",
-          risk_type: source?.risk_type || "Owner Risk",
-          warehouse_id: warehouseId,
-        },
-        products: Array.isArray(source?.products)
-          ? source.products.map((product) => ({
-              product_name: product?.product_name || "",
-              sku: product?.sku || null,
-              price: Number(product?.price) || 0,
-              qty: Number(product?.qty) || 1,
-              tax: Number(product?.tax) || 0,
-            }))
-          : [],
-        packages: Array.isArray(source?.packages)
-          ? source.packages.map((pkg) => ({
-              length: Number(pkg?.length) || 0,
-              width: Number(pkg?.width) || 0,
-              height: Number(pkg?.height) || 0,
-              weight: Number(pkg?.weight) || 0,
-              package_count: Number(pkg?.package_count) || 1,
-            }))
-          : [],
-      };
-
-      const createResponse = await api.post("/orders/create", payload);
-      const createResult = createResponse?.data;
-
-      if (!createResult?.success || !createResult?.order_id) {
-        throw new Error(createResult?.message || "Unable to duplicate order");
-      }
-
-      toast.success(
-        `Order duplicated successfully. New order #${createResult.order_id} is in Processing.`,
-      );
-      await fetchAllOrders();
-      notifyOrderChange({ type: "created", orderId: createResult.order_id });
     } catch (error) {
-      toast.error(
-        error?.response?.data?.message ||
-          error?.message ||
-          "Unable to duplicate order",
-      );
+      console.error("Unable to load full order details:", error);
+    } finally {
+      setDetailLoading(false);
     }
   };
 
@@ -917,7 +855,7 @@ function InTransit() {
       toast.error("AWB is not available for tracking");
       return;
     }
-    window.dispatchEvent(new CustomEvent("shipdrop:openTracking", { detail: String(awb).trim() }));
+    window.dispatchEvent(new CustomEvent("shipdrop:openTracking", { detail: { awb, order } }));
   };
 
   const handleCopyAWB = async (awb) => {
@@ -1362,6 +1300,104 @@ function InTransit() {
       );
     }).length;
 
+  const handleDuplicate = async (order) => {
+    const orderId = order?.id;
+    const userId = getUserId();
+
+    if (!orderId || !userId) {
+      toast.error("Unable to duplicate this order");
+      return;
+    }
+
+    try {
+      const response = await api.get(`/orders/${orderId}`, {
+        params: { user_id: userId },
+      });
+
+      const result = response?.data;
+      if (!result?.success || !result?.order) {
+        throw new Error(result?.message || "Unable to load order details");
+      }
+
+      const source = result.order;
+      const warehouseId = Number(
+        source?.warehouse_id ||
+          source?.warehouse?.id ||
+          order?.warehouse_id ||
+          0,
+      );
+
+      if (!warehouseId) {
+        throw new Error("Pickup warehouse is missing");
+      }
+
+      const payload = {
+        user_id: Number(userId),
+        pickup_address: source?.pickup_address || null,
+        pickup_pincode: source?.pickup_pincode || null,
+        pickup_city: source?.pickup_city || null,
+        warehouse_id: warehouseId,
+        pickup_address_id: source?.pickup_address_id || null,
+        orderData: {
+          consignee_name: source?.consignee_name || "",
+          mobile: source?.mobile || "",
+          alternate_mobile: source?.alternate_mobile || null,
+          email: source?.email || null,
+          gstin: source?.gstin || null,
+          company_name: source?.company_name || null,
+          floor_no: source?.floor_no || null,
+          landmark: source?.landmark || null,
+          address_line1: source?.address_line1 || "",
+          address_line2: source?.address_line2 || null,
+          pincode: source?.pincode || "",
+          city: source?.city || "",
+          state: source?.state || "",
+          country: source?.country || "India",
+          payment_type: source?.payment_type || "Prepaid",
+          risk_type: source?.risk_type || "Owner Risk",
+          warehouse_id: warehouseId,
+        },
+        products: Array.isArray(source?.products)
+          ? source.products.map((product) => ({
+              product_name: product?.product_name || "",
+              sku: product?.sku || null,
+              price: Number(product?.price) || 0,
+              qty: Number(product?.qty) || 1,
+              tax: Number(product?.tax) || 0,
+            }))
+          : [],
+        packages: Array.isArray(source?.packages)
+          ? source.packages.map((pkg) => ({
+              length: Number(pkg?.length) || 0,
+              width: Number(pkg?.width) || 0,
+              height: Number(pkg?.height) || 0,
+              weight: Number(pkg?.weight) || 0,
+              package_count: Number(pkg?.package_count) || 1,
+            }))
+          : [],
+      };
+
+      const createResponse = await api.post("/orders/create", payload);
+      const createResult = createResponse?.data;
+
+      if (!createResult?.success || !createResult?.order_id) {
+        throw new Error(createResult?.message || "Unable to duplicate order");
+      }
+
+      toast.success(
+        `Order duplicated successfully. New order #${createResult.order_id} is in Processing.`,
+      );
+      await fetchAllOrders();
+      notifyOrderChange({ type: "created", orderId: createResult.order_id });
+    } catch (error) {
+      toast.error(
+        error?.response?.data?.message ||
+          error?.message ||
+          "Unable to duplicate order",
+      );
+    }
+  };
+
   // ====================================================
   // LOADING
   // ====================================================
@@ -1681,19 +1717,19 @@ function InTransit() {
                     Route
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[14%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[11%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Payment
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[10%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[9%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Weight
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[12%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[11%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Created
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[8%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[13%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Actions
                   </th>
 
@@ -1829,7 +1865,7 @@ function InTransit() {
                                 </p>
                               )}
 
-                              <div className="mt-1.5">
+                              <div className="mt-1">
 
                                 <StatusBadge
                                   status={status}
@@ -2014,72 +2050,81 @@ function InTransit() {
 
                           </td>
 
-                          {/* ACTIONS — same compact layout as All Orders */}
-                          <td className="px-2 py-2.5">
-                            <div className="flex items-center justify-start gap-1">
-                              <button
-                                type="button"
-                                onClick={() => handlePrintSingleLabel(order)}
-                                title="Print Shipping Label"
-                                aria-label="Print Shipping Label"
-                                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[#b9dff0] bg-white text-[#008dd2] transition hover:bg-[#edf8ff] active:scale-95"
-                              >
-                                <Icon name="printer" size={14} />
-                              </button>
+                          {/* ==================================
+                              ACTIONS
+                          ================================== */}
 
-                              <button
-                                type="button"
-                                onClick={() => handleDownloadSingleLabel(order)}
-                                title="Download Shipping Label"
-                                aria-label="Download Shipping Label"
-                                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[#008dd2] bg-[#008dd2] text-white transition hover:bg-[#007dbb] active:scale-95"
-                              >
-                                <Icon name="download" size={13} />
-                              </button>
+                          <td className="px-2 py-3">
+  <div className="flex items-center justify-start gap-1.5 whitespace-nowrap">
+    <button
+      type="button"
+      onClick={() => handlePrintSingleLabel(order)}
+      title="Print Shipping Label"
+      aria-label="Print Shipping Label"
+      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-[#008dd2] text-white transition hover:bg-[#007dbb] active:scale-95"
+    >
+      <Icon name="printer" size={14} />
+    </button>
 
-                              <div
-                                ref={actionMenuRef}
-                                className="relative"
-                                onMouseDown={(event) => event.stopPropagation()}
-                              >
-                                <button
-                                  type="button"
-                                  onClick={() => setOpenActionMenuId((prev) => prev === id ? null : id)}
-                                  title="More Actions"
-                                  aria-label="More Actions"
-                                  aria-expanded={openActionMenuId === id}
-                                  className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md border transition ${
-                                    openActionMenuId === id
-                                      ? "border-[#008dd2] bg-[#edf8ff] text-[#008dd2]"
-                                      : "border-slate-200 bg-white text-slate-500 hover:border-[#008dd2] hover:bg-[#edf8ff] hover:text-[#008dd2]"
-                                  }`}
-                                >
-                                  <Icon name="more" size={16} />
-                                </button>
+    <button
+      type="button"
+      onClick={() => handleDownloadSingleLabel(order)}
+      title="Download Shipping Label"
+      aria-label="Download Shipping Label"
+      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-[#008dd2] text-white transition hover:bg-[#007dbb] active:scale-95"
+    >
+      <Icon name="download" size={14} />
+    </button>
 
-                                {openActionMenuId === id && (
-                                  <div className="absolute right-0 top-full z-50 mt-1 w-44 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
-                                    <button
-                                      type="button"
-                                      onClick={() => handleView(order)}
-                                      className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-xs font-medium text-slate-700 transition hover:bg-slate-50"
-                                    >
-                                      <Icon name="eye" size={15} />
-                                      Details
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => handleDuplicate(order)}
-                                      className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-xs font-medium text-slate-700 transition hover:bg-slate-50"
-                                    >
-                                      <Icon name="copy" size={15} />
-                                      Duplicate Order
-                                    </button>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          </td>
+    <div
+      ref={actionMenuRef}
+      className="relative shrink-0"
+      onMouseDown={(event) => event.stopPropagation()}
+    >
+      <button
+        type="button"
+        onClick={() => setOpenActionMenuId((previous) => previous === id ? null : id)}
+        title="More Actions"
+        aria-label="More Actions"
+        aria-expanded={openActionMenuId === id}
+        className={`flex h-7 w-7 items-center justify-center rounded-md border transition ${
+          openActionMenuId === id
+            ? "border-[#008dd2] bg-[#edf8ff] text-[#008dd2]"
+            : "border-slate-200 bg-white text-slate-500 hover:border-[#008dd2] hover:bg-[#edf8ff] hover:text-[#008dd2]"
+        }`}
+      >
+        <Icon name="more" size={16} />
+      </button>
+
+      {openActionMenuId === id && (
+        <div className="absolute right-0 bottom-full z-[100] mb-1 w-44 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-xl">
+          <button
+            type="button"
+            onClick={() => {
+              setOpenActionMenuId(null);
+              handleView(order);
+            }}
+            className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-xs font-medium text-slate-700 transition hover:bg-slate-50"
+          >
+            <Icon name="eye" size={15} />
+            Details
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setOpenActionMenuId(null);
+              handleDuplicate(order);
+            }}
+            className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-xs font-medium text-slate-700 transition hover:bg-slate-50"
+          >
+            <Icon name="copy" size={15} />
+            Duplicate Order
+          </button>
+        </div>
+      )}
+    </div>
+  </div>
+</td>
 
                         </tr>
 
@@ -2137,335 +2182,21 @@ function InTransit() {
 
       </div>
 
-      {/* ====================================================
-          VIEW ORDER MODAL
-      ==================================================== */}
-
-      {viewingOrder && (
-
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/30 p-4 backdrop-blur-[2px]"
-          onClick={() =>
-            setViewingOrder(null)
+      <OrderDetailsModal
+        order={viewingOrder}
+        loading={detailLoading}
+        onClose={() => setViewingOrder(null)}
+        onTrack={(orderOrAwb) => {
+          const awb = typeof orderOrAwb === "string"
+            ? orderOrAwb
+            : getAWB(orderOrAwb || viewingOrder);
+          if (awb && awb !== "—") {
+            window.dispatchEvent(new CustomEvent("shipdrop:openTracking", { detail: String(awb) }));
           }
-        >
-
-          <div
-            className="w-full max-w-[620px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
-            onClick={(e) =>
-              e.stopPropagation()
-            }
-          >
-
-            {/* HEADER */}
-
-            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-
-              <div>
-
-                <h2 className="text-[16px] font-semibold text-slate-900">
-                  Order Details
-                </h2>
-
-                <p className="mt-0.5 text-[11px] text-slate-400">
-                  Order #
-                  {getOrderId(
-                    viewingOrder
-                  )}
-                </p>
-
-              </div>
-
-              <button
-                type="button"
-                onClick={() =>
-                  setViewingOrder(
-                    null
-                  )
-                }
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
-              >
-                <Icon
-                  name="x"
-                  size={17}
-                />
-              </button>
-
-            </div>
-
-            {/* BODY */}
-
-            <div className="max-h-[70vh] overflow-y-auto p-5">
-
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-
-                <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
-
-                  <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
-                    Customer
-                  </p>
-
-                  <p className="mt-1 text-[13px] font-semibold text-slate-800">
-                    {getCustomerName(
-                      viewingOrder
-                    )}
-                  </p>
-
-                  <p className="mt-0.5 text-[11px] text-slate-500">
-                    {getMobile(
-                      viewingOrder
-                    )}
-                  </p>
-
-                </div>
-
-                <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
-
-                  <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
-                    AWB
-                  </p>
-
-                  <p className="mt-1 text-[13px] font-semibold text-slate-800">
-                    {getAWB(
-                      viewingOrder
-                    )}
-                  </p>
-
-                </div>
-
-                <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
-
-                  <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
-                    Shipment
-                  </p>
-
-                  <p className="mt-1 text-[13px] font-semibold text-slate-800">
-                    {getShipmentName(
-                      viewingOrder
-                    )}
-                  </p>
-
-                  <p className="mt-0.5 text-[11px] text-slate-500">
-                    {getServiceType(
-                      viewingOrder
-                    ) === "AIR"
-                      ? "By Air"
-                      : "By Road"}
-                  </p>
-
-                </div>
-
-                <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
-
-                  <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
-                    Payment
-                  </p>
-
-                  <p className="mt-1 text-[13px] font-semibold text-slate-800">
-                    {getPaymentType(
-                      viewingOrder
-                    )}
-                  </p>
-
-                  <p className="mt-0.5 text-[11px] text-slate-500">
-                    ₹
-                    {getAmount(
-                      viewingOrder
-                    ).toFixed(2)}
-                  </p>
-
-                </div>
-
-              </div>
-
-              {/* ADDRESS */}
-
-              <div className="mt-3 rounded-xl border border-slate-200 bg-white p-4">
-
-                <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
-                  Delivery Address
-                </p>
-
-                <p className="mt-1 text-[13px] font-medium leading-6 text-slate-700">
-
-                  {[
-                    viewingOrder?.address_line1,
-                    viewingOrder?.address_line2,
-                    viewingOrder?.city,
-                    viewingOrder?.state,
-                  ]
-                    .filter(Boolean)
-                    .join(", ") ||
-                    "—"}
-
-                  {viewingOrder?.pincode
-                    ? ` - ${viewingOrder.pincode}`
-                    : ""}
-
-                </p>
-
-              </div>
-
-              {/* ROUTE */}
-
-              <div className="mt-3 rounded-xl border border-slate-200 bg-white p-4">
-
-                <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
-                  Route
-                </p>
-
-                <div className="mt-2 flex items-center gap-3">
-
-                  <div className="rounded-lg bg-[#edf8ff] px-3 py-2 text-[12px] font-semibold text-[#008dd2]">
-                    {getPickupCity(
-                      viewingOrder
-                    )}
-                  </div>
-
-                  <span className="text-slate-300">
-                    →
-                  </span>
-
-                  <div className="rounded-lg bg-[#f0ecff] px-3 py-2 text-[12px] font-semibold text-[#7052ff]">
-                    {getDeliveryCity(
-                      viewingOrder
-                    )}
-                  </div>
-
-                </div>
-
-              </div>
-
-              {/* WEIGHT / STATUS */}
-
-              <div className="mt-3 grid grid-cols-2 gap-3">
-
-                <div className="rounded-xl border border-slate-200 p-3">
-
-                  <p className="text-[10px] uppercase tracking-wide text-slate-400">
-                    Weight
-                  </p>
-
-                  <p className="mt-1 text-[15px] font-semibold text-slate-800">
-                    {getWeight(
-                      viewingOrder
-                    ).toFixed(2)}{" "}
-                    Kg
-                  </p>
-
-                </div>
-
-                <div className="rounded-xl border border-slate-200 p-3">
-
-                  <p className="text-[10px] uppercase tracking-wide text-slate-400">
-                    Status
-                  </p>
-
-                  <div className="mt-1">
-                    <StatusBadge
-                      status={getStatus(
-                        viewingOrder
-                      )}
-                    />
-                  </div>
-
-                </div>
-
-              </div>
-
-            </div>
-
-            {/* FOOTER */}
-
-            <div className="flex items-center justify-end gap-2 border-t border-slate-100 bg-[#fafbfc] px-5 py-3">
-
-              <button
-                type="button"
-                onClick={() =>
-                  setViewingOrder(
-                    null
-                  )
-                }
-                className="h-9 rounded-lg border border-slate-200 bg-white px-4 text-[12px] font-medium text-slate-600 hover:bg-slate-50"
-              >
-                Close
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-
-                  const order =
-                    viewingOrder;
-
-                  setViewingOrder(
-                    null
-                  );
-
-                  const printWindow =
-                    window.open(
-                      "",
-                      "_blank",
-                      "width=900,height=700"
-                    );
-
-                  if (!printWindow) {
-                    toast.error(
-                      "Please allow pop-ups to print labels"
-                    );
-                    return;
-                  }
-
-                  printWindow.document.write(`
-                    <!DOCTYPE html>
-                    <html>
-                      <head>
-                        <title>
-                          ShipDrop Shipping Label
-                        </title>
-                      </head>
-
-                      <body
-                        style="
-                          margin:30px;
-                          background:#fff;
-                        "
-                      >
-                        ${buildLabel(
-                          order
-                        )}
-                      </body>
-                    </html>
-                  `);
-
-                  printWindow.document.close();
-                  printWindow.focus();
-
-                  setTimeout(
-                    () =>
-                      printWindow.print(),
-                    300
-                  );
-
-                }}
-                className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[#008dd2] px-4 text-[12px] font-medium text-white hover:bg-[#007dbb]"
-              >
-                <Icon
-                  name="printer"
-                  size={14}
-                />
-
-                Print Label
-              </button>
-
-            </div>
-
-          </div>
-
-        </div>
-
-      )}
-
+        }}
+        onDownload={handleDownloadSingleLabel}
+        onPrint={handlePrintSingleLabel}
+      />
     </div>
   );
 }
