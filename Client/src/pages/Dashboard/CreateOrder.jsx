@@ -2190,15 +2190,8 @@ const handleRequiredFieldEnter = (e) => {
                 );
               })}
             </div>
-
-           <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-  <span className="text-xs font-medium text-slate-500">
-    Invoice Total:{" "}
-    <b className="font-bold text-slate-900 text-sm">
-      ₹{totalInvoiceValue.toFixed(2)}
-    </b>
-  </span>
-
+<div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+  {/* LEFT SIDE: New Toggles */}
   <div className="flex flex-wrap items-center gap-4">
     <label className="flex items-center gap-2 cursor-pointer">
       <input
@@ -2234,6 +2227,14 @@ const handleRequiredFieldEnter = (e) => {
       </span>
     </label>
   </div>
+
+  {/* RIGHT SIDE: Existing Invoice Total */}
+  <span className="text-xs font-medium text-slate-500">
+    Invoice Total:{" "}
+    <b className="font-bold text-slate-900 text-sm">
+      ₹{totalInvoiceValue.toFixed(2)}
+    </b>
+  </span>
 </div>
           </div>
 
