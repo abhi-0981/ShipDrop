@@ -855,7 +855,7 @@ function InTransit() {
       toast.error("AWB is not available for tracking");
       return;
     }
-    window.dispatchEvent(new CustomEvent("shipdrop:openTracking", { detail: { awb, order } }));
+    window.dispatchEvent(new CustomEvent("shipdrop:openTracking", { detail: String(awb) }));
   };
 
   const handleCopyAWB = async (awb) => {
@@ -2097,8 +2097,8 @@ function InTransit() {
       </button>
 
       {openActionMenuId === id && (
-        <div className="absolute right-0 bottom-full z-[100] mb-1 w-44 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-xl">
-          <button
+        <div className="absolute right-0 top-full z-50 mt-1 w-44 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
+                    <button
             type="button"
             onClick={() => {
               setOpenActionMenuId(null);
