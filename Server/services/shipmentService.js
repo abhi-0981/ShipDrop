@@ -1450,6 +1450,11 @@ seller_add:
       order.return_country || "India",
   };
 
+    // FRAGILE SHIPMENT
+  if (Number(order.fragile_shipment) === 1) {
+    shipment.fragile_shipment = true;
+  }
+
   // ======================================================
   // COD
   // ======================================================
@@ -1790,7 +1795,7 @@ const confirmShipment = async ({
             return_city,
             return_state,
             return_country,
-
+fragile_shipment,
             status,
             awb
           FROM orders
@@ -2060,15 +2065,11 @@ const confirmShipment = async ({
       buildDelhiveryShipment({
 
         order: {
-
-          ...lockedOrder,
-
-          ...orderData,
-
-          order_id:
-            lockedOrder.order_id,
-
-        },
+  ...lockedOrder,
+  ...orderData,
+  fragile_shipment: lockedOrder.fragile_shipment,
+  order_id: lockedOrder.order_id,
+},
 
         products,
 

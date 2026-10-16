@@ -167,6 +167,12 @@ const createOrderController = async (req, res) => {
         nestedOrderData.payment_type || body.payment_type || "Prepaid",
 
       risk_type: nestedOrderData.risk_type || body.risk_type || "Owner Risk",
+
+      fragile_shipment: nestedOrderData.fragile_shipment === true ||
+  nestedOrderData.fragile_shipment === 1,
+
+dangerous_good: nestedOrderData.dangerous_good === true ||
+  nestedOrderData.dangerous_good === 1,
     };
 
     // ==================================================

@@ -106,19 +106,19 @@ const createOrder = (orderData, callback) => {
           state,
           country,
           payment_type,
-          risk_type,
-          status
+risk_type,
+fragile_shipment,
+dangerous_good,
+status
         )
         VALUES (
-          ?, ?, ?, ?,
-
-          ?, ?, ?, ?, ?, ?,
-          ?, ?, ?, ?, ?,
-
-          ?, ?, ?, ?, ?, ?,
-          ?, ?, ?, ?, ?, ?,
-          ?, ?, ?, ?, ?
-        )
+  ?, ?, ?, ?,
+  ?, ?, ?, ?, ?, ?,
+  ?, ?, ?, ?, ?,
+  ?, ?, ?, ?, ?, ?,
+  ?, ?, ?, ?, ?, ?,
+  ?, ?, ?, ?, ?, ?, ?
+)
       `;
 
     db.query(
@@ -168,14 +168,13 @@ const createOrder = (orderData, callback) => {
         orderData.state,
         orderData.country || "India",
 
-        orderData.payment_type || "Prepaid",
-        orderData.risk_type || "Owner Risk",
+orderData.payment_type || "Prepaid",
+orderData.risk_type || "Owner Risk",
+orderData.fragile_shipment ? 1 : 0,
+orderData.dangerous_good ? 1 : 0,
 
-        // IMPORTANT:
-        // Imported / normal newly-created order
-        // starts in Processing.
-        "Processing",
-      ],
+// New order starts in Processing.
+"Processing",],
       (err, result) => {
         if (err) {
           return callback(err);
@@ -334,6 +333,8 @@ const getProcessingOrders = (user_id, callback) => {
 
       o.payment_type,
       o.risk_type,
+      o.fragile_shipment,
+o.dangerous_good,
 
       o.status,
       o.created_at,
@@ -455,10 +456,12 @@ const getAllOrders = (user_id, page = 1, limit = 50, search = "", callback) => {
       o.state,
       o.country,
 
-      o.payment_type,
-      o.risk_type,
+  o.payment_type,
+o.risk_type,
+o.fragile_shipment,
+o.dangerous_good,
 
-      o.status,
+o.status,
       o.created_at,
 
       /* ==========================================
@@ -676,10 +679,12 @@ const getOrderById = (orderId, userId) => {
           o.state,
           o.country,
 
-          o.payment_type,
-          o.risk_type,
+        o.payment_type,
+o.risk_type,
+o.fragile_shipment,
+o.dangerous_good,
 
-          o.status,
+o.status,
           o.created_at,
 
           -- ==================================================
@@ -831,9 +836,13 @@ const getOrderById = (orderId, userId) => {
 
         payment_type: firstRow.payment_type,
 
-        risk_type: firstRow.risk_type,
+risk_type: firstRow.risk_type,
 
-        status: firstRow.status,
+fragile_shipment: firstRow.fragile_shipment,
+
+dangerous_good: firstRow.dangerous_good,
+
+status: firstRow.status,
 
         created_at: firstRow.created_at,
 
@@ -1099,8 +1108,10 @@ const updateOrder = (
               state = ?,
               country = ?,
 
-              payment_type = ?,
-              risk_type = ?
+             payment_type = ?,
+risk_type = ?,
+fragile_shipment = ?,
+dangerous_good = ?
 
             WHERE
               id = ?
@@ -1138,10 +1149,14 @@ const updateOrder = (
 
           orderData?.payment_type || "Prepaid",
 
-          orderData?.risk_type || "Owner Risk",
+orderData?.risk_type || "Owner Risk",
 
-          orderId,
-          userId,
+orderData?.fragile_shipment ? 1 : 0,
+
+orderData?.dangerous_good ? 1 : 0,
+
+orderId,
+userId,
         ],
       );
 
