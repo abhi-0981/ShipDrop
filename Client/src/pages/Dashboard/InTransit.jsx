@@ -2052,77 +2052,47 @@ function InTransit() {
                               ACTIONS
                           ================================== */}
 
-                          <td className="px-2 py-3">
+
+{/* ACTIONS */}
+<td className="px-2 py-3">
   <div className="flex items-center justify-start gap-1.5 whitespace-nowrap">
+
+    {/* PRINT */}
     <button
       type="button"
       onClick={() => handlePrintSingleLabel(order)}
       title="Print Shipping Label"
       aria-label="Print Shipping Label"
-      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-[#008dd2] text-white transition hover:bg-[#007dbb] active:scale-95"
+      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[#008dd2] text-white transition hover:bg-[#007dbb] active:scale-95"
     >
-      <Icon name="printer" size={14} />
+      <Icon name="printer" size={15} />
     </button>
 
+    {/* DUPLICATE */}
     <button
       type="button"
-      onClick={() => handleDownloadSingleLabel(order)}
-      title="Download Shipping Label"
-      aria-label="Download Shipping Label"
-      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-[#008dd2] text-white transition hover:bg-[#007dbb] active:scale-95"
+      onClick={() => handleDuplicate(order)}
+      title="Duplicate Order"
+      aria-label="Duplicate Order"
+      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 transition hover:border-[#008dd2] hover:bg-[#edf8ff] hover:text-[#008dd2] active:scale-95"
     >
-      <Icon name="download" size={14} />
+      <Icon name="copy" size={15} />
     </button>
 
-    <div
-      ref={actionMenuRef}
-      className="relative shrink-0"
-      onMouseDown={(event) => event.stopPropagation()}
+    {/* DETAILS */}
+    <button
+      type="button"
+      onClick={() => handleView(order)}
+      title="View Details"
+      aria-label="View Details"
+      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 transition hover:border-[#008dd2] hover:bg-[#edf8ff] hover:text-[#008dd2] active:scale-95"
     >
-      <button
-        type="button"
-        onClick={() => setOpenActionMenuId((previous) => previous === id ? null : id)}
-        title="More Actions"
-        aria-label="More Actions"
-        aria-expanded={openActionMenuId === id}
-        className={`flex h-7 w-7 items-center justify-center rounded-md border transition ${
-          openActionMenuId === id
-            ? "border-[#008dd2] bg-[#edf8ff] text-[#008dd2]"
-            : "border-slate-200 bg-white text-slate-500 hover:border-[#008dd2] hover:bg-[#edf8ff] hover:text-[#008dd2]"
-        }`}
-      >
-        <Icon name="more" size={16} />
-      </button>
+      <Icon name="eye" size={15} />
+    </button>
 
-      {openActionMenuId === id && (
-        <div className="absolute right-0 bottom-full z-50 mb-2 w-44 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
-                    <button
-            type="button"
-            onClick={() => {
-              setOpenActionMenuId(null);
-              handleView(order);
-            }}
-            className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-xs font-medium text-slate-700 transition hover:bg-slate-50"
-          >
-            <Icon name="eye" size={15} />
-            Details
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setOpenActionMenuId(null);
-              handleDuplicate(order);
-            }}
-            className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-xs font-medium text-slate-700 transition hover:bg-slate-50"
-          >
-            <Icon name="copy" size={15} />
-            Duplicate Order
-          </button>
-        </div>
-      )}
-    </div>
   </div>
 </td>
+
 
                         </tr>
 
