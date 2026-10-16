@@ -2074,7 +2074,7 @@ function InTransit() {
       onClick={() => handleDuplicate(order)}
       title="Duplicate Order"
       aria-label="Duplicate Order"
-      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 transition hover:border-[#008dd2]  hover:bg-[#edf8ff] hover:text-[#008dd2] active:scale-95 "
+      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[#008dd2] text-white transition hover:bg-[#007dbb] active:scale-95"
     >
       <Icon name="copy" size={15} />
     </button>
@@ -2085,7 +2085,7 @@ function InTransit() {
       onClick={() => handleView(order)}
       title="View Details"
       aria-label="View Details"
-      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[#008dd2] text-white transition hover:bg-[#007dbb] active:scale-95"
+      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 transition hover:border-[#008dd2] hover:bg-[#edf8ff] hover:text-[#008dd2] active:scale-95"
     >
       <Icon name="eye" size={15} />
     </button>
