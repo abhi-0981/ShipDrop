@@ -2074,7 +2074,7 @@ function InTransit() {
       onClick={() => handleDuplicate(order)}
       title="Duplicate Order"
       aria-label="Duplicate Order"
-      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 transition hover:border-[#008dd2] hover:bg-[#edf8ff] hover:text-[#008dd2] active:scale-95"
+      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 transition hover:border-[#008dd2]  hover:bg-[#edf8ff] hover:text-[#008dd2] active:scale-95 bg-[#008dd2] "
     >
       <Icon name="copy" size={15} />
     </button>
