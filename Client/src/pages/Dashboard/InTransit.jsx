@@ -1953,12 +1953,10 @@ function InTransit() {
 
                                 }}
                                 title="Print Shipping Label"
-                                className="flex h-8 w-8 items-center justify-center rounded-md border border-[#b9dff0] bg-white text-[#008dd2] transition hover:bg-[#edf8ff]"
+                                className="flex h-8 items-center gap-1 rounded-lg bg-[#008dd2] px-3 text-xs font-bold text-white shadow-xs transition hover:bg-[#0079b5] active:scale-95"
                               >
-                                <Icon
-                                  name="printer"
-                                  size={15}
-                                />
+                                <Icon name="printer" size={13} />
+                                Print
                               </button>
 
                               {/* VIEW */}
@@ -1970,13 +1968,11 @@ function InTransit() {
                                     order
                                   )
                                 }
-                                title="View Order"
-                                className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-500 transition hover:border-[#008dd2] hover:bg-[#edf8ff] hover:text-[#008dd2]"
+                                title="View Order Details"
+                                className="flex h-8 items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 active:scale-95"
                               >
-                                <Icon
-                                  name="eye"
-                                  size={15}
-                                />
+                                <Icon name="eye" size={13} />
+                                View
                               </button>
 
                             </div>
