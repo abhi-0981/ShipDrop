@@ -2036,17 +2036,15 @@ function InTransit() {
                                 getCreatedAt(
                                   order
                                 )
-                              )}
-
-                            </p>
-
-                            <p className="text-[10px] text-slate-400">
-                              {formatTime(
+                              )}{" "}{formatTime(
                                 getCreatedAt(
                                   order
                                 )
                               )}
+
                             </p>
+
+                           
 
                           </td>
 
