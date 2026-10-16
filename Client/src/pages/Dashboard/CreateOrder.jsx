@@ -58,6 +58,8 @@ function CreateOrder() {
 
     payment_type: "Prepaid",
     risk_type: "Owner Risk",
+    fragile_shipment: false,
+    dangerous_good: false,
   };
 
   const initialProduct = {
@@ -189,8 +191,18 @@ function CreateOrder() {
         state: order.state || "",
         country: order.country || "India",
 
-        payment_type: order.payment_type || "Prepaid",
-        risk_type: order.risk_type || "Owner Risk",
+       payment_type: order.payment_type || "Prepaid",
+risk_type: order.risk_type || "Owner Risk",
+
+fragile_shipment: order.fragile_shipment === true ||
+  order.fragile_shipment === 1 ||
+  order.fragile_shipment === "1" ||
+  order.fragile_shipment === "true",
+
+dangerous_good: order.dangerous_good === true ||
+  order.dangerous_good === 1 ||
+  order.dangerous_good === "1" ||
+  order.dangerous_good === "true",
       });
 
       if (Array.isArray(order.products) && order.products.length) {
@@ -2179,14 +2191,50 @@ const handleRequiredFieldEnter = (e) => {
               })}
             </div>
 
-            <div className="flex justify-end pt-1">
-              <span className="text-xs font-medium text-slate-500">
-                Invoice Total:{" "}
-                <b className="font-bold text-slate-900 text-sm">
-                  ₹{totalInvoiceValue.toFixed(2)}
-                </b>
-              </span>
-            </div>
+           <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+  <span className="text-xs font-medium text-slate-500">
+    Invoice Total:{" "}
+    <b className="font-bold text-slate-900 text-sm">
+      ₹{totalInvoiceValue.toFixed(2)}
+    </b>
+  </span>
+
+  <div className="flex flex-wrap items-center gap-4">
+    <label className="flex items-center gap-2 cursor-pointer">
+      <input
+        type="checkbox"
+        checked={!!formData.fragile_shipment}
+        onChange={(e) =>
+          setFormData((prev) => ({
+            ...prev,
+            fragile_shipment: e.target.checked,
+          }))
+        }
+        className="h-4 w-4 accent-[#008dd2]"
+      />
+      <span className="text-xs font-medium text-slate-700">
+        Fragile Shipment
+      </span>
+    </label>
+
+    <label className="flex items-center gap-2 cursor-pointer">
+      <input
+        type="checkbox"
+        checked={!!formData.dangerous_good}
+        onChange={(e) =>
+          setFormData((prev) => ({
+            ...prev,
+            dangerous_good: e.target.checked,
+          }))
+        }
+        className="h-4 w-4 accent-[#008dd2]"
+      />
+      <span className="text-xs font-medium text-slate-700">
+        Dangerous Goods
+      </span>
+    </label>
+  </div>
+</div>
           </div>
 
           {/* 4. PACKAGES & WEIGHT */}
