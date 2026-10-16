@@ -2,10 +2,12 @@ import React, {
   useEffect,
   useMemo,
   useState,
+  useRef,
 } from "react";
 import { toast } from "react-hot-toast";
 import api from "../../services/api";
-import { subscribeToOrderUpdates } from "../../services/orderEvents";
+import { notifyOrderChange, subscribeToOrderUpdates } from "../../services/orderEvents";
+import { printShippingLabels, downloadShippingLabels } from "../../services/shippingLabelService";
 
 // ======================================================
 // COLORS
@@ -544,6 +546,8 @@ function InTransit() {
 
   const [viewingOrder, setViewingOrder] =
     useState(null);
+  const [openActionMenuId, setOpenActionMenuId] = useState(null);
+  const actionMenuRef = useRef(null);
 
   // ====================================================
   // FETCH ALL ORDERS
@@ -625,6 +629,16 @@ function InTransit() {
     return () => {
       unsubscribe();
     };
+  }, []);
+
+  useEffect(() => {
+    const handleOutsideClick = (event) => {
+      if (actionMenuRef.current && !actionMenuRef.current.contains(event.target)) {
+        setOpenActionMenuId(null);
+      }
+    };
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, []);
 
   // ====================================================
@@ -784,7 +798,117 @@ function InTransit() {
   // ====================================================
 
   const handleView = (order) => {
+    setOpenActionMenuId(null);
     setViewingOrder(order);
+  };
+
+  const handlePrintSingleLabel = async (order) => {
+    if (!order) return toast.error("Unable to print this label");
+    await printShippingLabels([order], "ParcelDrop Shipping Label");
+  };
+
+  const handleDownloadSingleLabel = async (order) => {
+    if (!order) return toast.error("Unable to download this label");
+    await downloadShippingLabels([order]);
+  };
+
+  const handleDuplicate = async (order) => {
+    setOpenActionMenuId(null);
+    const orderId = order?.id;
+    const userId = getUserId();
+
+    if (!orderId || !userId) {
+      toast.error("Unable to duplicate this order");
+      return;
+    }
+
+    try {
+      const response = await api.get(`/orders/${orderId}`, {
+        params: { user_id: userId },
+      });
+
+      const result = response?.data;
+      if (!result?.success || !result?.order) {
+        throw new Error(result?.message || "Unable to load order details");
+      }
+
+      const source = result.order;
+      const warehouseId = Number(
+        source?.warehouse_id ||
+          source?.warehouse?.id ||
+          order?.warehouse_id ||
+          0,
+      );
+
+      if (!warehouseId) {
+        throw new Error("Pickup warehouse is missing");
+      }
+
+      const payload = {
+        user_id: Number(userId),
+        pickup_address: source?.pickup_address || null,
+        pickup_pincode: source?.pickup_pincode || null,
+        pickup_city: source?.pickup_city || null,
+        warehouse_id: warehouseId,
+        pickup_address_id: source?.pickup_address_id || null,
+        orderData: {
+          consignee_name: source?.consignee_name || "",
+          mobile: source?.mobile || "",
+          alternate_mobile: source?.alternate_mobile || null,
+          email: source?.email || null,
+          gstin: source?.gstin || null,
+          company_name: source?.company_name || null,
+          floor_no: source?.floor_no || null,
+          landmark: source?.landmark || null,
+          address_line1: source?.address_line1 || "",
+          address_line2: source?.address_line2 || null,
+          pincode: source?.pincode || "",
+          city: source?.city || "",
+          state: source?.state || "",
+          country: source?.country || "India",
+          payment_type: source?.payment_type || "Prepaid",
+          risk_type: source?.risk_type || "Owner Risk",
+          warehouse_id: warehouseId,
+        },
+        products: Array.isArray(source?.products)
+          ? source.products.map((product) => ({
+              product_name: product?.product_name || "",
+              sku: product?.sku || null,
+              price: Number(product?.price) || 0,
+              qty: Number(product?.qty) || 1,
+              tax: Number(product?.tax) || 0,
+            }))
+          : [],
+        packages: Array.isArray(source?.packages)
+          ? source.packages.map((pkg) => ({
+              length: Number(pkg?.length) || 0,
+              width: Number(pkg?.width) || 0,
+              height: Number(pkg?.height) || 0,
+              weight: Number(pkg?.weight) || 0,
+              package_count: Number(pkg?.package_count) || 1,
+            }))
+          : [],
+      };
+
+      const createResponse = await api.post("/orders/create", payload);
+      const createResult = createResponse?.data;
+
+      if (!createResult?.success || !createResult?.order_id) {
+        throw new Error(createResult?.message || "Unable to duplicate order");
+      }
+
+      toast.success(
+        `Order duplicated successfully. New order #${createResult.order_id} is in Processing.`,
+      );
+      await fetchAllOrders();
+      notifyOrderChange({ type: "created", orderId: createResult.order_id });
+    } catch (error) {
+      toast.error(
+        error?.response?.data?.message ||
+          error?.message ||
+          "Unable to duplicate order",
+      );
+    }
   };
 
   const handleTrack = (order) => {
@@ -1890,97 +2014,71 @@ function InTransit() {
 
                           </td>
 
-                          {/* ==================================
-                              ACTIONS
-                          ================================== */}
-
-                          <td className="px-3 py-3">
-
-                            <div className="flex items-center gap-1.5">
-
-                              {/* PRINT */}
-
+                          {/* ACTIONS — same compact layout as All Orders */}
+                          <td className="px-2 py-2.5">
+                            <div className="flex items-center justify-start gap-1">
                               <button
                                 type="button"
-                                onClick={() => {
-
-                                  const printWindow =
-                                    window.open(
-                                      "",
-                                      "_blank",
-                                      "width=900,height=700"
-                                    );
-
-                                  if (
-                                    !printWindow
-                                  ) {
-                                    toast.error(
-                                      "Please allow pop-ups to print labels"
-                                    );
-                                    return;
-                                  }
-
-                                  printWindow.document.write(`
-                                    <!DOCTYPE html>
-                                    <html>
-                                      <head>
-                                        <title>
-                                          ShipDrop Shipping Label
-                                        </title>
-                                      </head>
-
-                                      <body
-                                        style="
-                                          margin:30px;
-                                          background:#fff;
-                                        "
-                                      >
-                                        ${buildLabel(
-                                          order
-                                        )}
-                                      </body>
-                                    </html>
-                                  `);
-
-                                  printWindow.document.close();
-                                  printWindow.focus();
-
-                                  setTimeout(
-                                    () =>
-                                      printWindow.print(),
-                                    300
-                                  );
-
-                                }}
+                                onClick={() => handlePrintSingleLabel(order)}
                                 title="Print Shipping Label"
-                                className="flex h-8 w-8 items-center justify-center rounded-md border border-[#b9dff0] bg-white text-[#008dd2] transition hover:bg-[#edf8ff]"
+                                aria-label="Print Shipping Label"
+                                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[#b9dff0] bg-white text-[#008dd2] transition hover:bg-[#edf8ff] active:scale-95"
                               >
-                                <Icon
-                                  name="printer"
-                                  size={15}
-                                />
+                                <Icon name="printer" size={14} />
                               </button>
-
-                              {/* VIEW */}
 
                               <button
                                 type="button"
-                                onClick={() =>
-                                  handleView(
-                                    order
-                                  )
-                                }
-                                title="View Order"
-                                className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-500 transition hover:border-[#008dd2] hover:bg-[#edf8ff] hover:text-[#008dd2]"
+                                onClick={() => handleDownloadSingleLabel(order)}
+                                title="Download Shipping Label"
+                                aria-label="Download Shipping Label"
+                                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[#008dd2] bg-[#008dd2] text-white transition hover:bg-[#007dbb] active:scale-95"
                               >
-                                <Icon
-                                  name="eye"
-                                  size={15}
-                                />
+                                <Icon name="download" size={13} />
                               </button>
 
-                            </div>
+                              <div
+                                ref={actionMenuRef}
+                                className="relative"
+                                onMouseDown={(event) => event.stopPropagation()}
+                              >
+                                <button
+                                  type="button"
+                                  onClick={() => setOpenActionMenuId((prev) => prev === id ? null : id)}
+                                  title="More Actions"
+                                  aria-label="More Actions"
+                                  aria-expanded={openActionMenuId === id}
+                                  className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md border transition ${
+                                    openActionMenuId === id
+                                      ? "border-[#008dd2] bg-[#edf8ff] text-[#008dd2]"
+                                      : "border-slate-200 bg-white text-slate-500 hover:border-[#008dd2] hover:bg-[#edf8ff] hover:text-[#008dd2]"
+                                  }`}
+                                >
+                                  <Icon name="more" size={16} />
+                                </button>
 
+                                {openActionMenuId === id && (
+                                  <div className="absolute right-0 top-full z-50 mt-1 w-44 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleView(order)}
+                                      className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-xs font-medium text-slate-700 transition hover:bg-slate-50"
+                                    >
+                                      <Icon name="eye" size={15} />
+                                      Details
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDuplicate(order)}
+                                      className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-xs font-medium text-slate-700 transition hover:bg-slate-50"
+                                    >
+                                      <Icon name="copy" size={15} />
+                                      Duplicate Order
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
                           </td>
 
                         </tr>
