@@ -5,9 +5,7 @@ import React, {
 } from "react";
 import { toast } from "react-hot-toast";
 import api from "../../services/api";
-import OrderDetailsModal from "../../components/Common/OrderDetailsModal";
 import { subscribeToOrderUpdates } from "../../services/orderEvents";
-import { printShippingLabels } from "../../services/shippingLabelService";
 
 // ======================================================
 // COLORS
@@ -795,7 +793,7 @@ function InTransit() {
       toast.error("AWB is not available for tracking");
       return;
     }
-    window.dispatchEvent(new CustomEvent("shipdrop:openTracking", { detail: { awb, order } }));
+    window.dispatchEvent(new CustomEvent("shipdrop:openTracking", { detail: String(awb).trim() }));
   };
 
   const handleCopyAWB = async (awb) => {
@@ -1896,27 +1894,93 @@ function InTransit() {
                               ACTIONS
                           ================================== */}
 
-                          <td className="px-1 py-2.5">
-                            <div className="flex items-center justify-start gap-1">
+                          <td className="px-3 py-3">
+
+                            <div className="flex items-center gap-1.5">
+
+                              {/* PRINT */}
+
                               <button
                                 type="button"
-                                onClick={() => printShippingLabels([order], "ParcelDrop Shipping Label")}
+                                onClick={() => {
+
+                                  const printWindow =
+                                    window.open(
+                                      "",
+                                      "_blank",
+                                      "width=900,height=700"
+                                    );
+
+                                  if (
+                                    !printWindow
+                                  ) {
+                                    toast.error(
+                                      "Please allow pop-ups to print labels"
+                                    );
+                                    return;
+                                  }
+
+                                  printWindow.document.write(`
+                                    <!DOCTYPE html>
+                                    <html>
+                                      <head>
+                                        <title>
+                                          ShipDrop Shipping Label
+                                        </title>
+                                      </head>
+
+                                      <body
+                                        style="
+                                          margin:30px;
+                                          background:#fff;
+                                        "
+                                      >
+                                        ${buildLabel(
+                                          order
+                                        )}
+                                      </body>
+                                    </html>
+                                  `);
+
+                                  printWindow.document.close();
+                                  printWindow.focus();
+
+                                  setTimeout(
+                                    () =>
+                                      printWindow.print(),
+                                    300
+                                  );
+
+                                }}
                                 title="Print Shipping Label"
-                                aria-label="Print Shipping Label"
-                                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[#008dd2] bg-[#008dd2] text-white transition hover:bg-[#007dbb]"
+                                className="flex h-8 w-8 items-center justify-center rounded-md border border-[#b9dff0] bg-white text-[#008dd2] transition hover:bg-[#edf8ff]"
                               >
-                                <Icon name="printer" size={15} />
+                                <Icon
+                                  name="printer"
+                                  size={15}
+                                />
                               </button>
+
+                              {/* VIEW */}
+
                               <button
                                 type="button"
-                                onClick={() => handleView(order)}
-                                title="Details"
-                                aria-label="Details"
-                                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-500 transition hover:border-[#008dd2] hover:bg-[#edf8ff] hover:text-[#008dd2]"
+                                onClick={() =>
+                                  handleView(
+                                    order
+                                  )
+                                }
+                                title="View Order"
+                                className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-500 transition hover:border-[#008dd2] hover:bg-[#edf8ff] hover:text-[#008dd2]"
                               >
-                                <Icon name="eye" size={15} />
+                                <Icon
+                                  name="eye"
+                                  size={15}
+                                />
                               </button>
+
                             </div>
+
                           </td>
 
                         </tr>
@@ -1975,18 +2039,334 @@ function InTransit() {
 
       </div>
 
-      <OrderDetailsModal
-        order={viewingOrder}
-        loading={false}
-        onClose={() => setViewingOrder(null)}
-        onTrack={(orderOrAwb) => {
-          const awb = typeof orderOrAwb === "string" ? orderOrAwb : getAWB(orderOrAwb || viewingOrder);
-          if (awb && awb !== "—") {
-            window.dispatchEvent(new CustomEvent("shipdrop:openTracking", { detail: String(awb) }));
+      {/* ====================================================
+          VIEW ORDER MODAL
+      ==================================================== */}
+
+      {viewingOrder && (
+
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/30 p-4 backdrop-blur-[2px]"
+          onClick={() =>
+            setViewingOrder(null)
           }
-        }}
-        onPrint={(order) => printShippingLabels([order || viewingOrder], "ParcelDrop Shipping Label")}
-      />
+        >
+
+          <div
+            className="w-full max-w-[620px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
+            onClick={(e) =>
+              e.stopPropagation()
+            }
+          >
+
+            {/* HEADER */}
+
+            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+
+              <div>
+
+                <h2 className="text-[16px] font-semibold text-slate-900">
+                  Order Details
+                </h2>
+
+                <p className="mt-0.5 text-[11px] text-slate-400">
+                  Order #
+                  {getOrderId(
+                    viewingOrder
+                  )}
+                </p>
+
+              </div>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setViewingOrder(
+                    null
+                  )
+                }
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+              >
+                <Icon
+                  name="x"
+                  size={17}
+                />
+              </button>
+
+            </div>
+
+            {/* BODY */}
+
+            <div className="max-h-[70vh] overflow-y-auto p-5">
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+
+                <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
+
+                  <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
+                    Customer
+                  </p>
+
+                  <p className="mt-1 text-[13px] font-semibold text-slate-800">
+                    {getCustomerName(
+                      viewingOrder
+                    )}
+                  </p>
+
+                  <p className="mt-0.5 text-[11px] text-slate-500">
+                    {getMobile(
+                      viewingOrder
+                    )}
+                  </p>
+
+                </div>
+
+                <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
+
+                  <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
+                    AWB
+                  </p>
+
+                  <p className="mt-1 text-[13px] font-semibold text-slate-800">
+                    {getAWB(
+                      viewingOrder
+                    )}
+                  </p>
+
+                </div>
+
+                <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
+
+                  <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
+                    Shipment
+                  </p>
+
+                  <p className="mt-1 text-[13px] font-semibold text-slate-800">
+                    {getShipmentName(
+                      viewingOrder
+                    )}
+                  </p>
+
+                  <p className="mt-0.5 text-[11px] text-slate-500">
+                    {getServiceType(
+                      viewingOrder
+                    ) === "AIR"
+                      ? "By Air"
+                      : "By Road"}
+                  </p>
+
+                </div>
+
+                <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
+
+                  <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
+                    Payment
+                  </p>
+
+                  <p className="mt-1 text-[13px] font-semibold text-slate-800">
+                    {getPaymentType(
+                      viewingOrder
+                    )}
+                  </p>
+
+                  <p className="mt-0.5 text-[11px] text-slate-500">
+                    ₹
+                    {getAmount(
+                      viewingOrder
+                    ).toFixed(2)}
+                  </p>
+
+                </div>
+
+              </div>
+
+              {/* ADDRESS */}
+
+              <div className="mt-3 rounded-xl border border-slate-200 bg-white p-4">
+
+                <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
+                  Delivery Address
+                </p>
+
+                <p className="mt-1 text-[13px] font-medium leading-6 text-slate-700">
+
+                  {[
+                    viewingOrder?.address_line1,
+                    viewingOrder?.address_line2,
+                    viewingOrder?.city,
+                    viewingOrder?.state,
+                  ]
+                    .filter(Boolean)
+                    .join(", ") ||
+                    "—"}
+
+                  {viewingOrder?.pincode
+                    ? ` - ${viewingOrder.pincode}`
+                    : ""}
+
+                </p>
+
+              </div>
+
+              {/* ROUTE */}
+
+              <div className="mt-3 rounded-xl border border-slate-200 bg-white p-4">
+
+                <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
+                  Route
+                </p>
+
+                <div className="mt-2 flex items-center gap-3">
+
+                  <div className="rounded-lg bg-[#edf8ff] px-3 py-2 text-[12px] font-semibold text-[#008dd2]">
+                    {getPickupCity(
+                      viewingOrder
+                    )}
+                  </div>
+
+                  <span className="text-slate-300">
+                    →
+                  </span>
+
+                  <div className="rounded-lg bg-[#f0ecff] px-3 py-2 text-[12px] font-semibold text-[#7052ff]">
+                    {getDeliveryCity(
+                      viewingOrder
+                    )}
+                  </div>
+
+                </div>
+
+              </div>
+
+              {/* WEIGHT / STATUS */}
+
+              <div className="mt-3 grid grid-cols-2 gap-3">
+
+                <div className="rounded-xl border border-slate-200 p-3">
+
+                  <p className="text-[10px] uppercase tracking-wide text-slate-400">
+                    Weight
+                  </p>
+
+                  <p className="mt-1 text-[15px] font-semibold text-slate-800">
+                    {getWeight(
+                      viewingOrder
+                    ).toFixed(2)}{" "}
+                    Kg
+                  </p>
+
+                </div>
+
+                <div className="rounded-xl border border-slate-200 p-3">
+
+                  <p className="text-[10px] uppercase tracking-wide text-slate-400">
+                    Status
+                  </p>
+
+                  <div className="mt-1">
+                    <StatusBadge
+                      status={getStatus(
+                        viewingOrder
+                      )}
+                    />
+                  </div>
+
+                </div>
+
+              </div>
+
+            </div>
+
+            {/* FOOTER */}
+
+            <div className="flex items-center justify-end gap-2 border-t border-slate-100 bg-[#fafbfc] px-5 py-3">
+
+              <button
+                type="button"
+                onClick={() =>
+                  setViewingOrder(
+                    null
+                  )
+                }
+                className="h-9 rounded-lg border border-slate-200 bg-white px-4 text-[12px] font-medium text-slate-600 hover:bg-slate-50"
+              >
+                Close
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+
+                  const order =
+                    viewingOrder;
+
+                  setViewingOrder(
+                    null
+                  );
+
+                  const printWindow =
+                    window.open(
+                      "",
+                      "_blank",
+                      "width=900,height=700"
+                    );
+
+                  if (!printWindow) {
+                    toast.error(
+                      "Please allow pop-ups to print labels"
+                    );
+                    return;
+                  }
+
+                  printWindow.document.write(`
+                    <!DOCTYPE html>
+                    <html>
+                      <head>
+                        <title>
+                          ShipDrop Shipping Label
+                        </title>
+                      </head>
+
+                      <body
+                        style="
+                          margin:30px;
+                          background:#fff;
+                        "
+                      >
+                        ${buildLabel(
+                          order
+                        )}
+                      </body>
+                    </html>
+                  `);
+
+                  printWindow.document.close();
+                  printWindow.focus();
+
+                  setTimeout(
+                    () =>
+                      printWindow.print(),
+                    300
+                  );
+
+                }}
+                className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[#008dd2] px-4 text-[12px] font-medium text-white hover:bg-[#007dbb]"
+              >
+                <Icon
+                  name="printer"
+                  size={14}
+                />
+
+                Print Label
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      )}
 
     </div>
   );
