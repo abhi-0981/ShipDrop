@@ -533,6 +533,7 @@ const StatusBadge = ({ status }) => {
 // ======================================================
 
 function InTransit() {
+
   const [orders, setOrders] =
     useState([]);
 
@@ -1865,7 +1866,7 @@ function InTransit() {
                                 </p>
                               )}
 
-                              <div className="mt-1">
+                              <div className="">
 
                                 <StatusBadge
                                   status={status}
