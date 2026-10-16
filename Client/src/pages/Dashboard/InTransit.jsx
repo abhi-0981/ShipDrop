@@ -1611,7 +1611,7 @@ function InTransit() {
               </option>
 
               <option value="ROAD">
-                Road
+                Surface
               </option>
 
               <option value="AIR">
@@ -1909,7 +1909,7 @@ function InTransit() {
                                 {service ===
                                 "AIR"
                                   ? "Air"
-                                  : "Road"}
+                                  : "Surface"}
                               </p>
 
                             </div>
