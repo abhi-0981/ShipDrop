@@ -470,17 +470,19 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
                     path: "/rto-delivered",
                     count: statusCounts["RTO DELIVERED"],
                   },
+
+                   {
+                    name: "UnDelivered",
+                    path: "/pending",
+                    count: statusCounts.PENDING,
+                  },
                  
                   {
                     name: "Cancelled",
                     path: "/cancelled",
                     count: statusCounts.CANCELLED,
                   },
-                  {
-                    name: "UnDelivered",
-                    path: "/pending",
-                    count: statusCounts.PENDING,
-                  },
+                 
                 ].map((item) => (
                   <Link
                     key={item.path}
