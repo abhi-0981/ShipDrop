@@ -521,10 +521,10 @@ const StatusBadge = ({ status }) => {
 
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-semibold ${className}`}
+      className={`inline-flex items-center  rounded-full px-2 py-0.5 text-[9px] font-semibold ${className}`}
     >
       <span className="h-1 w-1 rounded-full bg-current" />
-      {getStatusLabel(status)}
+      {getStatusLabel(status).toUpperCase()}
     </span>
   );
 };
@@ -1507,7 +1507,7 @@ function OutForDelivery() {
               </option>
 
               <option value="ROAD">
-                Road
+                Surface
               </option>
 
               <option value="AIR">
@@ -1804,7 +1804,7 @@ function OutForDelivery() {
                                 {service ===
                                 "AIR"
                                   ? "Air"
-                                  : "Road"}
+                                  : "Surface"}
                               </p>
 
                             </div>
@@ -1935,17 +1935,15 @@ function OutForDelivery() {
                                 getCreatedAt(
                                   order
                                 )
-                              )}
-
-                            </p>
-
-                            <p className="text-[10px] text-slate-400">
-                              {formatTime(
+                              )}{" "} {formatTime(
                                 getCreatedAt(
                                   order
                                 )
                               )}
+
                             </p>
+
+                           
 
                           </td>
 
