@@ -1441,23 +1441,23 @@ function RTOInTransit() {
                               CUSTOMER
                           ================================== */}
 
-                        <td className="px-3 py-2.5">
-                          <div className="min-w-0">
-                            <p className="truncate text-[13px] font-semibold text-slate-800">
-                              {getCustomerName(order)}
-                            </p>
+<td className="px-3 py-2.5">
+  <div className="min-w-0 flex flex-col items-start">
+    <p className="w-full truncate text-[13px] font-semibold leading-[18px] text-slate-800">
+      {getCustomerName(order)}
+    </p>
 
-                           {getMobile(order) && (
-  <p className="mt-0 text-[11px] leading-[14px] text-slate-400">
-    {getMobile(order)}
-  </p>
-)}
+    {getMobile(order) && (
+      <p className="mt-0.5 w-full text-[11px] leading-[14px] text-slate-400">
+        {getMobile(order)}
+      </p>
+    )}
 
-<div className="mt-1">
-  <StatusBadge status={status} />
-</div>
-                          </div>
-                        </td>
+    <div className="mt-1.5 leading-none">
+      <StatusBadge status={status} />
+    </div>
+  </div>
+</td>
 
                         {/* ==================================
                               SHIPMENT
