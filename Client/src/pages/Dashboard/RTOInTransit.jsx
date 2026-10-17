@@ -431,7 +431,7 @@ const StatusBadge = ({ status }) => {
     <span
       className={`inline-flex items-center  rounded-full p-0.5 text-[9px] font-semibold ${className}`}
     >
-      <span className="h-1 w-1 rounded-full bg-current" />
+      {/* <span className="h-1 w-1 rounded-full bg-current" /> */}
       {getStatusLabel(status).toUpperCase()}
     </span>
   );
