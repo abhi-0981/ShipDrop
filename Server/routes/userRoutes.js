@@ -7,7 +7,9 @@ const {
   registerUser,
   loginUser,
   getUserProfile,
-  updateUserProfile
+  updateUserProfile,
+  logoutUser,
+  verifyUserSession,
 } = require("../controllers/userController");
 
 
@@ -28,6 +30,26 @@ router.post(
 router.post(
   "/login",
   loginUser
+);
+
+
+// ========================================
+// LOGOUT (Explicit remote invalidation)
+// ========================================
+
+router.post(
+  "/logout",
+  logoutUser
+);
+
+
+// ========================================
+// VERIFY SESSION (Remote check on fresh tab/open)
+// ========================================
+
+router.post(
+  "/verify-session",
+  verifyUserSession
 );
 
 

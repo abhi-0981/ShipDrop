@@ -9,6 +9,7 @@ import {
 } from "react-icons/fi";
 import toast from "react-hot-toast";
 import api from "../services/api";
+import { saveUserSession } from "../services/authSession";
 
 function Login() {
   const navigate = useNavigate();
@@ -68,10 +69,12 @@ function Login() {
         return;
       }
 
-      localStorage.setItem(
-        "user",
-        JSON.stringify(user)
-      );
+      const loginTime =
+        response.data?.login_time ||
+        user.login_time ||
+        Date.now();
+
+      saveUserSession(user, loginTime);
 
       toast.success("Login successful");
 

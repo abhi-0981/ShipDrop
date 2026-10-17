@@ -86,6 +86,28 @@ async function ensureIndexes() {
     } catch (syncErr) {
       console.warn("[DB OPTIMIZE] Cancelled status sync skipped:", syncErr.message);
     }
+
+    // Ensure users table has last_logout_at column for multi-device session handling
+    try {
+      const [userCol] = await promiseDb.query(`
+        SELECT COLUMN_NAME
+        FROM information_schema.columns
+        WHERE table_schema = DATABASE()
+          AND table_name = 'users'
+          AND column_name = 'last_logout_at'
+        LIMIT 1
+      `);
+      if (!userCol || userCol.length === 0) {
+        console.log("[DB OPTIMIZE] Adding last_logout_at column to users table...");
+        await promiseDb.query(`
+          ALTER TABLE users
+          ADD COLUMN last_logout_at DATETIME NULL DEFAULT NULL
+        `);
+        console.log("[DB OPTIMIZE] Column last_logout_at added successfully to users table.");
+      }
+    } catch (userColErr) {
+      console.warn("[DB OPTIMIZE] last_logout_at column check skipped/notice:", userColErr.message);
+    }
   } catch (error) {
     console.warn("[DB OPTIMIZE] Index optimization check skipped:", error.message);
   }
