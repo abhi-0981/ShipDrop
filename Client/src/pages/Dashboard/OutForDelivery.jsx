@@ -1956,13 +1956,13 @@ function OutForDelivery() {
                           <td className="px-1.5 py-3">
                             <div className="flex items-center justify-center gap-1.5 whitespace-nowrap">
                               <button type="button" onClick={() => handlePrintSingleLabel(order)} title="Print Shipping Label" aria-label="Print Shipping Label" className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[7px] border border-[#a9dcf4] bg-white text-[#008dd2] transition hover:bg-[#edf8ff] hover:border-[#008dd2] focus:outline-none focus:ring-2 focus:ring-sky-100">
-                                <Icon name="printer" size={17} strokeWidth={1.9} />
+                                <Icon name="printer" size={15} strokeWidth={1.9} />
                               </button>
                               <button type="button" onClick={() => handleDuplicate(order)} title="Duplicate Order" aria-label="Duplicate Order" className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[7px] border border-[#b8d8ff] bg-[#f3f8ff] text-[#1674d1] transition hover:bg-[#e5f0ff] hover:border-[#1674d1] focus:outline-none focus:ring-2 focus:ring-blue-100">
-                                <Icon name="copy" size={17} strokeWidth={1.9} />
+                                <Icon name="copy" size={15} strokeWidth={1.9} />
                               </button>
                               <button type="button" onClick={() => handleView(order)} title="Order Details" aria-label="Order Details" className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[7px] border border-slate-200 bg-white text-slate-600 transition hover:border-[#008dd2] hover:bg-[#edf8ff] hover:text-[#008dd2] focus:outline-none focus:ring-2 focus:ring-sky-100">
-                                <Icon name="eye" size={17} strokeWidth={1.9} />
+                                <Icon name="eye" size={15} strokeWidth={1.9} />
                               </button>
                             </div>
                           </td>
