@@ -1580,7 +1580,7 @@ function Cancelled() {
               </option>
 
               <option value="ROAD">
-                Road
+                Surface
               </option>
 
               <option value="AIR">
@@ -1864,7 +1864,7 @@ function Cancelled() {
                                 </>
                               )}
 
-                              <p className="mt-0.5 text-[10px] text-slate-400">
+                              <p className="mt-0.5 text-[10px] text-slate-500">
                                 {getShipmentName(
                                   order
                                 )}{" "}
@@ -1872,7 +1872,7 @@ function Cancelled() {
                                 {service ===
                                 "AIR"
                                   ? "Air"
-                                  : "Road"}
+                                  : "Surface"}
                               </p>
 
                             </div>
