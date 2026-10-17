@@ -1817,17 +1817,21 @@ function OutForDelivery() {
 
                           <td className="px-2 py-3">
                             <div className="flex min-w-0 items-stretch gap-2">
-                              <div className="flex w-4 shrink-0 flex-col items-center pt-0.5">
-                                <Icon name="pin" size={13} />
-                                <span className="my-1 h-3 border-l border-dashed border-slate-300" />
-                                <Icon name="pin" size={13} />
+                              <div className="flex w-4 shrink-0 flex-col items-center pt-[2px]">
+                                <span className="flex h-[15px] w-4 items-center justify-center text-[#008dd2]">
+                                  <Icon name="pin" size={15} strokeWidth={2} />
+                                </span>
+                                <span className="my-[2px] h-[12px] border-l border-dashed border-slate-300" />
+                                <span className="flex h-[15px] w-4 items-center justify-center text-slate-400">
+                                  <Icon name="pin" size={15} strokeWidth={2} />
+                                </span>
                               </div>
-                              <div className="min-w-0 flex-1">
-                                <p className="truncate text-[11px] font-medium leading-4 text-slate-700" title={`${getPickupCity(order)} (${getPickupPincode(order)})`}>
-                                  {getPickupCity(order)} <span className="text-[10px] text-slate-400">{getPickupPincode(order) ? `(${getPickupPincode(order)})` : ""}</span>
+                              <div className="min-w-0 flex-1 space-y-[5px]">
+                                <p className="truncate text-[12px] font-medium leading-[17px] text-slate-800" title={`${getPickupCity(order)} (${getPickupPincode(order)})`}>
+                                  {getPickupCity(order)} <span className="text-[11px] font-normal text-slate-400">{getPickupPincode(order) ? `(${getPickupPincode(order)})` : ""}</span>
                                 </p>
-                                <p className="mt-1 truncate text-[11px] font-medium leading-4 text-slate-700" title={`${getDeliveryCity(order)} (${getDeliveryPincode(order)})`}>
-                                  {getDeliveryCity(order)} <span className="text-[10px] text-slate-400">{getDeliveryPincode(order) ? `(${getDeliveryPincode(order)})` : ""}</span>
+                                <p className="truncate text-[12px] font-medium leading-[17px] text-slate-800" title={`${getDeliveryCity(order)} (${getDeliveryPincode(order)})`}>
+                                  {getDeliveryCity(order)} <span className="text-[11px] font-normal text-slate-400">{getDeliveryPincode(order) ? `(${getDeliveryPincode(order)})` : ""}</span>
                                 </p>
                               </div>
                             </div>
@@ -1950,15 +1954,15 @@ function OutForDelivery() {
                           ================================== */}
 
                           <td className="px-1.5 py-3">
-                            <div className="flex items-center justify-center gap-1">
-                              <button type="button" onClick={() => handlePrintSingleLabel(order)} title="Print Shipping Label" aria-label="Print Shipping Label" className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-[#b9dff0] bg-white text-[#008dd2] transition hover:bg-[#edf8ff]">
-                                <Icon name="printer" size={14} />
+                            <div className="flex items-center justify-center gap-1.5 whitespace-nowrap">
+                              <button type="button" onClick={() => handlePrintSingleLabel(order)} title="Print Shipping Label" aria-label="Print Shipping Label" className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[7px] border border-[#a9dcf4] bg-white text-[#008dd2] transition hover:bg-[#edf8ff] hover:border-[#008dd2] focus:outline-none focus:ring-2 focus:ring-sky-100">
+                                <Icon name="printer" size={17} strokeWidth={1.9} />
                               </button>
-                              <button type="button" onClick={() => handleDuplicate(order)} title="Duplicate Order" aria-label="Duplicate Order" className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-blue-200 bg-blue-50 text-blue-600 transition hover:bg-blue-100">
-                                <Icon name="copy" size={14} />
+                              <button type="button" onClick={() => handleDuplicate(order)} title="Duplicate Order" aria-label="Duplicate Order" className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[7px] border border-[#b8d8ff] bg-[#f3f8ff] text-[#1674d1] transition hover:bg-[#e5f0ff] hover:border-[#1674d1] focus:outline-none focus:ring-2 focus:ring-blue-100">
+                                <Icon name="copy" size={17} strokeWidth={1.9} />
                               </button>
-                              <button type="button" onClick={() => handleView(order)} title="Order Details" aria-label="Order Details" className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-500 transition hover:border-[#008dd2] hover:bg-[#edf8ff] hover:text-[#008dd2]">
-                                <Icon name="eye" size={14} />
+                              <button type="button" onClick={() => handleView(order)} title="Order Details" aria-label="Order Details" className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[7px] border border-slate-200 bg-white text-slate-600 transition hover:border-[#008dd2] hover:bg-[#edf8ff] hover:text-[#008dd2] focus:outline-none focus:ring-2 focus:ring-sky-100">
+                                <Icon name="eye" size={17} strokeWidth={1.9} />
                               </button>
                             </div>
                           </td>
