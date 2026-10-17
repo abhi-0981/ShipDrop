@@ -236,15 +236,46 @@ const getPaymentType = (order) => {
 };
 
 const getAmount = (order) => {
-  const amount = Number(
-    order?.total_amount ??
-      order?.total ??
-      order?.amount ??
-      order?.shipping_charges ??
-      0
-  );
+  // Prefer the order's actual product/order value; don't stop at a zero
+  // shipping/total field when a product price is available.
+  const amountFields = [
+    order?.total_amount,
+    order?.total,
+    order?.amount,
+    order?.product_price,
+    order?.productPrice,
+    order?.order_value,
+    order?.orderValue,
+    order?.selling_price,
+    order?.sellingPrice,
+    order?.price,
+    order?.shipping_charges,
+  ];
 
-  return Number.isFinite(amount) ? amount : 0;
+  for (const value of amountFields) {
+    if (value !== null && value !== undefined && value !== "") {
+      const amount = Number(value);
+      if (Number.isFinite(amount) && amount > 0) return amount;
+    }
+  }
+
+  const products = [
+    ...(Array.isArray(order?.products) ? order.products : []),
+    ...(Array.isArray(order?.items) ? order.items : []),
+    ...(Array.isArray(order?.product_items) ? order.product_items : []),
+  ];
+
+  const productTotal = products.reduce((sum, product) => {
+    const price = Number(
+      product?.total ?? product?.total_price ?? product?.selling_price ??
+      product?.price ?? product?.product_price ?? 0
+    );
+    const quantity = Number(product?.qty ?? product?.quantity ?? 1) || 1;
+    const lineTotal = Number.isFinite(price) ? price : 0;
+    return sum + (product?.total != null || product?.total_price != null ? lineTotal : lineTotal * quantity);
+  }, 0);
+
+  return Number.isFinite(productTotal) && productTotal > 0 ? productTotal : 0;
 };
 
 // ======================================================
