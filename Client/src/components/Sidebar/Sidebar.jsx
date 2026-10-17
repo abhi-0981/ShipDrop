@@ -481,7 +481,7 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
                     count: statusCounts.CANCELLED,
                   },
                   {
-                    name: "Pending",
+                    name: "UnDelivered",
                     path: "/pending",
                     count: statusCounts.PENDING,
                   },
