@@ -1048,7 +1048,6 @@ useEffect(() => {
                 <option value="DELIVERED">Delivered</option>
                 <option value="RTO IN TRANSIT">RTO In Transit</option>
                 <option value="RTO DELIVERED">RTO Delivered</option>
-                <option value="RETURNED">Returned</option>
                 <option value="CANCELLED">Cancelled</option>
               </select>
 
