@@ -161,44 +161,6 @@ const findUserById = (user_id, callback) => {
   );
 };
 
-// ========================================
-// RECORD USER LOGOUT
-// ========================================
-
-const recordUserLogout = (user_id, callback) => {
-  const query = `
-    UPDATE users
-    SET session_version = COALESCE(session_version, 1) + 1,
-        last_logout_at = NOW()
-    WHERE id = ?
-  `;
-
-  db.query(
-    query,
-    [user_id],
-    callback,
-  );
-};
-
-// ========================================
-// GET USER SESSION STATUS
-// ========================================
-
-const getUserSessionStatus = (user_id, callback) => {
-  const query = `
-    SELECT id, session_version, last_logout_at
-    FROM users
-    WHERE id = ?
-    LIMIT 1
-  `;
-
-  db.query(
-    query,
-    [user_id],
-    callback,
-  );
-};
-
 module.exports = {
   checkUser,
   createUser,
@@ -206,6 +168,4 @@ module.exports = {
   updateUserProfile,
   checkDuplicateUser,
   findUserById,
-  recordUserLogout,
-  getUserSessionStatus,
 };

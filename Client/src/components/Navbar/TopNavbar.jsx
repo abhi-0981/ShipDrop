@@ -4,7 +4,6 @@
   import { FiMenu, FiSearch } from "react-icons/fi";
   import api from "../../services/api";
   import { notifyOrderChange } from "../../services/orderEvents";
-  import { logoutFromServer, getStoredUser } from "../../services/authSession";
 
   const ImportIcon = () => (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -189,26 +188,20 @@
     };
 
     const loadUserProfile = async () => {
-      const savedUser = getStoredUser();
+      const savedUser = JSON.parse(localStorage.getItem("user") || "null");
       if (!savedUser?.id) return;
       try {
         const response = await api.get(`/users/profile/${savedUser.id}`);
         const updatedUser = response.data.user;
-        const mergedUser = {
-          ...savedUser,
-          ...updatedUser,
-          login_time: savedUser.login_time || Date.now(),
-          session_version: savedUser.session_version || 1,
-        };
-        setUser(mergedUser);
-        localStorage.setItem("user", JSON.stringify(mergedUser));
+        setUser(updatedUser);
+        localStorage.setItem("user", JSON.stringify(updatedUser));
       } catch (error) {
         console.log("Profile loading error:", error);
       }
     };
 
     const loadWallet = async () => {
-      const savedUser = getStoredUser();
+      const savedUser = JSON.parse(localStorage.getItem("user") || "null");
       if (!savedUser?.id) return;
       try {
         const response = await api.get(`/payments/wallet?user_id=${savedUser.id}`);
@@ -236,15 +229,8 @@
     useEffect(() => {
       const handleUserUpdated = (event) => {
         if (event.detail) {
-          const savedUser = getStoredUser() || {};
-          const mergedUser = {
-            ...savedUser,
-            ...event.detail,
-            login_time: savedUser.login_time || Date.now(),
-            session_version: savedUser.session_version || 1,
-          };
-          setUser(mergedUser);
-          localStorage.setItem("user", JSON.stringify(mergedUser));
+          setUser(event.detail);
+          localStorage.setItem("user", JSON.stringify(event.detail));
         } else {
           loadUserProfile();
         }
@@ -1045,9 +1031,8 @@
       document.documentElement.classList.toggle("dark");
     };
 
-    const handleLogout = async () => {
-      const currentUser = getStoredUser();
-      await logoutFromServer(currentUser?.id);
+    const handleLogout = () => {
+      localStorage.removeItem("user");
       toast.success("Logged out successfully");
       navigate("/login");
     };

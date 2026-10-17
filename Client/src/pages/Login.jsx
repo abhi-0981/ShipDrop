@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   FiArrowLeft,
@@ -9,11 +9,6 @@ import {
 } from "react-icons/fi";
 import toast from "react-hot-toast";
 import api from "../services/api";
-import {
-  saveUserSession,
-  getStoredUser,
-  isSessionExpired,
-} from "../services/authSession";
 
 function Login() {
   const navigate = useNavigate();
@@ -25,14 +20,6 @@ function Login() {
 
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-
-  // If user is already logged in with a valid session, go straight to dashboard
-  useEffect(() => {
-    const user = getStoredUser();
-    if (user && !isSessionExpired(user)) {
-      navigate("/dashboard", { replace: true });
-    }
-  }, [navigate]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -81,17 +68,10 @@ function Login() {
         return;
       }
 
-      const loginTime =
-        response.data?.login_time ||
-        user.login_time ||
-        Date.now();
-
-      const sessionVersion =
-        response.data?.session_version !== undefined
-          ? response.data.session_version
-          : (user.session_version || 1);
-
-      saveUserSession(user, loginTime, sessionVersion);
+      localStorage.setItem(
+        "user",
+        JSON.stringify(user)
+      );
 
       toast.success("Login successful");
 

@@ -360,9 +360,6 @@ const loginUser = (req, res) => {
         // NEVER SEND PASSWORD
         // ----------------------------------
 
-        const loginTime = Date.now();
-        const sessionVersion = Number(user.session_version || 1);
-
         const safeUser = {
           id: user.id,
           full_name: user.full_name,
@@ -373,16 +370,12 @@ const loginUser = (req, res) => {
           role: user.role,
           profile_image: user.profile_image || null,
           created_at: user.created_at,
-          login_time: loginTime,
-          session_version: sessionVersion,
         };
 
         return res.status(200).json({
           message: "Login successful",
           role: user.role,
           user: safeUser,
-          login_time: loginTime,
-          session_version: sessionVersion,
         });
       },
     );
@@ -622,111 +615,9 @@ const updateUserProfile = (req, res) => {
   );
 };
 
-// ========================================
-// LOGOUT USER
-// ========================================
-
-const logoutUser = (req, res) => {
-  try {
-    const userId = Number(req.body?.user_id || req.query?.user_id);
-
-    if (!userId) {
-      return res.status(200).json({
-        success: true,
-        message: "Logged out",
-      });
-    }
-
-    userModel.recordUserLogout(userId, (err) => {
-      if (err) {
-        console.error("Logout DB error:", err);
-      }
-      return res.status(200).json({
-        success: true,
-        message: "Logged out successfully",
-      });
-    });
-  } catch (error) {
-    console.error("Logout handler error:", error);
-    return res.status(200).json({
-      success: true,
-      message: "Logged out",
-    });
-  }
-};
-
-// ========================================
-// VERIFY USER SESSION
-// ========================================
-
-const verifyUserSession = (req, res) => {
-  try {
-    const userId = Number(req.body?.user_id || req.query?.user_id);
-    const clientVersion =
-      req.body?.session_version !== undefined && req.body?.session_version !== null
-        ? Number(req.body.session_version)
-        : null;
-
-    if (!userId) {
-      return res.status(400).json({
-        valid: false,
-        reason: "INVALID_USER",
-        message: "User ID is required",
-      });
-    }
-
-    userModel.getUserSessionStatus(userId, (err, result) => {
-      if (err) {
-        console.error("verifyUserSession database error:", err);
-        return res.status(200).json({
-          valid: true,
-          message: "Unable to check remote session",
-        });
-      }
-
-      if (result.length === 0) {
-        return res.status(404).json({
-          valid: false,
-          reason: "USER_NOT_FOUND",
-          message: "User account not found",
-        });
-      }
-
-      const user = result[0];
-      const currentVersion = Number(user.session_version || 1);
-
-      // Only invalidate if client's session_version is explicitly LESS than the DB session_version
-      // (meaning an explicit logout happened after this session was created)
-      if (
-        clientVersion !== null &&
-        !isNaN(clientVersion) &&
-        clientVersion < currentVersion
-      ) {
-        return res.status(200).json({
-          valid: false,
-          reason: "LOGGED_OUT_REMOTELY",
-          message: "Account was logged out from another device.",
-        });
-      }
-
-      return res.status(200).json({
-        valid: true,
-        session_version: currentVersion,
-      });
-    });
-  } catch (error) {
-    console.error("verifyUserSession error:", error);
-    return res.status(200).json({
-      valid: true,
-    });
-  }
-};
-
 module.exports = {
   registerUser,
   loginUser,
   getUserProfile,
   updateUserProfile,
-  logoutUser,
-  verifyUserSession,
 };
