@@ -470,11 +470,7 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
                     path: "/rto-delivered",
                     count: statusCounts["RTO DELIVERED"],
                   },
-                  {
-                    name: "Returned",
-                    path: "/returned",
-                    count: statusCounts.RETURNED,
-                  },
+                 
                   {
                     name: "Cancelled",
                     path: "/cancelled",
