@@ -1092,7 +1092,7 @@ const triggerTracking = (awb) => {
     type="button"
     onClick={() => triggerTracking(getAWB(order))}
     title="Track Shipment"
-    className="min-w-0 truncate text-left text-[12px] font-semibold text-slate-800 hover:text-[#008dd2] hover:underline"
+    className="min-w-0 truncate text-left text-[12px] font-semibold text-slate-800 hover:text-[#008dd2] "
   >
     {valueOrDash(getAWB(order))}
   </button>
