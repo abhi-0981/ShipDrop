@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import { toast } from "react-hot-toast";
 import api from "../../services/api";
 import OrderDetailsModal from "../../components/Common/OrderDetailsModal";
@@ -644,6 +644,15 @@ useEffect(() => {
     return statusMatch && serviceMatch && paymentMatch;
   });
 
+  const sortedFilteredOrders = useMemo(() => {
+  return [...filteredOrders].sort((a, b) => {
+    const dateA = new Date(getCreatedAt(a) || 0).getTime();
+    const dateB = new Date(getCreatedAt(b) || 0).getTime();
+
+    return dateB - dateA;
+  });
+}, [filteredOrders]);
+
   const getOrderKey = (order) => String(order?.id ?? order?.order_id);
 
   const selectedOrders = nonProcessingOrders.filter((order) =>
@@ -1118,7 +1127,7 @@ useEffect(() => {
               </p>
             </div>
           ) : (
-            filteredOrders.map((order) => {
+            sortedFilteredOrders.map((order) => {
               const id = getOrderKey(order);
               const selected = selectedIds.includes(id);
               const service = getServiceType(order);
@@ -1295,7 +1304,13 @@ useEffect(() => {
             2. TABLET & DESKTOP: STRUCTURED TABLE
         ================================================== */}
         <div className="hidden sm:block overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
-          <div className="max-h-[calc(100vh-180px)] overflow-y-auto overflow-x-hidden">
+          <div
+  className="orders-scrollbar max-h-[calc(100vh-180px)] overflow-y-auto overflow-x-hidden"
+  style={{
+    scrollbarWidth: "thin",
+    scrollbarColor: "#cbd5e1 transparent",
+  }}
+>
             <table className="w-full table-fixed border-collapse">
               <thead className="sticky top-0 z-20 bg-white">
                 <tr className="border-b border-slate-200 bg-white">
@@ -1367,7 +1382,7 @@ useEffect(() => {
                     </td>
                   </tr>
                 ) : (
-                  filteredOrders.map((order) => {
+                  sortedFilteredOrders.map((order) => {
                     const id = getOrderKey(order);
                     const selected = selectedIds.includes(id);
                     const service = getServiceType(order);
