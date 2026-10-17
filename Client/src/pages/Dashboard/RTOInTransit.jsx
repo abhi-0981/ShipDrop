@@ -1474,7 +1474,7 @@ function RTOInTransit() {
                                     type="button"
                                     onClick={() => triggerTracking(awb)}
                                     title="Track shipment"
-                                    className="min-w-0 truncate text-left text-[12px] font-semibold text-slate-800 hover:text-[#008dd2] hover:underline"
+                                    className="min-w-0 truncate text-left text-[12px] font-semibold text-slate-800 hover:text-[#008dd2]"
                                   >
                                     {awb}
                                   </button>

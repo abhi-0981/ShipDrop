@@ -1437,7 +1437,7 @@ useEffect(() => {
                                   <p
                                     onClick={() => triggerTracking(awb)}
                                     title="click to track"
-                                    className="truncate text-[13px] font-semibold text-slate-800 cursor-pointer select-none"
+                                    className="truncate text-[13px] font-semibold text-slate-800 cursor-pointer select-none hover:text-[#008dd2] "
                                   >
                                     {awb}
                                   </p>
