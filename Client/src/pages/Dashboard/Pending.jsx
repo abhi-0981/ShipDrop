@@ -1281,11 +1281,16 @@ function Pending() {
                 const width = order?.width ?? firstPackage?.width;
                 const height = order?.height ?? firstPackage?.height;
                 const volume = order?.volumetric_weight ?? (length && width && height ? ((Number(length) * Number(width) * Number(height)) / 5000).toFixed(2) : null);
-                console.log("PICKUP ID DEBUG:", {
+                const pickupId =
+  order?.pickup_request_id ||
+  order?.pickup_id ||
+  order?.pickup_address_id ||
+  "-";
+
+console.log("PICKUP ID DEBUG:", {
   pickup_request_id: order?.pickup_request_id,
-  pickup_address_id: order?.pickup_address_id,
   pickup_id: order?.pickup_id,
-  order,
+  pickup_address_id: order?.pickup_address_id,
 });
                 const shipmentService = getServiceType(order);
                 const createdDate = order?.manifest_created_at || order?.created_at;
