@@ -506,10 +506,10 @@ const StatusBadge = ({ status }) => {
 
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-semibold ${className}`}
+      className={`inline-flex items-center  rounded-full p-0.5 text-[9px] font-semibold ${className}`}
     >
-      <span className="h-1 w-1 rounded-full bg-current" />
-      {getStatusLabel(status)}
+      {/* <span className="h-1 w-1 rounded-full bg-current" /> */}
+      {getStatusLabel(status).toUpperCase}
     </span>
   );
 };
@@ -1835,23 +1835,40 @@ function RTOInTransit() {
                               ROUTE
                           ================================== */}
 
-                          <td className="px-3 py-2.5">
-                            <div className="flex min-w-0 items-start gap-2">
-                              <div className="flex w-3.5 shrink-0 flex-col items-center pt-0.5">
-                                <HiOutlineLocationMarker className="h-3.5 w-3.5 text-[#008dd2]" />
-                                <span className="my-0.5 h-3.5 border-l border-dotted border-slate-300" />
-                                <HiOutlineLocationMarker className="h-3.5 w-3.5 text-slate-400" />
-                              </div>
-                              <div className="min-w-0 flex-1 leading-[16px]">
-                                <p className="truncate text-[12px] font-medium text-slate-700" title={`${getPickupCity(order)} (${getPickupPincode(order)})`}>
-                                  {getPickupCity(order)} <span className="text-[10px] font-normal text-slate-400">({getPickupPincode(order)})</span>
-                                </p>
-                                <p className="truncate text-[12px] font-medium text-slate-700" title={`${getDeliveryCity(order)} (${getDeliveryPincode(order)})`}>
-                                  {getDeliveryCity(order)} <span className="text-[10px] font-normal text-slate-400">({getDeliveryPincode(order)})</span>
-                                </p>
-                              </div>
-                            </div>
-                          </td>
+                         <td className="px-3 py-2.5">
+  <div className="flex flex-col gap-0">
+    {/* Pickup */}
+    <div className="flex items-center gap-2 leading-[16px]">
+      <HiOutlineLocationMarker
+        className="shrink-0 text-sky-500"
+        size={13}
+      />
+      <span className="text-[11px] font-medium text-slate-700">
+        {getPickupCity(order)}{" "}
+        <span className="text-[10px] font-normal text-slate-400">
+          ({getPickupPincode(order) || "—"})
+        </span>
+      </span>
+    </div>
+
+    {/* Dotted connector */}
+    <div className="ml-[5px] h-[9px] border-l border-dotted border-slate-300" />
+
+    {/* Delivery */}
+    <div className="flex items-center gap-2 leading-[16px]">
+      <HiOutlineLocationMarker
+        className="shrink-0 text-slate-400"
+        size={13}
+      />
+      <span className="text-[11px] font-medium text-slate-700">
+        {getDeliveryCity(order)}{" "}
+        <span className="text-[10px] font-normal text-slate-400">
+          ({getDeliveryPincode(order) || "—"})
+        </span>
+      </span>
+    </div>
+  </div>
+</td>
 
                           {/* ==================================
                               PAYMENT
