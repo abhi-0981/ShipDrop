@@ -1447,15 +1447,15 @@ function RTOInTransit() {
                               {getCustomerName(order)}
                             </p>
 
-                            {getMobile(order) && (
-                              <p className="mt-0.5 text-[11px] text-slate-400">
-                                {getMobile(order)}
-                              </p>
-                            )}
+                           {getMobile(order) && (
+  <p className="mt-0 text-[11px] leading-[14px] text-slate-400">
+    {getMobile(order)}
+  </p>
+)}
 
-                            <div className="mt-1.5">
-                              <StatusBadge status={status} />
-                            </div>
+<div className="mt-1">
+  <StatusBadge status={status} />
+</div>
                           </div>
                         </td>
 
