@@ -135,9 +135,11 @@ const Icon = ({ name, size = 18 }) => {
 // ======================================================
 
 const getStatus = (order) =>
-  String(order?.status || "")
+  String(order?.status || order?.order_status || "")
     .trim()
-    .toUpperCase();
+    .toUpperCase()
+    .replace(/\s+/g, " ")
+    .replace(/_/g, " ");
 
 const getOrderId = (order) =>
   String(
@@ -384,31 +386,25 @@ function Dashboard() {
   const statistics = useMemo(() => {
     const total = orders.length;
 
+    // Match the Processing page using the order's primary status.
     const processing = orders.filter(
       (order) => getStatus(order) === "PROCESSING"
     ).length;
 
     const manifested = orders.filter((order) => {
       const status = getStatus(order);
-      return (
-        status === "MANIFESTED" ||
-        status === "SHIPPED" ||
-        status === "IN_TRANSIT" ||
-        status === "DELIVERED"
-      );
+      return ["MANIFESTED", "SHIPPED", "IN TRANSIT", "DELIVERED"].includes(status);
     }).length;
 
-    const cancelled = orders.filter(
-      (order) =>
-        getStatus(order) === "CANCELLED" ||
-        getStatus(order) === "CANCELED"
+    const pending = orders.filter(
+      (order) => getStatus(order) === "PENDING"
     ).length;
 
     return {
       total,
       processing,
       manifested,
-      cancelled,
+      pending,
     };
   }, [orders]);
 
@@ -417,6 +413,16 @@ function Dashboard() {
       .sort((a, b) => Number(b?.id || 0) - Number(a?.id || 0))
       .slice(0, 6);
   }, [orders]);
+
+  const handleResetRateCalculator = () => {
+    setPickupPincode("");
+    setDeliveryPincode("");
+    setWeight("");
+    setProductPrice("");
+    setPaymentType("PREPAID");
+    setRateError("");
+    setShippingOptions(null);
+  };
 
   const handleCalculateRate = async (event) => {
     event.preventDefault();
@@ -757,12 +763,12 @@ if (pageLoading && !orders.length) {
         />
 
         <StatCard
-          title="Cancelled"
-          value={statistics.cancelled}
-          subtitle="Cancelled orders"
-          icon="close-circle"
-          iconClass="bg-rose-50 text-rose-600"
-          onClick={() => navigate("/all-orders")}
+          title="Pending"
+          value={statistics.pending}
+          subtitle="Pending orders"
+          icon="clock"
+          iconClass="bg-amber-50 text-amber-600"
+          onClick={() => navigate("/pending")}
         />
 
         <StatCard
@@ -977,7 +983,7 @@ if (pageLoading && !orders.length) {
               <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-sky-50 text-sky-600">
                 <Icon name="calculator" size={16} />
               </div>
-              <div>
+              <div className="min-w-0 flex-1">
                 <h2 className="text-[14px] font-bold text-slate-800">
                   Calculate Shipping Rate
                 </h2>
@@ -985,6 +991,15 @@ if (pageLoading && !orders.length) {
                   Get your assigned rate instantly
                 </p>
               </div>
+              <button
+                type="button"
+                onClick={handleResetRateCalculator}
+                title="Reset calculator"
+                aria-label="Reset calculator"
+                className="ml-auto flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800 active:scale-95"
+              >
+                <Icon name="refresh" size={15} />
+              </button>
             </div>
           </div>
 
@@ -1249,79 +1264,6 @@ if (pageLoading && !orders.length) {
         </div>
       </div>
 
-      {/* ==================================================
-          BOTTOM SHORTCUT CARDS
-      ================================================== */}
-      <div className="mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-3 sm:gap-3">
-        <button
-          type="button"
-          onClick={() => navigate("/create-order")}
-          className="group rounded-2xl border border-slate-200/80 bg-white p-3.5 sm:p-4 text-left shadow-[0_1px_4px_rgba(15,23,42,0.03)] transition hover:border-sky-200 active:scale-[0.98]"
-        >
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-50 text-sky-600">
-              <Icon name="plus" size={16} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-[13px] font-bold text-slate-700 truncate">
-                Create New Order
-              </p>
-              <p className="text-[10px] text-slate-400 truncate">
-                Start a new shipment
-              </p>
-            </div>
-            <div className="text-slate-300 transition group-hover:text-sky-500">
-              <Icon name="arrow-right" size={14} />
-            </div>
-          </div>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => navigate("/wallet")}
-          className="group rounded-2xl border border-slate-200/80 bg-white p-3.5 sm:p-4 text-left shadow-[0_1px_4px_rgba(15,23,42,0.03)] transition hover:border-violet-200 active:scale-[0.98]"
-        >
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-50 text-violet-600">
-              <Icon name="wallet" size={16} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-[13px] font-bold text-slate-700 truncate">
-                Wallet History
-              </p>
-              <p className="text-[10px] text-slate-400 truncate">
-                View wallet balance & credits
-              </p>
-            </div>
-            <div className="text-slate-300 transition group-hover:text-violet-500">
-              <Icon name="arrow-right" size={14} />
-            </div>
-          </div>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => navigate("/manifested")}
-          className="group rounded-2xl border border-slate-200/80 bg-white p-3.5 sm:p-4 text-left shadow-[0_1px_4px_rgba(15,23,42,0.03)] transition hover:border-emerald-200 active:scale-[0.98]"
-        >
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
-              <Icon name="truck" size={16} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-[13px] font-bold text-slate-700 truncate">
-                Manifested Shipments
-              </p>
-              <p className="text-[10px] text-slate-400 truncate">
-                Track active orders
-              </p>
-            </div>
-            <div className="text-slate-300 transition group-hover:text-emerald-500">
-              <Icon name="arrow-right" size={14} />
-            </div>
-          </div>
-        </button>
-      </div>
     </div>
   );
 }
