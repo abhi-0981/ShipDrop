@@ -255,6 +255,7 @@ function Dashboard() {
 
   const [user, setUser] = useState(null);
   const [orders, setOrders] = useState([]);
+  const [processingOrdersCount, setProcessingOrdersCount] = useState(0);
   const [walletBalance, setWalletBalance] = useState(0);
   const [pageLoading, setPageLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -308,13 +309,14 @@ function Dashboard() {
     setDashboardError("");
 
     try {
-      const [ordersResponse, walletResponse] = await Promise.all([
+      const [ordersResponse, processingResponse, walletResponse] = await Promise.all([
         api.get("/orders/all", {
-  params: {
-    user_id: currentUser.id,
-    include_tracking: false,
-  },
-}),
+          params: {
+            user_id: currentUser.id,
+            include_tracking: false,
+          },
+        }),
+        api.get(`/orders/processing?user_id=${currentUser.id}`),
         api.get(`/payments/wallet?user_id=${currentUser.id}`),
       ]);
 
@@ -332,6 +334,8 @@ function Dashboard() {
         : [];
 
       setOrders(orderList);
+      const processingData = processingResponse?.data?.orders ?? processingResponse?.data ?? [];
+      setProcessingOrdersCount(Array.isArray(processingData) ? processingData.length : 0);
       setWalletBalance(Number(walletData?.balance || 0));
     } catch (error) {
       console.error("Dashboard loading error:", error);
@@ -387,9 +391,7 @@ function Dashboard() {
     const total = orders.length;
 
     // Match the Processing page using the order's primary status.
-    const processing = orders.filter(
-      (order) => getStatus(order) === "PROCESSING"
-    ).length;
+    const processing = processingOrdersCount;
 
     const manifested = orders.filter((order) => {
       const status = getStatus(order);
@@ -406,7 +408,7 @@ function Dashboard() {
       manifested,
       pending,
     };
-  }, [orders]);
+  }, [orders, processingOrdersCount]);
 
   const recentOrders = useMemo(() => {
     return [...orders]
@@ -803,9 +805,9 @@ if (pageLoading && !orders.length) {
               <button
                 type="button"
                 onClick={handleCreateOrder}
-                className="flex h-10 sm:h-9 items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 text-[13px] sm:text-[12px] font-semibold text-white transition hover:bg-slate-800 active:scale-95"
+                className="flex h-9 items-center justify-center gap-1.5 rounded-xl bg-[#111827] px-3 text-[12px] font-semibold text-white shadow-sm transition hover:bg-[#1f2937] active:scale-95"
               >
-                <Icon name="plus" size={15} />
+                <Icon name="plus" size={14} />
                 <span>Create Order</span>
               </button>
             </div>
