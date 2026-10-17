@@ -1096,7 +1096,7 @@ const triggerTracking = (awb) => {
                           <div className="mt-0.5 truncate text-[11px] text-slate-400">
                             {valueOrDash(order?.mobile || order?.phone)}
                           </div>
-                          <span className="mt-1 inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-[9px] font-medium text-amber-600">
+                          <span className=" inline-flex rounded-full bg-amber-50 p-0.5 text-[10px] font-medium text-amber-600">
                             ● UNDELIVERED
                           </span>
                         </div>
