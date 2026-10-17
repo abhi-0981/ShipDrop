@@ -11,12 +11,15 @@ import {
   HiOutlineRefresh,
   HiOutlineChevronDown,
   HiOutlineFilter,
+  HiOutlinePrinter,
+  HiOutlineLocationMarker,
 } from "react-icons/hi";
 
 import toast from "react-hot-toast";
 
 import api from "../../services/api";
-import { subscribeToOrderUpdates } from "../../services/orderEvents";
+import { notifyOrderChange, subscribeToOrderUpdates } from "../../services/orderEvents";
+import { printShippingLabels } from "../../services/shippingLabelService";
 
 /* =========================================================
    USER ID
@@ -149,28 +152,9 @@ const getOrderStatus = (order) => {
 ========================================================= */
 
 const isNdrOrPending = (order) => {
-  const trackingStatus = String(
-    order?.tracking_status || ""
-  )
-    .trim()
-    .toUpperCase()
-    .replace(/_/g, " ");
-
-  const orderStatus = String(
-    order?.status ||
-      order?.order_status ||
-      ""
-  )
-    .trim()
-    .toUpperCase()
-    .replace(/_/g, " ");
-
-  return (
-    trackingStatus === "NDR" ||
-    orderStatus === "NDR" ||
-    trackingStatus === "PENDING" ||
-    orderStatus === "PENDING"
-  );
+  const trackingStatus = String(order?.tracking_status || "").trim().toUpperCase().replace(/_/g, " ");
+  const orderStatus = String(order?.status || order?.order_status || "").trim().toUpperCase().replace(/_/g, " ");
+  return trackingStatus === "PENDING" || orderStatus === "PENDING";
 };
 
 /* =========================================================
@@ -1604,6 +1588,58 @@ function Pending() {
       );
     };
 
+  const handlePrintSingleLabel = async (order) => {
+    if (!order) return toast.error("Unable to print this label");
+    await printShippingLabels([order], "ParcelDrop Shipping Label");
+  };
+
+  const handleDuplicate = async (order) => {
+    const orderId = order?.id;
+    const userId = getUserId();
+    if (!orderId || !userId) return toast.error("Unable to duplicate this order");
+    try {
+      const response = await api.get(`/orders/${orderId}`, { params: { user_id: userId } });
+      const result = response?.data;
+      if (!result?.success || !result?.order) throw new Error(result?.message || "Unable to load order details");
+      const source = result.order;
+      const warehouseId = Number(source?.warehouse_id || source?.warehouse?.id || order?.warehouse_id || 0);
+      if (!warehouseId) throw new Error("Pickup warehouse is missing");
+      const payload = {
+        user_id: Number(userId), pickup_address: source?.pickup_address || null,
+        pickup_pincode: source?.pickup_pincode || null, pickup_city: source?.pickup_city || null,
+        warehouse_id: warehouseId, pickup_address_id: source?.pickup_address_id || null,
+        orderData: {
+          consignee_name: source?.consignee_name || "", mobile: source?.mobile || "",
+          alternate_mobile: source?.alternate_mobile || null, email: source?.email || null,
+          gstin: source?.gstin || null, company_name: source?.company_name || null,
+          floor_no: source?.floor_no || null, landmark: source?.landmark || null,
+          address_line1: source?.address_line1 || "", address_line2: source?.address_line2 || null,
+          pincode: source?.pincode || "", city: source?.city || "", state: source?.state || "",
+          country: source?.country || "India", payment_type: source?.payment_type || "Prepaid",
+          risk_type: source?.risk_type || "Owner Risk", warehouse_id: warehouseId,
+          fragile_shipment: Number(source?.fragile_shipment) === 1 ? 1 : 0,
+          dangerous_good: Number(source?.dangerous_good) === 1 ? 1 : 0,
+        },
+        products: Array.isArray(source?.products) ? source.products.map((product) => ({
+          product_name: product?.product_name || "", sku: product?.sku || null,
+          price: Number(product?.price) || 0, qty: Number(product?.qty) || 1, tax: Number(product?.tax) || 0,
+        })) : [],
+        packages: Array.isArray(source?.packages) ? source.packages.map((pkg) => ({
+          length: Number(pkg?.length) || 0, width: Number(pkg?.width) || 0,
+          height: Number(pkg?.height) || 0, weight: Number(pkg?.weight) || 0,
+          package_count: Number(pkg?.package_count) || 1,
+        })) : [],
+      };
+      const created = (await api.post("/orders/create", payload))?.data;
+      if (!created?.success || !created?.order_id) throw new Error(created?.message || "Unable to duplicate order");
+      toast.success(`Order duplicated successfully. New order #${created.order_id} is in Processing.`);
+      await fetchOrders();
+      notifyOrderChange({ type: "created", orderId: created.order_id });
+    } catch (error) {
+      toast.error(error?.response?.data?.message || error?.message || "Unable to duplicate order");
+    }
+  };
+
   /* =======================================================
      COPY
   ======================================================= */
@@ -1675,7 +1711,7 @@ function Pending() {
           <div className="flex items-center gap-2">
 
             <h1 className="text-[21px] font-semibold tracking-[-0.02em] text-slate-800">
-              NDR & Pending
+              Pending Orders
             </h1>
 
             <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
@@ -1685,7 +1721,7 @@ function Pending() {
           </div>
 
           <p className="mt-1 text-[12px] text-slate-500">
-            Manage NDR and Pending orders
+            Manage pending orders
           </p>
 
         </div>
@@ -1774,10 +1810,6 @@ function Pending() {
                 All Status
               </option>
 
-              <option value="NDR">
-                NDR
-              </option>
-
               <option value="Pending">
                 Pending
               </option>
@@ -1838,80 +1870,6 @@ function Pending() {
       </div>
 
       {/* =================================================
-          STATUS SUMMARY
-      ================================================= */}
-
-      <div className="mb-4 flex items-center gap-2">
-
-        <button
-          type="button"
-          onClick={() =>
-            setStatusFilter(
-              "ALL"
-            )
-          }
-          className={`flex h-9 items-center gap-2 rounded-lg border px-3 text-[11px] font-semibold transition ${
-            statusFilter ===
-            "ALL"
-              ? "border-blue-200 bg-blue-50 text-[#008dd2]"
-              : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50"
-          }`}
-        >
-          All Orders
-
-          <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px]">
-            {orders.length}
-          </span>
-
-        </button>
-
-        <button
-          type="button"
-          onClick={() =>
-            setStatusFilter(
-              "NDR"
-            )
-          }
-          className={`flex h-9 items-center gap-2 rounded-lg border px-3 text-[11px] font-semibold transition ${
-            statusFilter ===
-            "NDR"
-              ? "border-rose-200 bg-rose-50 text-rose-600"
-              : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50"
-          }`}
-        >
-          NDR
-
-          <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px]">
-            {ndrCount}
-          </span>
-
-        </button>
-
-        <button
-          type="button"
-          onClick={() =>
-            setStatusFilter(
-              "Pending"
-            )
-          }
-          className={`flex h-9 items-center gap-2 rounded-lg border px-3 text-[11px] font-semibold transition ${
-            statusFilter ===
-            "Pending"
-              ? "border-amber-200 bg-amber-50 text-amber-600"
-              : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50"
-          }`}
-        >
-          Pending
-
-          <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px]">
-            {pendingCount}
-          </span>
-
-        </button>
-
-      </div>
-
-      {/* =================================================
           ERROR
       ================================================= */}
 
@@ -1949,9 +1907,9 @@ function Pending() {
 
       <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
 
-        <div className="overflow-x-auto">
+        <div className="w-full overflow-x-hidden">
 
-          <table className="w-full min-w-[950px] border-collapse">
+          <table className="w-full table-fixed border-collapse">
 
             <thead>
 
@@ -2004,7 +1962,7 @@ function Pending() {
                   Date
                 </th>
 
-                <th className="w-[60px] px-3 py-3 text-center text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                <th className="w-[132px] px-2 py-3 text-center text-[10px] font-semibold uppercase tracking-wide text-slate-500">
                   Action
                 </th>
 
@@ -2249,20 +2207,16 @@ function Pending() {
 
                         <td className="px-3 py-3">
 
-                          <div className="max-w-[185px]">
-
-                            <div className="truncate text-[10px] font-medium text-slate-600">
-                              {pickup}
+                          <div className="flex min-w-0 max-w-[185px] items-stretch gap-2">
+                            <div className="flex w-3 shrink-0 flex-col items-center pt-0.5">
+                              <HiOutlineLocationMarker className="text-[13px] text-[#008dd2]" />
+                              <span className="my-0.5 h-3 border-l border-dashed border-slate-300" />
+                              <HiOutlineLocationMarker className="text-[13px] text-slate-400" />
                             </div>
-
-                            <div className="my-0.5 text-[8px] text-slate-300">
-                              ↓
+                            <div className="min-w-0 flex-1">
+                              <div className="truncate text-[10px] font-medium leading-5 text-slate-700">{pickup}</div>
+                              <div className="truncate text-[10px] font-medium leading-5 text-slate-700">{delivery}</div>
                             </div>
-
-                            <div className="truncate text-[10px] font-medium text-slate-600">
-                              {delivery}
-                            </div>
-
                           </div>
 
                         </td>
@@ -2301,21 +2255,18 @@ function Pending() {
 
                         {/* ACTION */}
 
-                        <td className="px-3 py-3 text-center">
-
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setViewingOrder(
-                                order
-                              )
-                            }
-                            className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:border-[#008dd2]/30 hover:bg-blue-50 hover:text-[#008dd2]"
-                            title="View order details"
-                          >
-                            <HiOutlineEye className="text-[14px]" />
-                          </button>
-
+                        <td className="px-2 py-3">
+                          <div className="flex items-center justify-center gap-1.5 whitespace-nowrap">
+                            <button type="button" onClick={() => handlePrintSingleLabel(order)} title="Print Shipping Label" aria-label="Print Shipping Label" className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[7px] border border-[#008dd2] bg-[#008dd2] text-white transition hover:bg-[#007dbb]">
+                              <HiOutlinePrinter className="text-[16px]" />
+                            </button>
+                            <button type="button" onClick={() => handleDuplicate(order)} title="Duplicate Order" aria-label="Duplicate Order" className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[7px] border border-[#008dd2] bg-[#008dd2] text-white transition hover:bg-[#007dbb]">
+                              <HiOutlineClipboardCopy className="text-[16px]" />
+                            </button>
+                            <button type="button" onClick={() => setViewingOrder(order)} title="View order details" aria-label="View order details" className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[7px] border border-slate-200 bg-white text-slate-600 transition hover:border-[#008dd2]/40 hover:bg-blue-50 hover:text-[#008dd2]">
+                              <HiOutlineEye className="text-[16px]" />
+                            </button>
+                          </div>
                         </td>
 
                       </tr>
