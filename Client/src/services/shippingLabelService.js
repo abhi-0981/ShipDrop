@@ -236,8 +236,8 @@ const getOrderValue = (o) =>
     )
   ) || 0;
 
-const getCodAmount = (o) =>
-  Number(
+const getCodAmount = (o) => {
+  const codAmount = Number(
     first(
       o.cod_amount,
       o.codAmount,
@@ -246,10 +246,22 @@ const getCodAmount = (o) =>
       o.collectable_amount,
       o.collectableAmount,
       o.amount_to_collect,
-      o.amountToCollect,
-      0
+      o.amountToCollect
     )
-  ) || 0;
+  );
+
+  if (Number.isFinite(codAmount) && codAmount > 0) {
+    return codAmount;
+  }
+
+  const products = getProducts(o);
+  const productTotal = products.reduce(
+    (sum, product) => sum + (Number(product.total) || 0),
+    0
+  );
+
+  return productTotal > 0 ? productTotal : getOrderValue(o);
+};
 
 const money = (value) =>
   `₹${(Number(value) || 0).toFixed(2)}`;
