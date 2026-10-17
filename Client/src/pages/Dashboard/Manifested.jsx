@@ -226,8 +226,18 @@ const getDeliveryPincode = (order) =>
 const getServiceType = (order) =>
   String(order.service_type || order.serviceType || "ROAD").toUpperCase();
 
-const getTrackingStatus = (order) =>
-  String(
+const getTrackingStatus = (order) => {
+  const primary = String(
+    order?.manifest_status || order?.status || order?.order_status || ""
+  )
+    .trim()
+    .toUpperCase();
+
+  if (primary === "CANCELLED" || primary === "CANCELED") {
+    return "CANCELLED";
+  }
+
+  return String(
     order?.tracking_status ||
       order?.order_status ||
       order?.status ||
@@ -235,6 +245,7 @@ const getTrackingStatus = (order) =>
   )
     .trim()
     .toUpperCase();
+};
 
 const getStatusBadgeClass = (status) => {
   switch (String(status || "").toUpperCase()) {

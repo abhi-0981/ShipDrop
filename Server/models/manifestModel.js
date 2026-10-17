@@ -1197,7 +1197,8 @@ for (const shipment of cancelled) {
         `
           UPDATE orders
           SET
-            status = 'Cancelled'
+            status = 'Cancelled',
+            tracking_status = 'CANCELLED'
           WHERE
             user_id = ?
             AND id IN (

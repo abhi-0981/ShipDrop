@@ -69,8 +69,21 @@ async function ensureIndexes() {
         }
       } catch (err) {
         // Log but do not block execution (e.g. table might not exist or duplicate key)
-        console.warn(`[DB OPTIMIZE] Index check/create skipped for ${idx.name}:`, err.message);
+    }
+
+    // Synchronize cancelled orders: ensure tracking_status = 'CANCELLED' in MySQL
+    try {
+      const [syncResult] = await promiseDb.query(`
+        UPDATE orders
+        SET tracking_status = 'CANCELLED'
+        WHERE (UPPER(TRIM(COALESCE(status, ''))) IN ('CANCELLED', 'CANCELED') OR UPPER(TRIM(COALESCE(order_status, ''))) IN ('CANCELLED', 'CANCELED'))
+          AND (tracking_status IS NULL OR UPPER(TRIM(tracking_status)) <> 'CANCELLED')
+      `);
+      if (syncResult && syncResult.affectedRows > 0) {
+        console.log(`[DB OPTIMIZE] Synchronized ${syncResult.affectedRows} cancelled orders tracking_status to CANCELLED.`);
       }
+    } catch (syncErr) {
+      console.warn("[DB OPTIMIZE] Cancelled status sync skipped:", syncErr.message);
     }
   } catch (error) {
     console.warn("[DB OPTIMIZE] Index optimization check skipped:", error.message);

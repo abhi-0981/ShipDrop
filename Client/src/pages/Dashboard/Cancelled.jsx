@@ -426,6 +426,16 @@ const formatTime = (value) => {
 // ======================================================
 
 const getStatus = (order) => {
+  const primaryStatus = safeString(
+    order?.status || order?.order_status
+  )
+    .trim()
+    .toUpperCase();
+
+  if (primaryStatus === "CANCELLED" || primaryStatus === "CANCELED") {
+    return "CANCELLED";
+  }
+
   return safeString(
     order?.tracking_status ||
       order?.status ||

@@ -543,6 +543,24 @@ const getAllOrdersController = async (req, res) => {
         // Unpack stored JSON tracking data into order object
         // --------------------------------------------------
         const ordersWithStoredTracking = rawRows.map((order) => {
+          const isCancelled =
+            String(order.status || "").trim().toUpperCase() === "CANCELLED" ||
+            String(order.status || "").trim().toUpperCase() === "CANCELED" ||
+            String(order.order_status || "").trim().toUpperCase() === "CANCELLED" ||
+            String(order.order_status || "").trim().toUpperCase() === "CANCELED" ||
+            String(order.tracking_status || "").trim().toUpperCase() === "CANCELLED" ||
+            String(order.tracking_status || "").trim().toUpperCase() === "CANCELED";
+
+          if (isCancelled) {
+            return {
+              ...order,
+              status: "Cancelled",
+              order_status: "Cancelled",
+              tracking_status: "CANCELLED",
+              tracking_available: false,
+            };
+          }
+
           let trackingData = order.tracking_data;
           if (trackingData) {
             try {

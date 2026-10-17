@@ -7,9 +7,12 @@ const safeString = (value) => {
 
 const getOrderId = (order) => order?.order_id || order?.id || "—";
 const getAWB = (order) => order?.awb || order?.waybill || order?.awb_number || "—";
-const getStatus = (order) =>
-  safeString(order?.tracking_status || order?.status || order?.order_status || "PROCESSING")
-    .trim().toUpperCase().replace(/[-_]+/g, " ").replace(/\\s+/g, " ");
+const getStatus = (order) => {
+  const primary = safeString(order?.status || order?.order_status).trim().toUpperCase();
+  if (primary === "CANCELLED" || primary === "CANCELED") return "CANCELLED";
+  return safeString(order?.tracking_status || order?.status || order?.order_status || "PROCESSING")
+    .trim().toUpperCase().replace(/[-_]+/g, " ").replace(/\s+/g, " ");
+};
 const getStatusLabel = (status) =>
   String(status || "PROCESSING").trim().toUpperCase().replace(/[-_]+/g, " ").replace(/\\s+/g, " ");
 const getServiceType = (order) => {

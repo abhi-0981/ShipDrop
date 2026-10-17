@@ -423,27 +423,27 @@ const getAllOrders = (user_id, page = 1, limit = 50, search = "", status = "", c
 
   if (normalizedStatus && normalizedStatus !== "ALL") {
     if (normalizedStatus === "PENDING") {
-      statusCondition = "AND UPPER(TRIM(COALESCE(o.status, ''))) <> 'PROCESSING' AND (UPPER(TRIM(COALESCE(o.status, ''))) = 'PENDING' OR UPPER(TRIM(COALESCE(o.tracking_status, ''))) = 'PENDING')";
+      statusCondition = "AND UPPER(TRIM(COALESCE(o.status, ''))) NOT IN ('PROCESSING', 'CANCELLED', 'CANCELED') AND (UPPER(TRIM(COALESCE(o.status, ''))) = 'PENDING' OR UPPER(TRIM(COALESCE(o.tracking_status, ''))) = 'PENDING')";
     } else if (normalizedStatus === "IN TRANSIT") {
-      statusCondition = "AND UPPER(TRIM(COALESCE(o.status, ''))) <> 'PROCESSING' AND (UPPER(TRIM(COALESCE(o.status, ''))) IN ('IN TRANSIT', 'IN_TRANSIT') OR UPPER(TRIM(COALESCE(o.tracking_status, ''))) IN ('IN TRANSIT', 'IN_TRANSIT'))";
+      statusCondition = "AND UPPER(TRIM(COALESCE(o.status, ''))) NOT IN ('PROCESSING', 'CANCELLED', 'CANCELED') AND (UPPER(TRIM(COALESCE(o.status, ''))) IN ('IN TRANSIT', 'IN_TRANSIT') OR UPPER(TRIM(COALESCE(o.tracking_status, ''))) IN ('IN TRANSIT', 'IN_TRANSIT'))";
     } else if (normalizedStatus === "DELIVERED") {
-      statusCondition = "AND UPPER(TRIM(COALESCE(o.status, ''))) <> 'PROCESSING' AND (UPPER(TRIM(COALESCE(o.status, ''))) = 'DELIVERED' OR UPPER(TRIM(COALESCE(o.tracking_status, ''))) = 'DELIVERED')";
+      statusCondition = "AND UPPER(TRIM(COALESCE(o.status, ''))) NOT IN ('PROCESSING', 'CANCELLED', 'CANCELED') AND (UPPER(TRIM(COALESCE(o.status, ''))) = 'DELIVERED' OR UPPER(TRIM(COALESCE(o.tracking_status, ''))) = 'DELIVERED')";
     } else if (normalizedStatus === "MANIFESTED") {
-      statusCondition = "AND UPPER(TRIM(COALESCE(o.status, ''))) IN ('MANIFESTED', 'NOT PICKED')";
+      statusCondition = "AND UPPER(TRIM(COALESCE(o.status, ''))) NOT IN ('PROCESSING', 'CANCELLED', 'CANCELED') AND UPPER(TRIM(COALESCE(o.status, ''))) IN ('MANIFESTED', 'NOT PICKED')";
     } else if (normalizedStatus === "NOT PICKED") {
-      statusCondition = "AND UPPER(TRIM(COALESCE(o.status, ''))) <> 'PROCESSING' AND (UPPER(TRIM(COALESCE(o.status, ''))) = 'NOT PICKED' OR UPPER(TRIM(COALESCE(o.tracking_status, ''))) = 'NOT PICKED')";
+      statusCondition = "AND UPPER(TRIM(COALESCE(o.status, ''))) NOT IN ('PROCESSING', 'CANCELLED', 'CANCELED') AND (UPPER(TRIM(COALESCE(o.status, ''))) = 'NOT PICKED' OR UPPER(TRIM(COALESCE(o.tracking_status, ''))) = 'NOT PICKED')";
     } else if (normalizedStatus === "OUT FOR DELIVERY" || normalizedStatus === "OFD") {
-      statusCondition = "AND UPPER(TRIM(COALESCE(o.status, ''))) <> 'PROCESSING' AND (UPPER(TRIM(COALESCE(o.status, ''))) IN ('OUT FOR DELIVERY', 'OUT_FOR_DELIVERY', 'OFD') OR UPPER(TRIM(COALESCE(o.tracking_status, ''))) IN ('OUT FOR DELIVERY', 'OUT_FOR_DELIVERY', 'OFD'))";
+      statusCondition = "AND UPPER(TRIM(COALESCE(o.status, ''))) NOT IN ('PROCESSING', 'CANCELLED', 'CANCELED') AND (UPPER(TRIM(COALESCE(o.status, ''))) IN ('OUT FOR DELIVERY', 'OUT_FOR_DELIVERY', 'OFD') OR UPPER(TRIM(COALESCE(o.tracking_status, ''))) IN ('OUT FOR DELIVERY', 'OUT_FOR_DELIVERY', 'OFD'))";
     } else if (normalizedStatus === "CANCELLED" || normalizedStatus === "CANCELED") {
       statusCondition = "AND (UPPER(TRIM(COALESCE(o.status, ''))) IN ('CANCELLED', 'CANCELED') OR UPPER(TRIM(COALESCE(o.tracking_status, ''))) IN ('CANCELLED', 'CANCELED'))";
     } else if (normalizedStatus === "RETURNED") {
-      statusCondition = "AND UPPER(TRIM(COALESCE(o.status, ''))) <> 'PROCESSING' AND (UPPER(TRIM(COALESCE(o.status, ''))) = 'RETURNED' OR UPPER(TRIM(COALESCE(o.tracking_status, ''))) = 'RETURNED')";
+      statusCondition = "AND UPPER(TRIM(COALESCE(o.status, ''))) NOT IN ('PROCESSING', 'CANCELLED', 'CANCELED') AND (UPPER(TRIM(COALESCE(o.status, ''))) = 'RETURNED' OR UPPER(TRIM(COALESCE(o.tracking_status, ''))) = 'RETURNED')";
     } else if (normalizedStatus === "RTO IN TRANSIT") {
-      statusCondition = "AND UPPER(TRIM(COALESCE(o.status, ''))) <> 'PROCESSING' AND (UPPER(TRIM(COALESCE(o.status, ''))) IN ('RTO IN TRANSIT', 'RTO_IN_TRANSIT') OR UPPER(TRIM(COALESCE(o.tracking_status, ''))) IN ('RTO IN TRANSIT', 'RTO_IN_TRANSIT'))";
+      statusCondition = "AND UPPER(TRIM(COALESCE(o.status, ''))) NOT IN ('PROCESSING', 'CANCELLED', 'CANCELED') AND (UPPER(TRIM(COALESCE(o.status, ''))) IN ('RTO IN TRANSIT', 'RTO_IN_TRANSIT') OR UPPER(TRIM(COALESCE(o.tracking_status, ''))) IN ('RTO IN TRANSIT', 'RTO_IN_TRANSIT'))";
     } else if (normalizedStatus === "RTO DELIVERED") {
-      statusCondition = "AND UPPER(TRIM(COALESCE(o.status, ''))) <> 'PROCESSING' AND (UPPER(TRIM(COALESCE(o.status, ''))) IN ('RTO DELIVERED', 'RTO_DELIVERED') OR UPPER(TRIM(COALESCE(o.tracking_status, ''))) IN ('RTO DELIVERED', 'RTO_DELIVERED'))";
+      statusCondition = "AND UPPER(TRIM(COALESCE(o.status, ''))) NOT IN ('PROCESSING', 'CANCELLED', 'CANCELED') AND (UPPER(TRIM(COALESCE(o.status, ''))) IN ('RTO DELIVERED', 'RTO_DELIVERED') OR UPPER(TRIM(COALESCE(o.tracking_status, ''))) IN ('RTO DELIVERED', 'RTO_DELIVERED'))";
     } else {
-      statusCondition = "AND UPPER(TRIM(COALESCE(o.status, ''))) <> 'PROCESSING' AND (UPPER(TRIM(COALESCE(o.status, ''))) = ? OR UPPER(TRIM(COALESCE(o.tracking_status, ''))) = ?)";
+      statusCondition = "AND UPPER(TRIM(COALESCE(o.status, ''))) NOT IN ('PROCESSING', 'CANCELLED', 'CANCELED') AND (UPPER(TRIM(COALESCE(o.status, ''))) = ? OR UPPER(TRIM(COALESCE(o.tracking_status, ''))) = ?)";
       statusParams.push(normalizedStatus, normalizedStatus);
       countStatusParams.push(normalizedStatus, normalizedStatus);
     }
@@ -471,7 +471,10 @@ const getAllOrders = (user_id, page = 1, limit = 50, search = "", status = "", c
       o.return_country,
 
       o.awb,
-      o.tracking_status,
+      CASE
+        WHEN UPPER(TRIM(COALESCE(o.status, ''))) IN ('CANCELLED', 'CANCELED') OR UPPER(TRIM(COALESCE(o.order_status, ''))) IN ('CANCELLED', 'CANCELED') THEN 'CANCELLED'
+        ELSE o.tracking_status
+      END AS tracking_status,
       o.tracking_data,
       o.tracking_updated_at,
 
@@ -689,6 +692,12 @@ const getOrderById = (orderId, userId) => {
           o.return_country,
 
           o.awb,
+          CASE
+            WHEN UPPER(TRIM(COALESCE(o.status, ''))) IN ('CANCELLED', 'CANCELED') OR UPPER(TRIM(COALESCE(o.order_status, ''))) IN ('CANCELLED', 'CANCELED') THEN 'CANCELLED'
+            ELSE o.tracking_status
+          END AS tracking_status,
+          o.tracking_data,
+          o.tracking_updated_at,
 
           o.consignee_name,
           o.mobile,
