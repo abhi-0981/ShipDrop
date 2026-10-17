@@ -1281,7 +1281,12 @@ function Pending() {
                 const width = order?.width ?? firstPackage?.width;
                 const height = order?.height ?? firstPackage?.height;
                 const volume = order?.volumetric_weight ?? (length && width && height ? ((Number(length) * Number(width) * Number(height)) / 5000).toFixed(2) : null);
-                const pickupId = order?.pickup_request_id || "-";
+                console.log("PICKUP ID DEBUG:", {
+  pickup_request_id: order?.pickup_request_id,
+  pickup_address_id: order?.pickup_address_id,
+  pickup_id: order?.pickup_id,
+  order,
+});
                 const shipmentService = getServiceType(order);
                 const createdDate = order?.manifest_created_at || order?.created_at;
                 return (
@@ -1293,7 +1298,7 @@ function Pending() {
                       <div className="min-w-0">
                         <div className="truncate text-[12px] font-semibold text-slate-800">{getCustomerName(order)}</div>
                         <div className="mt-0.5 truncate text-[11px] text-slate-400">{valueOrDash(order?.mobile || order?.phone)}</div>
-                        <span className="mt-1 inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-[9px] font-medium text-amber-600">●UNDELIVERED</span>
+                        <span className="mt-1 inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-[9px] font-medium text-amber-600">● UNDELIVERED</span>
                       </div>
                     </td>
                     <td className="px-2 py-3 align-middle">
