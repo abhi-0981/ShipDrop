@@ -1758,7 +1758,7 @@ function RTOInTransit() {
                               CUSTOMER
                           ================================== */}
 
-                          <td className="px-3 py-3">
+                          <td className="px-3 py-2.5">
 
                             <div className="min-w-0">
 
@@ -1794,7 +1794,7 @@ function RTOInTransit() {
                               SHIPMENT
                           ================================== */}
 
-                          <td className="px-3 py-3">
+                          <td className="px-3 py-2.5">
 
                             <div className="min-w-0">
 
@@ -1835,23 +1835,20 @@ function RTOInTransit() {
                               ROUTE
                           ================================== */}
 
-                          <td className="px-2 py-3">
-                            <div className="flex min-w-0 items-stretch gap-2">
-                              <div className="flex w-4 shrink-0 flex-col items-center pt-0.5">
-                                <HiOutlineLocationMarker className="h-4 w-4 text-[#008dd2]" />
-                                <span className="my-1 min-h-[16px] flex-1 border-l-2 border-dotted border-slate-300" />
-                                <HiOutlineLocationMarker className="h-4 w-4 text-slate-400" />
+                          <td className="px-3 py-2.5">
+                            <div className="flex min-w-0 items-start gap-2">
+                              <div className="flex w-3.5 shrink-0 flex-col items-center pt-0.5">
+                                <HiOutlineLocationMarker className="h-3.5 w-3.5 text-[#008dd2]" />
+                                <span className="my-0.5 h-3.5 border-l border-dotted border-slate-300" />
+                                <HiOutlineLocationMarker className="h-3.5 w-3.5 text-slate-400" />
                               </div>
-                              <div className="min-w-0 flex-1">
-                                <p className="truncate text-[11px] font-semibold text-slate-700" title={`${getPickupCity(order)} ${getPickupPincode(order)}`}>
-                                  {getPickupCity(order)}
+                              <div className="min-w-0 flex-1 leading-[16px]">
+                                <p className="truncate text-[12px] font-medium text-slate-700" title={`${getPickupCity(order)} (${getPickupPincode(order)})`}>
+                                  {getPickupCity(order)} <span className="text-[10px] font-normal text-slate-400">({getPickupPincode(order)})</span>
                                 </p>
-                                <p className="truncate text-[10px] text-slate-400">{getPickupPincode(order) || "—"}</p>
-                                <div className="h-1" />
-                                <p className="truncate text-[11px] font-semibold text-slate-700" title={`${getDeliveryCity(order)} ${getDeliveryPincode(order)}`}>
-                                  {getDeliveryCity(order)}
+                                <p className="truncate text-[12px] font-medium text-slate-700" title={`${getDeliveryCity(order)} (${getDeliveryPincode(order)})`}>
+                                  {getDeliveryCity(order)} <span className="text-[10px] font-normal text-slate-400">({getDeliveryPincode(order)})</span>
                                 </p>
-                                <p className="truncate text-[10px] text-slate-400">{getDeliveryPincode(order) || "—"}</p>
                               </div>
                             </div>
                           </td>
@@ -1860,7 +1857,7 @@ function RTOInTransit() {
                               PAYMENT
                           ================================== */}
 
-                          <td className="px-3 py-3">
+                          <td className="px-3 py-2.5">
 
                             <div>
 
@@ -1897,7 +1894,7 @@ function RTOInTransit() {
                               WEIGHT
                           ================================== */}
 
-                          <td className="px-3 py-3">
+                          <td className="px-3 py-2.5">
 
                             <div>
 
@@ -1934,7 +1931,7 @@ function RTOInTransit() {
                               CREATED
                           ================================== */}
 
-                          <td className="px-3 py-3">
+                          <td className="px-3 py-2.5">
 
                             <p className="text-[12px] font-medium text-slate-700">
                               #
@@ -1972,18 +1969,18 @@ function RTOInTransit() {
                               ACTIONS
                           ================================== */}
 
-                          <td className="px-2 py-3">
-                            <div className="flex items-center justify-start gap-1.5 whitespace-nowrap">
+                          <td className="px-2 py-2.5">
+                            <div className="flex items-center justify-start gap-1 whitespace-nowrap">
                               <button type="button" onClick={() => handlePrintSingleLabel(order)} title="Print label"
-                                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-[#008dd2] bg-[#008dd2] text-white transition hover:bg-[#007ab6]">
+                                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[#008dd2] bg-[#008dd2] text-white transition hover:bg-[#007ab6]">
                                 <Icon name="printer" size={18} />
                               </button>
                               <button type="button" onClick={() => handleDuplicate(order)} title="Duplicate order"
-                                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-[#008dd2] bg-[#008dd2] text-white transition hover:bg-[#007ab6]">
+                                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[#008dd2] bg-[#008dd2] text-white transition hover:bg-[#007ab6]">
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>
                               </button>
                               <button type="button" onClick={() => handleView(order)} title="Order details"
-                                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 transition hover:border-[#008dd2] hover:bg-[#edf8ff] hover:text-[#008dd2]">
+                                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 transition hover:border-[#008dd2] hover:bg-[#edf8ff] hover:text-[#008dd2]">
                                 <Icon name="eye" size={18} />
                               </button>
                             </div>
