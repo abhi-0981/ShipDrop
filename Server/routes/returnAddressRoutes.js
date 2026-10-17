@@ -1,5 +1,4 @@
 const express = require("express");
-router.use(authMiddleware);
 const authMiddleware = require("../middleware/authMiddleware");
 
 const {
@@ -13,6 +12,7 @@ const {
 } = require("../controllers/returnAddressController");
 
 const router = express.Router();
+router.use(authMiddleware);
 
 // ======================================================
 // RETURN ADDRESSES

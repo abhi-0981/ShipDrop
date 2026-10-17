@@ -1,9 +1,8 @@
-const authMiddleware = require("../middleware/authMiddleware");
 const express = require("express");
-router.use(authMiddleware);
+const authMiddleware = require("../middleware/authMiddleware");
 
-const router =
-  express.Router();
+const router = express.Router();
+router.use(authMiddleware);
 
 const {
   calculateRate,
