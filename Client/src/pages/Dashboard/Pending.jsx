@@ -884,21 +884,7 @@ const triggerTracking = (awb) => {
             />
           </div>
 
-          {/* STATUS */}
-
-          <div className="relative">
-            <select
-              value={statusFilter}
-              onChange={(event) => setStatusFilter(event.target.value)}
-              className="h-10 min-w-[145px] appearance-none rounded-lg border border-slate-200 bg-white pl-3 pr-8 text-[12px] font-medium text-slate-600 outline-none focus:border-[#008dd2]"
-            >
-              <option value="ALL">All Status</option>
-
-              <option value="Pending">Undelivered</option>
-            </select>
-
-            <HiOutlineChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[14px] text-slate-400" />
-          </div>
+         
 
           {/* PAYMENT */}
 
@@ -1096,9 +1082,7 @@ const triggerTracking = (awb) => {
                           <div className="mt-0.5 truncate text-[11px] text-slate-400">
                             {valueOrDash(order?.mobile || order?.phone)}
                           </div>
-                          <span className=" inline-flex rounded-full bg-amber-50 p-0.5 text-[10px] font-medium text-amber-600">
-                            ● UNDELIVERED
-                          </span>
+                          <span className=" inline-flex rounded-full bg-amber-50 p-0.5 text-[10px] font-medium text-amber-600">UNDELIVERED</span>
                         </div>
                       </td>
                       <td className="px-2 py-3 align-middle">
