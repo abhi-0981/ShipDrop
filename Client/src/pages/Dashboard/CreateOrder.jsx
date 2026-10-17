@@ -1405,9 +1405,15 @@ dangerous_good: order.dangerous_good === true ||
       city: formData.city,
       state: formData.state,
       country: formData.country || "India",
-      payment_type: formData.payment_type,
-      risk_type: formData.risk_type,
-    };
+   
+payment_type: formData.payment_type,
+risk_type: formData.risk_type,
+
+// Shipment flags
+fragile_shipment: Boolean(formData.fragile_shipment),
+dangerous_good: Boolean(formData.dangerous_good),
+};
+
 
     return { productData, packageData, orderData };
   };
