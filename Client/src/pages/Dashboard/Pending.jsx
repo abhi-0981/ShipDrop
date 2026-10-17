@@ -1245,9 +1245,7 @@ function Pending() {
       */
 
       const filteredList =
-        list.filter(
-          isNdrOrPending
-        );
+        list.filter((order) => getOrderStatus(order) === "Pending");
 
       /*
         Remove duplicate rows
@@ -1379,11 +1377,7 @@ function Pending() {
               query
             );
 
-          const matchesStatus =
-            statusFilter ===
-              "ALL" ||
-            status ===
-              statusFilter;
+          const matchesStatus = status === "Pending";
 
           const matchesService =
             serviceFilter ===
@@ -1906,381 +1900,111 @@ function Pending() {
       ================================================= */}
 
       <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
-
-        <div className="w-full overflow-x-hidden">
-
+        <div className="w-full overflow-hidden">
           <table className="w-full table-fixed border-collapse">
-
             <thead>
-
-              <tr className="border-b border-slate-200 bg-[#fbfcfe]">
-
-                <th className="w-[48px] px-3 py-3 text-left">
-
-                  <input
-                    type="checkbox"
-                    checked={
-                      allVisibleSelected
-                    }
-                    onChange={
-                      handleSelectAll
-                    }
-                    disabled={
-                      filteredOrders.length ===
-                      0
-                    }
-                    className="h-3.5 w-3.5 cursor-pointer rounded border-slate-300 accent-[#008dd2]"
-                  />
-
+              <tr className="border-b border-slate-200 bg-white">
+                <th className="w-[4%] px-3 py-3 text-left">
+                  <input type="checkbox" checked={allVisibleSelected} onChange={handleSelectAll} disabled={filteredOrders.length === 0} className="h-3.5 w-3.5 cursor-pointer rounded border-slate-300 accent-[#008dd2]" />
                 </th>
-
-                <th className="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-wide text-slate-500">
-                  Order
-                </th>
-
-                <th className="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-wide text-slate-500">
-                  Customer
-                </th>
-
-                <th className="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-wide text-slate-500">
-                  AWB
-                </th>
-
-                <th className="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-wide text-slate-500">
-                  Charge
-                </th>
-
-                <th className="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-wide text-slate-500">
-                  Route
-                </th>
-
-                <th className="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-wide text-slate-500">
-                  Status
-                </th>
-
-                <th className="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-wide text-slate-500">
-                  Date
-                </th>
-
-                <th className="w-[132px] px-2 py-3 text-center text-[10px] font-semibold uppercase tracking-wide text-slate-500">
-                  Action
-                </th>
-
+                <th className="w-[17%] px-2 py-3 text-left text-[12px] font-medium text-slate-700">Customer</th>
+                <th className="w-[17%] px-2 py-3 text-left text-[12px] font-medium text-slate-700">Shipment</th>
+                <th className="w-[17%] px-2 py-3 text-left text-[12px] font-medium text-slate-700">Route</th>
+                <th className="w-[11%] px-2 py-3 text-left text-[12px] font-medium text-slate-700">Payment</th>
+                <th className="w-[10%] px-2 py-3 text-left text-[12px] font-medium text-slate-700">Weight</th>
+                <th className="w-[12%] px-2 py-3 text-left text-[12px] font-medium text-slate-700">Created</th>
+                <th className="w-[12%] px-2 py-3 text-center text-[12px] font-medium text-slate-700">Actions</th>
               </tr>
-
             </thead>
-
             <tbody>
-
               {loading ? (
-                <tr>
-
-                  <td
-                    colSpan="9"
-                    className="px-6 py-16 text-center"
-                  >
-
-                    <div className="mx-auto h-7 w-7 animate-spin rounded-full border-2 border-slate-200 border-t-[#008dd2]" />
-
-                    <div className="mt-3 text-[12px] font-medium text-slate-500">
-                      Loading orders...
-                    </div>
-
-                  </td>
-
-                </tr>
-              ) : filteredOrders.length ===
-                0 ? (
-                <tr>
-
-                  <td
-                    colSpan="9"
-                    className="px-6 py-16 text-center"
-                  >
-
-                    <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-slate-50 text-slate-400">
-                      <HiOutlineSearch className="text-[21px]" />
-                    </div>
-
-                    <div className="mt-3 text-[13px] font-semibold text-slate-700">
-                      No orders found
-                    </div>
-
-                    <div className="mt-1 text-[11px] text-slate-400">
-                      Try changing your search or filters.
-                    </div>
-
-                    {(search ||
-                      statusFilter !==
-                        "ALL" ||
-                      serviceFilter !==
-                        "ALL" ||
-                      paymentFilter !==
-                        "ALL") && (
-                      <button
-                        type="button"
-                        onClick={
-                          resetFilters
-                        }
-                        className="mt-3 text-[11px] font-semibold text-[#008dd2] hover:underline"
-                      >
-                        Clear all filters
-                      </button>
-                    )}
-
-                  </td>
-
-                </tr>
-              ) : (
-                filteredOrders.map(
-                  (order) => {
-                    const orderKey =
-                      getOrderKey(
-                        order
-                      );
-
-                    const status =
-                      getOrderStatus(
-                        order
-                      );
-
-                    const charge =
-                      getCharge(
-                        order
-                      );
-
-                    const service =
-                      getServiceType(
-                        order
-                      );
-
-                    const payment =
-                      getPaymentType(
-                        order
-                      );
-
-                    const pickup =
-                      buildAddress(
-                        order?.pickup_city,
-                        order?.pickup_state,
-                        order?.pickup_pincode
-                      );
-
-                    const delivery =
-                      buildAddress(
-                        order?.city,
-                        order?.state,
-                        order?.pincode
-                      );
-
-                    return (
-                      <tr
-                        key={
-                          orderKey
-                        }
-                        className="border-b border-slate-100 transition last:border-b-0 hover:bg-slate-50/60"
-                      >
-
-                        {/* CHECKBOX */}
-
-                        <td className="px-3 py-3">
-
-                          <input
-                            type="checkbox"
-                            checked={selectedIds.includes(
-                              orderKey
-                            )}
-                            onChange={() =>
-                              handleSelect(
-                                order
-                              )
-                            }
-                            className="h-3.5 w-3.5 cursor-pointer rounded border-slate-300 accent-[#008dd2]"
-                          />
-
-                        </td>
-
-                        {/* ORDER */}
-
-                        <td className="px-3 py-3">
-
-                          <div className="flex flex-col">
-
-                            <span className="text-[11px] font-semibold text-slate-700">
-                              {getOrderId(
-                                order
-                              )}
-                            </span>
-
-                            <span className="mt-0.5 text-[9px] text-slate-400">
-                              UID:{" "}
-                              {valueOrDash(
-                                order?.user_id
-                              )}
-                            </span>
-
-                          </div>
-
-                        </td>
-
-                        {/* CUSTOMER */}
-
-                        <td className="px-3 py-3">
-
-                          <div className="max-w-[155px]">
-
-                            <div className="truncate text-[11px] font-medium text-slate-700">
-                              {getCustomerName(
-                                order
-                              )}
-                            </div>
-
-                            <div className="mt-0.5 truncate text-[9px] text-slate-400">
-                              {valueOrDash(
-                                order?.mobile ||
-                                  order?.phone
-                              )}
-                            </div>
-
-                          </div>
-
-                        </td>
-
-                        {/* AWB */}
-
-                        <td className="px-3 py-3">
-
-                          <div className="flex items-center gap-1">
-
-                            <span className="text-[10px] font-medium text-slate-600">
-                              {valueOrDash(
-                                getAWB(
-                                  order
-                                )
-                              )}
-                            </span>
-
-                            {getAWB(
-                              order
-                            ) !== "-" && (
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  copyText(
-                                    getAWB(
-                                      order
-                                    ),
-                                    "AWB"
-                                  )
-                                }
-                                className="rounded p-1 text-slate-400 transition hover:bg-slate-100 hover:text-[#008dd2]"
-                                title="Copy AWB"
-                              >
-                                <HiOutlineClipboardCopy className="text-[12px]" />
-                              </button>
-                            )}
-
-                          </div>
-
-                        </td>
-
-                        {/* CHARGE */}
-
-                        <td className="px-3 py-3">
-
-                          <div className="text-[11px] font-semibold text-slate-700">
-                            {charge !==
-                            null
-                              ? `₹${charge.toFixed(
-                                  2
-                                )}`
-                              : "-"}
-                          </div>
-
-                          <div className="mt-0.5 text-[9px] text-slate-400">
-                            {service}
-                          </div>
-
-                        </td>
-
-                        {/* ROUTE */}
-
-                        <td className="px-3 py-3">
-
-                          <div className="flex min-w-0 max-w-[185px] items-stretch gap-2">
-                            <div className="flex w-3 shrink-0 flex-col items-center pt-0.5">
-                              <HiOutlineLocationMarker className="text-[13px] text-[#008dd2]" />
-                              <span className="my-0.5 h-3 border-l border-dashed border-slate-300" />
-                              <HiOutlineLocationMarker className="text-[13px] text-slate-400" />
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <div className="truncate text-[10px] font-medium leading-5 text-slate-700">{pickup}</div>
-                              <div className="truncate text-[10px] font-medium leading-5 text-slate-700">{delivery}</div>
-                            </div>
-                          </div>
-
-                        </td>
-
-                        {/* STATUS */}
-
-                        <td className="px-3 py-3">
-
-                          <div className="flex flex-col items-start gap-1">
-
-                            <StatusBadge
-                              status={
-                                status
-                              }
-                            />
-
-                            <span className="text-[8px] text-slate-400">
-                              {payment}
-                            </span>
-
-                          </div>
-
-                        </td>
-
-                        {/* DATE */}
-
-                        <td className="px-3 py-3">
-
-                          <span className="text-[10px] font-medium text-slate-500">
-                            {formatDate(
-                              order?.created_at
-                            )}
-                          </span>
-
-                        </td>
-
-                        {/* ACTION */}
-
-                        <td className="px-2 py-3">
-                          <div className="flex items-center justify-center gap-1.5 whitespace-nowrap">
-                            <button type="button" onClick={() => handlePrintSingleLabel(order)} title="Print Shipping Label" aria-label="Print Shipping Label" className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[7px] border border-[#008dd2] bg-[#008dd2] text-white transition hover:bg-[#007dbb]">
-                              <HiOutlinePrinter className="text-[16px]" />
-                            </button>
-                            <button type="button" onClick={() => handleDuplicate(order)} title="Duplicate Order" aria-label="Duplicate Order" className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[7px] border border-[#008dd2] bg-[#008dd2] text-white transition hover:bg-[#007dbb]">
-                              <HiOutlineClipboardCopy className="text-[16px]" />
-                            </button>
-                            <button type="button" onClick={() => setViewingOrder(order)} title="View order details" aria-label="View order details" className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[7px] border border-slate-200 bg-white text-slate-600 transition hover:border-[#008dd2]/40 hover:bg-blue-50 hover:text-[#008dd2]">
-                              <HiOutlineEye className="text-[16px]" />
-                            </button>
-                          </div>
-                        </td>
-
-                      </tr>
-                    );
-                  }
-                )
-              )}
-
+                <tr><td colSpan={8} className="px-6 py-16 text-center">
+                  <div className="mx-auto h-7 w-7 animate-spin rounded-full border-2 border-slate-200 border-t-[#008dd2]" />
+                  <div className="mt-3 text-[12px] font-medium text-slate-500">Loading pending orders...</div>
+                </td></tr>
+              ) : filteredOrders.length === 0 ? (
+                <tr><td colSpan={8} className="px-6 py-16 text-center">
+                  <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-slate-50 text-slate-400"><HiOutlineSearch className="text-[21px]" /></div>
+                  <div className="mt-3 text-[13px] font-semibold text-slate-700">No pending orders found</div>
+                  <div className="mt-1 text-[11px] text-slate-400">Try changing your search or payment filter.</div>
+                  {(search || paymentFilter !== "ALL") && <button type="button" onClick={resetFilters} className="mt-3 text-[11px] font-semibold text-[#008dd2] hover:underline">Clear filters</button>}
+                </td></tr>
+              ) : filteredOrders.map((order) => {
+                const orderKey = getOrderKey(order);
+                const status = "Pending";
+                const payment = getPaymentType(order);
+                const pickupCity = order?.pickup_city || order?.pickup_address_city || "-";
+                const pickupPin = order?.pickup_pincode || "";
+                const deliveryCity = order?.city || order?.delivery_city || "-";
+                const deliveryPin = order?.pincode || order?.delivery_pincode || "";
+                const packages = Array.isArray(order?.packages) ? order.packages : [];
+                const firstPackage = packages[0] || {};
+                const boxCount = order?.package_count ?? firstPackage?.package_count ?? firstPackage?.count ?? 1;
+                const weight = order?.weight ?? order?.total_weight ?? firstPackage?.weight;
+                const length = order?.length ?? firstPackage?.length;
+                const width = order?.width ?? firstPackage?.width;
+                const height = order?.height ?? firstPackage?.height;
+                const volume = order?.volumetric_weight ?? (length && width && height ? ((Number(length) * Number(width) * Number(height)) / 5000).toFixed(2) : null);
+                const pickupId = order?.pickup_address_id || order?.pickup_id || "-";
+                const shipmentService = getServiceType(order);
+                const createdDate = order?.manifest_created_at || order?.created_at;
+                return (
+                  <tr key={orderKey} className="border-b border-slate-100 transition last:border-b-0 hover:bg-slate-50/60">
+                    <td className="px-3 py-3 align-middle">
+                      <input type="checkbox" checked={selectedIds.includes(orderKey)} onChange={() => handleSelect(order)} className="h-3.5 w-3.5 cursor-pointer rounded border-slate-300 accent-[#008dd2]" />
+                    </td>
+                    <td className="px-2 py-3 align-middle">
+                      <div className="min-w-0">
+                        <div className="truncate text-[12px] font-semibold text-slate-800">{getCustomerName(order)}</div>
+                        <div className="mt-0.5 truncate text-[11px] text-slate-400">{valueOrDash(order?.mobile || order?.phone)}</div>
+                        <span className="mt-1 inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-[9px] font-medium text-amber-600">● Pending</span>
+                      </div>
+                    </td>
+                    <td className="px-2 py-3 align-middle">
+                      <div className="truncate text-[12px] font-semibold text-slate-800">{valueOrDash(getAWB(order))}</div>
+                      <div className="mt-1 truncate text-[10px] text-slate-400">Pickup ID: {valueOrDash(pickupId)}</div>
+                      <div className="truncate text-[10px] text-slate-400">{shipmentService === "-" ? "" : shipmentService.replace("BY ", "By ")}</div>
+                    </td>
+                    <td className="px-2 py-3 align-middle">
+                      <div className="flex min-w-0 items-stretch gap-2">
+                        <div className="flex w-3 shrink-0 flex-col items-center pt-0.5">
+                          <HiOutlineLocationMarker className="text-[13px] text-[#008dd2]" />
+                          <span className="my-0.5 h-3 border-l border-dashed border-slate-300" />
+                          <HiOutlineLocationMarker className="text-[13px] text-slate-400" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate text-[11px] font-medium leading-5 text-slate-700">{pickupCity} <span className="text-slate-400">{pickupPin ? `(${pickupPin})` : ""}</span></div>
+                          <div className="truncate text-[11px] font-medium leading-5 text-slate-700">{deliveryCity} <span className="text-slate-400">{deliveryPin ? `(${deliveryPin})` : ""}</span></div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-2 py-3 align-middle">
+                      <div className="truncate text-[12px] font-semibold text-[#008dd2]">{payment}</div>
+                      <div className="mt-1 truncate text-[10px] text-slate-400">{payment === "COD" ? "Cash on Delivery" : "Prepaid"}</div>
+                      <div className="truncate text-[10px] text-slate-400">Total: ₹{(getCharge(order) ?? 0).toFixed(2)}</div>
+                    </td>
+                    <td className="px-2 py-3 align-middle">
+                      <div className="truncate text-[11px] font-medium text-slate-700">Box: {valueOrDash(boxCount)}</div>
+                      <div className="mt-1 truncate text-[10px] text-slate-400">Wt: {weight !== undefined && weight !== null && weight !== "" ? `${weight} kg` : "-"}</div>
+                      <div className="truncate text-[10px] text-slate-400">Vol: {volume !== null && volume !== undefined && volume !== "" ? `${volume} kg` : "-"}</div>
+                    </td>
+                    <td className="px-2 py-3 align-middle">
+                      <div className="truncate text-[12px] font-semibold text-slate-800">#{getOrderId(order)}</div>
+                      <div className="mt-1 text-[10px] text-slate-400">Created: {formatDate(createdDate)}</div>
+                    </td>
+                    <td className="px-2 py-3 align-middle">
+                      <div className="flex items-center justify-center gap-1.5 whitespace-nowrap">
+                        <button type="button" onClick={() => handlePrintSingleLabel(order)} title="Print Shipping Label" aria-label="Print Shipping Label" className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[7px] border border-[#008dd2] bg-[#008dd2] text-white transition hover:bg-[#007dbb]"><HiOutlinePrinter className="text-[16px]" /></button>
+                        <button type="button" onClick={() => handleDuplicate(order)} title="Duplicate Order" aria-label="Duplicate Order" className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[7px] border border-[#008dd2] bg-[#008dd2] text-white transition hover:bg-[#007dbb]"><HiOutlineClipboardCopy className="text-[16px]" /></button>
+                        <button type="button" onClick={() => setViewingOrder(order)} title="View order details" aria-label="View order details" className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[7px] border border-slate-200 bg-white text-slate-600 transition hover:border-[#008dd2]/40 hover:bg-blue-50 hover:text-[#008dd2]"><HiOutlineEye className="text-[16px]" /></button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
-
           </table>
-
         </div>
-
       </div>
 
       {/* =================================================
