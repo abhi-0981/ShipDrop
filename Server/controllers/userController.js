@@ -2,10 +2,6 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const userModel = require("../models/userModel");
 
-const crypto = require("crypto");
-const db = require("../config/db");
-
-
 // ========================================
 // PASSWORD VALIDATION
 // ========================================
@@ -275,13 +271,22 @@ const registerUser = async (req, res) => {
 // LOGIN
 // ========================================
 
-
 const loginUser = (req, res) => {
   try {
-    let { email, password } = req.body;
+    let {
+      email,
+      password,
+    } = req.body;
 
-    email = String(email || "").trim().toLowerCase();
+    email = String(email || "")
+      .trim()
+      .toLowerCase();
+
     password = String(password || "");
+
+    // ------------------------------------
+    // BASIC VALIDATION
+    // ------------------------------------
 
     if (!email || !password) {
       return res.status(400).json({
@@ -295,62 +300,65 @@ const loginUser = (req, res) => {
       });
     }
 
-    userModel.findUserByEmail(email, async (err, result) => {
-      try {
+    // ------------------------------------
+    // FIND USER
+    // ------------------------------------
+
+    userModel.findUserByEmail(
+      email,
+      async (err, result) => {
         if (err) {
           console.error("Login database error:", err);
+
           return res.status(500).json({
-            message: "Unable to login. Please try again.",
+            message:
+              "Unable to login. Please try again.",
           });
         }
 
-        if (!result || result.length === 0) {
+        // Generic response for security
+        if (result.length === 0) {
           return res.status(401).json({
-            message: "Email or password is incorrect",
+            message:
+              "Email or password is incorrect",
           });
         }
 
         const user = result[0];
 
-        const passwordMatched = await bcrypt.compare(
-          password,
-          user.password
-        );
+        // ----------------------------------
+        // COMPARE BCRYPT PASSWORD
+        // ----------------------------------
+
+        let passwordMatched = false;
+
+        try {
+          passwordMatched = await bcrypt.compare(
+            password,
+            user.password,
+          );
+        } catch (compareError) {
+          console.error(
+            "Password comparison error:",
+            compareError,
+          );
+
+          return res.status(500).json({
+            message:
+              "Unable to login. Please try again.",
+          });
+        }
 
         if (!passwordMatched) {
           return res.status(401).json({
-            message: "Email or password is incorrect",
+            message:
+              "Email or password is incorrect",
           });
         }
 
-        if (!process.env.JWT_SECRET) {
-          console.error("JWT_SECRET is not configured");
-          return res.status(500).json({
-            message: "Login configuration error",
-          });
-        }
-
-        const sessionId = crypto.randomUUID();
-        const userId = String(user.id);
-
-        // Har login ke liye alag session, maximum 24 hours
-        await db.promise().query(
-          `INSERT INTO user_sessions
-            (session_id, user_id, expires_at, revoked_at)
-           VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 24 HOUR), NULL)`,
-          [sessionId, userId]
-        );
-
-        const token = jwt.sign(
-          {
-            id: userId,
-            sessionId,
-          },
-          process.env.JWT_SECRET,
-          {
-            expiresIn: "24h",
-          }
-        );
+        // ----------------------------------
+        // NEVER SEND PASSWORD
+        // ----------------------------------
 
         const safeUser = {
           id: user.id,
@@ -368,63 +376,18 @@ const loginUser = (req, res) => {
           message: "Login successful",
           role: user.role,
           user: safeUser,
-          token,
         });
-      } catch (error) {
-        console.error("Login session error:", error);
-
-        return res.status(500).json({
-          message: "Unable to login. Please try again.",
-        });
-      }
-    });
+      },
+    );
   } catch (error) {
     console.error("Login error:", error);
 
     return res.status(500).json({
-      message: "Unable to login. Please try again.",
+      message:
+        "Unable to login. Please try again.",
     });
   }
 };
-
-
-
-const logoutUser = async (req, res) => {
-  try {
-    const userId = String(req.user.id);
-
-    await db.promise().query(
-      `UPDATE user_sessions
-       SET revoked_at = NOW()
-       WHERE user_id = ?
-         AND revoked_at IS NULL`,
-      [userId]
-    );
-
-    return res.status(200).json({
-      message: "Logged out from all devices successfully",
-    });
-  } catch (error) {
-    console.error("Logout error:", error);
-
-    return res.status(500).json({
-      message: "Unable to logout. Please try again.",
-    });
-  }
-};
-
-
-
-const validateSession = (req, res) => {
-  return res.status(200).json({
-    success: true,
-    authenticated: true,
-    user: {
-      id: req.user.id,
-    },
-  });
-};
-
 
 // ========================================
 // GET USER PROFILE
@@ -652,12 +615,9 @@ const updateUserProfile = (req, res) => {
   );
 };
 
-
 module.exports = {
   registerUser,
   loginUser,
-  logoutUser,
-  validateSession,
   getUserProfile,
   updateUserProfile,
 };

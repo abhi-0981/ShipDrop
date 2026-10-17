@@ -1,49 +1,54 @@
-
 const express = require("express");
 
-const router = express.Router();
+const router =
+  express.Router();
 
 const {
   registerUser,
   loginUser,
-  logoutUser,
-  validateSession,
   getUserProfile,
-  updateUserProfile,
+  updateUserProfile
 } = require("../controllers/userController");
 
-const authMiddleware = require("../middleware/authMiddleware");
 
-// REGISTER — public
-router.post("/register", registerUser);
+// ========================================
+// REGISTER
+// ========================================
 
-// LOGIN — public
-router.post("/login", loginUser);
-router.get("/session", authMiddleware, validateSession);
+router.post(
+  "/register",
+  registerUser
+);
 
-// LOGOUT — authenticated; revokes sessions across all devices
-router.post("/logout", authMiddleware, logoutUser);
 
-// PROFILE — authenticated
-router.get("/profile/:user_id", authMiddleware, (req, res, next) => {
-  if (String(req.params.user_id) !== String(req.user.id)) {
-    return res.status(403).json({
-      message: "You cannot access another user's profile.",
-    });
-  }
+// ========================================
+// LOGIN
+// ========================================
 
-  next();
-}, getUserProfile);
+router.post(
+  "/login",
+  loginUser
+);
 
-// UPDATE PROFILE — authenticated
-router.put("/profile/update", authMiddleware, (req, res, next) => {
-  if (String(req.body.user_id) !== String(req.user.id)) {
-    return res.status(403).json({
-      message: "You cannot update another user's profile.",
-    });
-  }
 
-  next();
-}, updateUserProfile);
+// ========================================
+// GET PROFILE
+// ========================================
+
+router.get(
+  "/profile/:user_id",
+  getUserProfile
+);
+
+
+// ========================================
+// UPDATE PROFILE
+// ========================================
+
+router.put(
+  "/profile/update",
+  updateUserProfile
+);
+
 
 module.exports = router;

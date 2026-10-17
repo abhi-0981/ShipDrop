@@ -76,21 +76,13 @@ const createOrderController = async (req, res) => {
     // USER ID
     // ==================================================
 
-   const authenticatedUserId = Number(req.user?.id);
+    if (!user_id) {
+      return res.status(400).json({
+        success: false,
 
-if (!authenticatedUserId || !Number.isInteger(authenticatedUserId)) {
-  return res.status(401).json({
-    success: false,
-    message: "Invalid authenticated user",
-  });
-}
-
-if (Number(user_id) !== authenticatedUserId) {
-  return res.status(403).json({
-    success: false,
-    message: "You cannot create orders for another user",
-  });
-}
+        message: "User ID is required",
+      });
+    }
 
     // ==================================================
     // NORMALIZE NESTED ORDER DATA
@@ -111,7 +103,8 @@ if (Number(user_id) !== authenticatedUserId) {
     const finalOrderData = {
       ...nestedOrderData,
 
-user_id: authenticatedUserId,
+      user_id: user_id,
+
       // ----------------------------------------------
       // PICKUP ADDRESS ID
       // ----------------------------------------------
@@ -240,7 +233,8 @@ dangerous_good: nestedOrderData.dangerous_good === true ||
 
       const pickupAddressResult = await new Promise((resolve, reject) => {
         createPickupAddress(
-authenticatedUserId,
+          Number(user_id),
+
           finalPickupAddress,
 
           finalPickupPincode,
@@ -455,7 +449,7 @@ authenticatedUserId,
 
 const getProcessingOrdersController = async (req, res) => {
   try {
-    const user_id = Number(req.user?.id);
+    const user_id = Number(req.query.user_id || req.body?.user_id);
 
     if (!user_id) {
       return res.status(400).json({
@@ -498,7 +492,7 @@ const getProcessingOrdersController = async (req, res) => {
 const getAllOrdersController = async (req, res) => {
   try {
     const requestStart = Date.now();
-    const user_id = Number(req.user?.id);
+    const user_id = Number(req.query.user_id || req.body?.user_id);
 
     const page = Math.max(1, Number(req.query.page) || 1);
     const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 50));
@@ -672,7 +666,7 @@ const getOrderByIdController = async (req, res) => {
   try {
     const orderId = Number(req.params.id);
 
-    const userId = Number(req.user?.id);
+    const userId = Number(req.query.user_id || req.body?.user_id);
 
     if (!orderId) {
       return res.status(400).json({
@@ -730,27 +724,15 @@ const updateOrderController = async (req, res) => {
       packages,
     } = req.body;
 
-    const userId = Number(req.user?.id);
+    const userId = Number(user_id);
 
-if (!userId || !Number.isInteger(userId)) {
-  return res.status(401).json({
-    success: false,
-    message: "Invalid authenticated user",
-  });
-}
+    if (!orderId || !userId) {
+      return res.status(400).json({
+        success: false,
 
-if (Number(user_id) !== userId) {
-  return res.status(403).json({
-    success: false,
-    message: "You cannot update another user's order",
-  });
-}
-if (!Number.isInteger(orderId) || orderId <= 0) {
-  return res.status(400).json({
-    success: false,
-    message: "Valid order ID is required",
-  });
-}
+        message: "Valid order ID and user ID are required",
+      });
+    }
 
     const nestedOrderData =
       orderData && typeof orderData === "object" ? orderData : {};
@@ -846,28 +828,15 @@ const deleteOrdersController = async (req, res) => {
   try {
     const { user_id, order_ids } = req.body;
 
-    const userId = Number(req.user?.id);
+    const userId = Number(user_id);
 
-if (!userId || !Number.isInteger(userId)) {
-  return res.status(401).json({
-    success: false,
-    message: "Invalid authenticated user",
-  });
-}
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
 
-if (Number(user_id) !== userId) {
-  return res.status(403).json({
-    success: false,
-    message: "You cannot delete another user's orders",
-  });
-}
-
-   if (!userId) {
-  return res.status(400).json({
-    success: false,
-    message: "User ID is required",
-  });
-}
+        message: "User ID is required",
+      });
+    }
 
     if (!Array.isArray(order_ids) || order_ids.length === 0) {
       return res.status(400).json({
@@ -919,7 +888,7 @@ if (Number(user_id) !== userId) {
 
 const searchPreviousCustomersController = async (req, res) => {
   try {
-    const userId = Number(req.user?.id);
+    const userId = Number(req.query?.user_id);
     const search = String(req.query?.search || "").trim();
 
     console.log("==========================================");
@@ -978,7 +947,7 @@ const searchPreviousCustomersController = async (req, res) => {
 
 const searchTrackingController = async (req, res) => {
   try {
-    const userId = Number(req.user?.id);
+    const userId = Number(req.query?.user_id || req.body?.user_id);
 
     const search = String(req.query?.search || req.body?.search || "").trim();
 
@@ -1058,7 +1027,12 @@ const searchTrackingController = async (req, res) => {
 
 const getOrderStatusCountsController = async (req, res) => {
   try {
-   const userId = Number(req.user?.id);
+    const userId = Number(
+      req.query?.user_id ||
+      req.user?.id ||
+      req.user?.user_id ||
+      req.user?.userId
+    );
 
     if (!userId || !Number.isInteger(userId) || userId <= 0) {
       return res.status(400).json({

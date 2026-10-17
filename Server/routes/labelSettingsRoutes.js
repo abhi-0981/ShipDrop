@@ -1,5 +1,4 @@
 const express = require("express");
-const authMiddleware = require("../middleware/authMiddleware");
 
 const {
   getSettings,
@@ -8,7 +7,6 @@ const {
 } = require("../controllers/labelSettingsController");
 
 const router = express.Router();
-router.use(authMiddleware);
 
 router.get("/", getSettings);
 

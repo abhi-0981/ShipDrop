@@ -1,5 +1,5 @@
 const express = require("express");
-const authMiddleware = require("../middleware/authMiddleware");
+
 const {
   createTicketController,
   getTicketsController,
@@ -9,7 +9,6 @@ const {
 } = require("../controllers/ticketController");
 
 const router = express.Router();
-router.use(authMiddleware);
 
 // ======================================================
 // CREATE

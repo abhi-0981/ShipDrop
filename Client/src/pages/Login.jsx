@@ -61,18 +61,17 @@ function Login() {
         password,
       });
 
-     
-const user = response.data?.user;
-const token = response.data?.token;
+      const user = response.data?.user;
 
-if (!user?.id || !token) {
-  toast.error("Login failed. Please try again.");
-  return;
-}
+      if (!user?.id) {
+        toast.error("Login failed. Please try again.");
+        return;
+      }
 
-localStorage.setItem("user", JSON.stringify(user));
-localStorage.setItem("token", token);
-
+      localStorage.setItem(
+        "user",
+        JSON.stringify(user)
+      );
 
       toast.success("Login successful");
 

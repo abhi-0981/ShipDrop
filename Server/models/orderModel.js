@@ -65,167 +65,132 @@ const generateUniqueOrderId = (callback, attempts = 0) => {
 // CREATE ORDER
 // ======================================================
 
-
 const createOrder = (orderData, callback) => {
-  (async () => {
-    const userId = Number(orderData?.user_id);
-    const pickupAddressId = Number(orderData?.pickup_address_id);
-
-    if (!Number.isInteger(userId) || userId <= 0) {
-      throw new Error("Invalid user");
+  generateUniqueOrderId((idError, publicOrderId) => {
+    if (idError) {
+      return callback(idError);
     }
 
-    // 1. Verify pickup address belongs to this user
-    if (!Number.isInteger(pickupAddressId) || pickupAddressId <= 0) {
-      throw new Error("Valid pickup address is required");
-    }
+    const query = `
+        INSERT INTO orders
+        (
+          order_id,
+          user_id,
+          pickup_address_id,
+          warehouse_id,
 
-    const [pickupRows] = await db.promise().query(
-      `SELECT id FROM pickup_addresses
-       WHERE id = ? AND user_id = ?
-       LIMIT 1`,
-      [pickupAddressId, userId]
+          return_address_id,
+          return_name,
+          return_phone,
+          return_email,
+          return_address_line1,
+          return_address_line2,
+          return_landmark,
+          return_pincode,
+          return_city,
+          return_state,
+          return_country,
+
+          consignee_name,
+          mobile,
+          alternate_mobile,
+          email,
+          gstin,
+          company_name,
+          floor_no,
+          landmark,
+          address_line1,
+          address_line2,
+          pincode,
+          city,
+          state,
+          country,
+          payment_type,
+risk_type,
+fragile_shipment,
+dangerous_good,
+status
+        )
+        VALUES (
+  ?, ?, ?, ?,
+  ?, ?, ?, ?, ?, ?,
+  ?, ?, ?, ?, ?,
+  ?, ?, ?, ?, ?, ?,
+  ?, ?, ?, ?, ?, ?,
+  ?, ?, ?, ?, ?, ?, ?
+)
+      `;
+
+    db.query(
+      query,
+      [
+        // ==========================================
+        // ORDER
+        // ==========================================
+
+        publicOrderId,
+        orderData.user_id,
+        orderData.pickup_address_id,
+        orderData.warehouse_id || null,
+
+        // ==========================================
+        // RETURN ADDRESS
+        // ==========================================
+
+        orderData.return_address_id || null,
+        orderData.return_name || null,
+        orderData.return_phone || null,
+        orderData.return_email || null,
+        orderData.return_address_line1 || null,
+        orderData.return_address_line2 || null,
+        orderData.return_landmark || null,
+        orderData.return_pincode || null,
+        orderData.return_city || null,
+        orderData.return_state || null,
+        orderData.return_country || "India",
+
+        // ==========================================
+        // CONSIGNEE
+        // ==========================================
+
+        orderData.consignee_name,
+        orderData.mobile,
+        orderData.alternate_mobile || null,
+        orderData.email || null,
+        orderData.gstin || null,
+        orderData.company_name || null,
+        orderData.floor_no || null,
+        orderData.landmark || null,
+        orderData.address_line1,
+        orderData.address_line2 || null,
+        orderData.pincode,
+        orderData.city,
+        orderData.state,
+        orderData.country || "India",
+
+orderData.payment_type || "Prepaid",
+orderData.risk_type || "Owner Risk",
+orderData.fragile_shipment ? 1 : 0,
+orderData.dangerous_good ? 1 : 0,
+
+// New order starts in Processing.
+"Processing",],
+      (err, result) => {
+        if (err) {
+          return callback(err);
+        }
+
+        clearOrderStatusCountsCache(orderData.user_id);
+        return callback(null, {
+          id: result.insertId,
+          order_id: publicOrderId,
+          warehouse_id: orderData.warehouse_id || null,
+          return_address_id: orderData.return_address_id || null,
+          message: "Order created successfully",
+        });
+      },
     );
-
-    if (pickupRows.length === 0) {
-      throw new Error("Selected pickup address not found");
-    }
-
-    // 2. Verify warehouse ownership when supplied
-    let warehouseId = null;
-
-    if (
-      orderData.warehouse_id !== null &&
-      orderData.warehouse_id !== undefined &&
-      orderData.warehouse_id !== ""
-    ) {
-      warehouseId = Number(orderData.warehouse_id);
-
-      if (!Number.isInteger(warehouseId) || warehouseId <= 0) {
-        throw new Error("Invalid pickup warehouse");
-      }
-
-      const [warehouseRows] = await db.promise().query(
-        `SELECT id FROM warehouses
-         WHERE id = ? AND user_id = ?
-         LIMIT 1`,
-        [warehouseId, userId]
-      );
-
-      if (warehouseRows.length === 0) {
-        throw new Error("Selected pickup warehouse not found");
-      }
-    }
-
-    // 3. Verify return address ownership and active status
-    let returnAddressId = null;
-
-    if (
-      orderData.return_address_id !== null &&
-      orderData.return_address_id !== undefined &&
-      orderData.return_address_id !== ""
-    ) {
-      returnAddressId = Number(orderData.return_address_id);
-
-      if (!Number.isInteger(returnAddressId) || returnAddressId <= 0) {
-        throw new Error("Invalid return address");
-      }
-
-      const [returnRows] = await db.promise().query(
-        `SELECT id FROM return_addresses
-         WHERE id = ?
-           AND user_id = ?
-           AND status = 'ACTIVE'
-         LIMIT 1`,
-        [returnAddressId, userId]
-      );
-
-      if (returnRows.length === 0) {
-        throw new Error("Selected return address not found or inactive");
-      }
-    }
-
-    // 4. Create order only after ownership checks pass
-    return await new Promise((resolve, reject) => {
-      generateUniqueOrderId((idError, publicOrderId) => {
-        if (idError) return reject(idError);
-
-        const query = `
-          INSERT INTO orders (
-            order_id, user_id, pickup_address_id, warehouse_id,
-            return_address_id, return_name, return_phone, return_email,
-            return_address_line1, return_address_line2, return_landmark,
-            return_pincode, return_city, return_state, return_country,
-            consignee_name, mobile, alternate_mobile, email, gstin,
-            company_name, floor_no, landmark, address_line1, address_line2,
-            pincode, city, state, country, payment_type, risk_type,
-            fragile_shipment, dangerous_good, status
-          )
-          VALUES (
-            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-          )
-        `;
-
-        db.query(
-          query,
-          [
-            publicOrderId,
-            userId,
-            pickupAddressId,
-            warehouseId,
-
-            returnAddressId,
-            orderData.return_name || null,
-            orderData.return_phone || null,
-            orderData.return_email || null,
-            orderData.return_address_line1 || null,
-            orderData.return_address_line2 || null,
-            orderData.return_landmark || null,
-            orderData.return_pincode || null,
-            orderData.return_city || null,
-            orderData.return_state || null,
-            orderData.return_country || "India",
-
-            orderData.consignee_name,
-            orderData.mobile,
-            orderData.alternate_mobile || null,
-            orderData.email || null,
-            orderData.gstin || null,
-            orderData.company_name || null,
-            orderData.floor_no || null,
-            orderData.landmark || null,
-            orderData.address_line1,
-            orderData.address_line2 || null,
-            orderData.pincode,
-            orderData.city,
-            orderData.state,
-            orderData.country || "India",
-            orderData.payment_type || "Prepaid",
-            orderData.risk_type || "Owner Risk",
-            orderData.fragile_shipment ? 1 : 0,
-            orderData.dangerous_good ? 1 : 0,
-            "Processing",
-          ],
-          (err, result) => {
-            if (err) return reject(err);
-
-            clearOrderStatusCountsCache(userId);
-
-            resolve({
-              id: result.insertId,
-              order_id: publicOrderId,
-              warehouse_id: warehouseId,
-              return_address_id: returnAddressId,
-              message: "Order created successfully",
-            });
-          }
-        );
-      });
-    });
-  })()
-    .then((result) => callback(null, result))
-    .catch((error) => callback(error));
+  });
 };
 
 // ======================================================

@@ -147,12 +147,9 @@ const isAllowedOrigin = (origin) => {
   try {
     const parsed = new URL(normalized);
     if (
-      parsed.hostname === "parceldrop.in" ||
-      parsed.hostname.endsWith(".parceldrop.in") ||
-      parsed.hostname === "netlify.app" ||
       parsed.hostname.endsWith(".netlify.app") ||
-      parsed.hostname === "vercel.app" ||
       parsed.hostname.endsWith(".vercel.app") ||
+      parsed.hostname.endsWith(".parceldrop.in") ||
       parsed.hostname === "localhost" ||
       parsed.hostname === "127.0.0.1"
     ) {
@@ -167,39 +164,38 @@ const isAllowedOrigin = (origin) => {
 
 console.log("Allowed CORS origins:", explicitAllowedOrigins);
 
-const corsOptions = {
-  origin: function (origin, callback) {
-    if (isAllowedOrigin(origin)) {
-      return callback(null, true);
-    }
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (isAllowedOrigin(origin)) {
+        return callback(null, true);
+      }
 
-    console.log("CORS blocked origin:", origin);
+      console.log("CORS blocked origin:", origin);
 
-    return callback(null, false);
-  },
+      return callback(
+        new Error(`CORS blocked for origin: ${origin}`)
+      );
+    },
 
-  credentials: true,
+    credentials: true,
 
-  methods: [
-    "GET",
-    "POST",
-    "PUT",
-    "PATCH",
-    "DELETE",
-    "OPTIONS",
-  ],
+    methods: [
+      "GET",
+      "POST",
+      "PUT",
+      "PATCH",
+      "DELETE",
+      "OPTIONS",
+    ],
 
-  allowedHeaders: [
-    "Content-Type",
-    "Authorization",
-    "X-Requested-With",
-  ],
-
-  optionsSuccessStatus: 204,
-};
-
-app.use(cors(corsOptions));
-app.options("*", cors(corsOptions));
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "X-Requested-With",
+    ],
+  })
+);
 
 app.use(
   express.json({
