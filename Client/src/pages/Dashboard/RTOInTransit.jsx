@@ -429,7 +429,7 @@ const StatusBadge = ({ status }) => {
 
   return (
     <span
-      className={`inline-flex items-center  rounded-full p-0.5 text-[9px] font-semibold ${className}`}
+      className={`inline-flex items-center  rounded-full px-0.5 text-[9px] font-semibold ${className}`}
     >
       {/* <span className="h-1 w-1 rounded-full bg-current" /> */}
       {getStatusLabel(status).toUpperCase()}
@@ -1625,7 +1625,7 @@ function RTOInTransit() {
                               type="button"
                               onClick={() => handlePrintSingleLabel(order)}
                               title="Print label"
-                              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[#008dd2] bg-[#008dd2] text-white transition hover:bg-[#007ab6]"
+                            className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-md border border-[#008dd2] bg-[#008dd2] text-white transition hover:bg-[#007ab6]"
                             >
                               <Icon name="printer" size={15} />
                             </button>
@@ -1661,7 +1661,7 @@ function RTOInTransit() {
                               title="Order details"
                               className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 transition hover:border-[#008dd2] hover:bg-[#edf8ff] hover:text-[#008dd2]"
                             >
-                              <Icon name="eye" size={18} />
+                              <Icon name="eye" size={15} />
                             </button>
                           </div>
                         </td>
