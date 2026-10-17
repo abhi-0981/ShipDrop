@@ -77,7 +77,7 @@ async function ensureIndexes() {
       const [syncResult] = await promiseDb.query(`
         UPDATE orders
         SET tracking_status = 'CANCELLED'
-        WHERE (UPPER(TRIM(COALESCE(status, ''))) IN ('CANCELLED', 'CANCELED') OR UPPER(TRIM(COALESCE(order_status, ''))) IN ('CANCELLED', 'CANCELED'))
+        WHERE UPPER(TRIM(COALESCE(status, ''))) IN ('CANCELLED', 'CANCELED')
           AND (tracking_status IS NULL OR UPPER(TRIM(tracking_status)) <> 'CANCELLED')
       `);
       if (syncResult && syncResult.affectedRows > 0) {

@@ -472,7 +472,7 @@ const getAllOrders = (user_id, page = 1, limit = 50, search = "", status = "", c
 
       o.awb,
       CASE
-        WHEN UPPER(TRIM(COALESCE(o.status, ''))) IN ('CANCELLED', 'CANCELED') OR UPPER(TRIM(COALESCE(o.order_status, ''))) IN ('CANCELLED', 'CANCELED') THEN 'CANCELLED'
+        WHEN UPPER(TRIM(COALESCE(o.status, ''))) IN ('CANCELLED', 'CANCELED') THEN 'CANCELLED'
         ELSE o.tracking_status
       END AS tracking_status,
       o.tracking_data,
@@ -693,7 +693,7 @@ const getOrderById = (orderId, userId) => {
 
           o.awb,
           CASE
-            WHEN UPPER(TRIM(COALESCE(o.status, ''))) IN ('CANCELLED', 'CANCELED') OR UPPER(TRIM(COALESCE(o.order_status, ''))) IN ('CANCELLED', 'CANCELED') THEN 'CANCELLED'
+            WHEN UPPER(TRIM(COALESCE(o.status, ''))) IN ('CANCELLED', 'CANCELED') THEN 'CANCELLED'
             ELSE o.tracking_status
           END AS tracking_status,
           o.tracking_data,
