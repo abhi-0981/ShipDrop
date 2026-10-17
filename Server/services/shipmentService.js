@@ -1796,6 +1796,7 @@ const confirmShipment = async ({
             return_state,
             return_country,
 fragile_shipment,
+dangerous_good,
             status,
             awb
           FROM orders
@@ -2064,10 +2065,11 @@ fragile_shipment,
     const shipment =
       buildDelhiveryShipment({
 
-        order: {
+order: {
   ...lockedOrder,
   ...orderData,
   fragile_shipment: lockedOrder.fragile_shipment,
+  dangerous_good: lockedOrder.dangerous_good,
   order_id: lockedOrder.order_id,
 },
 
