@@ -198,6 +198,7 @@
           ...savedUser,
           ...updatedUser,
           login_time: savedUser.login_time || Date.now(),
+          session_version: savedUser.session_version || 1,
         };
         setUser(mergedUser);
         localStorage.setItem("user", JSON.stringify(mergedUser));
@@ -240,6 +241,7 @@
             ...savedUser,
             ...event.detail,
             login_time: savedUser.login_time || Date.now(),
+            session_version: savedUser.session_version || 1,
           };
           setUser(mergedUser);
           localStorage.setItem("user", JSON.stringify(mergedUser));

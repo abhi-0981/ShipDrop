@@ -1,6 +1,15 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { getStoredUser, isSessionExpired } from "../../services/authSession";
 
 function Navbar() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    const user = getStoredUser();
+    setIsLoggedIn(Boolean(user && !isSessionExpired(user)));
+  }, []);
+
   const navItems = [
     "Solutions",
     "Features",
@@ -46,19 +55,30 @@ function Navbar() {
 
         {/* Auth Buttons */}
         <div className="flex items-center gap-3">
-          <Link
-            to="/login"
-            className="rounded-xl px-5 py-2.5 text-[14px] font-semibold text-slate-700 transition-all duration-300 hover:bg-slate-50 hover:text-[#008dd2]"
-          >
-            Login
-          </Link>
+          {isLoggedIn ? (
+            <Link
+              to="/dashboard"
+              className="rounded-xl bg-[#008dd2] px-6 py-2.5 text-[14px] font-semibold text-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#007fbd] hover:shadow-md"
+            >
+              Go to Dashboard
+            </Link>
+          ) : (
+            <>
+              <Link
+                to="/login"
+                className="rounded-xl px-5 py-2.5 text-[14px] font-semibold text-slate-700 transition-all duration-300 hover:bg-slate-50 hover:text-[#008dd2]"
+              >
+                Login
+              </Link>
 
-          <Link
-            to="/register"
-            className="rounded-xl bg-[#008dd2] px-6 py-2.5 text-[14px] font-semibold text-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#007fbd] hover:shadow-md"
-          >
-            Sign Up
-          </Link>
+              <Link
+                to="/register"
+                className="rounded-xl bg-[#008dd2] px-6 py-2.5 text-[14px] font-semibold text-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#007fbd] hover:shadow-md"
+              >
+                Sign Up
+              </Link>
+            </>
+          )}
         </div>
 
       </nav>

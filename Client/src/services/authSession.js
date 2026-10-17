@@ -19,14 +19,21 @@ export const getStoredUser = () => {
 };
 
 /**
- * Save user to localStorage with login timestamp, and mark current tab as active
+ * Save user to localStorage with login timestamp and session version,
+ * and mark the current browser tab as active.
  */
-export const saveUserSession = (user, explicitLoginTime = null) => {
+export const saveUserSession = (user, explicitLoginTime = null, explicitVersion = null) => {
   if (!user || typeof user !== "object") return;
   const loginTime = explicitLoginTime || user.login_time || Date.now();
+  const sessionVersion =
+    explicitVersion !== null && explicitVersion !== undefined
+      ? explicitVersion
+      : (user.session_version || 1);
+
   const userWithTimestamp = {
     ...user,
     login_time: loginTime,
+    session_version: sessionVersion,
   };
 
   localStorage.setItem("user", JSON.stringify(userWithTimestamp));
@@ -62,8 +69,11 @@ export const isTabActive = () => {
 export const isSessionExpired = (user) => {
   if (!user) return true;
   if (!user.login_time) {
-    // Backwards compatibility for users logged in before this feature:
-    // Give them a timestamp from now so they don't get kicked out immediately, or expire
+    // If login_time is missing (e.g. legacy session), set it now so they don't get kicked out
+    user.login_time = Date.now();
+    try {
+      localStorage.setItem("user", JSON.stringify(user));
+    } catch (e) {}
     return false;
   }
   const age = Date.now() - Number(user.login_time);
@@ -88,7 +98,7 @@ export const clearAuthSession = () => {
 };
 
 /**
- * Perform server logout to invalidate all inactive/closed sessions across other devices
+ * Perform server logout to invalidate all sessions across other devices
  */
 export const logoutFromServer = async (userId) => {
   try {
@@ -104,20 +114,21 @@ export const logoutFromServer = async (userId) => {
 
 /**
  * Query backend to check if an explicit logout occurred on another device
- * after this session was initiated
+ * (which increments session_version in the database)
  */
-export const verifyRemoteSession = async (userId, loginTime) => {
+export const verifyRemoteSession = async (userId, sessionVersion) => {
   try {
-    if (!userId || !loginTime) return { valid: true };
+    if (!userId) return { valid: true };
 
     const response = await api.post("/users/verify-session", {
       user_id: userId,
-      login_time: loginTime,
+      session_version: sessionVersion !== undefined && sessionVersion !== null ? sessionVersion : 1,
     });
 
     return response.data || { valid: true };
   } catch (err) {
-    // If backend is momentarily unreachable, do not disrupt user's offline/transient view
+    // If backend is momentarily unreachable or returned an error,
+    // do NOT kick the user out of their own laptop. Fail-open safely.
     return { valid: true };
   }
 };

@@ -69,7 +69,10 @@ function ProtectedRoute() {
       // Check 3: Tab was newly opened or reopened after being closed.
       // Verify with backend if another device explicitly logged out!
       try {
-        const verifyResult = await verifyRemoteSession(user.id, user.login_time);
+        const verifyResult = await verifyRemoteSession(
+          user.id,
+          user.session_version
+        );
 
         if (!isMounted) return;
 

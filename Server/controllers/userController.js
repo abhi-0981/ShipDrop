@@ -361,6 +361,7 @@ const loginUser = (req, res) => {
         // ----------------------------------
 
         const loginTime = Date.now();
+        const sessionVersion = Number(user.session_version || 1);
 
         const safeUser = {
           id: user.id,
@@ -373,6 +374,7 @@ const loginUser = (req, res) => {
           profile_image: user.profile_image || null,
           created_at: user.created_at,
           login_time: loginTime,
+          session_version: sessionVersion,
         };
 
         return res.status(200).json({
@@ -380,6 +382,7 @@ const loginUser = (req, res) => {
           role: user.role,
           user: safeUser,
           login_time: loginTime,
+          session_version: sessionVersion,
         });
       },
     );
@@ -659,7 +662,10 @@ const logoutUser = (req, res) => {
 const verifyUserSession = (req, res) => {
   try {
     const userId = Number(req.body?.user_id || req.query?.user_id);
-    const clientLoginTime = Number(req.body?.login_time || req.query?.login_time);
+    const clientVersion =
+      req.body?.session_version !== undefined && req.body?.session_version !== null
+        ? Number(req.body.session_version)
+        : null;
 
     if (!userId) {
       return res.status(400).json({
@@ -687,22 +693,25 @@ const verifyUserSession = (req, res) => {
       }
 
       const user = result[0];
-      const lastLogout = user.last_logout_at;
+      const currentVersion = Number(user.session_version || 1);
 
-      if (lastLogout && clientLoginTime) {
-        const lastLogoutTime = new Date(lastLogout).getTime();
-        // If last_logout_at is newer than client's login_time (with 1s clock skew allowance)
-        if (lastLogoutTime > clientLoginTime + 1000) {
-          return res.status(200).json({
-            valid: false,
-            reason: "LOGGED_OUT_REMOTELY",
-            message: "Account was logged out from another device.",
-          });
-        }
+      // Only invalidate if client's session_version is explicitly LESS than the DB session_version
+      // (meaning an explicit logout happened after this session was created)
+      if (
+        clientVersion !== null &&
+        !isNaN(clientVersion) &&
+        clientVersion < currentVersion
+      ) {
+        return res.status(200).json({
+          valid: false,
+          reason: "LOGGED_OUT_REMOTELY",
+          message: "Account was logged out from another device.",
+        });
       }
 
       return res.status(200).json({
         valid: true,
+        session_version: currentVersion,
       });
     });
   } catch (error) {

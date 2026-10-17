@@ -87,17 +87,18 @@ async function ensureIndexes() {
       console.warn("[DB OPTIMIZE] Cancelled status sync skipped:", syncErr.message);
     }
 
-    // Ensure users table has last_logout_at column for multi-device session handling
+    // Ensure users table has last_logout_at and session_version columns for multi-device session handling
     try {
-      const [userCol] = await promiseDb.query(`
+      const [cols] = await promiseDb.query(`
         SELECT COLUMN_NAME
         FROM information_schema.columns
         WHERE table_schema = DATABASE()
           AND table_name = 'users'
-          AND column_name = 'last_logout_at'
-        LIMIT 1
+          AND column_name IN ('last_logout_at', 'session_version')
       `);
-      if (!userCol || userCol.length === 0) {
+      const existingCols = (cols || []).map((c) => c.COLUMN_NAME);
+
+      if (!existingCols.includes("last_logout_at")) {
         console.log("[DB OPTIMIZE] Adding last_logout_at column to users table...");
         await promiseDb.query(`
           ALTER TABLE users
@@ -105,8 +106,17 @@ async function ensureIndexes() {
         `);
         console.log("[DB OPTIMIZE] Column last_logout_at added successfully to users table.");
       }
+
+      if (!existingCols.includes("session_version")) {
+        console.log("[DB OPTIMIZE] Adding session_version column to users table...");
+        await promiseDb.query(`
+          ALTER TABLE users
+          ADD COLUMN session_version INT NOT NULL DEFAULT 1
+        `);
+        console.log("[DB OPTIMIZE] Column session_version added successfully to users table.");
+      }
     } catch (userColErr) {
-      console.warn("[DB OPTIMIZE] last_logout_at column check skipped/notice:", userColErr.message);
+      console.warn("[DB OPTIMIZE] session columns check skipped/notice:", userColErr.message);
     }
   } catch (error) {
     console.warn("[DB OPTIMIZE] Index optimization check skipped:", error.message);

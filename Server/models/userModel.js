@@ -168,7 +168,8 @@ const findUserById = (user_id, callback) => {
 const recordUserLogout = (user_id, callback) => {
   const query = `
     UPDATE users
-    SET last_logout_at = NOW()
+    SET session_version = COALESCE(session_version, 1) + 1,
+        last_logout_at = NOW()
     WHERE id = ?
   `;
 
@@ -185,7 +186,7 @@ const recordUserLogout = (user_id, callback) => {
 
 const getUserSessionStatus = (user_id, callback) => {
   const query = `
-    SELECT id, last_logout_at
+    SELECT id, session_version, last_logout_at
     FROM users
     WHERE id = ?
     LIMIT 1
