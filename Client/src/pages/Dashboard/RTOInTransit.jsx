@@ -1471,10 +1471,11 @@ function RTOInTransit() {
                               <>
                                 <div className="flex min-w-0 items-center gap-1">
                                   <button
+
                                     type="button"
                                     onClick={() => triggerTracking(awb)}
                                     title="Track shipment"
-                                    className="min-w-0 truncate text-left text-[12px] font-semibold text-slate-800 hover:text-[#008dd2]"
+                                    className="min-w-0 truncate text-left text-[12px] font-semibold text-slate-800 cursor-pointer hover:text-[#008dd2]"
                                   >
                                     {awb}
                                   </button>
