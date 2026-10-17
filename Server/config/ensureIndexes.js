@@ -69,6 +69,7 @@ async function ensureIndexes() {
         }
       } catch (err) {
         // Log but do not block execution (e.g. table might not exist or duplicate key)
+      }
     }
 
     // Synchronize cancelled orders: ensure tracking_status = 'CANCELLED' in MySQL
