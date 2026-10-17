@@ -432,6 +432,8 @@ function Pending() {
       const response = await api.get("/orders/all", {
         params: {
           user_id: userId,
+          status: "PENDING",
+          include_tracking: false,
         },
       });
 

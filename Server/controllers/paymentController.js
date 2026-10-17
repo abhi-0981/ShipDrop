@@ -27,37 +27,33 @@ const getWalletBalance = (req, res) => {
     });
   }
 
-  paymentModel.createWalletIfNotExists(
-    user_id,
-    (err) => {
-      if (err) {
+  // Optimize: Check if wallet exists first with a lightweight SELECT
+  paymentModel.getWallet(user_id, (err, result) => {
+    if (err) {
+      return res.status(500).json({
+        message: err.message,
+      });
+    }
+
+    if (result && result.length > 0) {
+      return res.status(200).json({
+        balance: result[0].balance,
+      });
+    }
+
+    // Only create wallet if user does not have one yet
+    paymentModel.createWalletIfNotExists(user_id, (createErr) => {
+      if (createErr) {
         return res.status(500).json({
-          message: err.message,
+          message: createErr.message,
         });
       }
 
-      paymentModel.getWallet(
-        user_id,
-        (err, result) => {
-          if (err) {
-            return res.status(500).json({
-              message: err.message,
-            });
-          }
-
-          if (result.length === 0) {
-            return res.status(404).json({
-              message: "Wallet not found",
-            });
-          }
-
-          return res.status(200).json({
-            balance: result[0].balance,
-          });
-        }
-      );
-    }
-  );
+      return res.status(200).json({
+        balance: 0,
+      });
+    });
+  });
 };
 
 

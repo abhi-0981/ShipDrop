@@ -568,6 +568,8 @@ function Returned() {
         {
           params: {
             user_id: userId,
+            status: "RETURNED",
+            include_tracking: false,
           },
         }
       );

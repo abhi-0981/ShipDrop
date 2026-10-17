@@ -255,7 +255,7 @@ function Dashboard() {
 
   const [user, setUser] = useState(null);
   const [orders, setOrders] = useState([]);
-  const [processingOrdersCount, setProcessingOrdersCount] = useState(0);
+  const [statusCounts, setStatusCounts] = useState(null);
   const [walletBalance, setWalletBalance] = useState(0);
   const [pageLoading, setPageLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -309,18 +309,21 @@ function Dashboard() {
     setDashboardError("");
 
     try {
-      const [ordersResponse, processingResponse, walletResponse] = await Promise.all([
+      // Parallelize fast status counts, recent 6 orders, and wallet balance
+      const [ordersResponse, countsResponse, walletResponse] = await Promise.all([
         api.get("/orders/all", {
           params: {
             user_id: currentUser.id,
+            limit: 6,
             include_tracking: false,
           },
         }),
-        api.get(`/orders/processing?user_id=${currentUser.id}`),
+        api.get(`/orders/status-counts?user_id=${currentUser.id}`),
         api.get(`/payments/wallet?user_id=${currentUser.id}`),
       ]);
 
       const ordersData = ordersResponse?.data;
+      const countsData = countsResponse?.data?.counts || null;
       const walletData = walletResponse?.data;
 
       if (!ordersData?.success) {
@@ -334,12 +337,12 @@ function Dashboard() {
         : [];
 
       setOrders(orderList);
-      const processingData = processingResponse?.data?.orders ?? processingResponse?.data ?? [];
-      setProcessingOrdersCount(Array.isArray(processingData) ? processingData.length : 0);
+      setStatusCounts(countsData);
       setWalletBalance(Number(walletData?.balance || 0));
     } catch (error) {
       console.error("Dashboard loading error:", error);
       setDashboardError(
+        error?.userFriendlyMessage ||
         error?.response?.data?.message ||
         error?.message ||
         "Unable to load dashboard"
@@ -388,19 +391,11 @@ function Dashboard() {
   };
 
   const statistics = useMemo(() => {
-    const total = orders.length;
-
-    // Match the Processing page using the order's primary status.
-    const processing = processingOrdersCount;
-
-    const manifested = orders.filter((order) => {
-      const status = getStatus(order);
-      return ["MANIFESTED", "SHIPPED", "IN TRANSIT", "DELIVERED"].includes(status);
-    }).length;
-
-    const pending = orders.filter(
-      (order) => getStatus(order) === "PENDING"
-    ).length;
+    // Derive exact counts directly from fast indexed DB status-counts query
+    const total = statusCounts?.ALL ?? (orders.length > 0 ? orders.length : 0);
+    const processing = statusCounts?.PROCESSING ?? 0;
+    const manifested = statusCounts?.MANIFESTED ?? 0;
+    const pending = statusCounts?.PENDING ?? 0;
 
     return {
       total,
@@ -408,7 +403,7 @@ function Dashboard() {
       manifested,
       pending,
     };
-  }, [orders, processingOrdersCount]);
+  }, [orders, statusCounts]);
 
   const recentOrders = useMemo(() => {
     return [...orders]

@@ -565,6 +565,8 @@ function Delivered() {
         {
           params: {
             user_id: userId,
+            status: "DELIVERED",
+            include_tracking: false,
           },
         }
       );

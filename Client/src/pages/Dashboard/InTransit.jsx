@@ -586,6 +586,8 @@ function InTransit() {
         {
           params: {
             user_id: userId,
+            status: "IN_TRANSIT",
+            include_tracking: false,
           },
         }
       );

@@ -565,6 +565,8 @@ function NotPicked() {
         {
           params: {
             user_id: userId,
+            status: "NOT_PICKED",
+            include_tracking: false,
           },
         }
       );

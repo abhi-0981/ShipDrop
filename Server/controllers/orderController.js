@@ -495,9 +495,9 @@ const getAllOrdersController = async (req, res) => {
     const user_id = Number(req.query.user_id || req.body?.user_id);
 
     const page = Math.max(1, Number(req.query.page) || 1);
-
     const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 50));
     const search = String(req.query.search || "").trim();
+    const status = String(req.query.status || req.query.statusScope || "").trim();
 
     // ==================================================
     // USER ID
@@ -506,7 +506,6 @@ const getAllOrdersController = async (req, res) => {
     if (!user_id) {
       return res.status(400).json({
         success: false,
-
         message: "User ID is required",
       });
     }
@@ -521,6 +520,7 @@ const getAllOrdersController = async (req, res) => {
       page,
       limit,
       search,
+      status,
       async (error, rows, totalOrders) => {
         console.log(
           `GET ALL ORDERS DB TIME: ${Date.now() - dbStart} ms | ROWS: ${
@@ -533,26 +533,82 @@ const getAllOrdersController = async (req, res) => {
 
           return res.status(500).json({
             success: false,
-
             message: error.message || "Unable to fetch all orders",
           });
         }
 
+        const rawRows = rows || [];
+
+        // --------------------------------------------------
+        // Unpack stored JSON tracking data into order object
+        // --------------------------------------------------
+        const ordersWithStoredTracking = rawRows.map((order) => {
+          let trackingData = order.tracking_data;
+          if (trackingData) {
+            try {
+              if (typeof trackingData === "string") {
+                trackingData = JSON.parse(trackingData);
+              }
+              if (trackingData && typeof trackingData === "object") {
+                return {
+                  ...order,
+                  tracking_status: order.tracking_status || trackingData.tracking_status || order.status,
+                  tracking_raw_status: trackingData.tracking_raw_status || null,
+                  tracking_status_code: trackingData.tracking_status_code || null,
+                  tracking_status_type: trackingData.tracking_status_type || null,
+                  tracking_status_datetime: trackingData.tracking_status_datetime || null,
+                  tracking_location: trackingData.tracking_location || null,
+                  tracking_instructions: trackingData.tracking_instructions || null,
+                  tracking_scans: Array.isArray(trackingData.tracking_scans) ? trackingData.tracking_scans : [],
+                  tracking_expected_delivery: trackingData.tracking_expected_delivery || null,
+                  tracking_pickup_date: trackingData.tracking_pickup_date || null,
+                  tracking_delivery_date: trackingData.tracking_delivery_date || null,
+                  tracking_rto_started_date: trackingData.tracking_rto_started_date || null,
+                  tracking_returned_date: trackingData.tracking_returned_date || null,
+                  tracking_awb: trackingData.tracking_awb || order.awb,
+                  tracking_available: trackingData.tracking_available !== false,
+                };
+              }
+            } catch (e) {
+              // Ignore JSON parse errors
+            }
+          }
+
+          return {
+            ...order,
+            tracking_status: order.tracking_status || order.status,
+            tracking_available: Boolean(order.tracking_status),
+          };
+        });
+
         // ==================================================
-        // DELHIVERY TRACKING
+        // DELHIVERY LIVE TRACKING
+        // Only run synchronously if explicitly requested via refresh_tracking=true
         // ==================================================
-        const includeTracking =
-          String(req.query.include_tracking || "true").toLowerCase() === "true";
+        const forceLiveTracking =
+          String(req.query.refresh_tracking || req.query.live_tracking || "false").toLowerCase() === "true";
 
-        const trackingStart = Date.now();
+        let finalOrders = ordersWithStoredTracking;
 
-        const ordersWithTracking = includeTracking
-          ? await attachTrackingToOrders(rows || [])
-          : rows || [];
+        if (forceLiveTracking) {
+          const trackingStart = Date.now();
+          finalOrders = await attachTrackingToOrders(ordersWithStoredTracking);
+          console.log(
+            `GET ALL ORDERS LIVE TRACKING TIME: ${Date.now() - trackingStart} ms`,
+          );
+        } else {
+          // Asynchronously check for any untracked active orders in background without blocking response
+          const untrackedAwbs = ordersWithStoredTracking
+            .filter((o) => o.awb && !o.tracking_status && String(o.status || "").toUpperCase() !== "DELIVERED")
+            .map((o) => o.awb)
+            .slice(0, 10);
 
-        console.log(
-          `GET ALL ORDERS TRACKING TIME: ${Date.now() - trackingStart} ms`,
-        );
+          if (untrackedAwbs.length > 0) {
+            getTrackingForWaybills(untrackedAwbs).catch((err) => {
+              console.warn("Background tracking catch:", err?.message || err);
+            });
+          }
+        }
 
         // ==================================================
         // SUCCESS RESPONSE
@@ -564,14 +620,12 @@ const getAllOrdersController = async (req, res) => {
 
         return res.status(200).json({
           success: true,
-
-          orders: ordersWithTracking,
-
+          orders: finalOrders,
           pagination: {
             page,
             limit,
             totalOrders,
-            totalPages: Math.ceil(totalOrders / limit),
+            totalPages: Math.ceil(totalOrders / limit) || 1,
           },
         });
       },
@@ -581,7 +635,6 @@ const getAllOrdersController = async (req, res) => {
 
     return res.status(500).json({
       success: false,
-
       message: error.message || "Unable to fetch all orders",
     });
   }

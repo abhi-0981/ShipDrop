@@ -480,6 +480,8 @@ function RTOInTransit() {
       const response = await api.get("/orders/all", {
         params: {
           user_id: userId,
+          status: "RTO_IN_TRANSIT",
+          include_tracking: false,
         },
       });
 

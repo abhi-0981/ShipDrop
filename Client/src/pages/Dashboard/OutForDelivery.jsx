@@ -583,6 +583,8 @@ function OutForDelivery() {
         {
           params: {
             user_id: userId,
+            status: "OUT_FOR_DELIVERY",
+            include_tracking: false,
           },
         }
       );

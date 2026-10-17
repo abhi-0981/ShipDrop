@@ -568,6 +568,8 @@ function Cancelled() {
         {
           params: {
             user_id: userId,
+            status: "CANCELLED",
+            include_tracking: false,
           },
         }
       );

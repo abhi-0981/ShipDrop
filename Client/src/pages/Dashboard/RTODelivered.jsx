@@ -565,6 +565,8 @@ function RTODelivered() {
         {
           params: {
             user_id: userId,
+            status: "RTO_DELIVERED",
+            include_tracking: false,
           },
         }
       );
