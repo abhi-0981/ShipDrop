@@ -1031,11 +1031,24 @@
       document.documentElement.classList.toggle("dark");
     };
 
-    const handleLogout = () => {
-      localStorage.removeItem("user");
-      toast.success("Logged out successfully");
-      navigate("/login");
-    };
+   
+const handleLogout = async () => {
+  try {
+    await api.post("/users/logout");
+
+    localStorage.removeItem("user");
+    localStorage.removeItem("token");
+
+    toast.success("Logged out from all devices successfully");
+    navigate("/login", { replace: true });
+  } catch (error) {
+    toast.error(
+      error.response?.data?.message ||
+        "Logout failed. Please check your connection and try again."
+    );
+  }
+};
+
 
     const openProfile = () => {
       setShowProfile(false);

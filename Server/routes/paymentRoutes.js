@@ -1,6 +1,8 @@
 const express = require("express");
 
 const router = express.Router();
+router.use(authMiddleware);
+const authMiddleware = require("../middleware/authMiddleware");
 
 const {
   getWalletBalance,

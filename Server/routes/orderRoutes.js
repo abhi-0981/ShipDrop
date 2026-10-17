@@ -1,7 +1,9 @@
 const express = require("express");
 const multer = require("multer");
 
+const authMiddleware = require("../middleware/authMiddleware");
 const router = express.Router();
+router.use(authMiddleware);
 
 const {
   createOrder,

@@ -1,4 +1,6 @@
 const express = require("express");
+router.use(authMiddleware);
+const authMiddleware = require("../middleware/authMiddleware");
 
 const {
   getReturnAddresses,
