@@ -19,7 +19,11 @@ import toast from "react-hot-toast";
 
 import api from "../../services/api";
 import { notifyOrderChange, subscribeToOrderUpdates } from "../../services/orderEvents";
-import { printShippingLabels } from "../../services/shippingLabelService";
+import OrderDetailsModal from "../../components/Common/OrderDetailsModal";
+import {
+  printShippingLabels,
+  downloadShippingLabels,
+} from "../../services/shippingLabelService";
 
 /* =========================================================
    USER ID
@@ -433,721 +437,6 @@ const DetailCard = ({
 };
 
 /* =========================================================
-   ORDER DETAILS MODAL
-========================================================= */
-
-const OrderDetailsModal = ({
-  order,
-  onClose,
-}) => {
-  if (!order) {
-    return null;
-  }
-
-  const status =
-    getOrderStatus(order);
-
-  const charge =
-    getCharge(order);
-
-  const service =
-    getServiceType(order);
-
-  const buyerAddress =
-    buildAddress(
-      order?.address_line1,
-      order?.address_line2,
-      order?.floor_no
-        ? `Floor ${order.floor_no}`
-        : null,
-      order?.landmark
-        ? `Landmark: ${order.landmark}`
-        : null,
-      order?.city,
-      order?.state,
-      order?.pincode,
-      order?.country
-    );
-
-  const pickupAddress =
-    buildAddress(
-      order?.pickup_address,
-      order?.pickup_address_line1,
-      order?.pickup_address_line2,
-      order?.pickup_city,
-      order?.pickup_state,
-      order?.pickup_pincode
-    );
-
-  const warehouseAddress =
-    buildAddress(
-      order?.warehouse_address_line1,
-      order?.warehouse_address_line2,
-      order?.warehouse_city,
-      order?.warehouse_state,
-      order?.warehouse_pincode,
-      order?.warehouse_country
-    );
-
-  const rtoAddress =
-    buildAddress(
-      order?.return_address_line1,
-      order?.return_address_line2,
-      order?.return_floor_no
-        ? `Floor ${order.return_floor_no}`
-        : null,
-      order?.return_landmark
-        ? `Landmark: ${order.return_landmark}`
-        : null,
-      order?.return_city,
-      order?.return_state,
-      order?.return_pincode,
-      order?.return_country
-    );
-
-  const product =
-    order?.product_name ||
-    order?.products?.[0]?.product_name ||
-    "-";
-
-  const sku =
-    order?.sku ||
-    order?.products?.[0]?.sku ||
-    "-";
-
-  const quantity =
-    order?.qty ??
-    order?.quantity ??
-    order?.products?.[0]?.qty ??
-    order?.products?.[0]?.quantity;
-
-  const weight =
-    order?.weight ??
-    order?.total_weight ??
-    order?.packages?.[0]?.weight;
-
-  const packageCount =
-    order?.package_count ??
-    order?.packages?.[0]?.package_count ??
-    order?.packages?.[0]?.count;
-
-  const length =
-    order?.length ??
-    order?.packages?.[0]?.length;
-
-  const width =
-    order?.width ??
-    order?.packages?.[0]?.width;
-
-  const height =
-    order?.height ??
-    order?.packages?.[0]?.height;
-
-  const productPrice =
-    order?.price ??
-    order?.products?.[0]?.price;
-
-  return (
-    <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/55 p-3"
-      onMouseDown={(event) => {
-        if (
-          event.target ===
-          event.currentTarget
-        ) {
-          onClose();
-        }
-      }}
-    >
-      <div className="flex max-h-[90vh] w-full max-w-[980px] flex-col overflow-hidden rounded-[14px] border border-slate-200 bg-white shadow-[0_20px_60px_rgba(15,23,42,0.20)]">
-
-        {/* HEADER */}
-
-        <div className="flex shrink-0 items-center justify-between border-b border-slate-200 bg-white px-4 py-3">
-          <div className="flex min-w-0 items-center gap-2">
-
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-[12px] font-bold text-slate-600">
-              #
-            </div>
-
-            <div className="min-w-0">
-
-              <div className="flex items-center gap-2">
-
-                <h2 className="truncate text-[15px] font-semibold text-slate-800">
-                  {getOrderId(order)}
-                </h2>
-
-                <StatusBadge
-                  status={status}
-                />
-
-              </div>
-
-              <p className="mt-0.5 text-[10px] text-slate-400">
-                AWB {valueOrDash(getAWB(order))}
-              </p>
-
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[18px] leading-none text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
-          >
-            ×
-          </button>
-
-        </div>
-
-        {/* CONTENT */}
-
-        <div className="min-h-0 flex-1 overflow-y-auto bg-[#f7f9fc] p-3">
-
-          {/* SHIPMENT + CUSTOMER */}
-
-          <div className="mb-3 grid gap-3 lg:grid-cols-2">
-
-            <DetailCard title="Shipment">
-
-              <div className="grid grid-cols-2 gap-x-5">
-
-                <DetailRow
-                  label="Order ID"
-                  value={getOrderId(order)}
-                  strong
-                />
-
-                <DetailRow
-                  label="AWB"
-                  value={getAWB(order)}
-                  strong
-                />
-
-                <DetailRow
-                  label="Pickup ID"
-                  value={
-                    order?.pickup_address_id
-                  }
-                />
-
-                <DetailRow
-                  label="Manifest ID"
-                  value={
-                    order?.manifest_id
-                  }
-                />
-
-                <DetailRow
-                  label="Service"
-                  value={service}
-                  strong
-                />
-
-                <DetailRow
-                  label="Status"
-                  value={status}
-                  strong
-                />
-
-              </div>
-
-            </DetailCard>
-
-            <DetailCard title="Customer & Payment">
-
-              <div className="grid grid-cols-2 gap-x-5">
-
-                <DetailRow
-                  label="Customer"
-                  value={getCustomerName(order)}
-                  strong
-                />
-
-                <DetailRow
-                  label="UID"
-                  value={order?.user_id}
-                />
-
-                <DetailRow
-                  label="Mobile"
-                  value={
-                    order?.mobile ||
-                    order?.phone
-                  }
-                />
-
-                <DetailRow
-                  label="Email"
-                  value={order?.email}
-                />
-
-                <DetailRow
-                  label="Payment"
-                  value={
-                    order?.payment_type ||
-                    order?.payment
-                  }
-                />
-
-                <DetailRow
-                  label="Shipping Charge"
-                  value={
-                    charge !== null
-                      ? `₹${charge.toFixed(2)}`
-                      : "-"
-                  }
-                  strong
-                />
-
-                <DetailRow
-                  label="Order Value"
-                  value={
-                    order?.order_value ??
-                    order?.total_amount ??
-                    order?.total_value
-                  }
-                />
-
-                <DetailRow
-                  label="COD Amount"
-                  value={
-                    order?.cod_amount ??
-                    order?.cod_value ??
-                    order?.codAmount
-                  }
-                />
-
-              </div>
-
-            </DetailCard>
-
-          </div>
-
-          {/* ADDRESSES */}
-
-          <div className="mb-3 grid gap-3 lg:grid-cols-2">
-
-            {/* BUYER */}
-
-            <div className="rounded-xl border border-slate-200 bg-white p-3.5">
-
-              <div className="mb-3 flex items-center justify-between">
-
-                <div>
-                  <h3 className="text-[12px] font-semibold text-slate-800">
-                    Buyer / Consignee
-                  </h3>
-
-                  <p className="mt-0.5 text-[9px] text-slate-400">
-                    Delivery customer
-                  </p>
-                </div>
-
-                <span className="rounded-md bg-blue-50 px-2 py-1 text-[9px] font-semibold text-blue-600">
-                  DELIVERY
-                </span>
-
-              </div>
-
-              <div className="grid grid-cols-2 gap-x-4">
-
-                <DetailRow
-                  label="Name"
-                  value={
-                    order?.consignee_name ||
-                    order?.customer_name
-                  }
-                  strong
-                />
-
-                <DetailRow
-                  label="Phone"
-                  value={
-                    order?.mobile ||
-                    order?.phone
-                  }
-                />
-
-                <DetailRow
-                  label="Alt Phone"
-                  value={
-                    order?.alternate_mobile
-                  }
-                />
-
-                <DetailRow
-                  label="Email"
-                  value={order?.email}
-                />
-
-              </div>
-
-              <div className="mt-2.5 rounded-lg border border-blue-100 bg-blue-50/50 px-3 py-2.5">
-
-                <div className="mb-1 text-[9px] font-semibold uppercase tracking-wide text-blue-500">
-                  Address
-                </div>
-
-                <div className="text-[10px] font-medium leading-[1.6] text-slate-700">
-                  {buyerAddress}
-                </div>
-
-              </div>
-
-            </div>
-
-            {/* PICKUP */}
-
-            <div className="rounded-xl border border-slate-200 bg-white p-3.5">
-
-              <div className="mb-3 flex items-center justify-between">
-
-                <div>
-                  <h3 className="text-[12px] font-semibold text-slate-800">
-                    Pickup Address
-                  </h3>
-
-                  <p className="mt-0.5 text-[9px] text-slate-400">
-                    Shipment origin
-                  </p>
-                </div>
-
-                <span className="rounded-md bg-emerald-50 px-2 py-1 text-[9px] font-semibold text-emerald-600">
-                  PICKUP
-                </span>
-
-              </div>
-
-              <div className="grid grid-cols-2 gap-x-4">
-
-                <DetailRow
-                  label="Name"
-                  value={
-                    order?.pickup_contact_name ||
-                    order?.warehouse_contact_name ||
-                    order?.contact_name
-                  }
-                  strong
-                />
-
-                <DetailRow
-                  label="Phone"
-                  value={
-                    order?.pickup_phone ||
-                    order?.warehouse_phone ||
-                    order?.phone
-                  }
-                />
-
-              </div>
-
-              <div className="mt-2.5 rounded-lg border border-emerald-100 bg-emerald-50/50 px-3 py-2.5">
-
-                <div className="mb-1 text-[9px] font-semibold uppercase tracking-wide text-emerald-600">
-                  Address
-                </div>
-
-                <div className="text-[10px] font-medium leading-[1.6] text-slate-700">
-                  {pickupAddress}
-                </div>
-
-              </div>
-
-            </div>
-
-          </div>
-
-          {/* ROUTE + PACKAGE */}
-
-          <div className="mb-3 grid gap-3 lg:grid-cols-2">
-
-            <DetailCard title="Route">
-
-              <div className="grid grid-cols-2 gap-x-5">
-
-                <DetailRow
-                  label="Pickup"
-                  value={buildAddress(
-                    order?.pickup_city,
-                    order?.pickup_state,
-                    order?.pickup_pincode
-                  )}
-                />
-
-                <DetailRow
-                  label="Delivery"
-                  value={buildAddress(
-                    order?.city,
-                    order?.state,
-                    order?.pincode
-                  )}
-                />
-
-                <DetailRow
-                  label="Distance"
-                  value={
-                    order?.distance_km !==
-                      undefined &&
-                    order?.distance_km !==
-                      null
-                      ? `${order.distance_km} km`
-                      : order?.distance
-                        ? `${order.distance} km`
-                        : "-"
-                  }
-                />
-
-                <DetailRow
-                  label="Zone"
-                  value={order?.zone}
-                />
-
-              </div>
-
-            </DetailCard>
-
-            <DetailCard title="Package & Product">
-
-              <div className="grid grid-cols-2 gap-x-5">
-
-                <DetailRow
-                  label="Weight"
-                  value={
-                    weight !==
-                      undefined &&
-                    weight !== null
-                      ? `${weight} kg`
-                      : "-"
-                  }
-                />
-
-                <DetailRow
-                  label="Boxes"
-                  value={packageCount}
-                />
-
-                <DetailRow
-                  label="Dimensions"
-                  value={
-                    length !== undefined &&
-                    width !== undefined &&
-                    height !== undefined
-                      ? `${length} × ${width} × ${height}`
-                      : "-"
-                  }
-                />
-
-                <DetailRow
-                  label="Product"
-                  value={product}
-                  strong
-                />
-
-                <DetailRow
-                  label="SKU"
-                  value={sku}
-                />
-
-                <DetailRow
-                  label="Quantity"
-                  value={quantity}
-                />
-
-                <DetailRow
-                  label="Product Price"
-                  value={
-                    productPrice !==
-                      undefined &&
-                    productPrice !==
-                      null
-                      ? `₹${Number(
-                          productPrice
-                        ).toFixed(2)}`
-                      : "-"
-                  }
-                />
-
-              </div>
-
-            </DetailCard>
-
-          </div>
-
-          {/* WAREHOUSE + RTO */}
-
-          <div className="mb-3 grid gap-3 lg:grid-cols-2">
-
-            <DetailCard title="Warehouse">
-
-              <div className="grid grid-cols-2 gap-x-5">
-
-                <DetailRow
-                  label="Name"
-                  value={
-                    order?.warehouse_name ||
-                    order?.warehouse?.warehouse_name
-                  }
-                  strong
-                />
-
-                <DetailRow
-                  label="Contact"
-                  value={
-                    order?.warehouse_contact_name ||
-                    order?.warehouse?.contact_name
-                  }
-                />
-
-                <DetailRow
-                  label="Phone"
-                  value={
-                    order?.warehouse_phone ||
-                    order?.warehouse?.phone
-                  }
-                />
-
-              </div>
-
-              <div className="mt-2.5 rounded-lg border border-slate-100 bg-slate-50 px-3 py-2.5">
-
-                <div className="mb-1 text-[9px] font-semibold uppercase tracking-wide text-slate-400">
-                  Address
-                </div>
-
-                <div className="text-[10px] font-medium leading-[1.6] text-slate-600">
-                  {warehouseAddress}
-                </div>
-
-              </div>
-
-            </DetailCard>
-
-            <DetailCard title="RTO Address">
-
-              <div className="grid grid-cols-2 gap-x-5">
-
-                <DetailRow
-                  label="Name"
-                  value={order?.return_name}
-                />
-
-                <DetailRow
-                  label="Phone"
-                  value={order?.return_phone}
-                />
-
-                <DetailRow
-                  label="Email"
-                  value={order?.return_email}
-                />
-
-              </div>
-
-              <div className="mt-2.5 rounded-lg border border-orange-100 bg-orange-50/50 px-3 py-2.5">
-
-                <div className="mb-1 text-[9px] font-semibold uppercase tracking-wide text-orange-500">
-                  Return Address
-                </div>
-
-                <div className="text-[10px] font-medium leading-[1.6] text-slate-600">
-                  {rtoAddress}
-                </div>
-
-              </div>
-
-            </DetailCard>
-
-          </div>
-
-          {/* META */}
-
-          <DetailCard title="Shipment Meta">
-
-            <div className="grid grid-cols-2 gap-x-5 lg:grid-cols-4">
-
-              <DetailRow
-                label="Order ID"
-                value={getOrderId(order)}
-                strong
-              />
-
-              <DetailRow
-                label="Status"
-                value={status}
-              />
-
-              <DetailRow
-                label="Tracking Status"
-                value={
-                  order?.tracking_status
-                }
-              />
-
-              <DetailRow
-                label="Created"
-                value={
-                  order?.created_at
-                    ? formatDate(
-                        order.created_at
-                      )
-                    : "-"
-                }
-              />
-
-              <DetailRow
-                label="Manifested"
-                value={
-                  order?.manifest_created_at
-                    ? formatDate(
-                        order.manifest_created_at
-                      )
-                    : "-"
-                }
-              />
-
-              <DetailRow
-                label="Tracking Updated"
-                value={
-                  order?.tracking_updated_at
-                    ? formatDate(
-                        order.tracking_updated_at
-                      )
-                    : "-"
-                }
-              />
-
-            </div>
-
-          </DetailCard>
-
-        </div>
-
-        {/* FOOTER */}
-
-        <div className="flex shrink-0 items-center justify-between border-t border-slate-200 bg-white px-4 py-2.5">
-
-          <div className="text-[9px] text-slate-400">
-            Order details
-          </div>
-
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-lg bg-[#ff5a2f] px-4 py-1.5 text-[10px] font-semibold text-white transition hover:bg-[#ed4d24]"
-          >
-            Close
-          </button>
-
-        </div>
-
-      </div>
-    </div>
-  );
-};
-
-/* =========================================================
    MAIN COMPONENT
 ========================================================= */
 
@@ -1178,6 +467,8 @@ function Pending() {
 
   const [viewingOrder, setViewingOrder] =
     useState(null);
+
+  const [detailLoading, setDetailLoading] = useState(false);
 
   /* =======================================================
      FETCH USER ORDERS
@@ -1583,8 +874,53 @@ function Pending() {
     };
 
   const handlePrintSingleLabel = async (order) => {
-    if (!order) return toast.error("Unable to print this label");
+    if (!order) {
+      toast.error("Unable to print this label");
+      return;
+    }
     await printShippingLabels([order], "ParcelDrop Shipping Label");
+  };
+
+  const handleDownloadSingleLabel = async (order) => {
+    if (!order) {
+      toast.error("Unable to download this label");
+      return;
+    }
+    await downloadShippingLabels([order]);
+  };
+
+  // Reuse the same detail loader and shared details modal as All Orders.
+  const handleView = async (order) => {
+    setViewingOrder(order);
+    const orderId = order?.id ?? order?.order_id;
+    const userId = getUserId();
+    if (!orderId || !userId) return;
+
+    setDetailLoading(true);
+    try {
+      const response = await api.get(`/orders/${orderId}`, {
+        params: { user_id: userId },
+      });
+      if (response?.data?.success && response?.data?.order) {
+        setViewingOrder((current) =>
+          current && String(current?.id ?? current?.order_id) === String(orderId)
+            ? { ...current, ...response.data.order }
+            : current
+        );
+      }
+    } catch (error) {
+      console.error("Unable to load full order details:", error);
+      toast.error(error?.response?.data?.message || "Unable to load order details");
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  const triggerTracking = (awb) => {
+    if (!awb || awb === "—") return;
+    window.dispatchEvent(
+      new CustomEvent("shipdrop:openTracking", { detail: String(awb) })
+    );
   };
 
   const handleDuplicate = async (order) => {
@@ -1705,7 +1041,7 @@ function Pending() {
           <div className="flex items-center gap-2">
 
             <h1 className="text-[21px] font-semibold tracking-[-0.02em] text-slate-800">
-              Pending Orders
+              Undelivered Orders
             </h1>
 
             <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
@@ -1715,7 +1051,7 @@ function Pending() {
           </div>
 
           <p className="mt-1 text-[12px] text-slate-500">
-            Manage pending orders
+            Manage undelivered orders
           </p>
 
         </div>
@@ -1805,7 +1141,7 @@ function Pending() {
               </option>
 
               <option value="Pending">
-                Pending
+                Undelivered
               </option>
             </select>
 
@@ -1920,12 +1256,12 @@ function Pending() {
               {loading ? (
                 <tr><td colSpan={8} className="px-6 py-16 text-center">
                   <div className="mx-auto h-7 w-7 animate-spin rounded-full border-2 border-slate-200 border-t-[#008dd2]" />
-                  <div className="mt-3 text-[12px] font-medium text-slate-500">Loading pending orders...</div>
+                  <div className="mt-3 text-[12px] font-medium text-slate-500">Loading undelivered orders...</div>
                 </td></tr>
               ) : filteredOrders.length === 0 ? (
                 <tr><td colSpan={8} className="px-6 py-16 text-center">
                   <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-slate-50 text-slate-400"><HiOutlineSearch className="text-[21px]" /></div>
-                  <div className="mt-3 text-[13px] font-semibold text-slate-700">No pending orders found</div>
+                  <div className="mt-3 text-[13px] font-semibold text-slate-700">No undelivered orders found</div>
                   <div className="mt-1 text-[11px] text-slate-400">Try changing your search or payment filter.</div>
                   {(search || paymentFilter !== "ALL") && <button type="button" onClick={resetFilters} className="mt-3 text-[11px] font-semibold text-[#008dd2] hover:underline">Clear filters</button>}
                 </td></tr>
@@ -1957,7 +1293,7 @@ function Pending() {
                       <div className="min-w-0">
                         <div className="truncate text-[12px] font-semibold text-slate-800">{getCustomerName(order)}</div>
                         <div className="mt-0.5 truncate text-[11px] text-slate-400">{valueOrDash(order?.mobile || order?.phone)}</div>
-                        <span className="mt-1 inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-[9px] font-medium text-amber-600">● Pending</span>
+                        <span className="mt-1 inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-[9px] font-medium text-amber-600">● Undelivered</span>
                       </div>
                     </td>
                     <td className="px-2 py-3 align-middle">
@@ -1996,7 +1332,7 @@ function Pending() {
                       <div className="flex items-center justify-center gap-1.5 whitespace-nowrap">
                         <button type="button" onClick={() => handlePrintSingleLabel(order)} title="Print Shipping Label" aria-label="Print Shipping Label" className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[7px] border border-[#008dd2] bg-[#008dd2] text-white transition hover:bg-[#007dbb]"><HiOutlinePrinter className="text-[16px]" /></button>
                         <button type="button" onClick={() => handleDuplicate(order)} title="Duplicate Order" aria-label="Duplicate Order" className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[7px] border border-[#008dd2] bg-[#008dd2] text-white transition hover:bg-[#007dbb]"><HiOutlineClipboardCopy className="text-[16px]" /></button>
-                        <button type="button" onClick={() => setViewingOrder(order)} title="View order details" aria-label="View order details" className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[7px] border border-slate-200 bg-white text-slate-600 transition hover:border-[#008dd2]/40 hover:bg-blue-50 hover:text-[#008dd2]"><HiOutlineEye className="text-[16px]" /></button>
+                        <button type="button" onClick={() => handleView(order)} title="View order details" aria-label="View order details" className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[7px] border border-slate-200 bg-white text-slate-600 transition hover:border-[#008dd2]/40 hover:bg-blue-50 hover:text-[#008dd2]"><HiOutlineEye className="text-[16px]" /></button>
                       </div>
                     </td>
                   </tr>
@@ -2011,18 +1347,14 @@ function Pending() {
           MODAL
       ================================================= */}
 
-      {viewingOrder && (
-        <OrderDetailsModal
-          order={
-            viewingOrder
-          }
-          onClose={() =>
-            setViewingOrder(
-              null
-            )
-          }
-        />
-      )}
+      <OrderDetailsModal
+        order={viewingOrder}
+        loading={detailLoading}
+        onClose={() => setViewingOrder(null)}
+        onTrack={triggerTracking}
+        onDownload={handleDownloadSingleLabel}
+        onPrint={handlePrintSingleLabel}
+      />
 
     </div>
   );
