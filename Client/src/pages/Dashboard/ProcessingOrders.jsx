@@ -1287,47 +1287,47 @@ function ProcessingOrders() {
                         <div className="text-[10px] text-slate-400 whitespace-nowrap leading-4">{getBoxCount(order)} Box</div>
                       </td>
 
-                      {/* 7. ACTIONS */}
-                      <td className="py-3 px-4 align-middle text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => openShipPopup([id])}
-                            className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#008dd2] text-white hover:bg-[#0079b5] transition active:scale-95"
-                            title="Ship Order"
-                          >
-                            <Icon name="truck" size={14} />
-                          </button>
+                     {/* 7. ACTIONS */}
+<td className="py-3 px-4 align-middle text-right">
+  <div className="flex items-center justify-end gap-1.5">
+    <button
+      type="button"
+      onClick={() => openShipPopup([id])}
+      className="flex h-7 w-7 items-center justify-center rounded-md bg-[#008dd2] text-white hover:bg-[#0079b5] transition active:scale-95"
+      title="Ship Order"
+    >
+      <Icon name="truck" size={12} />
+    </button>
 
-                          <button
-                            type="button"
-                            onClick={() => handleEdit(order)}
-                            disabled={editingOrder}
-                            className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#008dd2] text-white hover:bg-[#0079b5] transition active:scale-95 disabled:opacity-50"
-                            title="Edit Order"
-                          >
-                            <Icon name="edit" size={14} />
-                          </button>
+    <button
+      type="button"
+      onClick={() => handleEdit(order)}
+      disabled={editingOrder}
+      className="flex h-7 w-7 items-center justify-center rounded-md bg-[#008dd2] text-white hover:bg-[#0079b5] transition active:scale-95 disabled:opacity-50"
+      title="Edit Order"
+    >
+      <Icon name="edit" size={12} />
+    </button>
 
-                          <button
-                            type="button"
-                            onClick={() => handleDuplicate(order)}
-                            className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#008dd2] text-white hover:bg-[#0079b5] transition active:scale-95"
-                            title="Duplicate Order"
-                          >
-                            <Icon name="copy" size={14} />
-                          </button>
+    <button
+      type="button"
+      onClick={() => handleDuplicate(order)}
+      className="flex h-7 w-7 items-center justify-center rounded-md bg-[#008dd2] text-white hover:bg-[#0079b5] transition active:scale-95"
+      title="Duplicate Order"
+    >
+      <Icon name="copy" size={12} />
+    </button>
 
-                          <button
-                            type="button"
-                            onClick={() => handleDelete([id])}
-                            className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#008dd2] text-white hover:bg-[#0079b5] transition active:scale-95"
-                            title="Delete Order"
-                          >
-                            <Icon name="trash" size={14} />
-                          </button>
-                        </div>
-                      </td>
+    <button
+      type="button"
+      onClick={() => handleDelete([id])}
+      className="flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition active:scale-95"
+      title="Delete Order"
+    >
+      <Icon name="trash" size={12} />
+    </button>
+  </div>
+</td>
                     </tr>
                   );
                 })
