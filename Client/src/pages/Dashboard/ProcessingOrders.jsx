@@ -1011,7 +1011,7 @@ function ProcessingOrders() {
                     >
                       {getPayment(order)}
                     </span>
-                    <span className="rounded-full bg-[#e8f6fc] px-2 py-0.5 text-[10px] font-semibold text-[#008dd2]">
+                    <span className="rounded-full bg-[#e8f6fc] px-2 py-0.5 text-[10px] font-semibold uppercase text-[#008dd2]">
                       {getStatus(order)}
                     </span>
                   </div>
@@ -1076,7 +1076,7 @@ function ProcessingOrders() {
                       type="button"
                       onClick={() => handleEdit(order)}
                       disabled={editingOrder}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-sky-200 text-sky-600 hover:bg-sky-50 active:scale-90 transition disabled:opacity-50"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#008dd2] text-white hover:bg-[#0079b5] active:scale-90 transition disabled:opacity-50"
                       title="Edit Order"
                     >
                       <Icon name="edit" size={13} />
@@ -1085,7 +1085,7 @@ function ProcessingOrders() {
                     <button
                       type="button"
                       onClick={() => handleDuplicate(order)}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-sky-200 bg-sky-50 text-[#008dd2] hover:bg-[#008dd2] hover:text-white active:scale-90 transition"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#008dd2] text-white hover:bg-[#0079b5] active:scale-90 transition"
                       title="Duplicate Order"
                     >
                       <Icon name="copy" size={13} />
@@ -1094,7 +1094,7 @@ function ProcessingOrders() {
                     <button
                       type="button"
                       onClick={() => handleDelete([id])}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-sky-200 bg-sky-50 text-[#008dd2] hover:bg-[#008dd2] hover:text-white active:scale-90 transition"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#008dd2] text-white hover:bg-[#0079b5] active:scale-90 transition"
                       title="Delete Order"
                     >
                       <Icon name="trash" size={13} />
@@ -1186,7 +1186,7 @@ function ProcessingOrders() {
                         <div className="text-[11px] text-slate-400">
                           {getMobile(order)}
                         </div>
-                        <span className="mt-1 inline-flex rounded-full bg-[#e8f6fc] px-2 py-0.5 text-[9px] font-bold text-[#008dd2]">
+                        <span className="mt-1 inline-flex rounded-full bg-[#e8f6fc] px-2 py-0.5 text-[9px] font-bold uppercase text-[#008dd2]">
                           {getStatus(order)}
                         </span>
                       </td>
@@ -1293,7 +1293,7 @@ function ProcessingOrders() {
                           <button
                             type="button"
                             onClick={() => openShipPopup([id])}
-                            className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#e8f6fc] text-[#008dd2] hover:bg-[#008dd2] hover:text-white transition active:scale-95"
+                            className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#008dd2] text-white hover:bg-[#0079b5] transition active:scale-95"
                             title="Ship Order"
                           >
                             <Icon name="truck" size={14} />
@@ -1303,7 +1303,7 @@ function ProcessingOrders() {
                             type="button"
                             onClick={() => handleEdit(order)}
                             disabled={editingOrder}
-                            className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-50 text-sky-600 hover:bg-sky-600 hover:text-white transition active:scale-95 disabled:opacity-50"
+                            className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#008dd2] text-white hover:bg-[#0079b5] transition active:scale-95 disabled:opacity-50"
                             title="Edit Order"
                           >
                             <Icon name="edit" size={14} />
@@ -1312,7 +1312,7 @@ function ProcessingOrders() {
                           <button
                             type="button"
                             onClick={() => handleDuplicate(order)}
-                            className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-50 text-[#008dd2] hover:bg-[#008dd2] hover:text-white transition active:scale-95"
+                            className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#008dd2] text-white hover:bg-[#0079b5] transition active:scale-95"
                             title="Duplicate Order"
                           >
                             <Icon name="copy" size={14} />
@@ -1321,7 +1321,7 @@ function ProcessingOrders() {
                           <button
                             type="button"
                             onClick={() => handleDelete([id])}
-                            className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-50 text-[#008dd2] hover:bg-[#008dd2] hover:text-white transition active:scale-95"
+                            className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#008dd2] text-white hover:bg-[#0079b5] transition active:scale-95"
                             title="Delete Order"
                           >
                             <Icon name="trash" size={14} />

@@ -431,7 +431,7 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
             )}`}
           >
             <HiOutlineClock size={20} />
-            <span className="ml-3 truncate">Ready To Ship</span>
+            <span className="ml-3 truncate">Ready to Ship</span>
           </Link>
 
           {/* ORDERS */}
@@ -453,7 +453,7 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
               <div className="mt-1 ml-5 space-y-1 border-l-2 border-slate-100 pl-3">
                 {[
                   {
-                    name: "Ready To Ship",
+                    name: "Ready to Ship",
                     path: "/processing-orders",
                     count: statusCounts.PROCESSING,
                   },
@@ -675,7 +675,7 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
             className="flex w-full items-center rounded-xl px-3 py-2.5 text-[14px] text-red-500 hover:bg-red-50 transition duration-150"
           >
             <HiOutlineLogout size={20} />
-            <span className="ml-3 truncate font-medium">Logout</span>
+            <span className="ml-3 truncate font-medium">Log out</span>
           </button>
         </div>
       </aside>
@@ -732,7 +732,7 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
           }`}
         >
           <HiOutlineTicket size={21} />
-          <span className="text-[11px] font-medium">Tickets</span>
+          <span className="text-[11px] font-medium">Support Tickets</span>
         </Link>
       </nav>
     </>
