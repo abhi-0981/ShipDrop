@@ -1254,7 +1254,7 @@ function ProcessingOrders() {
                       {/* 4. PAYMENT */}
                       <td className="py-2.5 px-2 align-middle">
                         <span
-                          className={`inline-flex rounded-md border px-2 py-0.5 text-[10px] font-bold ${
+                          className={`inline-flex rounded-md border px-2 py-0.5 text-[11px] font-bold ${
                             getPayment(order) === "COD"
                               ? "border-rose-100 bg-rose-50 text-rose-600"
                               : "border-emerald-100 bg-emerald-50 text-emerald-600"
@@ -1282,7 +1282,7 @@ function ProcessingOrders() {
 
                       {/* 6. WEIGHT */}
                       <td className="py-2.5 px-2 align-middle">
-                        <div className="font-semibold text-slate-900 whitespace-nowrap leading-5">{getTotalWeight(order)}</div>
+                        <div className="font-semibold text-slate-900 whitespace-nowrap leading-5">Wt: {getTotalWeight(order)}</div>
                         <div className="mt-0.5 text-[10px] font-medium text-slate-500 whitespace-nowrap leading-4">Vol: {getVolumetricWeight(order)}</div>
                         <div className="text-[10px] text-slate-400 whitespace-nowrap leading-4">{getBoxCount(order)} Box</div>
                       </td>
