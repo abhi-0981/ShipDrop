@@ -41,6 +41,16 @@ async function ensureIndexes() {
       name: "idx_wallets_user_id",
       columns: "user_id",
     },
+    {
+      table: "user_sessions",
+      name: "idx_user_sessions_user_id",
+      columns: "user_id",
+    },
+    {
+      table: "user_sessions",
+      name: "idx_user_sessions_expiry",
+      columns: "expires_at",
+    },
   ];
 
   try {

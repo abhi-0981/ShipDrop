@@ -1,54 +1,42 @@
 const express = require("express");
 
-const router =
-  express.Router();
+const router = express.Router();
 
 const {
   registerUser,
   loginUser,
+  getSessionUser,
+  logoutUser,
   getUserProfile,
-  updateUserProfile
+  updateUserProfile,
 } = require("../controllers/userController");
 
+const { authenticateUser } = require("../middleware/authMiddleware");
 
 // ========================================
-// REGISTER
+// PUBLIC ROUTES: REGISTER & LOGIN
 // ========================================
 
-router.post(
-  "/register",
-  registerUser
-);
+router.post("/register", registerUser);
 
+router.post("/login", loginUser);
 
 // ========================================
-// LOGIN
+// PROTECTED SESSION MANAGEMENT ROUTES
 // ========================================
 
-router.post(
-  "/login",
-  loginUser
-);
+// Validates current session token against database and returns safe user data
+router.get("/session", authenticateUser, getSessionUser);
 
-
-// ========================================
-// GET PROFILE
-// ========================================
-
-router.get(
-  "/profile/:user_id",
-  getUserProfile
-);
-
+// Global logout: revokes all active sessions for this account across all devices
+router.post("/logout", authenticateUser, logoutUser);
 
 // ========================================
-// UPDATE PROFILE
+// PROTECTED USER PROFILE ROUTES
 // ========================================
 
-router.put(
-  "/profile/update",
-  updateUserProfile
-);
+router.get("/profile/:user_id", authenticateUser, getUserProfile);
 
+router.put("/profile/update", authenticateUser, updateUserProfile);
 
 module.exports = router;

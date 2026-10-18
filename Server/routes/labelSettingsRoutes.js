@@ -6,7 +6,12 @@ const {
   deleteLogo,
 } = require("../controllers/labelSettingsController");
 
+const { authenticateUser } = require("../middleware/authMiddleware");
+
 const router = express.Router();
+
+// All label settings routes are account-owned and require authentication
+router.use(authenticateUser);
 
 router.get("/", getSettings);
 

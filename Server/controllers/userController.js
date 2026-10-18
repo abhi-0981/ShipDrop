@@ -1,5 +1,7 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
+const db = require("../config/db");
 const userModel = require("../models/userModel");
 
 // ========================================
@@ -372,9 +374,45 @@ const loginUser = (req, res) => {
           created_at: user.created_at,
         };
 
+        // ----------------------------------
+        // CREATE 24-HOUR DATABASE SESSION
+        // ----------------------------------
+        const sessionId = crypto.randomUUID();
+        const jwtSecret = process.env.JWT_SECRET || "default_jwt_secret_shipdrop";
+
+        const promiseDb = db.promise();
+        try {
+          await promiseDb.query(
+            `
+            INSERT INTO user_sessions (session_id, user_id, expires_at, revoked_at, created_at)
+            VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 24 HOUR), NULL, NOW())
+            `,
+            [sessionId, String(user.id)]
+          );
+        } catch (sessionErr) {
+          console.error("Failed to insert session row:", sessionErr);
+          return res.status(500).json({
+            message: "Unable to establish secure login session. Please try again.",
+          });
+        }
+
+        // Sign authentication token with session_id and user_id
+        const token = jwt.sign(
+          {
+            id: user.id,
+            user_id: user.id,
+            session_id: sessionId,
+            email: user.email,
+            role: user.role,
+          },
+          jwtSecret,
+          { expiresIn: "24h" }
+        );
+
         return res.status(200).json({
           message: "Login successful",
           role: user.role,
+          token,
           user: safeUser,
         });
       },
@@ -390,20 +428,114 @@ const loginUser = (req, res) => {
 };
 
 // ========================================
+// GET CURRENT SESSION USER
+// ========================================
+
+const getSessionUser = (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        code: "UNAUTHORIZED",
+        message: "No active authenticated session found.",
+      });
+    }
+
+    const safeUser = {
+      id: req.user.id,
+      full_name: req.user.full_name,
+      company_name: req.user.company_name,
+      gst_no: req.user.gst_no,
+      email: req.user.email,
+      phone_no: req.user.phone_no,
+      role: req.user.role,
+      profile_image: req.user.profile_image || null,
+      created_at: req.user.created_at,
+    };
+
+    return res.status(200).json({
+      success: true,
+      user: safeUser,
+    });
+  } catch (error) {
+    console.error("Get session user error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Unable to retrieve session user.",
+    });
+  }
+};
+
+// ========================================
+// LOGOUT USER (GLOBAL LOGOUT - ALL DEVICES)
+// ========================================
+
+const logoutUser = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized request. No active session found to logout.",
+      });
+    }
+
+    const promiseDb = db.promise();
+
+    // Revoke all active sessions belonging to this user
+    await promiseDb.query(
+      `
+      UPDATE user_sessions
+      SET revoked_at = NOW()
+      WHERE user_id = ? AND revoked_at IS NULL
+      `,
+      [String(userId)]
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Logged out successfully from all devices.",
+    });
+  } catch (error) {
+    console.error("Global logout error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Unable to complete server-side logout. Please try again.",
+    });
+  }
+};
+
+// ========================================
 // GET USER PROFILE
 // ========================================
 
 const getUserProfile = (req, res) => {
-  const { user_id } = req.params;
+  const paramUserId = req.params.user_id;
+  const authUserId = req.user?.id;
 
-  if (!user_id) {
+  const userId = authUserId || paramUserId;
+
+  if (!userId) {
     return res.status(400).json({
       message: "User ID is required",
     });
   }
 
+  // Prevent accessing another user's profile
+  if (
+    authUserId &&
+    paramUserId &&
+    String(authUserId) !== String(paramUserId) &&
+    req.user?.role !== "admin"
+  ) {
+    return res.status(403).json({
+      message: "Access denied. You cannot view another user's profile.",
+    });
+  }
+
   userModel.findUserById(
-    user_id,
+    userId,
     (err, result) => {
       if (err) {
         console.error(
@@ -447,7 +579,18 @@ const updateUserProfile = (req, res) => {
     profile_image,
   } = req.body;
 
-  user_id = Number(user_id);
+  // Enforce authenticated user ID if logged in
+  const effectiveUserId = req.user?.id
+    ? Number(req.user.id)
+    : Number(user_id);
+
+  if (!effectiveUserId) {
+    return res.status(400).json({
+      message: "User ID is required",
+    });
+  }
+
+  user_id = effectiveUserId;
 
   full_name = String(full_name || "").trim();
   email = String(email || "")
@@ -456,12 +599,6 @@ const updateUserProfile = (req, res) => {
 
   phone_no = String(phone_no || "")
     .replace(/\D/g, "");
-
-  if (!user_id) {
-    return res.status(400).json({
-      message: "User ID is required",
-    });
-  }
 
   if (!full_name) {
     return res.status(400).json({
@@ -618,6 +755,8 @@ const updateUserProfile = (req, res) => {
 module.exports = {
   registerUser,
   loginUser,
+  getSessionUser,
+  logoutUser,
   getUserProfile,
   updateUserProfile,
 };

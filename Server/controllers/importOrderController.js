@@ -762,7 +762,7 @@ const importOrders = async (
     // ==================================================
 
     const userId =
-      Number(req.body.user_id);
+      Number(req.user?.id || req.body.user_id);
 
     const warehouseId =
       Number(

@@ -48,6 +48,7 @@ const validateAddress = (data) => {
 const getReturnAddresses = async (req, res) => {
   try {
     const userId = Number(
+      req.user?.id ||
       req.query.user_id
     );
 
@@ -90,6 +91,7 @@ const getReturnAddress = async (req, res) => {
   try {
     const id = Number(req.params.id);
     const userId = Number(
+      req.user?.id ||
       req.query.user_id
     );
 
@@ -143,6 +145,7 @@ const getDefaultReturnAddress = async (
 ) => {
   try {
     const userId = Number(
+      req.user?.id ||
       req.query.user_id
     );
 
@@ -202,7 +205,7 @@ const createReturnAddress = async (
       is_default,
     } = req.body;
 
-    const userId = Number(user_id);
+    const userId = Number(req.user?.id || user_id);
 
     if (!userId) {
       return res.status(400).json({
@@ -287,6 +290,7 @@ const updateReturnAddress = async (
   try {
     const id = Number(req.params.id);
     const userId = Number(
+      req.user?.id ||
       req.body.user_id
     );
 
@@ -354,6 +358,7 @@ const deleteReturnAddress = async (
   try {
     const id = Number(req.params.id);
     const userId = Number(
+      req.user?.id ||
       req.body.user_id ||
       req.query.user_id
     );
@@ -410,6 +415,7 @@ const setDefaultReturnAddress = async (
   try {
     const id = Number(req.params.id);
     const userId = Number(
+      req.user?.id ||
       req.body.user_id
     );
 

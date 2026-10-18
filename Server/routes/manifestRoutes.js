@@ -6,6 +6,11 @@ const router =
 const manifestController =
   require("../controllers/manifestController");
 
+const { authenticateUser } = require("../middleware/authMiddleware");
+
+// All manifest routes are account-owned and require authentication
+router.use(authenticateUser);
+
 
 // ======================================================
 // GET ALL MANIFESTS

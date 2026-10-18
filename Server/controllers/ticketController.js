@@ -22,7 +22,9 @@ const createTicketController = async (req, res) => {
       description,
     } = req.body;
 
-    if (!user_id) {
+    const userId = Number(req.user?.id || user_id);
+
+    if (!userId) {
       return res.status(400).json({
         success: false,
         message: "User ID is required",
@@ -30,7 +32,7 @@ const createTicketController = async (req, res) => {
     }
 
     const ticket = await createTicket({
-      user_id,
+      user_id: userId,
       order_id,
       awb,
       category,
@@ -62,6 +64,7 @@ const createTicketController = async (req, res) => {
 const getTicketsController = async (req, res) => {
   try {
     const userId =
+      req.user?.id ||
       req.query.user_id ||
       req.body?.user_id;
 
@@ -102,6 +105,7 @@ const getTicketController = async (req, res) => {
     const ticketId = Number(req.params.id);
 
     const userId = Number(
+      req.user?.id ||
       req.query.user_id ||
       req.body?.user_id
     );
@@ -161,8 +165,8 @@ const replyToTicketController = async (req, res) => {
   try {
     const ticketId = Number(req.params.id);
 
+    const userId = Number(req.user?.id || req.body.user_id);
     const {
-      user_id,
       message,
     } = req.body;
 
@@ -200,7 +204,7 @@ const replyToTicketController = async (req, res) => {
     // ticketModel.addUserReply expects an object.
     const reply = await addUserReply({
       ticket_id: ticketId,
-      user_id: Number(user_id),
+      user_id: userId,
       message: String(message).trim(),
     });
 
@@ -228,9 +232,7 @@ const closeTicketController = async (req, res) => {
   try {
     const ticketId = Number(req.params.id);
 
-    const {
-      user_id,
-    } = req.body;
+    const userId = Number(req.user?.id || req.body.user_id);
 
     if (
       !Number.isInteger(ticketId) ||
@@ -243,8 +245,8 @@ const closeTicketController = async (req, res) => {
     }
 
     if (
-      !Number.isInteger(Number(user_id)) ||
-      Number(user_id) <= 0
+      !Number.isInteger(userId) ||
+      userId <= 0
     ) {
       return res.status(400).json({
         success: false,
@@ -256,7 +258,7 @@ const closeTicketController = async (req, res) => {
     // ticketModel.closeTicket expects an object.
     const result = await closeTicket({
       ticket_id: ticketId,
-      user_id: Number(user_id),
+      user_id: userId,
     });
 
     return res.status(200).json({

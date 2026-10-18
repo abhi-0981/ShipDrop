@@ -1031,10 +1031,27 @@
       document.documentElement.classList.toggle("dark");
     };
 
-    const handleLogout = () => {
-      localStorage.removeItem("user");
-      toast.success("Logged out successfully");
-      navigate("/login");
+    const handleLogout = async () => {
+      try {
+        await api.post("/users/logout");
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        toast.success("Logged out successfully");
+        navigate("/login");
+      } catch (err) {
+        if (err.response?.status === 401) {
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          toast.success("Logged out successfully");
+          navigate("/login");
+          return;
+        }
+        console.error("Logout error:", err);
+        toast.error(
+          err.response?.data?.message ||
+            "Unable to complete logout on server. Please try again."
+        );
+      }
     };
 
     const openProfile = () => {

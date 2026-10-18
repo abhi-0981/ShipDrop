@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 import {
   HiOutlineViewGrid,
   HiOutlinePlusCircle,
@@ -23,6 +24,7 @@ import { fetchOrderStatusCounts } from "../../services/orderEvents";
 
 function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
   const location = useLocation();
+  const navigate = useNavigate();
 
   // Desktop default open (false), mobile default closed (true)
   const [isCollapsed, setIsCollapsed] = useState(() => {
@@ -202,6 +204,31 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
   const handleNavClick = () => {
     if (window.innerWidth < 1024) {
       handleToggle(true);
+    }
+  };
+
+  const handleSidebarLogout = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    handleNavClick();
+    try {
+      await api.post("/users/logout");
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      toast.success("Logged out successfully");
+      navigate("/login");
+    } catch (err) {
+      if (err.response?.status === 401) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        toast.success("Logged out successfully");
+        navigate("/login");
+        return;
+      }
+      console.error("Logout error:", err);
+      toast.error(
+        err.response?.data?.message ||
+          "Unable to complete logout on server. Please try again."
+      );
     }
   };
 
@@ -642,14 +669,14 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
           </div>
 
           {/* LOGOUT */}
-          <Link
-            to="/login"
-            onClick={handleNavClick}
-            className="flex items-center rounded-xl px-3 py-2.5 text-[14px] text-red-500 hover:bg-red-50 transition duration-150"
+          <button
+            type="button"
+            onClick={handleSidebarLogout}
+            className="flex w-full items-center rounded-xl px-3 py-2.5 text-[14px] text-red-500 hover:bg-red-50 transition duration-150"
           >
             <HiOutlineLogout size={20} />
             <span className="ml-3 truncate font-medium">Logout</span>
-          </Link>
+          </button>
         </div>
       </aside>
 

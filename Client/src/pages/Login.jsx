@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   FiArrowLeft,
@@ -12,6 +12,22 @@ import api from "../services/api";
 
 function Login() {
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const user = localStorage.getItem("user");
+    if (token && user) {
+      api
+        .get("/users/session")
+        .then(() => {
+          navigate("/dashboard", { replace: true });
+        })
+        .catch(() => {
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+        });
+    }
+  }, [navigate]);
 
   const [formData, setFormData] = useState({
     email: "",
@@ -62,12 +78,14 @@ function Login() {
       });
 
       const user = response.data?.user;
+      const token = response.data?.token;
 
-      if (!user?.id) {
+      if (!user?.id || !token) {
         toast.error("Login failed. Please try again.");
         return;
       }
 
+      localStorage.setItem("token", token);
       localStorage.setItem(
         "user",
         JSON.stringify(user)

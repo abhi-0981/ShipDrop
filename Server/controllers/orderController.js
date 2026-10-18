@@ -29,9 +29,9 @@ const createOrderController = async (req, res) => {
     // ==================================================
 
     const body = req.body || {};
+    const user_id = req.user?.id ? Number(req.user.id) : body.user_id;
 
     const {
-      user_id,
 
       // ----------------------------------------------
       // NEW FRONTEND PICKUP DATA
@@ -449,7 +449,7 @@ dangerous_good: nestedOrderData.dangerous_good === true ||
 
 const getProcessingOrdersController = async (req, res) => {
   try {
-    const user_id = Number(req.query.user_id || req.body?.user_id);
+    const user_id = Number(req.user?.id || req.query.user_id || req.body?.user_id);
 
     if (!user_id) {
       return res.status(400).json({
@@ -492,7 +492,7 @@ const getProcessingOrdersController = async (req, res) => {
 const getAllOrdersController = async (req, res) => {
   try {
     const requestStart = Date.now();
-    const user_id = Number(req.query.user_id || req.body?.user_id);
+    const user_id = Number(req.user?.id || req.query.user_id || req.body?.user_id);
 
     const page = Math.max(1, Number(req.query.page) || 1);
     const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 50));
@@ -666,7 +666,7 @@ const getOrderByIdController = async (req, res) => {
   try {
     const orderId = Number(req.params.id);
 
-    const userId = Number(req.query.user_id || req.body?.user_id);
+    const userId = Number(req.user?.id || req.query.user_id || req.body?.user_id);
 
     if (!orderId) {
       return res.status(400).json({
@@ -724,7 +724,7 @@ const updateOrderController = async (req, res) => {
       packages,
     } = req.body;
 
-    const userId = Number(user_id);
+    const userId = Number(req.user?.id || user_id);
 
     if (!orderId || !userId) {
       return res.status(400).json({
@@ -828,7 +828,7 @@ const deleteOrdersController = async (req, res) => {
   try {
     const { user_id, order_ids } = req.body;
 
-    const userId = Number(user_id);
+    const userId = Number(req.user?.id || user_id);
 
     if (!userId) {
       return res.status(400).json({
@@ -888,7 +888,7 @@ const deleteOrdersController = async (req, res) => {
 
 const searchPreviousCustomersController = async (req, res) => {
   try {
-    const userId = Number(req.query?.user_id);
+    const userId = Number(req.user?.id || req.query?.user_id);
     const search = String(req.query?.search || "").trim();
 
     console.log("==========================================");
@@ -947,7 +947,7 @@ const searchPreviousCustomersController = async (req, res) => {
 
 const searchTrackingController = async (req, res) => {
   try {
-    const userId = Number(req.query?.user_id || req.body?.user_id);
+    const userId = Number(req.user?.id || req.query?.user_id || req.body?.user_id);
 
     const search = String(req.query?.search || req.body?.search || "").trim();
 

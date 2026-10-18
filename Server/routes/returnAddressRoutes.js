@@ -10,7 +10,12 @@ const {
   setDefaultReturnAddress,
 } = require("../controllers/returnAddressController");
 
+const { authenticateUser } = require("../middleware/authMiddleware");
+
 const router = express.Router();
+
+// All return address routes are account-owned and require authentication
+router.use(authenticateUser);
 
 // ======================================================
 // RETURN ADDRESSES

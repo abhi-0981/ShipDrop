@@ -36,11 +36,13 @@ const confirmShipmentController = async (
     } = req.body;
 
 
+    const effectiveUserId = req.user?.id ? Number(req.user.id) : Number(user_id);
+
     // ========================================
     // USER ID
     // ========================================
 
-    if (!user_id) {
+    if (!effectiveUserId) {
 
       return res.status(400).json({
 
@@ -321,7 +323,7 @@ const confirmShipmentController = async (
     const result =
       await confirmShipment({
 
-        user_id,
+        user_id: effectiveUserId,
 
         pickup_address,
 
@@ -430,11 +432,13 @@ const bulkConfirmShipmentController =
       } = req.body;
 
 
+      const effectiveUserId = req.user?.id ? Number(req.user.id) : Number(user_id);
+
       // ========================================
       // USER ID
       // ========================================
 
-      if (!user_id) {
+      if (!effectiveUserId) {
 
         return res.status(400).json({
 
@@ -559,7 +563,7 @@ const bulkConfirmShipmentController =
       const result =
         await bulkConfirmShipments({
 
-          user_id,
+          user_id: effectiveUserId,
 
           order_ids:
             cleanOrderIds,

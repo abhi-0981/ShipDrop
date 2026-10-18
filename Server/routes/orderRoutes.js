@@ -19,6 +19,11 @@ const {
   importOrders,
 } = require("../controllers/importOrderController");
 
+const { authenticateUser } = require("../middleware/authMiddleware");
+
+// All order routes are account-owned and require authentication
+router.use(authenticateUser);
+
 const upload = multer({
   storage: multer.memoryStorage(),
 

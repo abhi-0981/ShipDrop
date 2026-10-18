@@ -19,7 +19,7 @@ const razorpay = new Razorpay({
 // ========================================
 
 const getWalletBalance = (req, res) => {
-  const { user_id } = req.query;
+  const user_id = req.user?.id || req.query.user_id;
 
   if (!user_id) {
     return res.status(400).json({
@@ -63,8 +63,8 @@ const getWalletBalance = (req, res) => {
 
 const createPaymentOrder = async (req, res) => {
   try {
+    const user_id = req.user?.id || req.body.user_id;
     const {
-      user_id,
       amount,
     } = req.body;
 
@@ -181,8 +181,8 @@ const createPaymentOrder = async (req, res) => {
 // ========================================
 
 const verifyPayment = (req, res) => {
+  const user_id = req.user?.id || req.body.user_id;
   const {
-    user_id,
     razorpay_order_id,
     razorpay_payment_id,
     razorpay_signature,
@@ -386,7 +386,7 @@ const verifyPayment = (req, res) => {
 // ========================================
 
 const getWalletHistory = (req, res) => {
-  const { user_id } = req.query;
+  const user_id = req.user?.id || req.query.user_id;
 
   if (!user_id) {
     return res.status(400).json({
@@ -417,7 +417,7 @@ const getWalletHistory = (req, res) => {
 // ========================================
 
 const getCODRemittanceHistory = (req, res) => {
-  const { user_id } = req.query;
+  const user_id = req.user?.id || req.query.user_id;
 
   if (!user_id) {
     return res.status(400).json({
