@@ -732,7 +732,7 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
           }`}
         >
           <HiOutlineTicket size={21} />
-          <span className="text-[11px] font-medium">Support Tickets</span>
+          <span className="text-[11px] font-medium">Tickets</span>
         </Link>
       </nav>
     </>
