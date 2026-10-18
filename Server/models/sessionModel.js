@@ -2,6 +2,75 @@ const db = require("../config/db");
 
 const sessionModel = {
   /**
+   * Auto-healing schema helper: Ensures user_sessions table and columns exist in MySQL
+   */
+  ensureTable: async () => {
+    try {
+      const promiseDb = db.promise();
+
+      await promiseDb.query(`
+        CREATE TABLE IF NOT EXISTS user_sessions (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          session_id VARCHAR(128) NOT NULL DEFAULT '',
+          user_id INT NOT NULL DEFAULT 0,
+          ip_address VARCHAR(45) NULL DEFAULT NULL,
+          user_agent TEXT NULL,
+          created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          expires_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          is_revoked TINYINT(1) NOT NULL DEFAULT 0,
+          revoked_at TIMESTAMP NULL DEFAULT NULL,
+          INDEX idx_user_sessions_user_id (user_id),
+          INDEX idx_user_sessions_session_id (session_id),
+          INDEX idx_user_sessions_user_revoked (user_id, is_revoked),
+          INDEX idx_user_sessions_expires_at (expires_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+      `);
+
+      // Use SHOW COLUMNS to inspect without schema name dependencies
+      const [cols] = await promiseDb.query("SHOW COLUMNS FROM user_sessions");
+      const colNames = (cols || []).map((c) => c.Field.toLowerCase());
+
+      if (!colNames.includes("session_id")) {
+        await promiseDb.query(
+          "ALTER TABLE user_sessions ADD COLUMN session_id VARCHAR(128) NOT NULL DEFAULT ''"
+        );
+      }
+      if (!colNames.includes("user_id")) {
+        await promiseDb.query(
+          "ALTER TABLE user_sessions ADD COLUMN user_id INT NOT NULL DEFAULT 0"
+        );
+      }
+      if (!colNames.includes("expires_at")) {
+        await promiseDb.query(
+          "ALTER TABLE user_sessions ADD COLUMN expires_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP"
+        );
+      }
+      if (!colNames.includes("is_revoked")) {
+        await promiseDb.query(
+          "ALTER TABLE user_sessions ADD COLUMN is_revoked TINYINT(1) NOT NULL DEFAULT 0"
+        );
+      }
+      if (!colNames.includes("revoked_at")) {
+        await promiseDb.query(
+          "ALTER TABLE user_sessions ADD COLUMN revoked_at TIMESTAMP NULL DEFAULT NULL"
+        );
+      }
+      if (!colNames.includes("ip_address")) {
+        await promiseDb.query(
+          "ALTER TABLE user_sessions ADD COLUMN ip_address VARCHAR(45) NULL DEFAULT NULL"
+        );
+      }
+      if (!colNames.includes("user_agent")) {
+        await promiseDb.query(
+          "ALTER TABLE user_sessions ADD COLUMN user_agent TEXT NULL"
+        );
+      }
+    } catch (err) {
+      console.warn("[sessionModel] ensureTable notice:", err.message);
+    }
+  },
+
+  /**
    * Create a new session record in user_sessions table
    * @param {Object} sessionData
    * @param {string} sessionData.sessionId
@@ -30,15 +99,36 @@ const sessionModel = {
       VALUES (?, ?, ?, ?, NOW(), ?, 0)
     `;
 
-    const [result] = await db.promise().query(query, [
-      sessionId,
-      userId,
-      ipAddress || null,
-      userAgent || null,
-      expiresAt,
-    ]);
-
-    return result;
+    try {
+      const [result] = await db.promise().query(query, [
+        sessionId,
+        userId,
+        ipAddress || null,
+        userAgent || null,
+        expiresAt,
+      ]);
+      return result;
+    } catch (err) {
+      // Auto-heal on missing table or column error
+      if (
+        err.code === "ER_NO_SUCH_TABLE" ||
+        err.code === "ER_BAD_FIELD_ERROR" ||
+        err.errno === 1146 ||
+        err.errno === 1054
+      ) {
+        console.warn("[sessionModel] Auto-healing user_sessions schema on createSession...");
+        await sessionModel.ensureTable();
+        const [retryResult] = await db.promise().query(query, [
+          sessionId,
+          userId,
+          ipAddress || null,
+          userAgent || null,
+          expiresAt,
+        ]);
+        return retryResult;
+      }
+      throw err;
+    }
   },
 
   /**
@@ -63,8 +153,24 @@ const sessionModel = {
       LIMIT 1
     `;
 
-    const [rows] = await db.promise().query(query, [sessionId, userId]);
-    return rows[0] || null;
+    try {
+      const [rows] = await db.promise().query(query, [sessionId, userId]);
+      return rows[0] || null;
+    } catch (err) {
+      // Auto-heal on missing table or column error
+      if (
+        err.code === "ER_NO_SUCH_TABLE" ||
+        err.code === "ER_BAD_FIELD_ERROR" ||
+        err.errno === 1146 ||
+        err.errno === 1054
+      ) {
+        console.warn("[sessionModel] Auto-healing user_sessions schema on findSession...");
+        await sessionModel.ensureTable();
+        const [retryRows] = await db.promise().query(query, [sessionId, userId]);
+        return retryRows[0] || null;
+      }
+      throw err;
+    }
   },
 
   /**
@@ -81,8 +187,22 @@ const sessionModel = {
         AND is_revoked = 0
     `;
 
-    const [result] = await db.promise().query(query, [userId]);
-    return result;
+    try {
+      const [result] = await db.promise().query(query, [userId]);
+      return result;
+    } catch (err) {
+      if (
+        err.code === "ER_NO_SUCH_TABLE" ||
+        err.code === "ER_BAD_FIELD_ERROR" ||
+        err.errno === 1146 ||
+        err.errno === 1054
+      ) {
+        await sessionModel.ensureTable();
+        const [retryResult] = await db.promise().query(query, [userId]);
+        return retryResult;
+      }
+      throw err;
+    }
   },
 
   /**
@@ -106,8 +226,22 @@ const sessionModel = {
       params.push(userId);
     }
 
-    const [result] = await db.promise().query(query, params);
-    return result;
+    try {
+      const [result] = await db.promise().query(query, params);
+      return result;
+    } catch (err) {
+      if (
+        err.code === "ER_NO_SUCH_TABLE" ||
+        err.code === "ER_BAD_FIELD_ERROR" ||
+        err.errno === 1146 ||
+        err.errno === 1054
+      ) {
+        await sessionModel.ensureTable();
+        const [retryResult] = await db.promise().query(query, params);
+        return retryResult;
+      }
+      throw err;
+    }
   },
 
   /**
@@ -123,8 +257,22 @@ const sessionModel = {
         AND expires_at > NOW()
     `;
 
-    const [rows] = await db.promise().query(query, [userId]);
-    return rows[0]?.active_count || 0;
+    try {
+      const [rows] = await db.promise().query(query, [userId]);
+      return rows[0]?.active_count || 0;
+    } catch (err) {
+      if (
+        err.code === "ER_NO_SUCH_TABLE" ||
+        err.code === "ER_BAD_FIELD_ERROR" ||
+        err.errno === 1146 ||
+        err.errno === 1054
+      ) {
+        await sessionModel.ensureTable();
+        const [retryRows] = await db.promise().query(query, [userId]);
+        return retryRows[0]?.active_count || 0;
+      }
+      return 0;
+    }
   },
 };
 

@@ -80,8 +80,8 @@ const authMiddleware = async (req, res, next) => {
     if (!sessionId || !userId) {
       return res.status(401).json({
         success: false,
-        code: "INVALID_SESSION",
-        message: "Invalid session credentials in token.",
+        code: "SESSION_EXPIRED",
+        message: "Session expired or invalid. Please log in again.",
       });
     }
 
@@ -93,8 +93,8 @@ const authMiddleware = async (req, res, next) => {
     if (!session) {
       return res.status(401).json({
         success: false,
-        code: "SESSION_NOT_FOUND",
-        message: "Session not found or has expired. Please log in again.",
+        code: "SESSION_EXPIRED",
+        message: "Session expired or not found. Please log in again.",
       });
     }
 
@@ -140,10 +140,11 @@ const authMiddleware = async (req, res, next) => {
 
     return next();
   } catch (error) {
-    console.error("authMiddleware error:", error);
-    return res.status(500).json({
+    console.error("authMiddleware unexpected error:", error?.message || error);
+    return res.status(401).json({
       success: false,
-      message: "Internal authentication error",
+      code: "AUTH_REQUIRED",
+      message: "Authentication session expired or invalid. Please log in again.",
     });
   }
 };
