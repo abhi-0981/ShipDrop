@@ -182,13 +182,9 @@ function Users() {
 
       handleCloseImpersonateModal();
 
-      // Open user dashboard in a new tab so admin panel remains undisturbed
+      // Directly navigate to user dashboard without popup blocker interception
       if (data.redirect_url) {
-        const newWindow = window.open(data.redirect_url, "_blank");
-        if (!newWindow || newWindow.closed || typeof newWindow.closed === "undefined") {
-          // If popup blocker intervened, redirect in current window
-          window.location.href = data.redirect_url;
-        }
+        window.location.href = data.redirect_url;
       }
     } catch (err) {
       console.error("Impersonation error:", err);

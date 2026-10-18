@@ -6,6 +6,19 @@ const db = require("./db");
  */
 async function ensureTables() {
   try {
+    // 0. Ensure user_sessions table exists
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS user_sessions (
+        session_id VARCHAR(64) PRIMARY KEY,
+        user_id VARCHAR(64) NOT NULL,
+        expires_at DATETIME NOT NULL,
+        revoked_at DATETIME NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_user_sessions_user_id (user_id),
+        INDEX idx_user_sessions_expiry (expires_at)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
     // 1. Audit log table
     await db.query(`
       CREATE TABLE IF NOT EXISTS admin_impersonation_logs (

@@ -1,6 +1,7 @@
 const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
 const db = require("../config/db");
+const { ensureTables } = require("../config/ensureTables");
 
 /**
  * Get the secret used for signing user tokens.
@@ -36,6 +37,9 @@ const getUserAppUrl = (req) => {
  */
 const startImpersonation = async (req, res) => {
   try {
+    // Defensively ensure all required session and audit tables exist
+    await ensureTables().catch(() => {});
+
     const admin = req.admin;
     if (!admin || admin.role !== "admin") {
       return res.status(403).json({

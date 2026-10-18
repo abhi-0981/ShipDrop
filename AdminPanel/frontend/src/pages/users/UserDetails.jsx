@@ -331,10 +331,7 @@ function UserDetails() {
       setShowImpersonateModal(false);
 
       if (data.redirect_url) {
-        const newWindow = window.open(data.redirect_url, "_blank");
-        if (!newWindow || newWindow.closed || typeof newWindow.closed === "undefined") {
-          window.location.href = data.redirect_url;
-        }
+        window.location.href = data.redirect_url;
       }
     } catch (err) {
       console.error("Impersonation error:", err);

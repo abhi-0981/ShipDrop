@@ -1,6 +1,19 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import api, { API_BASE_URL } from "../../services/api";
+import api from "../../services/api";
+
+const getAdminApiBase = () => {
+  if (typeof window !== "undefined") {
+    const hostname = window.location.hostname;
+    if (hostname === "localhost" || hostname === "127.0.0.1") {
+      return "http://localhost:5001/api";
+    }
+  }
+  return (
+    import.meta.env.VITE_ADMIN_API_URL ||
+    "https://parceldropadminapi-blond.vercel.app/api"
+  );
+};
 
 function ImpersonateExchange() {
   const navigate = useNavigate();
@@ -9,21 +22,21 @@ function ImpersonateExchange() {
   const [errorMessage, setErrorMessage] = useState("");
   const [adminReturnUrl, setAdminReturnUrl] = useState("http://localhost:5174/users");
 
+  const ticketRef = useRef(null);
   const hasExchangedRef = useRef(false);
 
   useEffect(() => {
-    const ticket = searchParams.get("ticket");
-
-    // Clean query parameter from browser address bar immediately so ticket is never in history
-    if (window.history && window.history.replaceState) {
-      window.history.replaceState(
-        {},
-        document.title,
-        window.location.pathname
-      );
+    // Cache ticket on first mount before any URL replaceState
+    if (!ticketRef.current) {
+      ticketRef.current =
+        searchParams.get("ticket") ||
+        new URLSearchParams(window.location.search).get("ticket");
     }
 
+    const ticket = ticketRef.current;
+
     if (!ticket) {
+      if (hasExchangedRef.current) return;
       setStatus("error");
       setErrorMessage("No impersonation ticket was provided in the request URL.");
       return;
@@ -32,27 +45,38 @@ function ImpersonateExchange() {
     if (hasExchangedRef.current) return;
     hasExchangedRef.current = true;
 
+    // Clean query parameter from browser address bar so ticket is never in history
+    if (window.history && window.history.replaceState) {
+      window.history.replaceState(
+        {},
+        document.title,
+        window.location.pathname
+      );
+    }
+
     const performExchange = async () => {
       try {
         setStatus("verifying");
 
         let data = null;
 
-        // 1. Try exchanging via User backend
+        // 1. Try User backend exchange endpoint (/api/users/impersonate/exchange)
         try {
           const response = await api.post("/users/impersonate/exchange", { ticket });
           data = response.data;
         } catch (serverErr) {
-          // 2. If user backend route fails, try Admin backend directly
-          const adminApiBase = API_BASE_URL.replace(/:\d+/, ":5001");
-          const fallbackRes = await fetch(`${adminApiBase}/admin/impersonate/exchange`, {
+          // 2. Fallback: try Admin backend directly
+          const adminBase = getAdminApiBase();
+          const fallbackRes = await fetch(`${adminBase}/admin/impersonate/exchange`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ ticket }),
           });
-          data = await fallbackRes.json();
+          data = await fallbackRes.json().catch(() => ({}));
           if (!fallbackRes.ok || data.success === false) {
-            throw new Error(data.message || serverErr.message || "Exchange failed");
+            throw new Error(
+              data.message || serverErr.response?.data?.message || serverErr.message || "Exchange failed"
+            );
           }
         }
 
