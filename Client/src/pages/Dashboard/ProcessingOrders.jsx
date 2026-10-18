@@ -839,7 +839,7 @@ function ProcessingOrders() {
             </div>
             <div>
               <h1 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
-                Processing Orders
+                Ready To Ship
               </h1>
               <p className="text-[11px] text-slate-400">
                 {filteredOrders.length} of {orders.length} orders

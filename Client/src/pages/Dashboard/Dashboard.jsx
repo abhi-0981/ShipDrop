@@ -742,7 +742,7 @@ if (pageLoading && !orders.length) {
         />
 
         <StatCard
-          title="Processing"
+          title="Ready To Ship"
           value={statistics.processing}
           subtitle="Awaiting shipment"
           icon="clock"
@@ -760,9 +760,9 @@ if (pageLoading && !orders.length) {
         />
 
         <StatCard
-          title="Pending"
+          title="UnDelivered"
           value={statistics.pending}
-          subtitle="Pending orders"
+          subtitle="UnDelivered orders"
           icon="clock"
           iconClass="bg-amber-50 text-amber-600"
           onClick={() => navigate("/pending")}
@@ -985,7 +985,7 @@ if (pageLoading && !orders.length) {
                   Calculate Shipping Rate
                 </h2>
                 <p className="mt-0.5 text-[11px] text-slate-400">
-                  Get your assigned rate instantly
+                  Get your rate instantly
                 </p>
               </div>
               <button

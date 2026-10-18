@@ -431,7 +431,7 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
             )}`}
           >
             <HiOutlineClock size={20} />
-            <span className="ml-3 truncate">Processing Orders</span>
+            <span className="ml-3 truncate">Ready To Ship</span>
           </Link>
 
           {/* ORDERS */}
@@ -453,7 +453,7 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
               <div className="mt-1 ml-5 space-y-1 border-l-2 border-slate-100 pl-3">
                 {[
                   {
-                    name: "Processing Orders",
+                    name: "Ready To Ship",
                     path: "/processing-orders",
                     count: statusCounts.PROCESSING,
                   },
