@@ -82,14 +82,14 @@ function ImpersonationBanner() {
   return (
     <div
       id="impersonation-support-banner"
-      className="sticky top-[64px] z-20 w-full bg-linear-to-r from-amber-600 via-amber-500 to-orange-500 text-white shadow-md border-b border-amber-600/30"
+      className="sticky top-[64px] z-20 w-full bg-gradient-to-r from-[#008dd2] via-[#007cb8] to-[#006ea3] text-white shadow-sm border-b border-[#006ea3]/40"
     >
-      <div className="max-w-[1600px] mx-auto px-4 py-2 sm:py-2.5 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs">
+      <div className="max-w-[1600px] mx-auto px-4 py-2 sm:py-2.5 flex flex-col sm:flex-row items-center justify-between gap-2.5 text-xs">
         {/* LEFT: BADGE + INFO */}
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="flex items-center gap-1.5 rounded-full bg-black/20 px-2.5 py-0.5 font-bold uppercase tracking-wider text-[10px] text-amber-100 shrink-0">
-            <span className="h-2 w-2 rounded-full bg-amber-200 animate-pulse" />
-            <HiOutlineShieldCheck size={14} />
+          <div className="flex items-center gap-1.5 rounded-full bg-white/20 backdrop-blur-xs px-2.5 py-0.5 font-bold uppercase tracking-wider text-[10px] text-white shrink-0 border border-white/25 shadow-2xs">
+            <span className="h-2 w-2 rounded-full bg-emerald-300 animate-pulse" />
+            <HiOutlineShieldCheck size={14} className="text-white" />
             <span>Admin Support Mode</span>
           </div>
 
@@ -99,11 +99,11 @@ function ImpersonationBanner() {
               {impersonation.target_user_name || "Merchant"}
             </span>{" "}
             {impersonation.target_user_id && (
-              <span className="opacity-90 font-mono text-[11px]">
-                (UID #{impersonation.target_user_id})
+              <span className="font-mono text-[11px] bg-black/15 px-1.5 py-0.5 rounded font-semibold text-white/95">
+                UID #{impersonation.target_user_id}
               </span>
             )}
-            <span className="hidden md:inline text-amber-100 text-[11px] ml-2 font-normal">
+            <span className="hidden md:inline text-white/80 text-[11px] ml-2 font-normal">
               • Initiated by Admin "{impersonation.admin_username || "Admin"}"
             </span>
           </div>
@@ -115,11 +115,11 @@ function ImpersonationBanner() {
             type="button"
             disabled={ending}
             onClick={handleReturnToAdmin}
-            className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg bg-white px-3.5 text-xs font-bold text-amber-900 shadow-xs transition hover:bg-amber-50 active:scale-95 disabled:opacity-60"
+            className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg bg-white px-3.5 text-xs font-bold text-[#008dd2] shadow-xs transition hover:bg-slate-50 hover:shadow-sm active:scale-95 disabled:opacity-60"
           >
             {ending ? (
               <>
-                <div className="h-3 w-3 animate-spin rounded-full border-2 border-amber-800/30 border-t-amber-800" />
+                <div className="h-3 w-3 animate-spin rounded-full border-2 border-[#008dd2]/30 border-t-[#008dd2]" />
                 <span>Returning...</span>
               </>
             ) : (
