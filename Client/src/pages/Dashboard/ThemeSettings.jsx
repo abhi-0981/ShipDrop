@@ -74,13 +74,16 @@ const MiniUIPreview = ({ theme }) => {
       >
         <div className="flex items-center gap-1.5">
           <div
-            className="w-4 h-4 rounded-md flex items-center justify-center text-[9px] font-bold text-white"
-            style={{ backgroundColor: colors.primary }}
+            className="w-4 h-4 rounded-md flex items-center justify-center text-[9px] font-bold text-white shadow-xs"
+            style={{
+              background: colors.gradient || colors.primary,
+              boxShadow: colors.glow ? `0 2px 6px ${colors.glow}` : "none",
+            }}
           >
             P
           </div>
           <span
-            className="text-[11px] font-bold tracking-tight"
+            className="text-[11px] font-extrabold tracking-tight"
             style={{ color: colors.primary }}
           >
             ParcelDrop
@@ -123,10 +126,13 @@ const MiniUIPreview = ({ theme }) => {
         >
           {/* Active Link */}
           <div
-            className="flex items-center gap-1 rounded px-1.5 py-1 text-[9px] font-semibold text-white shadow-2xs"
-            style={{ backgroundColor: colors.primary }}
+            className="flex items-center gap-1 rounded px-1.5 py-1 text-[9px] font-bold text-white"
+            style={{
+              background: colors.gradient || colors.primary,
+              boxShadow: colors.glow ? `0 2px 8px ${colors.glow}` : "none",
+            }}
           >
-            <span className="w-1.5 h-1.5 rounded-full bg-white opacity-90" />
+            <span className="w-1.5 h-1.5 rounded-full bg-white opacity-95" />
             <span>Dashboard</span>
           </div>
           {/* Inactive links */}
@@ -288,11 +294,17 @@ export default function ThemeSettings() {
           return (
             <div
               key={theme.id}
-              className={`group relative flex flex-col justify-between rounded-2xl border bg-white p-5 transition-all duration-200 hover:shadow-md ${
+              className={`group relative flex flex-col justify-between rounded-2xl border bg-white p-5 transition-all duration-200 hover:shadow-lg ${
                 isActive
-                  ? "border-[#008dd2] ring-2 ring-[#008dd2]/20 shadow-sm"
+                  ? "ring-2 shadow-md"
                   : "border-slate-200 hover:border-slate-300"
               }`}
+              style={{
+                borderColor: isActive ? theme.colors.primary : undefined,
+                boxShadow: isActive
+                  ? `0 10px 28px -4px ${theme.colors.glow || "rgba(0,141,210,0.2)"}`
+                  : undefined,
+              }}
             >
               {/* CARD TOP INFO */}
               <div>
@@ -314,7 +326,13 @@ export default function ThemeSettings() {
                   </div>
 
                   {isActive && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700 border border-emerald-200 shadow-2xs shrink-0">
+                    <span
+                      className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold text-white shadow-2xs shrink-0"
+                      style={{
+                        background: theme.colors.gradient || theme.colors.primary,
+                        boxShadow: `0 2px 8px ${theme.colors.glow}`,
+                      }}
+                    >
                       <CheckIcon className="w-3.5 h-3.5" />
                       Active
                     </span>
@@ -368,9 +386,9 @@ export default function ThemeSettings() {
                   <button
                     type="button"
                     disabled
-                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-300 bg-emerald-50/80 py-2.5 text-xs font-bold text-emerald-700 cursor-default"
+                    className="flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-bold text-slate-700 bg-slate-100 border border-slate-200 cursor-default"
                   >
-                    <CheckIcon className="w-4 h-4" />
+                    <CheckIcon className="w-4 h-4 text-emerald-600" />
                     Currently Applied
                   </button>
                 ) : (
@@ -378,12 +396,13 @@ export default function ThemeSettings() {
                     type="button"
                     onClick={() => setTheme(theme.id)}
                     disabled={isUpdating}
-                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 py-2.5 text-xs font-bold text-white transition hover:bg-slate-800 active:scale-[0.98] disabled:opacity-50 cursor-pointer shadow-xs"
+                    className="flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-bold text-white transition-all duration-200 hover:brightness-105 active:scale-[0.98] disabled:opacity-50 cursor-pointer"
                     style={{
-                      backgroundColor: theme.colors.primary,
+                      background: theme.colors.gradient || theme.colors.primary,
+                      boxShadow: `0 4px 14px ${theme.colors.glow || "rgba(0,0,0,0.2)"}`,
                     }}
                   >
-                    <SparklesIcon className="w-4 h-4 text-white/80" />
+                    <SparklesIcon className="w-4 h-4 text-white/90" />
                     Apply {theme.name}
                   </button>
                 )}
