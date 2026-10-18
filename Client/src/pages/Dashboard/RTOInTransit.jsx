@@ -59,9 +59,9 @@ const Icon = ({ name, size = 17, strokeWidth = 1.8 }) => {
     case "refresh":
       return (
         <svg {...common}>
-          <path d="M20 11a8 8 0 0 0-14.9-4" />
+          <path d="M20 11a8.1 8.1 0 0 0-14.9-4" />
           <path d="M4 4v4h4" />
-          <path d="M4 13a8 8 0 0 0 14.9 4" />
+          <path d="M4 13a8.1 8.1 0 0 0 14.9 4" />
           <path d="M20 20v-4h-4" />
         </svg>
       );
@@ -97,6 +97,14 @@ const Icon = ({ name, size = 17, strokeWidth = 1.8 }) => {
       return (
         <svg {...common}>
           <path d="m5 12 4 4L19 6" />
+        </svg>
+      );
+
+    case "copy":
+      return (
+        <svg {...common}>
+          <rect x="8" y="8" width="12" height="12" rx="2" />
+          <path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3" />
         </svg>
       );
 
@@ -281,9 +289,7 @@ const getWeight = (order) => {
   if (Array.isArray(order?.packages)) {
     return order.packages.reduce((total, pkg) => {
       const weight = Number(pkg?.weight) || 0;
-
       const count = Number(pkg?.package_count ?? pkg?.count ?? 1) || 1;
-
       return total + weight * count;
     }, 0);
   }
@@ -384,24 +390,21 @@ const getStatusLabel = (status) => {
   switch (status) {
     case "PROCESSING":
       return "Processing";
-
     case "MANIFESTED":
       return "Manifested";
-
     case "IN TRANSIT":
     case "IN_TRANSIT":
       return "In Transit";
-
     case "DELIVERED":
       return "Delivered";
-
     case "CANCELLED":
     case "CANCELED":
       return "Cancelled";
-
     case "PENDING":
       return "Pending";
-
+    case "RTO IN TRANSIT":
+    case "RTO_IN_TRANSIT":
+      return "RTO In Transit";
     default:
       return (
         status?.toLowerCase()?.replace(/\b\w/g, (char) => char.toUpperCase()) ||
@@ -415,23 +418,22 @@ const getStatusLabel = (status) => {
 // ======================================================
 
 const StatusBadge = ({ status }) => {
-  let className = "bg-[#edf8ff] text-[#008dd2]";
+  let className = "bg-orange-50 text-orange-600 border-orange-200/70";
 
   if (status === "CANCELLED" || status === "CANCELED") {
-    className = "bg-red-50 text-red-600";
+    className = "bg-red-50 text-red-600 border-red-200/70";
   } else if (status === "DELIVERED") {
-    className = "bg-emerald-50 text-emerald-600";
+    className = "bg-emerald-50 text-emerald-600 border-emerald-200/70";
   } else if (status === "IN TRANSIT" || status === "IN_TRANSIT") {
-    className = "bg-violet-50 text-violet-600";
+    className = "bg-violet-50 text-violet-600 border-violet-200/70";
   } else if (status === "PENDING") {
-    className = "bg-amber-50 text-amber-600";
+    className = "bg-amber-50 text-amber-600 border-amber-200/70";
   }
 
   return (
     <span
-      className={`inline-flex items-center  rounded-full px-2 py-0.5 text-[10px] font-semibold ${className}`}
+      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[9.5px] font-semibold ${className}`}
     >
-      {/* <span className="h-1 w-1 rounded-full bg-current" /> */}
       {getStatusLabel(status).toUpperCase()}
     </span>
   );
@@ -443,19 +445,12 @@ const StatusBadge = ({ status }) => {
 
 function RTOInTransit() {
   const [orders, setOrders] = useState([]);
-
   const [loading, setLoading] = useState(true);
-
   const [search, setSearch] = useState("");
-
   const [statusFilter, setStatusFilter] = useState("ALL");
-
   const [serviceFilter, setServiceFilter] = useState("ALL");
-
   const [paymentFilter, setPaymentFilter] = useState("ALL");
-
   const [selectedIds, setSelectedIds] = useState([]);
-
   const [viewingOrder, setViewingOrder] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
 
@@ -468,9 +463,7 @@ function RTOInTransit() {
 
     if (!userId) {
       setLoading(false);
-
       toast.error("User ID is required");
-
       return;
     }
 
@@ -492,18 +485,15 @@ function RTOInTransit() {
       }
 
       const list = Array.isArray(data?.orders) ? data.orders : [];
-
       setOrders(list);
       setSelectedIds([]);
     } catch (error) {
-      console.error("Get out for delivery orders error:", error);
-
+      console.error("Get RTO in transit orders error:", error);
       setOrders([]);
-
       toast.error(
         error?.response?.data?.message ||
           error?.message ||
-          "Unable to load out for delivery orders",
+          "Unable to load RTO in transit orders",
       );
     } finally {
       setLoading(false);
@@ -537,9 +527,7 @@ function RTOInTransit() {
 
     return orders.filter((order) => {
       const status = getStatus(order);
-
       const service = getServiceType(order);
-
       const payment = getPaymentType(order);
 
       const searchable = [
@@ -558,12 +546,9 @@ function RTOInTransit() {
         .toLowerCase();
 
       const searchMatch = !query || searchable.includes(query);
-
       const statusMatch =
         status === "RTO IN TRANSIT" || status === "RTO_IN_TRANSIT";
-
       const serviceMatch = serviceFilter === "ALL" || service === serviceFilter;
-
       const paymentMatch = paymentFilter === "ALL" || payment === paymentFilter;
 
       return searchMatch && statusMatch && serviceMatch && paymentMatch;
@@ -596,11 +581,9 @@ function RTOInTransit() {
   const handleSelectAll = () => {
     if (allVisibleSelected) {
       const visibleIds = filteredOrders.map(getOrderKey);
-
       setSelectedIds((previous) =>
         previous.filter((id) => !visibleIds.includes(id)),
       );
-
       return;
     }
 
@@ -615,12 +598,10 @@ function RTOInTransit() {
 
   const handleSelect = (order) => {
     const id = getOrderKey(order);
-
     setSelectedIds((previous) => {
       if (previous.includes(id)) {
         return previous.filter((item) => item !== id);
       }
-
       return [...previous, id];
     });
   };
@@ -660,7 +641,7 @@ function RTOInTransit() {
   const triggerTracking = (awb) => {
     if (!awb || awb === "—" || awb === "-") return;
     window.dispatchEvent(
-      new CustomEvent("shipdrop:openTracking", { detail: String(awb) }),
+      new CustomEvent("shipdrop:openTracking", { detail: String(awb).trim() }),
     );
   };
 
@@ -670,7 +651,7 @@ function RTOInTransit() {
       return;
     }
     try {
-      await navigator.clipboard.writeText(String(value));
+      await navigator.clipboard.writeText(String(value).trim());
       toast.success(`${label} copied`);
     } catch {
       toast.error("Unable to copy");
@@ -770,268 +751,13 @@ function RTOInTransit() {
     }
   };
 
-  // ====================================================
-  // LABEL HTML
-  // ====================================================
-
-  const buildLabel = (order) => {
-    const service = getServiceType(order);
-
-    const address = [
-      order?.address_line1,
-      order?.address_line2,
-      order?.city,
-      order?.state,
-    ]
-      .filter(Boolean)
-      .join(", ");
-
-    return `
-      <div
-        style="
-          width:420px;
-          margin:0 auto 24px;
-          padding:24px;
-          border:1px solid #dbe3ef;
-          border-radius:12px;
-          font-family:Arial,sans-serif;
-          color:#172033;
-          page-break-after:always;
-        "
-      >
-
-        <div
-          style="
-            display:flex;
-            justify-content:space-between;
-            align-items:center;
-            border-bottom:1px solid #e8edf4;
-            padding-bottom:14px;
-            margin-bottom:18px;
-          "
-        >
-          <div>
-            <div
-              style="
-                font-size:20px;
-                font-weight:700;
-                color:${PRIMARY};
-              "
-            >
-              ShipDrop
-            </div>
-
-            <div
-              style="
-                font-size:11px;
-                color:#718096;
-                margin-top:4px;
-              "
-            >
-              Shipping Label
-            </div>
-          </div>
-
-          <div
-            style="
-              font-size:12px;
-              font-weight:700;
-            "
-          >
-            AWB ${getAWB(order)}
-          </div>
-        </div>
-
-        <div
-          style="
-            font-size:10px;
-            color:#718096;
-            margin-bottom:5px;
-          "
-        >
-          CONSIGNEE
-        </div>
-
-        <div
-          style="
-            font-size:16px;
-            font-weight:700;
-          "
-        >
-          ${getCustomerName(order)}
-        </div>
-
-        <div
-          style="
-            font-size:12px;
-            margin-top:5px;
-            margin-bottom:16px;
-          "
-        >
-          ${getMobile(order)}
-        </div>
-
-        <div
-          style="
-            background:#f7f9fc;
-            border-radius:8px;
-            padding:12px;
-            margin-bottom:16px;
-          "
-        >
-          <div
-            style="
-              font-size:10px;
-              color:#718096;
-              margin-bottom:5px;
-            "
-          >
-            DELIVERY ADDRESS
-          </div>
-
-          <div
-            style="
-              font-size:12px;
-              line-height:1.5;
-            "
-          >
-            ${address || "—"}
-            <br />
-            ${getDeliveryPincode(order)}
-          </div>
-        </div>
-
-        <div
-          style="
-            display:grid;
-            grid-template-columns:1fr 1fr;
-            gap:10px;
-          "
-        >
-
-          <div
-            style="
-              border:1px solid #e4eaf2;
-              border-radius:8px;
-              padding:10px;
-            "
-          >
-            <div
-              style="
-                font-size:10px;
-                color:#718096;
-              "
-            >
-              SERVICE
-            </div>
-
-            <div
-              style="
-                font-size:12px;
-                font-weight:700;
-                margin-top:4px;
-              "
-            >
-              ${service === "AIR" ? "By Air" : "By Road"}
-            </div>
-          </div>
-
-          <div
-            style="
-              border:1px solid #e4eaf2;
-              border-radius:8px;
-              padding:10px;
-            "
-          >
-            <div
-              style="
-                font-size:10px;
-                color:#718096;
-              "
-            >
-              WEIGHT
-            </div>
-
-            <div
-              style="
-                font-size:12px;
-                font-weight:700;
-                margin-top:4px;
-              "
-            >
-              ${getWeight(order).toFixed(2)} Kg
-            </div>
-          </div>
-
-        </div>
-
-        <div
-          style="
-            margin-top:18px;
-            padding-top:12px;
-            border-top:1px dashed #cbd5e1;
-            font-size:10px;
-            color:#718096;
-            text-align:center;
-          "
-        >
-          ShipDrop • Handle with care
-        </div>
-
-      </div>
-    `;
-  };
-
-  // ====================================================
-  // PRINT LABELS
-  // ====================================================
-
-  const handlePrintLabels = () => {
-    if (selectedOrders.length === 0) {
-      toast.error("Please select at least one order");
+  const handlePrintLabels = async () => {
+    if (!selectedOrders.length) {
+      toast.error("Please select at least one shipment");
       return;
     }
-
-    const printWindow = window.open("", "_blank", "width=900,height=700");
-
-    if (!printWindow) {
-      toast.error("Please allow pop-ups to print labels");
-      return;
-    }
-
-    const html = selectedOrders.map(buildLabel).join("");
-
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>
-            ShipDrop Shipping Labels
-          </title>
-        </head>
-
-        <body
-          style="
-            margin:30px;
-            background:#fff;
-          "
-        >
-          ${html}
-        </body>
-      </html>
-    `);
-
-    printWindow.document.close();
-    printWindow.focus();
-
-    setTimeout(() => {
-      printWindow.print();
-    }, 300);
+    await printShippingLabels(selectedOrders, "ParcelDrop Shipping Labels");
   };
-
-  // ====================================================
-  // EXPORT CSV
-  // ====================================================
 
   const handleExport = () => {
     if (orders.length === 0) {
@@ -1072,13 +798,11 @@ function RTOInTransit() {
     ]);
 
     const escapeCsv = (value) => {
-      const text = String(value ?? "");
-
-      if (text.includes(",") || text.includes('"') || text.includes("\n")) {
-        return `"${text.replace(/"/g, '""')}"`;
+      const textVal = String(value ?? "");
+      if (textVal.includes(",") || textVal.includes('"') || textVal.includes("\n")) {
+        return `"${textVal.replace(/"/g, '""')}"`;
       }
-
-      return text;
+      return textVal;
     };
 
     const csv = [
@@ -1091,19 +815,15 @@ function RTOInTransit() {
     });
 
     const url = URL.createObjectURL(blob);
-
     const link = document.createElement("a");
-
     link.href = url;
-
-    link.download = `shipdrop-all-orders-${new Date()
+    link.download = `shipdrop-rto-in-transit-${new Date()
       .toISOString()
       .slice(0, 10)}.csv`;
 
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-
     URL.revokeObjectURL(url);
 
     toast.success(
@@ -1113,55 +833,27 @@ function RTOInTransit() {
     );
   };
 
-  // ====================================================
-  // COUNTS
-  // ====================================================
-
   const totalOrders = orders.filter(
-    (order) => getStatus(order) === "RTO IN TRANSIT",
+    (order) =>
+      getStatus(order) === "RTO IN TRANSIT" ||
+      getStatus(order) === "RTO_IN_TRANSIT",
   ).length;
-
-  const processingCount = orders.filter(
-    (order) => getStatus(order) === "PROCESSING",
-  ).length;
-
-  const manifestedCount = orders.filter(
-    (order) => getStatus(order) === "MANIFESTED",
-  ).length;
-
-  const pendingCount = orders.filter(
-    (order) => getStatus(order) === "PENDING",
-  ).length;
-
-  const deliveredCount = orders.filter(
-    (order) => getStatus(order) === "DELIVERED",
-  ).length;
-
-  const cancelledCount = orders.filter((order) => {
-    const status = getStatus(order);
-
-    return status === "CANCELLED" || status === "CANCELED";
-  }).length;
 
   // ====================================================
-  // LOADING
+  // LOADING STATE
   // ====================================================
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#f5f8fc] px-4 py-5">
+      <div className="min-h-screen bg-[#f5f8fc] px-3.5 py-4 sm:px-5 sm:py-5">
         <div className="mx-auto max-w-[1450px]">
-          <div className="mb-3 h-[92px] animate-pulse rounded-xl border border-slate-200 bg-white" />
-
-          <div className="mb-3 h-[62px] animate-pulse rounded-xl border border-slate-200 bg-white" />
-
-          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-            <div className="h-12 animate-pulse bg-slate-50" />
-
+          <div className="mb-3 h-20 animate-pulse rounded-2xl border border-slate-200 bg-white" />
+          <div className="mb-3 h-14 animate-pulse rounded-2xl border border-slate-200 bg-white" />
+          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 space-y-3">
             {[1, 2, 3, 4].map((item) => (
               <div
                 key={item}
-                className="h-[86px] animate-pulse border-t border-slate-100"
+                className="h-28 animate-pulse rounded-xl bg-slate-100"
               />
             ))}
           </div>
@@ -1171,21 +863,20 @@ function RTOInTransit() {
   }
 
   // ====================================================
-  // RENDER
+  // MAIN RENDER
   // ====================================================
 
   return (
-    <div className="min-h-screen bg-[#f5f8fc] px-4 py-5">
+    <div className="min-h-screen bg-[#f5f8fc] px-3.5 py-4 sm:px-5 sm:py-5 pb-24 lg:pb-8">
       <div className="mx-auto max-w-[1450px]">
         {/* ==================================================
             TOP HEADER
         ================================================== */}
-
-        <div className="mb-3 rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-[0_1px_2px_rgba(15,23,42,0.02)]">
-          <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="mb-3 rounded-2xl border border-slate-200 bg-white p-3.5 sm:px-5 sm:py-4 shadow-2xs">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
               <div
-                className="flex h-10 w-10 items-center justify-center rounded-lg"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
                 style={{
                   background: "#edf8ff",
                   color: PRIMARY,
@@ -1195,37 +886,36 @@ function RTOInTransit() {
               </div>
 
               <div>
-                <h1 className="text-[17px] font-semibold tracking-[-0.2px] text-slate-900">
+                <h1 className="text-base sm:text-[17px] font-bold tracking-tight text-slate-900">
                   RTO In Transit
                 </h1>
 
-                <p className="mt-0.5 text-[12px] text-slate-400">
-                  {`${filteredOrders.length} ${filteredOrders.length === 1 ? "shipment" : "shipments"}`}
+                <p className="mt-0.5 text-xs text-slate-400">
+                  {`${filteredOrders.length} ${filteredOrders.length === 1 ? "shipment" : "shipments"}`} returning to origin
                 </p>
               </div>
             </div>
 
             {/* TOP BUTTONS */}
-
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={handlePrintLabels}
                 disabled={selectedOrders.length === 0}
-                className="inline-flex h-9 items-center gap-1.5 rounded-md bg-[#8fcce8] px-3.5 text-[12px] font-medium text-white transition hover:bg-[#7fc2e1] disabled:cursor-not-allowed disabled:opacity-55"
+                className="flex-1 sm:flex-initial inline-flex h-9.5 items-center justify-center gap-1.5 rounded-xl bg-[#008dd2] px-3.5 text-xs font-semibold text-white shadow-2xs transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Icon name="printer" size={15} />
-                Print Shipping Label
+                <span>Print Label</span>
               </button>
 
               <button
                 type="button"
                 onClick={handleExport}
                 disabled={orders.length === 0}
-                className="inline-flex h-9 items-center gap-1.5 rounded-md bg-[#10b981] px-3.5 text-[12px] font-medium text-white transition hover:bg-[#059669] disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex-1 sm:flex-initial inline-flex h-9.5 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 text-xs font-semibold text-white shadow-2xs transition hover:bg-emerald-700 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Icon name="download" size={15} />
-                Export
+                <span>Export</span>
               </button>
             </div>
           </div>
@@ -1234,12 +924,10 @@ function RTOInTransit() {
         {/* ==================================================
             FILTER BAR
         ================================================== */}
-
-        <div className="mb-3 rounded-xl border border-slate-200 bg-white p-3 shadow-[0_1px_2px_rgba(15,23,42,0.02)]">
-          <div className="flex flex-wrap items-center gap-2">
+        <div className="mb-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-2xs space-y-2.5">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
             {/* SEARCH */}
-
-            <div className="relative min-w-[280px] flex-1">
+            <div className="relative min-w-0 flex-1">
               <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
                 <Icon name="search" size={15} />
               </span>
@@ -1249,86 +937,274 @@ function RTOInTransit() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search customer, AWB, Order ID or mobile..."
-                className="h-10 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-[12px] text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#008dd2] focus:ring-2 focus:ring-[#008dd2]/5"
+                className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/70 pl-9 pr-3 text-xs text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
               />
             </div>
 
-            {/* STATUS */}
-
-            {false && (
+            <div className="flex items-center gap-2">
+              {/* SERVICE */}
               <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="h-10 min-w-[135px] rounded-lg border border-slate-200 bg-white px-3 text-[12px] text-slate-600 outline-none focus:border-[#008dd2]"
+                value={serviceFilter}
+                onChange={(e) => setServiceFilter(e.target.value)}
+                className="h-10 flex-1 sm:w-36 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 outline-none focus:border-[#008dd2]"
               >
-                <option value="ALL">All Status</option>
-
-                <option value="MANIFESTED">Manifested</option>
-
-                <option value="PENDING">Pending</option>
-
-                <option value="IN TRANSIT">In Transit</option>
-
-                <option value="DELIVERED">Delivered</option>
-
-                <option value="CANCELLED">Cancelled</option>
+                <option value="ALL">All Services</option>
+                <option value="ROAD">Road</option>
+                <option value="AIR">Air</option>
               </select>
-            )}
 
-            {/* SERVICE */}
+              {/* PAYMENT */}
+              <select
+                value={paymentFilter}
+                onChange={(e) => setPaymentFilter(e.target.value)}
+                className="h-10 flex-1 sm:w-36 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 outline-none focus:border-[#008dd2]"
+              >
+                <option value="ALL">All Payment</option>
+                <option value="PREPAID">Prepaid</option>
+                <option value="COD">COD</option>
+              </select>
 
-            <select
-              value={serviceFilter}
-              onChange={(e) => setServiceFilter(e.target.value)}
-              className="h-10 min-w-[135px] rounded-lg border border-slate-200 bg-white px-3 text-[12px] text-slate-600 outline-none focus:border-[#008dd2]"
-            >
-              <option value="ALL">All Services</option>
-
-              <option value="ROAD">Road</option>
-
-              <option value="AIR">Air</option>
-            </select>
-
-            {/* PAYMENT */}
-
-            <select
-              value={paymentFilter}
-              onChange={(e) => setPaymentFilter(e.target.value)}
-              className="h-10 min-w-[135px] rounded-lg border border-slate-200 bg-white px-3 text-[12px] text-slate-600 outline-none focus:border-[#008dd2]"
-            >
-              <option value="ALL">All Payment</option>
-
-              <option value="PREPAID">Prepaid</option>
-
-              <option value="COD">COD</option>
-            </select>
-
-            {/* REFRESH */}
-
-            <button
-              type="button"
-              onClick={fetchAllOrders}
-              title="Refresh"
-              className="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-slate-700"
-            >
-              <Icon name="refresh" size={15} />
-            </button>
+              {/* REFRESH */}
+              <button
+                type="button"
+                onClick={fetchAllOrders}
+                title="Refresh"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 active:scale-95 transition"
+              >
+                <Icon name="refresh" size={15} />
+              </button>
+            </div>
           </div>
+
+          {/* MOBILE SELECT ALL BAR */}
+          {filteredOrders.length > 0 && (
+            <div className="flex items-center justify-between border-t border-slate-100 pt-2 sm:hidden text-xs">
+              <label className="flex items-center gap-2 font-bold text-slate-700 cursor-pointer">
+                <button
+                  type="button"
+                  onClick={handleSelectAll}
+                  className={`flex h-4 w-4 items-center justify-center rounded border transition ${
+                    allVisibleSelected
+                      ? "border-[#008dd2] bg-[#008dd2] text-white"
+                      : "border-slate-300 bg-white text-transparent"
+                  }`}
+                >
+                  <Icon name="check" size={11} />
+                </button>
+                <span>Select Visible ({filteredOrders.length})</span>
+              </label>
+
+              {selectedIds.length > 0 && (
+                <span className="text-[11px] font-bold text-[#008dd2]">
+                  {selectedIds.length} selected
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         {/* ==================================================
-            SMALL SUMMARY
+            1. MOBILE VIEW: APPLIKE SHIPMENT CARDS
         ================================================== */}
+        <div className="space-y-2.5 sm:hidden">
+          {filteredOrders.length === 0 ? (
+            <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-slate-400">
+              <div className="mx-auto mb-2 flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-50 text-slate-300">
+                <Icon name="box" size={20} />
+              </div>
+              <h3 className="text-xs font-bold text-slate-800">
+                {orders.length > 0
+                  ? "No matching shipments"
+                  : "No RTO shipments found"}
+              </h3>
+              <p className="mt-1 text-[11px] text-slate-400">
+                {orders.length > 0
+                  ? "Try changing your search or filters."
+                  : "Shipments in RTO transit will appear here."}
+              </p>
+            </div>
+          ) : (
+            filteredOrders.map((order) => {
+              const id = getOrderKey(order);
+              const selected = selectedIds.includes(id);
+              const service = getServiceType(order);
+              const payment = getPaymentType(order);
+              const weight = getWeight(order);
+              const status = getStatus(order);
+              const awb = getAWB(order);
+              const created = getCreatedAt(order);
+
+              return (
+                <div
+                  key={id}
+                  className={`rounded-2xl border bg-white p-3.5 space-y-2.5 shadow-2xs transition ${
+                    selected
+                      ? "border-[#008dd2] ring-2 ring-[#008dd2]/10"
+                      : "border-slate-200"
+                  }`}
+                >
+                  {/* CARD HEADER */}
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <button
+                        type="button"
+                        onClick={() => handleSelect(order)}
+                        className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition ${
+                          selected
+                            ? "border-[#008dd2] bg-[#008dd2] text-white"
+                            : "border-slate-300 bg-white text-transparent"
+                        }`}
+                      >
+                        <Icon name="check" size={11} />
+                      </button>
+
+                      <span className="font-mono text-xs font-bold text-slate-800 truncate">
+                        #{getOrderId(order)}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span
+                        className={`rounded-md px-2 py-0.5 text-[9.5px] font-bold ${
+                          payment === "COD"
+                            ? "bg-amber-50 text-amber-700"
+                            : "bg-sky-50 text-sky-700"
+                        }`}
+                      >
+                        {payment}
+                      </span>
+                      <StatusBadge status={status} />
+                    </div>
+                  </div>
+
+                  {/* CUSTOMER & AWB BAR */}
+                  <div className="space-y-1 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-slate-800 truncate">
+                        {getCustomerName(order)}
+                      </span>
+                      <span className="text-[11px] text-slate-400">
+                        {getMobile(order)}
+                      </span>
+                    </div>
+
+                    {/* AWB BAR WITH CLICK-TO-TRACK & COPY */}
+                    <div className="flex items-center justify-between font-mono text-[11px] text-slate-700 bg-slate-50/80 px-2.5 py-1.5 rounded-xl border border-slate-100">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="font-sans text-[10px] text-slate-400 font-semibold uppercase">
+                          AWB:
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => triggerTracking(awb)}
+                          className="truncate font-bold text-[#008dd2] hover:underline cursor-pointer text-left active:scale-[0.99]"
+                          title="Click to track"
+                        >
+                          {awb}
+                        </button>
+                      </div>
+
+                      {awb && awb !== "—" && awb !== "-" && (
+                        <button
+                          type="button"
+                          onClick={() => copyText(awb, "AWB")}
+                          className="flex items-center gap-1 rounded-md bg-[#008dd2]/10 px-2 py-0.5 text-[10px] font-bold text-[#008dd2] active:scale-95 transition shrink-0"
+                          title="Copy AWB"
+                        >
+                          <Icon name="copy" size={12} />
+                          <span>Copy</span>
+                        </button>
+                      )}
+                    </div>
+
+                    {/* ROUTE */}
+                    <div className="flex items-center justify-between text-[11px] text-slate-500 pt-0.5">
+                      <span className="truncate max-w-[125px]">
+                        {getPickupCity(order)} ({getPickupPincode(order)})
+                      </span>
+                      <span className="text-slate-300 font-bold px-1">→</span>
+                      <span className="truncate max-w-[125px] text-right">
+                        {getDeliveryCity(order)} ({getDeliveryPincode(order)})
+                      </span>
+                    </div>
+
+                    {/* SPECS & CHARGE */}
+                    <div className="flex items-center justify-between text-[11px] text-slate-500 border-t border-slate-50 pt-1.5">
+                      <span>
+                        {service === "AIR" ? "By Air" : "By Road"} •{" "}
+                        {weight.toFixed(2)} Kg
+                      </span>
+                      <span className="font-bold text-slate-800">
+                        ₹{getAmount(order).toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* CARD ACTIONS: PRINT, DUPLICATE & DETAILS */}
+                  <div className="flex items-center justify-between border-t border-slate-100 pt-2 text-[10px] text-slate-400">
+                    <span className="truncate max-w-[100px]">
+                      {formatDate(created)}
+                    </span>
+
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => handlePrintSingleLabel(order)}
+                        title="Print Shipping Label"
+                        className="flex h-7.5 items-center gap-1 rounded-lg bg-[#008dd2] px-2 text-xs font-semibold text-white shadow-2xs transition active:scale-95"
+                      >
+                        <Icon name="printer" size={13} />
+                        <span className="hidden xs:inline">Print</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleDuplicate(order)}
+                        title="Duplicate Order"
+                        className="flex h-7.5 items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 active:scale-95"
+                      >
+                        <Icon name="copy" size={13} />
+                        <span className="hidden xs:inline">Duplicate</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleView(order)}
+                        title="View Details"
+                        className="flex h-7.5 items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 active:scale-95"
+                      >
+                        <Icon name="eye" size={13} />
+                        <span>Details</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+
+          {/* MOBILE FOOTER COUNTER */}
+          {filteredOrders.length > 0 && (
+            <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-[11px] text-slate-500 shadow-2xs">
+              <span>
+                Showing <strong>{filteredOrders.length}</strong> of{" "}
+                <strong>{totalOrders}</strong> shipments
+              </span>
+              {selectedIds.length > 0 && (
+                <span className="font-bold text-[#008dd2]">
+                  {selectedIds.length} selected
+                </span>
+              )}
+            </div>
+          )}
+        </div>
 
         {/* ==================================================
-            TABLE
+            2. DESKTOP & TABLET VIEW: STRUCTURED TABLE
         ================================================== */}
-
-        <div className="w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
-          <div className="max-h-[calc(100vh-180px)] overflow-y-auto overflow-x-hidden">
-            <table className="w-full table-fixed border-collapse">
-              {/* TABLE HEADER */}
-
+        <div className="hidden sm:block overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xs">
+          <div className="max-h-[calc(100vh-180px)] overflow-auto">
+            <table className="w-full min-w-[1120px] border-collapse">
               <thead className="sticky top-0 z-20 bg-white">
                 <tr className="border-b border-slate-200 bg-white">
                   <th className="sticky top-0 z-20 w-[52px] bg-white px-4 py-3.5 text-left">
@@ -1375,8 +1251,6 @@ function RTOInTransit() {
                 </tr>
               </thead>
 
-              {/* TABLE BODY */}
-
               <tbody>
                 {filteredOrders.length === 0 ? (
                   <tr>
@@ -1389,13 +1263,13 @@ function RTOInTransit() {
                         <div className="text-sm font-medium text-slate-700">
                           {orders.length > 0
                             ? "No matching orders"
-                            : "No orders found"}
+                            : "No RTO in transit orders found"}
                         </div>
 
                         <div className="mt-1 text-xs text-slate-400">
                           {orders.length > 0
                             ? "Try changing your search or filters."
-                            : "Orders will appear here after they are created."}
+                            : "Orders will appear here when marked in RTO transit."}
                         </div>
                       </div>
                     </td>
@@ -1403,17 +1277,11 @@ function RTOInTransit() {
                 ) : (
                   filteredOrders.map((order) => {
                     const id = getOrderKey(order);
-
                     const selected = selectedIds.includes(id);
-
                     const service = getServiceType(order);
-
                     const payment = getPaymentType(order);
-
                     const weight = getWeight(order);
-
                     const status = getStatus(order);
-
                     const awb = getAWB(order);
 
                     return (
@@ -1424,7 +1292,6 @@ function RTOInTransit() {
                         } hover:bg-slate-50`}
                       >
                         {/* CHECKBOX */}
-
                         <td className="px-4 py-3">
                           <button
                             type="button"
@@ -1439,39 +1306,32 @@ function RTOInTransit() {
                           </button>
                         </td>
 
-                        {/* ==================================
-                              CUSTOMER
-                          ================================== */}
+                        {/* CUSTOMER */}
+                        <td className="px-3 py-2.5">
+                          <div className="min-w-0 flex flex-col items-start">
+                            <p className="w-full truncate text-[13px] font-semibold leading-[18px] text-slate-800">
+                              {getCustomerName(order)}
+                            </p>
 
-<td className="px-3 py-2.5">
-  <div className="min-w-0 flex flex-col items-start">
-    <p className="w-full truncate text-[13px] font-semibold leading-[18px] text-slate-800">
-      {getCustomerName(order)}
-    </p>
+                            {getMobile(order) && (
+                              <p className="mt-0.5 w-full text-[11px] leading-[14px] text-slate-400">
+                                {getMobile(order)}
+                              </p>
+                            )}
 
-    {getMobile(order) && (
-      <p className="mt-0.5 w-full text-[11px] leading-[14px] text-slate-400">
-        {getMobile(order)}
-      </p>
-    )}
+                            <div className="mt-1.5 leading-none">
+                              <StatusBadge status={status} />
+                            </div>
+                          </div>
+                        </td>
 
-    <div className="mt-1.5 leading-none">
-      <StatusBadge status={status} />
-    </div>
-  </div>
-</td>
-
-                        {/* ==================================
-                              SHIPMENT
-                          ================================== */}
-
+                        {/* SHIPMENT */}
                         <td className="px-3 py-2.5">
                           <div className="min-w-0">
                             {status !== "PROCESSING" && (
                               <>
                                 <div className="flex min-w-0 items-center gap-1">
                                   <button
-
                                     type="button"
                                     onClick={() => triggerTracking(awb)}
                                     title="Track shipment"
@@ -1509,13 +1369,9 @@ function RTOInTransit() {
                           </div>
                         </td>
 
-                        {/* ==================================
-                              ROUTE
-                          ================================== */}
-
+                        {/* ROUTE */}
                         <td className="px-3 py-2.5">
                           <div className="flex flex-col gap-0">
-                            {/* Pickup */}
                             <div className="flex items-center gap-2 leading-[16px]">
                               <HiOutlineLocationMarker
                                 className="shrink-0 text-sky-500"
@@ -1529,10 +1385,8 @@ function RTOInTransit() {
                               </span>
                             </div>
 
-                            {/* Dotted connector */}
                             <div className="ml-[5px] h-[9px] border-l border-dotted border-slate-300" />
 
-                            {/* Delivery */}
                             <div className="flex items-center gap-2 leading-[16px]">
                               <HiOutlineLocationMarker
                                 className="shrink-0 text-slate-400"
@@ -1548,10 +1402,7 @@ function RTOInTransit() {
                           </div>
                         </td>
 
-                        {/* ==================================
-                              PAYMENT
-                          ================================== */}
-
+                        {/* PAYMENT */}
                         <td className="px-3 py-2.5">
                           <div>
                             <p
@@ -1576,10 +1427,7 @@ function RTOInTransit() {
                           </div>
                         </td>
 
-                        {/* ==================================
-                              WEIGHT
-                          ================================== */}
-
+                        {/* WEIGHT */}
                         <td className="px-3 py-2.5">
                           <div>
                             <p className="text-[12px] font-semibold text-slate-700">
@@ -1596,10 +1444,7 @@ function RTOInTransit() {
                           </div>
                         </td>
 
-                        {/* ==================================
-                              CREATED
-                          ================================== */}
-
+                        {/* CREATED */}
                         <td className="px-3 py-2.5">
                           <p className="text-[12px] font-medium text-slate-700">
                             #{getOrderId(order)}
@@ -1609,7 +1454,6 @@ function RTOInTransit() {
                             {status === "MANIFESTED"
                               ? "Manifested: "
                               : "Created: "}
-
                             {formatDate(getCreatedAt(order))}
                           </p>
 
@@ -1618,17 +1462,14 @@ function RTOInTransit() {
                           </p>
                         </td>
 
-                        {/* ==================================
-                              ACTIONS
-                          ================================== */}
-
+                        {/* ACTIONS */}
                         <td className="px-2 py-2.5">
                           <div className="flex items-center justify-start gap-1 whitespace-nowrap">
                             <button
                               type="button"
                               onClick={() => handlePrintSingleLabel(order)}
                               title="Print label"
-                            className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-md border border-[#008dd2] bg-[#008dd2] text-white transition hover:bg-[#007ab6]"
+                              className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-md border border-[#008dd2] bg-[#008dd2] text-white transition hover:bg-[#007ab6]"
                             >
                               <Icon name="printer" size={15} />
                             </button>
@@ -1638,25 +1479,7 @@ function RTOInTransit() {
                               title="Duplicate order"
                               className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[#008dd2] bg-[#008dd2] text-white transition hover:bg-[#007ab6]"
                             >
-                              <svg
-                                width="18"
-                                height="18"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="1.8"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              >
-                                <rect
-                                  x="8"
-                                  y="8"
-                                  width="12"
-                                  height="12"
-                                  rx="2"
-                                />
-                                <path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3" />
-                              </svg>
+                              <Icon name="copy" size={15} />
                             </button>
                             <button
                               type="button"
@@ -1676,10 +1499,7 @@ function RTOInTransit() {
             </table>
           </div>
 
-          {/* ==================================================
-              FOOTER
-          ================================================== */}
-
+          {/* FOOTER */}
           {orders.length > 0 && (
             <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-[#fafbfc] px-5 py-3">
               <p className="text-[11px] text-slate-400">
