@@ -220,7 +220,7 @@ function ProcessingOrders() {
   const getTotalWeight = (order) => {
     const weight = getWeightNumber(order);
     if (weight <= 0) return "—";
-    return `${weight} kg`;
+    return `${Number(weight.toFixed(2))} kg`;
   };
 
   // Read volumetric weight from existing data, or calculate it from package dimensions.
@@ -1058,8 +1058,9 @@ function ProcessingOrders() {
                       {getProduct(order)} (Qty: {getQty(order)})
                     </span>
                     <span className="font-semibold text-slate-700 text-right">
-                      <span className="block">Actual: {getTotalWeight(order)}</span>
-                      <span className="block text-[10px] text-slate-400">Vol: {getVolumetricWeight(order)} • {getBoxCount(order)} Box</span>
+                      <span className="block font-semibold text-slate-800">{getTotalWeight(order)}</span>
+                      <span className="block text-[10px] font-medium text-slate-500">Vol: {getVolumetricWeight(order)}</span>
+                      <span className="block text-[10px] text-slate-400">{getBoxCount(order)} Box</span>
                     </span>
                   </div>
                 </div>
@@ -1084,7 +1085,7 @@ function ProcessingOrders() {
                     <button
                       type="button"
                       onClick={() => handleDuplicate(order)}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-violet-200 text-violet-600 hover:bg-violet-50 active:scale-90 transition"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-sky-200 bg-sky-50 text-[#008dd2] hover:bg-[#008dd2] hover:text-white active:scale-90 transition"
                       title="Duplicate Order"
                     >
                       <Icon name="copy" size={13} />
@@ -1093,7 +1094,7 @@ function ProcessingOrders() {
                     <button
                       type="button"
                       onClick={() => handleDelete([id])}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 active:scale-90 transition"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-sky-200 bg-sky-50 text-[#008dd2] hover:bg-[#008dd2] hover:text-white active:scale-90 transition"
                       title="Delete Order"
                     >
                       <Icon name="trash" size={13} />
@@ -1281,9 +1282,9 @@ function ProcessingOrders() {
 
                       {/* 6. WEIGHT */}
                       <td className="py-2.5 px-2 align-middle">
-                        <div className="font-semibold text-slate-800 whitespace-nowrap">{getTotalWeight(order)}</div>
-                        <div className="mt-0.5 text-[10px] text-slate-500 whitespace-nowrap">Vol: {getVolumetricWeight(order)}</div>
-                        <div className="text-[10px] text-slate-400 whitespace-nowrap">{getBoxCount(order)} Box</div>
+                        <div className="font-semibold text-slate-900 whitespace-nowrap leading-5">{getTotalWeight(order)}</div>
+                        <div className="mt-0.5 text-[10px] font-medium text-slate-500 whitespace-nowrap leading-4">Vol: {getVolumetricWeight(order)}</div>
+                        <div className="text-[10px] text-slate-400 whitespace-nowrap leading-4">{getBoxCount(order)} Box</div>
                       </td>
 
                       {/* 7. ACTIONS */}
@@ -1311,7 +1312,7 @@ function ProcessingOrders() {
                           <button
                             type="button"
                             onClick={() => handleDuplicate(order)}
-                            className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-50 text-violet-600 hover:bg-violet-600 hover:text-white transition active:scale-95"
+                            className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-50 text-[#008dd2] hover:bg-[#008dd2] hover:text-white transition active:scale-95"
                             title="Duplicate Order"
                           >
                             <Icon name="copy" size={14} />
@@ -1320,7 +1321,7 @@ function ProcessingOrders() {
                           <button
                             type="button"
                             onClick={() => handleDelete([id])}
-                            className="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white transition active:scale-95"
+                            className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-50 text-[#008dd2] hover:bg-[#008dd2] hover:text-white transition active:scale-95"
                             title="Delete Order"
                           >
                             <Icon name="trash" size={14} />
