@@ -183,6 +183,8 @@ const startImpersonation = async (req, res) => {
         JSON.stringify(safeUser),
         adminReturnUrl,
       ]
+    );
+
     const userAppUrl =
       (req.body.user_app_url &&
         String(req.body.user_app_url).trim().replace(/\/+$/, "")) ||
