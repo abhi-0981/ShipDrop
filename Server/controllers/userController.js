@@ -5,6 +5,35 @@ const db = require("../config/db");
 const userModel = require("../models/userModel");
 
 // ========================================
+// THEME CONSTANTS & NORMALIZATION
+// ========================================
+
+const SUPPORTED_THEMES = [
+  "forest-mint",
+  "mahogany-taupe",
+  "purple-gray",
+  "forest-olive",
+  "teal-sage",
+];
+
+const THEME_ALIASES = {
+  "ocean-blue": "forest-mint",
+  "forest-code-mint-fog": "forest-mint",
+  "deep-mahogany-warm-taupe": "mahogany-taupe",
+  "midnight-purple-neutral-gray": "purple-gray",
+  "forest-green-olive-green": "forest-olive",
+  "midnight-teal-sage-green": "teal-sage",
+};
+
+const normalizeTheme = (themeId) => {
+  if (!themeId || typeof themeId !== "string") return "forest-mint";
+  const trimmed = themeId.trim().toLowerCase();
+  if (THEME_ALIASES[trimmed]) return THEME_ALIASES[trimmed];
+  if (SUPPORTED_THEMES.includes(trimmed)) return trimmed;
+  return "forest-mint";
+};
+
+// ========================================
 // PASSWORD VALIDATION
 // ========================================
 
@@ -371,6 +400,7 @@ const loginUser = (req, res) => {
           phone_no: user.phone_no,
           role: user.role,
           profile_image: user.profile_image || null,
+          theme_preference: normalizeTheme(user.theme_preference),
           created_at: user.created_at,
         };
 
@@ -450,6 +480,7 @@ const getSessionUser = (req, res) => {
       phone_no: req.user.phone_no,
       role: req.user.role,
       profile_image: req.user.profile_image || null,
+      theme_preference: normalizeTheme(req.user.theme_preference),
       created_at: req.user.created_at,
     };
 
@@ -752,6 +783,104 @@ const updateUserProfile = (req, res) => {
   );
 };
 
+// ========================================
+// GET USER THEME PREFERENCE
+// ========================================
+
+const getUserThemeController = (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized. Authentication required.",
+      });
+    }
+
+    userModel.getUserTheme(userId, (err, result) => {
+      if (err) {
+        console.error("Get user theme error:", err);
+        return res.status(500).json({
+          success: false,
+          message: "Unable to retrieve theme preference.",
+        });
+      }
+
+      const rawTheme = result?.[0]?.theme_preference;
+      const theme = normalizeTheme(rawTheme);
+
+      return res.status(200).json({
+        success: true,
+        theme,
+      });
+    });
+  } catch (error) {
+    console.error("Get user theme error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error.",
+    });
+  }
+};
+
+// ========================================
+// UPDATE USER THEME PREFERENCE
+// ========================================
+
+const updateUserThemeController = (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized. Authentication required.",
+      });
+    }
+
+    const requestedTheme = req.body?.theme;
+    if (!requestedTheme || typeof requestedTheme !== "string") {
+      return res.status(400).json({
+        success: false,
+        message: "Theme identifier is required.",
+      });
+    }
+
+    const trimmed = requestedTheme.trim().toLowerCase();
+    const resolvedTheme =
+      THEME_ALIASES[trimmed] ||
+      (SUPPORTED_THEMES.includes(trimmed) ? trimmed : null);
+
+    if (!resolvedTheme) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid theme. Supported themes: ${SUPPORTED_THEMES.join(", ")}`,
+      });
+    }
+
+    userModel.updateUserTheme(userId, resolvedTheme, (err) => {
+      if (err) {
+        console.error("Update user theme error:", err);
+        return res.status(500).json({
+          success: false,
+          message: "Unable to save theme preference.",
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "Theme preference updated successfully.",
+        theme: resolvedTheme,
+      });
+    });
+  } catch (error) {
+    console.error("Update user theme error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error.",
+    });
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
@@ -759,4 +888,7 @@ module.exports = {
   logoutUser,
   getUserProfile,
   updateUserProfile,
+  getUserThemeController,
+  updateUserThemeController,
+  normalizeTheme,
 };

@@ -1028,7 +1028,7 @@
     };
 
     const handleTheme = () => {
-      document.documentElement.classList.toggle("dark");
+      navigate("/settings/theme");
     };
 
     const handleLogout = async () => {

@@ -31,7 +31,10 @@ function DashboardLayout() {
   }, []);
 
   return (
-    <div className="relative min-h-screen bg-[#f6f8fb]">
+    <div
+      className="relative min-h-screen bg-[var(--theme-bg)] transition-colors duration-200"
+      data-user-panel="true"
+    >
       {/* FIXED TOP NAVBAR */}
       <TopNavbar collapsed={collapsed} setCollapsed={setCollapsed} />
 

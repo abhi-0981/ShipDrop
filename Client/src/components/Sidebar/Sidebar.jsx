@@ -121,6 +121,7 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
     { name: "Pickup Address", path: "/settings/pickup-address" },
     { name: "Return Addresses", path: "/settings/return-addresses" },
     { name: "Label Settings", path: "/settings/label-settings" },
+    { name: "Theme", path: "/settings/theme" },
   ];
 
   const filteredSearchItems = sidebarSearch.trim()
@@ -663,6 +664,15 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
                   )}`}
                 >
                   Label Settings
+                </Link>
+                <Link
+                  to="/settings/theme"
+                  onClick={handleNavClick}
+                  className={`block rounded-lg px-2.5 py-1.5 text-[13px] transition ${subActiveClass(
+                    "/settings/theme",
+                  )}`}
+                >
+                  Theme
                 </Link>
               </div>
             )}

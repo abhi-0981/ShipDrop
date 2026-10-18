@@ -161,6 +161,43 @@ const findUserById = (user_id, callback) => {
   );
 };
 
+// ========================================
+// GET USER THEME PREFERENCE
+// ========================================
+
+const getUserTheme = (user_id, callback) => {
+  const query = `
+    SELECT theme_preference
+    FROM users
+    WHERE id = ?
+    LIMIT 1
+  `;
+
+  db.query(
+    query,
+    [user_id],
+    callback,
+  );
+};
+
+// ========================================
+// UPDATE USER THEME PREFERENCE
+// ========================================
+
+const updateUserTheme = (user_id, theme, callback) => {
+  const query = `
+    UPDATE users
+    SET theme_preference = ?
+    WHERE id = ?
+  `;
+
+  db.query(
+    query,
+    [theme, user_id],
+    callback,
+  );
+};
+
 module.exports = {
   checkUser,
   createUser,
@@ -168,4 +205,6 @@ module.exports = {
   updateUserProfile,
   checkDuplicateUser,
   findUserById,
+  getUserTheme,
+  updateUserTheme,
 };

@@ -9,6 +9,8 @@ const {
   logoutUser,
   getUserProfile,
   updateUserProfile,
+  getUserThemeController,
+  updateUserThemeController,
 } = require("../controllers/userController");
 
 const { authenticateUser } = require("../middleware/authMiddleware");
@@ -38,5 +40,13 @@ router.post("/logout", authenticateUser, logoutUser);
 router.get("/profile/:user_id", authenticateUser, getUserProfile);
 
 router.put("/profile/update", authenticateUser, updateUserProfile);
+
+// ========================================
+// PROTECTED THEME PREFERENCE ROUTES
+// ========================================
+
+router.get("/theme", authenticateUser, getUserThemeController);
+
+router.put("/theme", authenticateUser, updateUserThemeController);
 
 module.exports = router;

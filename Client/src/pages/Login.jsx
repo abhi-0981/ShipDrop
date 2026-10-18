@@ -91,6 +91,10 @@ function Login() {
         JSON.stringify(user)
       );
 
+      if (user?.theme_preference) {
+        localStorage.setItem("parceldrop_theme", user.theme_preference);
+      }
+
       toast.success("Login successful");
 
       navigate("/dashboard", {
