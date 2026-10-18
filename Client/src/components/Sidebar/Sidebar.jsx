@@ -1,6 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import toast from "react-hot-toast";
+import { Link, useLocation } from "react-router-dom";
 import {
   HiOutlineViewGrid,
   HiOutlinePlusCircle,
@@ -24,7 +23,6 @@ import { fetchOrderStatusCounts } from "../../services/orderEvents";
 
 function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
   const location = useLocation();
-  const navigate = useNavigate();
 
   // Desktop default open (false), mobile default closed (true)
   const [isCollapsed, setIsCollapsed] = useState(() => {
@@ -204,25 +202,6 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
   const handleNavClick = () => {
     if (window.innerWidth < 1024) {
       handleToggle(true);
-    }
-  };
-
-  const handleLogout = async (e) => {
-    if (e && e.preventDefault) e.preventDefault();
-    handleNavClick();
-    try {
-      await api.post("/users/logout");
-    } catch (err) {
-      console.warn("Global logout API call:", err?.message || err);
-    } finally {
-      try {
-        localStorage.removeItem("user");
-        localStorage.removeItem("token");
-      } catch {
-        // ignore
-      }
-      toast.success("Logged out successfully");
-      navigate("/login", { replace: true });
     }
   };
 
@@ -663,14 +642,14 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
           </div>
 
           {/* LOGOUT */}
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="flex w-full items-center rounded-xl px-3 py-2.5 text-[14px] text-red-500 hover:bg-red-50 transition duration-150 cursor-pointer"
+          <Link
+            to="/login"
+            onClick={handleNavClick}
+            className="flex items-center rounded-xl px-3 py-2.5 text-[14px] text-red-500 hover:bg-red-50 transition duration-150"
           >
             <HiOutlineLogout size={20} />
             <span className="ml-3 truncate font-medium">Logout</span>
-          </button>
+          </Link>
         </div>
       </aside>
 

@@ -202,31 +202,13 @@ const getUserId = () => {
 };
 
 const apiRequest = async (endpoint, options = {}) => {
-  const token = localStorage.getItem("token");
-  const headers = {
-    "Content-Type": "application/json",
-    ...(options.headers || {}),
-  };
-  if (token && !headers["Authorization"]) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
-
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     ...options,
-    credentials: "include",
-    headers,
+    headers: {
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+    },
   });
-
-  if (response.status === 401) {
-    try {
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-    } catch {
-      // ignore
-    }
-    window.location.href = "/login";
-    return;
-  }
 
   const data = await response.json().catch(() => ({}));
 

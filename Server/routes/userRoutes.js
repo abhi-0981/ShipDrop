@@ -1,41 +1,54 @@
 const express = require("express");
 
-const router = express.Router();
-const authMiddleware = require("../middleware/authMiddleware");
+const router =
+  express.Router();
 
 const {
   registerUser,
   loginUser,
-  logoutUser,
-  verifySession,
   getUserProfile,
-  updateUserProfile,
+  updateUserProfile
 } = require("../controllers/userController");
 
-// ========================================
-// PUBLIC ROUTES
-// ========================================
 
+// ========================================
 // REGISTER
-router.post("/register", registerUser);
+// ========================================
 
+router.post(
+  "/register",
+  registerUser
+);
+
+
+// ========================================
 // LOGIN
-router.post("/login", loginUser);
-
-// ========================================
-// PROTECTED ROUTES (SESSION & AUTH REQUIRED)
 // ========================================
 
-// VERIFY SESSION
-router.get("/verify-session", authMiddleware, verifySession);
+router.post(
+  "/login",
+  loginUser
+);
 
-// LOGOUT (GLOBAL LOGOUT)
-router.post("/logout", authMiddleware, logoutUser);
 
+// ========================================
 // GET PROFILE
-router.get("/profile/:user_id", authMiddleware, getUserProfile);
+// ========================================
 
+router.get(
+  "/profile/:user_id",
+  getUserProfile
+);
+
+
+// ========================================
 // UPDATE PROFILE
-router.put("/profile/update", authMiddleware, updateUserProfile);
+// ========================================
+
+router.put(
+  "/profile/update",
+  updateUserProfile
+);
+
 
 module.exports = router;

@@ -102,9 +102,6 @@ const serviceabilityRoutes =
 const publicTrackingRoutes =
   require("./routes/publicTrackingRoutes");
 
-const authMiddleware =
-  require("./middleware/authMiddleware");
-
 
 // ======================================================
 // MIDDLEWARE
@@ -267,7 +264,6 @@ app.use(
 // ORDERS
 app.use(
   "/api/orders",
-  authMiddleware,
   orderRoutes
 );
 
@@ -275,7 +271,6 @@ app.use(
 // PAYMENTS
 app.use(
   "/api/payments",
-  authMiddleware,
   paymentRoutes
 );
 
@@ -283,7 +278,6 @@ app.use(
 // RATE CARD
 app.use(
   "/api/rate-card",
-  authMiddleware,
   rateCardRoutes
 );
 
@@ -291,7 +285,6 @@ app.use(
 // ZONE
 app.use(
   "/api/zone",
-  authMiddleware,
   zoneRoutes
 );
 
@@ -299,7 +292,6 @@ app.use(
 // RATE CALCULATION
 app.use(
   "/api/rate",
-  authMiddleware,
   rateRoutes
 );
 
@@ -307,7 +299,6 @@ app.use(
 // MANIFESTS
 app.use(
   "/api/manifests",
-  authMiddleware,
   manifestRoutes
 );
 
@@ -315,7 +306,6 @@ app.use(
 // SHIPMENTS
 app.use(
   "/api/shipments",
-  authMiddleware,
   shipmentRoutes
 );
 
@@ -323,7 +313,6 @@ app.use(
 // WAREHOUSES
 app.use(
   "/api/warehouses",
-  authMiddleware,
   warehouseRoutes
 );
 
@@ -331,7 +320,6 @@ app.use(
 // RETURN ADDRESSES
 app.use(
   "/api/return-addresses",
-  authMiddleware,
   returnAddressRoutes
 );
 
@@ -339,7 +327,6 @@ app.use(
 // LABEL SETTINGS
 app.use(
   "/api/label-settings",
-  authMiddleware,
   labelSettingsRoutes
 );
 
@@ -347,7 +334,6 @@ app.use(
 // TICKETS
 app.use(
   "/api/tickets",
-  authMiddleware,
   ticketRoutes
 );
 
@@ -371,7 +357,6 @@ app.use(
 
 app.use(
   "/orders",
-  authMiddleware,
   orderRoutes
 );
 
