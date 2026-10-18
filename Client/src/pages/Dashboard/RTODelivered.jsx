@@ -1,4 +1,8 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, {
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { toast } from "react-hot-toast";
 import api from "../../services/api";
 import { subscribeToOrderUpdates } from "../../services/orderEvents";
@@ -14,7 +18,11 @@ const PURPLE = "#7052ff";
 // ICON
 // ======================================================
 
-const Icon = ({ name, size = 17, strokeWidth = 1.8 }) => {
+const Icon = ({
+  name,
+  size = 17,
+  strokeWidth = 1.8,
+}) => {
   const common = {
     width: size,
     height: size,
@@ -115,7 +123,12 @@ const getUserId = () => {
 
     const user = JSON.parse(storedUser);
 
-    return user?.id || user?.user_id || user?.userId || null;
+    return (
+      user?.id ||
+      user?.user_id ||
+      user?.userId ||
+      null
+    );
   } catch (error) {
     console.error("Unable to read logged-in user:", error);
     return null;
@@ -163,11 +176,20 @@ const getMobile = (order) => {
 // ======================================================
 
 const getAWB = (order) => {
-  return order?.awb || order?.waybill || order?.awb_number || "—";
+  return (
+    order?.awb ||
+    order?.waybill ||
+    order?.awb_number ||
+    "—"
+  );
 };
 
 const getOrderId = (order) => {
-  return order?.order_id || order?.id || "—";
+  return (
+    order?.order_id ||
+    order?.id ||
+    "—"
+  );
 };
 
 // ======================================================
@@ -186,7 +208,10 @@ const getShipmentName = (order) => {
 
 const getServiceType = (order) => {
   return safeString(
-    order?.service_type || order?.service || order?.mode || "ROAD",
+    order?.service_type ||
+      order?.service ||
+      order?.mode ||
+      "ROAD"
   )
     .trim()
     .toUpperCase();
@@ -198,7 +223,10 @@ const getServiceType = (order) => {
 
 const getPaymentType = (order) => {
   return safeString(
-    order?.payment_type || order?.payment || order?.payment_mode || "PREPAID",
+    order?.payment_type ||
+      order?.payment ||
+      order?.payment_mode ||
+      "PREPAID"
   )
     .trim()
     .toUpperCase();
@@ -210,7 +238,7 @@ const getAmount = (order) => {
       order?.total ??
       order?.amount ??
       order?.shipping_charges ??
-      0,
+      0
   );
 
   return Number.isFinite(amount) ? amount : 0;
@@ -250,7 +278,12 @@ const getDeliveryCity = (order) => {
 };
 
 const getDeliveryPincode = (order) => {
-  return order?.pincode || order?.delivery_pincode || order?.to_pincode || "";
+  return (
+    order?.pincode ||
+    order?.delivery_pincode ||
+    order?.to_pincode ||
+    ""
+  );
 };
 
 // ======================================================
@@ -259,21 +292,35 @@ const getDeliveryPincode = (order) => {
 
 const getWeight = (order) => {
   const directWeight = Number(
-    order?.total_weight ?? order?.weight ?? order?.shipment_weight,
+    order?.total_weight ??
+      order?.weight ??
+      order?.shipment_weight
   );
 
-  if (Number.isFinite(directWeight) && directWeight >= 0) {
+  if (
+    Number.isFinite(directWeight) &&
+    directWeight >= 0
+  ) {
     return directWeight;
   }
 
   if (Array.isArray(order?.packages)) {
-    return order.packages.reduce((total, pkg) => {
-      const weight = Number(pkg?.weight) || 0;
+    return order.packages.reduce(
+      (total, pkg) => {
+        const weight =
+          Number(pkg?.weight) || 0;
 
-      const count = Number(pkg?.package_count ?? pkg?.count ?? 1) || 1;
+        const count =
+          Number(
+            pkg?.package_count ??
+              pkg?.count ??
+              1
+          ) || 1;
 
-      return total + weight * count;
-    }, 0);
+        return total + weight * count;
+      },
+      0
+    );
   }
 
   return 0;
@@ -284,7 +331,7 @@ const getVolumetricWeight = (order) => {
     order?.volumetric_weight ??
       order?.vol_weight ??
       order?.volumetricWeight ??
-      0,
+      0
   );
 
   return Number.isFinite(value) ? value : 0;
@@ -292,14 +339,29 @@ const getVolumetricWeight = (order) => {
 
 const getPackageCount = (order) => {
   if (Array.isArray(order?.packages)) {
-    return order.packages.reduce((total, pkg) => {
-      return total + (Number(pkg?.package_count ?? pkg?.count ?? 1) || 1);
-    }, 0);
+    return order.packages.reduce(
+      (total, pkg) => {
+        return (
+          total +
+          (
+            Number(
+              pkg?.package_count ??
+                pkg?.count ??
+                1
+            ) || 1
+          )
+        );
+      },
+      0
+    );
   }
 
   return (
     Number(
-      order?.package_count ?? order?.packages_count ?? order?.boxes ?? 1,
+      order?.package_count ??
+        order?.packages_count ??
+        order?.boxes ??
+        1
     ) || 1
   );
 };
@@ -329,11 +391,14 @@ const formatDate = (value) => {
     return "—";
   }
 
-  return date.toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
+  return date.toLocaleDateString(
+    "en-IN",
+    {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    }
+  );
 };
 
 const formatTime = (value) => {
@@ -347,10 +412,13 @@ const formatTime = (value) => {
     return "";
   }
 
-  return date.toLocaleTimeString("en-IN", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return date.toLocaleTimeString(
+    "en-IN",
+    {
+      hour: "2-digit",
+      minute: "2-digit",
+    }
+  );
 };
 
 // ======================================================
@@ -362,7 +430,7 @@ const getStatus = (order) => {
     order?.tracking_status ||
       order?.status ||
       order?.order_status ||
-      "PROCESSING",
+      "PROCESSING"
   )
     .trim()
     .toUpperCase();
@@ -392,8 +460,11 @@ const getStatusLabel = (status) => {
 
     default:
       return (
-        status?.toLowerCase()?.replace(/\b\w/g, (char) => char.toUpperCase()) ||
-        "Processing"
+        status
+          ?.toLowerCase()
+          ?.replace(/\b\w/g, (char) =>
+            char.toUpperCase()
+          ) || "Processing"
       );
   }
 };
@@ -403,16 +474,31 @@ const getStatusLabel = (status) => {
 // ======================================================
 
 const StatusBadge = ({ status }) => {
-  let className = "bg-[#edf8ff] text-[#008dd2]";
+  let className =
+    "bg-[#edf8ff] text-[#008dd2]";
 
-  if (status === "CANCELLED" || status === "CANCELED") {
-    className = "bg-red-50 text-red-600";
-  } else if (status === "DELIVERED") {
-    className = "bg-emerald-50 text-emerald-600";
-  } else if (status === "IN TRANSIT" || status === "IN_TRANSIT") {
-    className = "bg-violet-50 text-violet-600";
-  } else if (status === "PENDING") {
-    className = "bg-amber-50 text-amber-600";
+  if (
+    status === "CANCELLED" ||
+    status === "CANCELED"
+  ) {
+    className =
+      "bg-red-50 text-red-600";
+  } else if (
+    status === "DELIVERED"
+  ) {
+    className =
+      "bg-emerald-50 text-emerald-600";
+  } else if (
+    status === "IN TRANSIT" ||
+    status === "IN_TRANSIT"
+  ) {
+    className =
+      "bg-violet-50 text-violet-600";
+  } else if (
+    status === "PENDING"
+  ) {
+    className =
+      "bg-amber-50 text-amber-600";
   }
 
   return (
@@ -430,21 +516,29 @@ const StatusBadge = ({ status }) => {
 // ======================================================
 
 function RTODelivered() {
-  const [orders, setOrders] = useState([]);
+  const [orders, setOrders] =
+    useState([]);
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] =
+    useState(true);
 
-  const [search, setSearch] = useState("");
+  const [search, setSearch] =
+    useState("");
 
-  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [statusFilter, setStatusFilter] =
+    useState("ALL");
 
-  const [serviceFilter, setServiceFilter] = useState("ALL");
+  const [serviceFilter, setServiceFilter] =
+    useState("ALL");
 
-  const [paymentFilter, setPaymentFilter] = useState("ALL");
+  const [paymentFilter, setPaymentFilter] =
+    useState("ALL");
 
-  const [selectedIds, setSelectedIds] = useState([]);
+  const [selectedIds, setSelectedIds] =
+    useState([]);
 
-  const [viewingOrder, setViewingOrder] = useState(null);
+  const [viewingOrder, setViewingOrder] =
+    useState(null);
 
   // ====================================================
   // FETCH ALL ORDERS
@@ -456,7 +550,9 @@ function RTODelivered() {
     if (!userId) {
       setLoading(false);
 
-      toast.error("User ID is required");
+      toast.error(
+        "User ID is required"
+      );
 
       return;
     }
@@ -464,33 +560,46 @@ function RTODelivered() {
     try {
       setLoading(true);
 
-      const response = await api.get("/orders/all", {
-        params: {
-          user_id: userId,
-          status: "RTO_DELIVERED",
-          include_tracking: false,
-        },
-      });
+      const response = await api.get(
+        "/orders/all",
+        {
+          params: {
+            user_id: userId,
+            status: "RTO_DELIVERED",
+            include_tracking: false,
+          },
+        }
+      );
 
       const data = response?.data;
 
       if (!data?.success) {
-        throw new Error(data?.message || "Unable to fetch all orders");
+        throw new Error(
+          data?.message ||
+            "Unable to fetch all orders"
+        );
       }
 
-      const list = Array.isArray(data?.orders) ? data.orders : [];
+      const list = Array.isArray(
+        data?.orders
+      )
+        ? data.orders
+        : [];
 
       setOrders(list);
       setSelectedIds([]);
     } catch (error) {
-      console.error("Get out for delivery orders error:", error);
+      console.error(
+        "Get out for delivery orders error:",
+        error
+      );
 
       setOrders([]);
 
       toast.error(
         error?.response?.data?.message ||
           error?.message ||
-          "Unable to load out for delivery orders",
+          "Unable to load out for delivery orders"
       );
     } finally {
       setLoading(false);
@@ -520,14 +629,19 @@ function RTODelivered() {
   // ====================================================
 
   const filteredOrders = useMemo(() => {
-    const query = search.trim().toLowerCase();
+    const query = search
+      .trim()
+      .toLowerCase();
 
     return orders.filter((order) => {
-      const status = getStatus(order);
+      const status =
+        getStatus(order);
 
-      const service = getServiceType(order);
+      const service =
+        getServiceType(order);
 
-      const payment = getPaymentType(order);
+      const payment =
+        getPaymentType(order);
 
       const searchable = [
         getCustomerName(order),
@@ -544,37 +658,71 @@ function RTODelivered() {
         .join(" ")
         .toLowerCase();
 
-      const searchMatch = !query || searchable.includes(query);
+      const searchMatch =
+        !query ||
+        searchable.includes(query);
 
       const statusMatch =
-        status === "RTO DELIVERED" || status === "RTO_IN_TRANSIT";
+        status === "RTO DELIVERED" ||
+        status === "RTO_IN_TRANSIT";
 
-      const serviceMatch = serviceFilter === "ALL" || service === serviceFilter;
+      const serviceMatch =
+        serviceFilter === "ALL" ||
+        service === serviceFilter;
 
-      const paymentMatch = paymentFilter === "ALL" || payment === paymentFilter;
+      const paymentMatch =
+        paymentFilter === "ALL" ||
+        payment === paymentFilter;
 
-      return searchMatch && statusMatch && serviceMatch && paymentMatch;
+      return (
+        searchMatch &&
+        statusMatch &&
+        serviceMatch &&
+        paymentMatch
+      );
     });
-  }, [orders, search, statusFilter, serviceFilter, paymentFilter]);
+  }, [
+    orders,
+    search,
+    statusFilter,
+    serviceFilter,
+    paymentFilter,
+  ]);
 
   // ====================================================
   // ORDER KEY
   // ====================================================
 
-  const getOrderKey = (order) => String(order?.id ?? order?.order_id);
+  const getOrderKey = (order) =>
+    String(
+      order?.id ??
+        order?.order_id
+    );
 
   // ====================================================
   // SELECTED ORDERS
   // ====================================================
 
   const selectedOrders = useMemo(
-    () => orders.filter((order) => selectedIds.includes(getOrderKey(order))),
-    [orders, selectedIds],
+    () =>
+      orders.filter((order) =>
+        selectedIds.includes(
+          getOrderKey(order)
+        )
+      ),
+    [
+      orders,
+      selectedIds,
+    ]
   );
 
   const allVisibleSelected =
     filteredOrders.length > 0 &&
-    filteredOrders.every((order) => selectedIds.includes(getOrderKey(order)));
+    filteredOrders.every((order) =>
+      selectedIds.includes(
+        getOrderKey(order)
+      )
+    );
 
   // ====================================================
   // SELECT ALL
@@ -582,17 +730,28 @@ function RTODelivered() {
 
   const handleSelectAll = () => {
     if (allVisibleSelected) {
-      const visibleIds = filteredOrders.map(getOrderKey);
+      const visibleIds =
+        filteredOrders.map(
+          getOrderKey
+        );
 
       setSelectedIds((previous) =>
-        previous.filter((id) => !visibleIds.includes(id)),
+        previous.filter(
+          (id) =>
+            !visibleIds.includes(id)
+        )
       );
 
       return;
     }
 
     setSelectedIds((previous) => [
-      ...new Set([...previous, ...filteredOrders.map(getOrderKey)]),
+      ...new Set([
+        ...previous,
+        ...filteredOrders.map(
+          getOrderKey
+        ),
+      ]),
     ]);
   };
 
@@ -605,10 +764,15 @@ function RTODelivered() {
 
     setSelectedIds((previous) => {
       if (previous.includes(id)) {
-        return previous.filter((item) => item !== id);
+        return previous.filter(
+          (item) => item !== id
+        );
       }
 
-      return [...previous, id];
+      return [
+        ...previous,
+        id,
+      ];
     });
   };
 
@@ -625,7 +789,8 @@ function RTODelivered() {
   // ====================================================
 
   const buildLabel = (order) => {
-    const service = getServiceType(order);
+    const service =
+      getServiceType(order);
 
     const address = [
       order?.address_line1,
@@ -782,7 +947,9 @@ function RTODelivered() {
                 margin-top:4px;
               "
             >
-              ${service === "AIR" ? "By Air" : "By Road"}
+              ${service === "AIR"
+                ? "By Air"
+                : "By Road"}
             </div>
           </div>
 
@@ -838,18 +1005,28 @@ function RTODelivered() {
 
   const handlePrintLabels = () => {
     if (selectedOrders.length === 0) {
-      toast.error("Please select at least one order");
+      toast.error(
+        "Please select at least one order"
+      );
       return;
     }
 
-    const printWindow = window.open("", "_blank", "width=900,height=700");
+    const printWindow = window.open(
+      "",
+      "_blank",
+      "width=900,height=700"
+    );
 
     if (!printWindow) {
-      toast.error("Please allow pop-ups to print labels");
+      toast.error(
+        "Please allow pop-ups to print labels"
+      );
       return;
     }
 
-    const html = selectedOrders.map(buildLabel).join("");
+    const html = selectedOrders
+      .map(buildLabel)
+      .join("");
 
     printWindow.document.write(`
       <!DOCTYPE html>
@@ -885,11 +1062,16 @@ function RTODelivered() {
 
   const handleExport = () => {
     if (orders.length === 0) {
-      toast.error("No orders to export");
+      toast.error(
+        "No orders to export"
+      );
       return;
     }
 
-    const exportOrders = selectedOrders.length > 0 ? selectedOrders : orders;
+    const exportOrders =
+      selectedOrders.length > 0
+        ? selectedOrders
+        : orders;
 
     const headers = [
       "AWB",
@@ -906,26 +1088,37 @@ function RTODelivered() {
       "Created",
     ];
 
-    const rows = exportOrders.map((order) => [
-      getAWB(order),
-      getOrderId(order),
-      getCustomerName(order),
-      getMobile(order),
-      getShipmentName(order),
-      getServiceType(order),
-      getPickupCity(order),
-      getDeliveryCity(order),
-      getPaymentType(order),
-      getWeight(order).toFixed(2),
-      getStatus(order),
-      getCreatedAt(order) || "",
-    ]);
+    const rows = exportOrders.map(
+      (order) => [
+        getAWB(order),
+        getOrderId(order),
+        getCustomerName(order),
+        getMobile(order),
+        getShipmentName(order),
+        getServiceType(order),
+        getPickupCity(order),
+        getDeliveryCity(order),
+        getPaymentType(order),
+        getWeight(order).toFixed(2),
+        getStatus(order),
+        getCreatedAt(order) || "",
+      ]
+    );
 
     const escapeCsv = (value) => {
-      const text = String(value ?? "");
+      const text = String(
+        value ?? ""
+      );
 
-      if (text.includes(",") || text.includes('"') || text.includes("\n")) {
-        return `"${text.replace(/"/g, '""')}"`;
+      if (
+        text.includes(",") ||
+        text.includes('"') ||
+        text.includes("\n")
+      ) {
+        return `"${text.replace(
+          /"/g,
+          '""'
+        )}"`;
       }
 
       return text;
@@ -933,22 +1126,31 @@ function RTODelivered() {
 
     const csv = [
       headers.map(escapeCsv).join(","),
-      ...rows.map((row) => row.map(escapeCsv).join(",")),
+      ...rows.map((row) =>
+        row.map(escapeCsv).join(",")
+      ),
     ].join("\n");
 
-    const blob = new Blob([csv], {
-      type: "text/csv;charset=utf-8;",
-    });
+    const blob = new Blob(
+      [csv],
+      {
+        type:
+          "text/csv;charset=utf-8;",
+      }
+    );
 
-    const url = URL.createObjectURL(blob);
+    const url =
+      URL.createObjectURL(blob);
 
-    const link = document.createElement("a");
+    const link =
+      document.createElement("a");
 
     link.href = url;
 
-    link.download = `shipdrop-all-orders-${new Date()
-      .toISOString()
-      .slice(0, 10)}.csv`;
+    link.download =
+      `shipdrop-all-orders-${new Date()
+        .toISOString()
+        .slice(0, 10)}.csv`;
 
     document.body.appendChild(link);
     link.click();
@@ -958,8 +1160,10 @@ function RTODelivered() {
 
     toast.success(
       `${exportOrders.length} ${
-        exportOrders.length === 1 ? "order" : "orders"
-      } exported`,
+        exportOrders.length === 1
+          ? "order"
+          : "orders"
+      } exported`
     );
   };
 
@@ -967,31 +1171,50 @@ function RTODelivered() {
   // COUNTS
   // ====================================================
 
-  const totalOrders = orders.filter(
-    (order) => getStatus(order) === "RTO DELIVERED",
+  const totalOrders =
+  orders.filter(
+    (order) =>
+      getStatus(order) === "RTO DELIVERED"
   ).length;
 
-  const processingCount = orders.filter(
-    (order) => getStatus(order) === "PROCESSING",
-  ).length;
+  const processingCount =
+    orders.filter(
+      (order) =>
+        getStatus(order) ===
+        "PROCESSING"
+    ).length;
 
-  const manifestedCount = orders.filter(
-    (order) => getStatus(order) === "MANIFESTED",
-  ).length;
+  const manifestedCount =
+    orders.filter(
+      (order) =>
+        getStatus(order) ===
+        "MANIFESTED"
+    ).length;
 
-  const pendingCount = orders.filter(
-    (order) => getStatus(order) === "PENDING",
-  ).length;
+  const pendingCount =
+    orders.filter(
+      (order) =>
+        getStatus(order) ===
+        "PENDING"
+    ).length;
 
-  const deliveredCount = orders.filter(
-    (order) => getStatus(order) === "DELIVERED",
-  ).length;
+  const deliveredCount =
+    orders.filter(
+      (order) =>
+        getStatus(order) ===
+        "DELIVERED"
+    ).length;
 
-  const cancelledCount = orders.filter((order) => {
-    const status = getStatus(order);
+  const cancelledCount =
+    orders.filter((order) => {
+      const status =
+        getStatus(order);
 
-    return status === "CANCELLED" || status === "CANCELED";
-  }).length;
+      return (
+        status === "CANCELLED" ||
+        status === "CANCELED"
+      );
+    }).length;
 
   // ====================================================
   // LOADING
@@ -1001,6 +1224,7 @@ function RTODelivered() {
     return (
       <div className="min-h-screen bg-[#f5f8fc] px-4 py-5">
         <div className="mx-auto max-w-[1450px]">
+
           <div className="mb-3 h-[92px] animate-pulse rounded-xl border border-slate-200 bg-white" />
 
           <div className="mb-3 h-[62px] animate-pulse rounded-xl border border-slate-200 bg-white" />
@@ -1008,13 +1232,16 @@ function RTODelivered() {
           <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
             <div className="h-12 animate-pulse bg-slate-50" />
 
-            {[1, 2, 3, 4].map((item) => (
-              <div
-                key={item}
-                className="h-[86px] animate-pulse border-t border-slate-100"
-              />
-            ))}
+            {[1, 2, 3, 4].map(
+              (item) => (
+                <div
+                  key={item}
+                  className="h-[86px] animate-pulse border-t border-slate-100"
+                />
+              )
+            )}
           </div>
+
         </div>
       </div>
     );
@@ -1026,25 +1253,36 @@ function RTODelivered() {
 
   return (
     <div className="min-h-screen bg-[#f5f8fc] px-4 py-5">
+
       <div className="mx-auto max-w-[1450px]">
+
         {/* ==================================================
             TOP HEADER
         ================================================== */}
 
         <div className="mb-3 rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-[0_1px_2px_rgba(15,23,42,0.02)]">
+
           <div className="flex flex-wrap items-center justify-between gap-4">
+
             <div className="flex items-center gap-3">
+
               <div
                 className="flex h-10 w-10 items-center justify-center rounded-lg"
                 style={{
-                  background: "#edf8ff",
-                  color: PRIMARY,
+                  background:
+                    "#edf8ff",
+                  color:
+                    PRIMARY,
                 }}
               >
-                <Icon name="box" size={20} />
+                <Icon
+                  name="box"
+                  size={20}
+                />
               </div>
 
               <div>
+
                 <h1 className="text-[17px] font-semibold tracking-[-0.2px] text-slate-900">
                   RTO Delivered
                 </h1>
@@ -1052,33 +1290,56 @@ function RTODelivered() {
                 <p className="mt-0.5 text-[12px] text-slate-400">
                   {`${filteredOrders.length} ${filteredOrders.length === 1 ? "shipment" : "shipments"}`}
                 </p>
+
               </div>
+
             </div>
 
             {/* TOP BUTTONS */}
 
             <div className="flex items-center gap-2">
+
               <button
                 type="button"
-                onClick={handlePrintLabels}
-                disabled={selectedOrders.length === 0}
+                onClick={
+                  handlePrintLabels
+                }
+                disabled={
+                  selectedOrders.length ===
+                  0
+                }
                 className="inline-flex h-9 items-center gap-1.5 rounded-md bg-[#8fcce8] px-3.5 text-[12px] font-medium text-white transition hover:bg-[#7fc2e1] disabled:cursor-not-allowed disabled:opacity-55"
               >
-                <Icon name="printer" size={15} />
+                <Icon
+                  name="printer"
+                  size={15}
+                />
+
                 Print Shipping Label
               </button>
 
               <button
                 type="button"
-                onClick={handleExport}
-                disabled={orders.length === 0}
+                onClick={
+                  handleExport
+                }
+                disabled={
+                  orders.length === 0
+                }
                 className="inline-flex h-9 items-center gap-1.5 rounded-md bg-[#10b981] px-3.5 text-[12px] font-medium text-white transition hover:bg-[#059669] disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <Icon name="download" size={15} />
+                <Icon
+                  name="download"
+                  size={15}
+                />
+
                 Export
               </button>
+
             </div>
+
           </div>
+
         </div>
 
         {/* ==================================================
@@ -1086,21 +1347,32 @@ function RTODelivered() {
         ================================================== */}
 
         <div className="mb-3 rounded-xl border border-slate-200 bg-white p-3 shadow-[0_1px_2px_rgba(15,23,42,0.02)]">
+
           <div className="flex flex-wrap items-center gap-2">
+
             {/* SEARCH */}
 
             <div className="relative min-w-[280px] flex-1">
+
               <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-                <Icon name="search" size={15} />
+                <Icon
+                  name="search"
+                  size={15}
+                />
               </span>
 
               <input
                 type="text"
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) =>
+                  setSearch(
+                    e.target.value
+                  )
+                }
                 placeholder="Search customer, AWB, Order ID or mobile..."
                 className="h-10 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-[12px] text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#008dd2] focus:ring-2 focus:ring-[#008dd2]/5"
               />
+
             </div>
 
             {/* STATUS */}
@@ -1108,20 +1380,36 @@ function RTODelivered() {
             {false && (
               <select
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
+                onChange={(e) =>
+                  setStatusFilter(e.target.value)
+                }
                 className="h-10 min-w-[135px] rounded-lg border border-slate-200 bg-white px-3 text-[12px] text-slate-600 outline-none focus:border-[#008dd2]"
               >
-                <option value="ALL">All Status</option>
+              <option value="ALL">
+                All Status
+              </option>
 
-                <option value="MANIFESTED">Manifested</option>
+            
 
-                <option value="PENDING">Pending</option>
+              <option value="MANIFESTED">
+                Manifested
+              </option>
 
-                <option value="IN TRANSIT">In Transit</option>
+              <option value="PENDING">
+                Pending
+              </option>
 
-                <option value="DELIVERED">Delivered</option>
+              <option value="IN TRANSIT">
+                In Transit
+              </option>
 
-                <option value="CANCELLED">Cancelled</option>
+              <option value="DELIVERED">
+                Delivered
+              </option>
+
+              <option value="CANCELLED">
+                Cancelled
+              </option>
               </select>
             )}
 
@@ -1129,70 +1417,110 @@ function RTODelivered() {
 
             <select
               value={serviceFilter}
-              onChange={(e) => setServiceFilter(e.target.value)}
+              onChange={(e) =>
+                setServiceFilter(
+                  e.target.value
+                )
+              }
               className="h-10 min-w-[135px] rounded-lg border border-slate-200 bg-white px-3 text-[12px] text-slate-600 outline-none focus:border-[#008dd2]"
             >
-              <option value="ALL">All Services</option>
+              <option value="ALL">
+                All Services
+              </option>
 
-              <option value="ROAD">Road</option>
+              <option value="ROAD">
+                Road
+              </option>
 
-              <option value="AIR">Air</option>
+              <option value="AIR">
+                Air
+              </option>
             </select>
 
             {/* PAYMENT */}
 
             <select
               value={paymentFilter}
-              onChange={(e) => setPaymentFilter(e.target.value)}
+              onChange={(e) =>
+                setPaymentFilter(
+                  e.target.value
+                )
+              }
               className="h-10 min-w-[135px] rounded-lg border border-slate-200 bg-white px-3 text-[12px] text-slate-600 outline-none focus:border-[#008dd2]"
             >
-              <option value="ALL">All Payment</option>
+              <option value="ALL">
+                All Payment
+              </option>
 
-              <option value="PREPAID">Prepaid</option>
+              <option value="PREPAID">
+                Prepaid
+              </option>
 
-              <option value="COD">COD</option>
+              <option value="COD">
+                COD
+              </option>
             </select>
 
             {/* REFRESH */}
 
             <button
               type="button"
-              onClick={fetchAllOrders}
+              onClick={
+                fetchAllOrders
+              }
               title="Refresh"
               className="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-slate-700"
             >
-              <Icon name="refresh" size={15} />
+              <Icon
+                name="refresh"
+                size={15}
+              />
             </button>
+
           </div>
+
         </div>
 
         {/* ==================================================
             SMALL SUMMARY
         ================================================== */}
 
+        
         {/* ==================================================
             TABLE
         ================================================== */}
 
         <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
-          <div className="max-h-[calc(100vh-180px)] overflow-y-auto overflow-x-hidden">
-            <table className="w-full table-fixed border-collapse">
+
+          <div className="max-h-[calc(100vh-180px)] overflow-auto">
+
+            <table className="w-full min-w-[1120px] border-collapse">
+
               {/* TABLE HEADER */}
 
               <thead className="sticky top-0 z-20 bg-white">
+
                 <tr className="border-b border-slate-200 bg-white">
+
                   <th className="sticky top-0 z-20 w-[52px] bg-white px-4 py-3.5 text-left">
+
                     <button
                       type="button"
-                      onClick={handleSelectAll}
+                      onClick={
+                        handleSelectAll
+                      }
                       className={`flex h-[17px] w-[17px] items-center justify-center rounded-[4px] border transition ${
                         allVisibleSelected
                           ? "border-[#008dd2] bg-[#008dd2] text-white"
                           : "border-slate-300 bg-white text-transparent"
                       }`}
                     >
-                      <Icon name="check" size={11} />
+                      <Icon
+                        name="check"
+                        size={11}
+                      />
                     </button>
+
                   </th>
 
                   <th className="sticky top-0 z-20 w-[190px] bg-white px-3 py-3.5 text-left text-[12px] font-medium text-slate-700">
@@ -1222,18 +1550,31 @@ function RTODelivered() {
                   <th className="sticky top-0 z-20 w-[105px] bg-white px-3 py-3.5 text-left text-[12px] font-medium text-slate-700">
                     Actions
                   </th>
+
                 </tr>
+
               </thead>
 
               {/* TABLE BODY */}
 
               <tbody>
+
                 {filteredOrders.length === 0 ? (
+
                   <tr>
-                    <td colSpan="8" className="h-[300px] px-6 text-center">
+
+                    <td
+                      colSpan="8"
+                      className="h-[300px] px-6 text-center"
+                    >
+
                       <div className="flex flex-col items-center justify-center">
+
                         <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-50 text-slate-300">
-                          <Icon name="box" size={21} />
+                          <Icon
+                            name="box"
+                            size={21}
+                          />
                         </div>
 
                         <div className="text-sm font-medium text-slate-700">
@@ -1247,230 +1588,366 @@ function RTODelivered() {
                             ? "Try changing your search or filters."
                             : "Orders will appear here after they are created."}
                         </div>
+
                       </div>
+
                     </td>
+
                   </tr>
+
                 ) : (
-                  filteredOrders.map((order) => {
-                    const id = getOrderKey(order);
 
-                    const selected = selectedIds.includes(id);
+                  filteredOrders.map(
+                    (order) => {
 
-                    const service = getServiceType(order);
+                      const id =
+                        getOrderKey(order);
 
-                    const payment = getPaymentType(order);
+                      const selected =
+                        selectedIds.includes(
+                          id
+                        );
 
-                    const weight = getWeight(order);
+                      const service =
+                        getServiceType(order);
 
-                    const status = getStatus(order);
+                      const payment =
+                        getPaymentType(order);
 
-                    const awb = getAWB(order);
+                      const weight =
+                        getWeight(order);
 
-                    return (
-                      <tr
-                        key={id}
-                        className={`border-b border-slate-100 transition last:border-b-0 ${
-                          selected ? "bg-[#f8fcff]" : "bg-white"
-                        } hover:bg-slate-50`}
-                      >
-                        {/* CHECKBOX */}
+                      const status =
+                        getStatus(order);
 
-                        <td className="px-4 py-3">
-                          <button
-                            type="button"
-                            onClick={() => handleSelect(order)}
-                            className={`flex h-[17px] w-[17px] items-center justify-center rounded-[4px] border transition ${
-                              selected
-                                ? "border-[#008dd2] bg-[#008dd2] text-white"
-                                : "border-slate-300 bg-white text-transparent"
-                            }`}
-                          >
-                            <Icon name="check" size={11} />
-                          </button>
-                        </td>
+                      const awb =
+                        getAWB(order);
 
-                        {/* ==================================
-                              CUSTOMER
-                          ================================== */}
+                      return (
 
-                        <td className="px-3 py-3">
-                          <div className="min-w-0">
-                            <p className="truncate text-[13px] font-semibold text-slate-800">
-                              {getCustomerName(order)}
-                            </p>
+                        <tr
+                          key={id}
+                          className={`border-b border-slate-100 transition last:border-b-0 ${
+                            selected
+                              ? "bg-[#f8fcff]"
+                              : "bg-white"
+                          } hover:bg-slate-50`}
+                        >
 
-                            {getMobile(order) && (
-                              <p className="mt-0.5 text-[11px] text-slate-400">
-                                {getMobile(order)}
-                              </p>
-                            )}
+                          {/* CHECKBOX */}
 
-                            <div className="mt-1.5">
-                              <StatusBadge status={status} />
-                            </div>
-                          </div>
-                        </td>
-
-                        {/* ==================================
-                              SHIPMENT
-                          ================================== */}
-
-                        <td className="px-3 py-3">
-                          <div className="min-w-0">
-                            {status !== "PROCESSING" && (
-                              <>
-                                <p className="truncate text-[13px] font-semibold text-slate-800">
-                                  {awb}
-                                </p>
-
-                                <p className="mt-0.5 text-[10px] text-slate-400">
-                                  Pickup ID:{" "}
-                                  {order?.pickup_id || order?.pickupId || ""}
-                                </p>
-                              </>
-                            )}
-
-                            <p className="mt-0.5 text-[10px] text-slate-400">
-                              {getShipmentName(order)} -{" "}
-                              {service === "AIR" ? "Air" : "Road"}
-                            </p>
-                          </div>
-                        </td>
-
-                        {/* ==================================
-                              ROUTE
-                          ================================== */}
-
-                        <td className="px-3 py-3">
-                          <div>
-                            <p className="text-[12px] font-medium text-slate-700">
-                              {getPickupCity(order)}
-
-                              {getPickupPincode(order) && (
-                                <span className="text-[10px] text-slate-400">
-                                  {" "}
-                                  ({getPickupPincode(order)})
-                                </span>
-                              )}
-                            </p>
-
-                            <p className="my-0.5 text-[10px] text-slate-300">
-                              ↓
-                            </p>
-
-                            <p className="text-[12px] font-medium text-slate-700">
-                              {getDeliveryCity(order)}
-
-                              {getDeliveryPincode(order) && (
-                                <span className="text-[10px] text-slate-400">
-                                  {" "}
-                                  ({getDeliveryPincode(order)})
-                                </span>
-                              )}
-                            </p>
-
-                            <p className="mt-1 text-[9px] text-slate-400">
-                              {getPickupPincode(order) || "—"} →{" "}
-                              {getDeliveryPincode(order) || "—"}
-                            </p>
-                          </div>
-                        </td>
-
-                        {/* ==================================
-                              PAYMENT
-                          ================================== */}
-
-                        <td className="px-3 py-3">
-                          <div>
-                            <p
-                              className={`text-[12px] font-semibold ${
-                                payment === "COD"
-                                  ? "text-amber-600"
-                                  : "text-[#008dd2]"
-                              }`}
-                            >
-                              {payment}
-                            </p>
-
-                            <p className="mt-0.5 text-[10px] text-slate-400">
-                              {payment === "COD"
-                                ? "Cash on Delivery"
-                                : "Prepaid"}
-                            </p>
-
-                            <p className="text-[10px] text-slate-400">
-                              Total: ₹{getAmount(order).toFixed(2)}
-                            </p>
-                          </div>
-                        </td>
-
-                        {/* ==================================
-                              WEIGHT
-                          ================================== */}
-
-                        <td className="px-3 py-3">
-                          <div>
-                            <p className="text-[12px] font-semibold text-slate-700">
-                              Box: {getPackageCount(order)}
-                            </p>
-
-                            <p className="mt-0.5 text-[10px] text-slate-400">
-                              Wt: {weight.toFixed(2)} kg
-                            </p>
-
-                            <p className="text-[10px] text-slate-400">
-                              Vol: {getVolumetricWeight(order).toFixed(2)} kg
-                            </p>
-                          </div>
-                        </td>
-
-                        {/* ==================================
-                              CREATED
-                          ================================== */}
-
-                        <td className="px-3 py-3">
-                          <p className="text-[12px] font-medium text-slate-700">
-                            #{getOrderId(order)}
-                          </p>
-
-                          <p className="mt-0.5 text-[10px] text-slate-400">
-                            {status === "MANIFESTED"
-                              ? "Manifested: "
-                              : "Created: "}
-
-                            {formatDate(getCreatedAt(order))}
-                          </p>
-
-                          <p className="text-[10px] text-slate-400">
-                            {formatTime(getCreatedAt(order))}
-                          </p>
-                        </td>
-
-                        {/* ==================================
-                              ACTIONS
-                          ================================== */}
-
-                        <td className="px-3 py-3">
-                          <div className="flex items-center gap-1.5">
-                            {/* PRINT */}
+                          <td className="px-4 py-3">
 
                             <button
                               type="button"
-                              onClick={() => {
-                                const printWindow = window.open(
-                                  "",
-                                  "_blank",
-                                  "width=900,height=700",
-                                );
+                              onClick={() =>
+                                handleSelect(
+                                  order
+                                )
+                              }
+                              className={`flex h-[17px] w-[17px] items-center justify-center rounded-[4px] border transition ${
+                                selected
+                                  ? "border-[#008dd2] bg-[#008dd2] text-white"
+                                  : "border-slate-300 bg-white text-transparent"
+                              }`}
+                            >
+                              <Icon
+                                name="check"
+                                size={11}
+                              />
+                            </button>
 
-                                if (!printWindow) {
-                                  toast.error(
-                                    "Please allow pop-ups to print labels",
-                                  );
-                                  return;
-                                }
+                          </td>
 
-                                printWindow.document.write(`
+                          {/* ==================================
+                              CUSTOMER
+                          ================================== */}
+
+                          <td className="px-3 py-3">
+
+                            <div className="min-w-0">
+
+                              <p className="truncate text-[13px] font-semibold text-slate-800">
+                                {getCustomerName(
+                                  order
+                                )}
+                              </p>
+
+                              {getMobile(
+                                order
+                              ) && (
+                                <p className="mt-0.5 text-[11px] text-slate-400">
+                                  {getMobile(
+                                    order
+                                  )}
+                                </p>
+                              )}
+
+                              <div className="mt-1.5">
+
+                                <StatusBadge
+                                  status={status}
+                                />
+
+                              </div>
+
+                            </div>
+
+                          </td>
+
+                          {/* ==================================
+                              SHIPMENT
+                          ================================== */}
+
+                          <td className="px-3 py-3">
+
+                            <div className="min-w-0">
+
+                             {status !== "PROCESSING" && (
+  <>
+    <p className="truncate text-[13px] font-semibold text-slate-800">
+      {awb}
+    </p>
+
+    <p className="mt-0.5 text-[10px] text-slate-400">
+      Pickup ID:{" "}
+      {order?.pickup_id ||
+        order?.pickupId ||
+        ""}
+    </p>
+  </>
+)}
+
+                              <p className="mt-0.5 text-[10px] text-slate-400">
+                                {getShipmentName(
+                                  order
+                                )}{" "}
+                                -{" "}
+                                {service ===
+                                "AIR"
+                                  ? "Air"
+                                  : "Road"}
+                              </p>
+
+                            </div>
+
+                          </td>
+
+                          {/* ==================================
+                              ROUTE
+                          ================================== */}
+
+                          <td className="px-3 py-3">
+
+                            <div>
+
+                              <p className="text-[12px] font-medium text-slate-700">
+
+                                {getPickupCity(
+                                  order
+                                )}
+
+                                {getPickupPincode(
+                                  order
+                                ) && (
+                                  <span className="text-[10px] text-slate-400">
+                                    {" "}
+                                    (
+                                    {getPickupPincode(
+                                      order
+                                    )}
+                                    )
+                                  </span>
+                                )}
+
+                              </p>
+
+                              <p className="my-0.5 text-[10px] text-slate-300">
+                                ↓
+                              </p>
+
+                              <p className="text-[12px] font-medium text-slate-700">
+
+                                {getDeliveryCity(
+                                  order
+                                )}
+
+                                {getDeliveryPincode(
+                                  order
+                                ) && (
+                                  <span className="text-[10px] text-slate-400">
+                                    {" "}
+                                    (
+                                    {getDeliveryPincode(
+                                      order
+                                    )}
+                                    )
+                                  </span>
+                                )}
+
+                              </p>
+
+                              <p className="mt-1 text-[9px] text-slate-400">
+
+                                {getPickupPincode(
+                                  order
+                                ) ||
+                                "—"}{" "}
+                                →{" "}
+                                {getDeliveryPincode(
+                                  order
+                                ) ||
+                                  "—"}
+
+                              </p>
+
+                            </div>
+
+                          </td>
+
+                          {/* ==================================
+                              PAYMENT
+                          ================================== */}
+
+                          <td className="px-3 py-3">
+
+                            <div>
+
+                              <p
+                                className={`text-[12px] font-semibold ${
+                                  payment ===
+                                  "COD"
+                                    ? "text-amber-600"
+                                    : "text-[#008dd2]"
+                                }`}
+                              >
+                                {payment}
+                              </p>
+
+                              <p className="mt-0.5 text-[10px] text-slate-400">
+                                {payment ===
+                                "COD"
+                                  ? "Cash on Delivery"
+                                  : "Prepaid"}
+                              </p>
+
+                              <p className="text-[10px] text-slate-400">
+                                Total: ₹
+                                {getAmount(
+                                  order
+                                ).toFixed(2)}
+                              </p>
+
+                            </div>
+
+                          </td>
+
+                          {/* ==================================
+                              WEIGHT
+                          ================================== */}
+
+                          <td className="px-3 py-3">
+
+                            <div>
+
+                              <p className="text-[12px] font-semibold text-slate-700">
+                                Box:{" "}
+                                {getPackageCount(
+                                  order
+                                )}
+                              </p>
+
+                              <p className="mt-0.5 text-[10px] text-slate-400">
+                                Wt:{" "}
+                                {weight.toFixed(
+                                  2
+                                )}{" "}
+                                kg
+                              </p>
+
+                              <p className="text-[10px] text-slate-400">
+                                Vol:{" "}
+                                {getVolumetricWeight(
+                                  order
+                                ).toFixed(
+                                  2
+                                )}{" "}
+                                kg
+                              </p>
+
+                            </div>
+
+                          </td>
+
+                          {/* ==================================
+                              CREATED
+                          ================================== */}
+
+                          <td className="px-3 py-3">
+
+                            <p className="text-[12px] font-medium text-slate-700">
+                              #
+                              {getOrderId(
+                                order
+                              )}
+                            </p>
+
+                            <p className="mt-0.5 text-[10px] text-slate-400">
+
+                              {status ===
+                              "MANIFESTED"
+                                ? "Manifested: "
+                                : "Created: "}
+
+                              {formatDate(
+                                getCreatedAt(
+                                  order
+                                )
+                              )}
+
+                            </p>
+
+                            <p className="text-[10px] text-slate-400">
+                              {formatTime(
+                                getCreatedAt(
+                                  order
+                                )
+                              )}
+                            </p>
+
+                          </td>
+
+                          {/* ==================================
+                              ACTIONS
+                          ================================== */}
+
+                          <td className="px-3 py-3">
+
+                            <div className="flex items-center gap-1.5">
+
+                              {/* PRINT */}
+
+                              <button
+                                type="button"
+                                onClick={() => {
+
+                                  const printWindow =
+                                    window.open(
+                                      "",
+                                      "_blank",
+                                      "width=900,height=700"
+                                    );
+
+                                  if (
+                                    !printWindow
+                                  ) {
+                                    toast.error(
+                                      "Please allow pop-ups to print labels"
+                                    );
+                                    return;
+                                  }
+
+                                  printWindow.document.write(`
                                     <!DOCTYPE html>
                                     <html>
                                       <head>
@@ -1485,40 +1962,66 @@ function RTODelivered() {
                                           background:#fff;
                                         "
                                       >
-                                        ${buildLabel(order)}
+                                        ${buildLabel(
+                                          order
+                                        )}
                                       </body>
                                     </html>
                                   `);
 
-                                printWindow.document.close();
-                                printWindow.focus();
+                                  printWindow.document.close();
+                                  printWindow.focus();
 
-                                setTimeout(() => printWindow.print(), 300);
-                              }}
-                              title="Print Shipping Label"
-                              className="flex h-8 w-8 items-center justify-center rounded-md border border-[#b9dff0] bg-white text-[#008dd2] transition hover:bg-[#edf8ff]"
-                            >
-                              <Icon name="printer" size={15} />
-                            </button>
+                                  setTimeout(
+                                    () =>
+                                      printWindow.print(),
+                                    300
+                                  );
 
-                            {/* VIEW */}
+                                }}
+                                title="Print Shipping Label"
+                                className="flex h-8 w-8 items-center justify-center rounded-md border border-[#b9dff0] bg-white text-[#008dd2] transition hover:bg-[#edf8ff]"
+                              >
+                                <Icon
+                                  name="printer"
+                                  size={15}
+                                />
+                              </button>
 
-                            <button
-                              type="button"
-                              onClick={() => handleView(order)}
-                              title="View Order"
-                              className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-500 transition hover:border-[#008dd2] hover:bg-[#edf8ff] hover:text-[#008dd2]"
-                            >
-                              <Icon name="eye" size={15} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })
+                              {/* VIEW */}
+
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleView(
+                                    order
+                                  )
+                                }
+                                title="View Order"
+                                className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-500 transition hover:border-[#008dd2] hover:bg-[#edf8ff] hover:text-[#008dd2]"
+                              >
+                                <Icon
+                                  name="eye"
+                                  size={15}
+                                />
+                              </button>
+
+                            </div>
+
+                          </td>
+
+                        </tr>
+
+                      );
+                    }
+                  )
+
                 )}
+
               </tbody>
+
             </table>
+
           </div>
 
           {/* ==================================================
@@ -1526,27 +2029,41 @@ function RTODelivered() {
           ================================================== */}
 
           {orders.length > 0 && (
+
             <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-[#fafbfc] px-5 py-3">
+
               <p className="text-[11px] text-slate-400">
+
                 Showing{" "}
+
                 <span className="font-semibold text-slate-600">
                   {filteredOrders.length}
                 </span>{" "}
+
                 of{" "}
+
                 <span className="font-semibold text-slate-600">
                   {totalOrders}
                 </span>{" "}
+
                 orders
+
               </p>
 
               <p className="text-[11px] text-slate-400">
+
                 {selectedIds.length > 0
                   ? `${selectedIds.length} selected`
                   : "Select orders to perform actions"}
+
               </p>
+
             </div>
+
           )}
+
         </div>
+
       </div>
 
       {/* ====================================================
@@ -1554,103 +2071,152 @@ function RTODelivered() {
       ==================================================== */}
 
       {viewingOrder && (
+
         <div
           className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/30 p-4 backdrop-blur-[2px]"
-          onClick={() => setViewingOrder(null)}
+          onClick={() =>
+            setViewingOrder(null)
+          }
         >
+
           <div
             className="w-full max-w-[620px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) =>
+              e.stopPropagation()
+            }
           >
+
             {/* HEADER */}
 
             <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+
               <div>
+
                 <h2 className="text-[16px] font-semibold text-slate-900">
                   Order Details
                 </h2>
 
                 <p className="mt-0.5 text-[11px] text-slate-400">
-                  Order #{getOrderId(viewingOrder)}
+                  Order #
+                  {getOrderId(
+                    viewingOrder
+                  )}
                 </p>
+
               </div>
 
               <button
                 type="button"
-                onClick={() => setViewingOrder(null)}
+                onClick={() =>
+                  setViewingOrder(
+                    null
+                  )
+                }
                 className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
               >
-                <Icon name="x" size={17} />
+                <Icon
+                  name="x"
+                  size={17}
+                />
               </button>
+
             </div>
 
             {/* BODY */}
 
             <div className="max-h-[70vh] overflow-y-auto p-5">
+
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+
                 <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
+
                   <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
                     Customer
                   </p>
 
                   <p className="mt-1 text-[13px] font-semibold text-slate-800">
-                    {getCustomerName(viewingOrder)}
+                    {getCustomerName(
+                      viewingOrder
+                    )}
                   </p>
 
                   <p className="mt-0.5 text-[11px] text-slate-500">
-                    {getMobile(viewingOrder)}
+                    {getMobile(
+                      viewingOrder
+                    )}
                   </p>
+
                 </div>
 
                 <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
+
                   <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
                     AWB
                   </p>
 
                   <p className="mt-1 text-[13px] font-semibold text-slate-800">
-                    {getAWB(viewingOrder)}
+                    {getAWB(
+                      viewingOrder
+                    )}
                   </p>
+
                 </div>
 
                 <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
+
                   <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
                     Shipment
                   </p>
 
                   <p className="mt-1 text-[13px] font-semibold text-slate-800">
-                    {getShipmentName(viewingOrder)}
+                    {getShipmentName(
+                      viewingOrder
+                    )}
                   </p>
 
                   <p className="mt-0.5 text-[11px] text-slate-500">
-                    {getServiceType(viewingOrder) === "AIR"
+                    {getServiceType(
+                      viewingOrder
+                    ) === "AIR"
                       ? "By Air"
                       : "By Road"}
                   </p>
+
                 </div>
 
                 <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
+
                   <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
                     Payment
                   </p>
 
                   <p className="mt-1 text-[13px] font-semibold text-slate-800">
-                    {getPaymentType(viewingOrder)}
+                    {getPaymentType(
+                      viewingOrder
+                    )}
                   </p>
 
                   <p className="mt-0.5 text-[11px] text-slate-500">
-                    ₹{getAmount(viewingOrder).toFixed(2)}
+                    ₹
+                    {getAmount(
+                      viewingOrder
+                    ).toFixed(2)}
                   </p>
+
                 </div>
+
               </div>
 
               {/* ADDRESS */}
 
               <div className="mt-3 rounded-xl border border-slate-200 bg-white p-4">
+
                 <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
                   Delivery Address
                 </p>
 
                 <p className="mt-1 text-[13px] font-medium leading-6 text-slate-700">
+
                   {[
                     viewingOrder?.address_line1,
                     viewingOrder?.address_line2,
@@ -1658,63 +2224,97 @@ function RTODelivered() {
                     viewingOrder?.state,
                   ]
                     .filter(Boolean)
-                    .join(", ") || "—"}
+                    .join(", ") ||
+                    "—"}
 
-                  {viewingOrder?.pincode ? ` - ${viewingOrder.pincode}` : ""}
+                  {viewingOrder?.pincode
+                    ? ` - ${viewingOrder.pincode}`
+                    : ""}
+
                 </p>
+
               </div>
 
               {/* ROUTE */}
 
               <div className="mt-3 rounded-xl border border-slate-200 bg-white p-4">
+
                 <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
                   Route
                 </p>
 
                 <div className="mt-2 flex items-center gap-3">
+
                   <div className="rounded-lg bg-[#edf8ff] px-3 py-2 text-[12px] font-semibold text-[#008dd2]">
-                    {getPickupCity(viewingOrder)}
+                    {getPickupCity(
+                      viewingOrder
+                    )}
                   </div>
 
-                  <span className="text-slate-300">→</span>
+                  <span className="text-slate-300">
+                    →
+                  </span>
 
                   <div className="rounded-lg bg-[#f0ecff] px-3 py-2 text-[12px] font-semibold text-[#7052ff]">
-                    {getDeliveryCity(viewingOrder)}
+                    {getDeliveryCity(
+                      viewingOrder
+                    )}
                   </div>
+
                 </div>
+
               </div>
 
               {/* WEIGHT / STATUS */}
 
               <div className="mt-3 grid grid-cols-2 gap-3">
+
                 <div className="rounded-xl border border-slate-200 p-3">
+
                   <p className="text-[10px] uppercase tracking-wide text-slate-400">
                     Weight
                   </p>
 
                   <p className="mt-1 text-[15px] font-semibold text-slate-800">
-                    {getWeight(viewingOrder).toFixed(2)} Kg
+                    {getWeight(
+                      viewingOrder
+                    ).toFixed(2)}{" "}
+                    Kg
                   </p>
+
                 </div>
 
                 <div className="rounded-xl border border-slate-200 p-3">
+
                   <p className="text-[10px] uppercase tracking-wide text-slate-400">
                     Status
                   </p>
 
                   <div className="mt-1">
-                    <StatusBadge status={getStatus(viewingOrder)} />
+                    <StatusBadge
+                      status={getStatus(
+                        viewingOrder
+                      )}
+                    />
                   </div>
+
                 </div>
+
               </div>
+
             </div>
 
             {/* FOOTER */}
 
             <div className="flex items-center justify-end gap-2 border-t border-slate-100 bg-[#fafbfc] px-5 py-3">
+
               <button
                 type="button"
-                onClick={() => setViewingOrder(null)}
+                onClick={() =>
+                  setViewingOrder(
+                    null
+                  )
+                }
                 className="h-9 rounded-lg border border-slate-200 bg-white px-4 text-[12px] font-medium text-slate-600 hover:bg-slate-50"
               >
                 Close
@@ -1723,18 +2323,25 @@ function RTODelivered() {
               <button
                 type="button"
                 onClick={() => {
-                  const order = viewingOrder;
 
-                  setViewingOrder(null);
+                  const order =
+                    viewingOrder;
 
-                  const printWindow = window.open(
-                    "",
-                    "_blank",
-                    "width=900,height=700",
+                  setViewingOrder(
+                    null
                   );
 
+                  const printWindow =
+                    window.open(
+                      "",
+                      "_blank",
+                      "width=900,height=700"
+                    );
+
                   if (!printWindow) {
-                    toast.error("Please allow pop-ups to print labels");
+                    toast.error(
+                      "Please allow pop-ups to print labels"
+                    );
                     return;
                   }
 
@@ -1753,7 +2360,9 @@ function RTODelivered() {
                           background:#fff;
                         "
                       >
-                        ${buildLabel(order)}
+                        ${buildLabel(
+                          order
+                        )}
                       </body>
                     </html>
                   `);
@@ -1761,17 +2370,31 @@ function RTODelivered() {
                   printWindow.document.close();
                   printWindow.focus();
 
-                  setTimeout(() => printWindow.print(), 300);
+                  setTimeout(
+                    () =>
+                      printWindow.print(),
+                    300
+                  );
+
                 }}
                 className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[#008dd2] px-4 text-[12px] font-medium text-white hover:bg-[#007dbb]"
               >
-                <Icon name="printer" size={14} />
+                <Icon
+                  name="printer"
+                  size={14}
+                />
+
                 Print Label
               </button>
+
             </div>
+
           </div>
+
         </div>
+
       )}
+
     </div>
   );
 }
