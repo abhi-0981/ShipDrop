@@ -659,7 +659,7 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
               {showSettings ? (
                 <HiChevronDown size={17} />
               ) : (
-                <HiChevronRight size={17} />
+                <HiChevronRight size={17}  />
               )}
             </button>
 
