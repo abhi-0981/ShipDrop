@@ -1094,7 +1094,7 @@ function ProcessingOrders() {
                     <button
                       type="button"
                       onClick={() => handleDelete([id])}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#008dd2] text-white hover:bg-[#0079b5] active:scale-90 transition"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg  text-white hover:bg-[#0079b5] active:scale-90 transition"
                       title="Delete Order"
                     >
                       <Icon name="trash" size={13} />
@@ -1186,7 +1186,7 @@ function ProcessingOrders() {
                         <div className="text-[11px] text-slate-400">
                           {getMobile(order)}
                         </div>
-                        <span className="mt-1 inline-flex rounded-full bg-[#e8f6fc] px-2 py-0.5 text-[9px] font-bold uppercase text-[#008dd2]">
+                        <span className="mt-1 inline-flex rounded-full bg-[#e8f6fc] px-2 py-0.5 text-[10px] font-bold uppercase text-[#008dd2]">
                           {getStatus(order)}
                         </span>
                       </td>
