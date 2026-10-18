@@ -223,6 +223,29 @@ function ProcessingOrders() {
     return `${weight} kg`;
   };
 
+  // Read volumetric weight from existing data, or calculate it from package dimensions.
+  const getVolumetricWeight = (order) => {
+    const directValue = order.volumetric_weight ?? order.volumetricWeight ?? order.total_volumetric_weight ?? order.totalVolumetricWeight;
+    if (directValue !== null && directValue !== undefined && directValue !== "") {
+      const value = Number(directValue);
+      return Number.isFinite(value) && value > 0 ? `${value.toFixed(2)} kg` : "—";
+    }
+    if (!Array.isArray(order.packages) || order.packages.length === 0) return "—";
+    let total = 0;
+    let foundDimensions = false;
+    for (const pkg of order.packages) {
+      const length = Number(pkg?.length ?? pkg?.length_cm ?? pkg?.lengthCm ?? pkg?.l);
+      const width = Number(pkg?.width ?? pkg?.breadth ?? pkg?.width_cm ?? pkg?.widthCm ?? pkg?.w);
+      const height = Number(pkg?.height ?? pkg?.height_cm ?? pkg?.heightCm ?? pkg?.h);
+      const count = Number(pkg?.package_count ?? pkg?.count ?? 1) || 1;
+      if (Number.isFinite(length) && length > 0 && Number.isFinite(width) && width > 0 && Number.isFinite(height) && height > 0) {
+        foundDimensions = true;
+        total += (length * width * height * count) / 5000;
+      }
+    }
+    return foundDimensions ? `${total.toFixed(2)} kg` : "—";
+  };
+
   const getBoxCount = (order) => {
     if (Array.isArray(order.packages) && order.packages.length) {
       const total = order.packages.reduce(
@@ -794,7 +817,7 @@ function ProcessingOrders() {
       <div className="min-h-full bg-[#f6f8fb] p-4 sm:p-6">
         <div className="flex min-h-[60vh] items-center justify-center rounded-2xl border border-slate-200/80 bg-white">
           <div className="text-center">
-            <div className="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-3 border-slate-200 border-t-[#7451ff]" />
+            <div className="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-3 border-slate-200 border-t-[#008dd2]" />
             <p className="text-xs font-semibold text-slate-500">
               Loading processing orders...
             </p>
@@ -834,7 +857,7 @@ function ProcessingOrders() {
       <div className="mb-3.5 rounded-2xl border border-slate-200/80 bg-white p-3.5 sm:p-4 shadow-[0_1px_4px_rgba(15,23,42,0.03)] space-y-3">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f0ecff] text-[#7052ff]">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#e8f6fc] text-[#008dd2]">
               <Icon name="truck" size={18} />
             </div>
             <div>
@@ -858,7 +881,7 @@ function ProcessingOrders() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search orders, customers..."
-                className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-8.5 pr-8 text-xs text-slate-700 outline-none focus:border-[#7451ff] focus:bg-white focus:ring-2 focus:ring-[#7451ff]/10 transition"
+                className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-8.5 pr-8 text-xs text-slate-700 outline-none focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10 transition"
               />
               {search && (
                 <button
@@ -877,7 +900,7 @@ function ProcessingOrders() {
                 type="button"
                 onClick={handleShip}
                 disabled={selectedOrders.length === 0}
-                className="flex h-10 items-center gap-1.5 rounded-xl bg-[#7451ff] px-4 text-xs font-bold text-white shadow-xs transition hover:bg-[#6745ec] active:scale-95 disabled:opacity-40"
+                className="flex h-10 items-center gap-1.5 rounded-xl bg-[#008dd2] px-4 text-xs font-bold text-white shadow-xs transition hover:bg-[#0079b5] active:scale-95 disabled:opacity-40"
               >
                 <Icon name="truck" size={14} />
                 Ship ({selectedOrders.length})
@@ -904,7 +927,7 @@ function ProcessingOrders() {
                 type="checkbox"
                 checked={allSelected}
                 onChange={toggleAll}
-                className="h-4 w-4 rounded accent-[#7451ff]"
+                className="h-4 w-4 rounded accent-[#008dd2]"
               />
               <span>
                 Select All ({selectedOrders.length}/{filteredOrders.length})
@@ -925,7 +948,7 @@ function ProcessingOrders() {
                 <button
                   type="button"
                   onClick={handleShip}
-                  className="flex h-8 items-center gap-1 rounded-lg bg-[#7451ff] px-3 text-[11px] font-bold text-white shadow-xs active:scale-95"
+                  className="flex h-8 items-center gap-1 rounded-lg bg-[#008dd2] px-3 text-[11px] font-bold text-white shadow-xs active:scale-95"
                 >
                   <Icon name="truck" size={12} />
                   Ship ({selectedOrders.length})
@@ -937,7 +960,7 @@ function ProcessingOrders() {
       </div>
 
       {/* MOBILE CARD VIEW */}
-      <div className="space-y-3 sm:hidden">
+      <div className="space-y-3 lg:hidden">
         {filteredOrders.length === 0 ? (
           <div className="flex min-h-[200px] flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white p-6 text-center">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
@@ -960,7 +983,7 @@ function ProcessingOrders() {
                 key={id}
                 className={`relative rounded-2xl border bg-white p-3.5 sm:p-4 shadow-[0_1px_4px_rgba(15,23,42,0.03)] transition-all ${
                   selected
-                    ? "border-[#7451ff] ring-2 ring-[#7451ff]/10"
+                    ? "border-[#008dd2] ring-2 ring-[#008dd2]/10"
                     : "border-slate-200/80"
                 }`}
               >
@@ -971,7 +994,7 @@ function ProcessingOrders() {
                       type="checkbox"
                       checked={selected}
                       onChange={() => toggleOrder(id)}
-                      className="h-4 w-4 rounded accent-[#7451ff]"
+                      className="h-4 w-4 rounded accent-[#008dd2]"
                     />
                     <span className="text-xs font-bold text-slate-900">
                       #{order.order_id || id}
@@ -988,7 +1011,7 @@ function ProcessingOrders() {
                     >
                       {getPayment(order)}
                     </span>
-                    <span className="rounded-full bg-[#f2edff] px-2 py-0.5 text-[10px] font-semibold text-[#008dd2]">
+                    <span className="rounded-full bg-[#e8f6fc] px-2 py-0.5 text-[10px] font-semibold text-[#008dd2]">
                       {getStatus(order)}
                     </span>
                   </div>
@@ -1034,8 +1057,9 @@ function ProcessingOrders() {
                     <span className="truncate max-w-[180px]">
                       {getProduct(order)} (Qty: {getQty(order)})
                     </span>
-                    <span className="font-semibold text-slate-700">
-                      {getTotalWeight(order)} • {getBoxCount(order)} Box
+                    <span className="font-semibold text-slate-700 text-right">
+                      <span className="block">Actual: {getTotalWeight(order)}</span>
+                      <span className="block text-[10px] text-slate-400">Vol: {getVolumetricWeight(order)} • {getBoxCount(order)} Box</span>
                     </span>
                   </div>
                 </div>
@@ -1078,7 +1102,7 @@ function ProcessingOrders() {
                     <button
                       type="button"
                       onClick={() => openShipPopup([id])}
-                      className="flex h-8 items-center gap-1 rounded-lg bg-[#7451ff] px-3 text-[11px] font-bold text-white shadow-xs active:scale-95 transition"
+                      className="flex h-8 items-center gap-1 rounded-lg bg-[#008dd2] px-3 text-[11px] font-bold text-white shadow-xs active:scale-95 transition"
                     >
                       <Icon name="truck" size={12} />
                       Ship
@@ -1092,25 +1116,25 @@ function ProcessingOrders() {
       </div>
 
       {/* TABLET & DESKTOP: TABLE VIEW */}
-      <div className="hidden sm:block overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_4px_rgba(15,23,42,0.03)]">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+      <div className="hidden lg:block overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_4px_rgba(15,23,42,0.03)]">
+        <div className="w-full">
+          <table className="w-full table-fixed text-left border-collapse">
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50/70 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                <th className="py-3 px-4 w-12 text-center">
+                <th className="py-2.5 px-2 w-9 text-center">
                   <input
                     type="checkbox"
                     checked={allSelected}
                     onChange={toggleAll}
-                    className="h-4 w-4 rounded accent-[#7451ff] cursor-pointer"
+                    className="h-4 w-4 rounded accent-[#008dd2] cursor-pointer"
                   />
                 </th>
-                <th className="py-3 px-4">Customer</th>
-                <th className="py-3 px-4">Route</th>
-                <th className="py-3 px-4">Payment</th>
-                <th className="py-3 px-4">Order & Item</th>
-                <th className="py-3 px-4">Weight</th>
-                <th className="py-3 px-4 text-right">Actions</th>
+                <th className="py-2.5 px-2 w-[17%]">Customer</th>
+                <th className="py-2.5 px-2 w-[24%]">Route</th>
+                <th className="py-2.5 px-2 w-[10%]">Payment</th>
+                <th className="py-2.5 px-2 w-[17%]">Order & Item</th>
+                <th className="py-2.5 px-2 w-[13%]">Weight</th>
+                <th className="py-2.5 px-2 w-[17%] text-right">Actions</th>
               </tr>
             </thead>
 
@@ -1140,34 +1164,34 @@ function ProcessingOrders() {
                     <tr
                       key={id}
                       className={`transition-colors ${
-                        selected ? "bg-[#7451ff]/[0.03]" : "hover:bg-slate-50/70"
+                        selected ? "bg-[#008dd2]/[0.03]" : "hover:bg-slate-50/70"
                       }`}
                     >
                       {/* 1. CHECKBOX */}
-                      <td className="py-3 px-4 text-center align-middle">
+                      <td className="py-2.5 px-2 text-center align-middle">
                         <input
                           type="checkbox"
                           checked={selected}
                           onChange={() => toggleOrder(id)}
-                          className="h-4 w-4 rounded accent-[#7451ff] cursor-pointer"
+                          className="h-4 w-4 rounded accent-[#008dd2] cursor-pointer"
                         />
                       </td>
 
                       {/* 2. CUSTOMER */}
-                      <td className="py-3 px-4 align-middle">
+                      <td className="py-2.5 px-2 align-middle">
                         <div className="font-bold text-slate-900">
                           {getCustomer(order)}
                         </div>
                         <div className="text-[11px] text-slate-400">
                           {getMobile(order)}
                         </div>
-                        <span className="mt-1 inline-flex rounded-full bg-[#f2edff] px-2 py-0.5 text-[9px] font-bold text-[#008dd2]">
+                        <span className="mt-1 inline-flex rounded-full bg-[#e8f6fc] px-2 py-0.5 text-[9px] font-bold text-[#008dd2]">
                           {getStatus(order)}
                         </span>
                       </td>
 
                       {/* 3. ROUTE (SCREENSHOT DESIGN) */}
-                      <td className="py-3 px-4 align-middle">
+                      <td className="py-2.5 px-2 align-middle">
                         <div className="flex flex-col py-1">
                           {/* Pickup Node */}
                           <div className="flex items-center gap-2">
@@ -1227,7 +1251,7 @@ function ProcessingOrders() {
                       </td>
 
                       {/* 4. PAYMENT */}
-                      <td className="py-3 px-4 align-middle">
+                      <td className="py-2.5 px-2 align-middle">
                         <span
                           className={`inline-flex rounded-md border px-2 py-0.5 text-[10px] font-bold ${
                             getPayment(order) === "COD"
@@ -1243,7 +1267,7 @@ function ProcessingOrders() {
                       </td>
 
                       {/* 5. ORDER & ITEM */}
-                      <td className="py-3 px-4 align-middle">
+                      <td className="py-2.5 px-2 align-middle">
                         <div className="font-bold text-slate-800">
                           #{order.order_id || id}
                         </div>
@@ -1256,13 +1280,10 @@ function ProcessingOrders() {
                       </td>
 
                       {/* 6. WEIGHT */}
-                      <td className="py-3 px-4 align-middle">
-                        <div className="font-semibold text-slate-700">
-                          {getTotalWeight(order)}
-                        </div>
-                        <div className="text-[10px] text-slate-400">
-                          {getBoxCount(order)} Box
-                        </div>
+                      <td className="py-2.5 px-2 align-middle">
+                        <div className="font-semibold text-slate-800 whitespace-nowrap">{getTotalWeight(order)}</div>
+                        <div className="mt-0.5 text-[10px] text-slate-500 whitespace-nowrap">Vol: {getVolumetricWeight(order)}</div>
+                        <div className="text-[10px] text-slate-400 whitespace-nowrap">{getBoxCount(order)} Box</div>
                       </td>
 
                       {/* 7. ACTIONS */}
@@ -1271,7 +1292,7 @@ function ProcessingOrders() {
                           <button
                             type="button"
                             onClick={() => openShipPopup([id])}
-                            className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#f0ecff] text-[#7451ff] hover:bg-[#7451ff] hover:text-white transition active:scale-95"
+                            className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#e8f6fc] text-[#008dd2] hover:bg-[#008dd2] hover:text-white transition active:scale-95"
                             title="Ship Order"
                           >
                             <Icon name="truck" size={14} />
@@ -1321,7 +1342,7 @@ function ProcessingOrders() {
           <div className="w-full max-w-xl max-h-[90vh] flex flex-col rounded-t-3xl sm:rounded-2xl bg-white shadow-2xl overflow-hidden animate-in slide-in-from-bottom duration-200">
             <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
               <div className="flex items-center gap-2.5">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f2edff] text-[#7451ff]">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#e8f6fc] text-[#008dd2]">
                   <Icon name="truck" size={18} />
                 </div>
                 <div>
@@ -1344,7 +1365,7 @@ function ProcessingOrders() {
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3">
-              <div className="rounded-2xl border border-[#e5ddff] bg-[#faf8ff] p-3.5 flex items-center justify-between gap-3">
+              <div className="rounded-2xl border border-[#ccecf8] bg-[#f4fbfe] p-3.5 flex items-center justify-between gap-3">
                 <div>
                   <span className="text-xs font-bold text-slate-800">
                     Shipping Mode
@@ -1358,7 +1379,7 @@ function ProcessingOrders() {
                   value={shippingType}
                   onChange={handleShippingTypeChange}
                   disabled={previewLoading || shipping}
-                  className="h-9.5 rounded-xl border border-[#a996ff] bg-white px-3 text-xs font-bold text-slate-700 outline-none"
+                  className="h-9.5 rounded-xl border border-[#7cc9e8] bg-white px-3 text-xs font-bold text-slate-700 outline-none"
                 >
                   <option value="ROAD">Delivery By Road</option>
                   <option value="AIR">Delivery By Air</option>
@@ -1367,7 +1388,7 @@ function ProcessingOrders() {
 
               {previewLoading ? (
                 <div className="py-12 text-center">
-                  <div className="mx-auto mb-2.5 h-7 w-7 animate-spin rounded-full border-3 border-slate-200 border-t-[#7451ff]" />
+                  <div className="mx-auto mb-2.5 h-7 w-7 animate-spin rounded-full border-3 border-slate-200 border-t-[#008dd2]" />
                   <p className="text-xs font-medium text-slate-500">
                     Calculating shipping rates...
                   </p>
@@ -1393,7 +1414,7 @@ function ProcessingOrders() {
                           </div>
                         </div>
 
-                        <span className="font-extrabold text-[#7451ff] text-sm shrink-0">
+                        <span className="font-extrabold text-[#008dd2] text-sm shrink-0">
                           ₹{rate ? Number(rate.charge).toFixed(2) : "—"}
                         </span>
                       </div>
@@ -1414,7 +1435,7 @@ function ProcessingOrders() {
                   </p>
                 </div>
 
-                <span className="text-xl font-black text-[#7451ff]">
+                <span className="text-xl font-black text-[#008dd2]">
                   ₹{previewLoading ? "..." : previewTotal.toFixed(2)}
                 </span>
               </div>
@@ -1433,7 +1454,7 @@ function ProcessingOrders() {
                   type="button"
                   onClick={confirmShipNow}
                   disabled={shipping || previewLoading || previewTotal <= 0}
-                  className="flex-1 h-10.5 rounded-xl bg-[#7451ff] text-xs font-bold text-white shadow-xs active:scale-95 disabled:opacity-50 transition"
+                  className="flex-1 h-10.5 rounded-xl bg-[#008dd2] text-xs font-bold text-white shadow-xs active:scale-95 disabled:opacity-50 transition"
                 >
                   {shipping ? "Processing..." : "Confirm & Ship Now →"}
                 </button>
