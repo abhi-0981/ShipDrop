@@ -10,41 +10,6 @@
     rel="stylesheet">
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ParcelDrop</title>
-    <script>
-      (function() {
-        try {
-          var t = localStorage.getItem("parceldrop_theme");
-          if (!t) {
-            var u = localStorage.getItem("user");
-            if (u) {
-              var parsed = JSON.parse(u);
-              t = parsed.theme_preference;
-            }
-          }
-          var map = {
-            "ocean-blue": "forest-mint",
-            "forest-code-mint-fog": "forest-mint",
-            "deep-mahogany-warm-taupe": "mahogany-taupe",
-            "midnight-purple-neutral-gray": "purple-gray",
-            "forest-green-olive-green": "forest-olive",
-            "midnight-teal-sage-green": "teal-sage"
-          };
-          t = (t && map[t]) || t || "forest-mint";
-          var themes = {
-            "forest-mint": { p: "#075E46", bg: "#E8FFF2", rgb: "7, 94, 70" },
-            "mahogany-taupe": { p: "#1E1211", bg: "#B2A39D", rgb: "30, 18, 17" },
-            "purple-gray": { p: "#291A40", bg: "#B6B6B6", rgb: "41, 26, 64" },
-            "forest-olive": { p: "#173B16", bg: "#767D66", rgb: "23, 59, 22" },
-            "teal-sage": { p: "#0B2C3D", bg: "#858D71", rgb: "11, 44, 61" }
-          };
-          var cur = themes[t] || themes["forest-mint"];
-          document.documentElement.setAttribute("data-theme", t);
-          document.documentElement.style.setProperty("--theme-primary", cur.p);
-          document.documentElement.style.setProperty("--theme-bg", cur.bg);
-          document.documentElement.style.setProperty("--theme-primary-rgb", cur.rgb);
-        } catch(e) {}
-      })();
-    </script>
   </head>
   <body>
     <div id="root"></div>

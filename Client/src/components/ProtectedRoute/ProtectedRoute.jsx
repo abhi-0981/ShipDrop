@@ -31,12 +31,6 @@ function ProtectedRoute() {
         if (isMounted) {
           if (response.data?.user) {
             localStorage.setItem("user", JSON.stringify(response.data.user));
-            if (response.data.user.theme_preference) {
-              localStorage.setItem(
-                "parceldrop_theme",
-                response.data.user.theme_preference
-              );
-            }
           }
           setIsValidSession(true);
           setIsValidating(false);

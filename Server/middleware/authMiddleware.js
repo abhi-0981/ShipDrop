@@ -104,7 +104,7 @@ const authenticateUser = async (req, res, next) => {
     // Verify user exists in database
     const [userRows] = await promiseDb.query(
       `
-      SELECT id, full_name, company_name, gst_no, email, phone_no, role, profile_image, theme_preference, created_at
+      SELECT id, full_name, company_name, gst_no, email, phone_no, role, profile_image, created_at
       FROM users
       WHERE id = ?
       LIMIT 1
@@ -133,7 +133,6 @@ const authenticateUser = async (req, res, next) => {
       phone_no: user.phone_no,
       role: user.role,
       profile_image: user.profile_image || null,
-      theme_preference: user.theme_preference || "forest-mint",
       created_at: user.created_at,
       session_id: sessionId,
     };
