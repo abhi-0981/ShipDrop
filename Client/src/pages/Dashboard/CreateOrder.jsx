@@ -1778,7 +1778,7 @@ const handleRequiredFieldEnter = (e) => {
             <p className="mt-0.5 text-xs sm:text-sm text-slate-400">
               {isEditMode
                 ? "Update recipient details, items manifest or package specs"
-                : "Enter customer address, items manifest and package dimensions"}
+                : "Add delivery details, shipment items, and package dimensions."}
             </p>
           </div>
 
@@ -2424,7 +2424,7 @@ required
                   disabled={rateLoading}
                   className="flex h-11 items-center justify-center rounded-xl bg-[#008dd2] px-5 text-xs font-bold text-white shadow-sm shadow-[#008dd2]/20 transition hover:bg-[#007ab6] active:scale-95 disabled:opacity-60"
                 >
-                  {rateLoading ? "Calculating..." : "⚡ Check Rate"}
+                  {rateLoading ? "Shipping..." : "Ship Now"}
                 </button>
 
                 <button
