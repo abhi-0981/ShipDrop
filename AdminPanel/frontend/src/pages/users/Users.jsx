@@ -15,6 +15,8 @@ import {
   HiOutlineShieldCheck,
   HiOutlineX,
   HiOutlineExclamation,
+  HiOutlineExternalLink,
+  HiOutlineCheckCircle,
 } from "react-icons/hi";
 import toast from "react-hot-toast";
 import { API_BASE_URL } from "../../config/api";
@@ -41,6 +43,7 @@ function Users() {
   );
   const [isImpersonating, setIsImpersonating] = useState(false);
   const [impersonateError, setImpersonateError] = useState("");
+  const [directRedirectUrl, setDirectRedirectUrl] = useState("");
 
   // Close open dropdown on outside click
   useEffect(() => {
@@ -138,19 +141,50 @@ function Users() {
     if (isImpersonating) return;
     setImpersonateUser(null);
     setImpersonateError("");
+    setDirectRedirectUrl("");
   };
 
   const handleConfirmImpersonate = async () => {
     if (!impersonateUser) return;
 
+    // 1. Immediately open a blank new tab in direct response to the click event.
+    // This completely bypasses browser popup blockers on Chrome, Edge, Safari, and Firefox.
+    const newTab = window.open("about:blank", "_blank");
+    if (newTab) {
+      try {
+        newTab.document.title = `Opening ${impersonateUser.full_name || "Merchant"} Dashboard...`;
+        newTab.document.body.innerHTML = `
+          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; background-color: #f8fafc; color: #334155;">
+            <div style="width: 44px; height: 44px; border: 3px solid #e2e8f0; border-top-color: #008dd2; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+            <h3 style="margin-top: 20px; margin-bottom: 6px; font-size: 16px; font-weight: 600; color: #0f172a;">Connecting to Merchant Dashboard...</h3>
+            <p style="margin: 0; font-size: 13px; color: #64748b;">Authenticating support credentials for ${impersonateUser.full_name || "Merchant"}...</p>
+            <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
+          </div>
+        `;
+      } catch (e) {
+        // Fallback for about:blank access restrictions
+      }
+    }
+
     try {
       setIsImpersonating(true);
       setImpersonateError("");
+      setDirectRedirectUrl("");
 
-      const adminToken = localStorage.getItem("adminToken");
+      const adminToken =
+        localStorage.getItem("adminToken") ||
+        localStorage.getItem("token") ||
+        localStorage.getItem("admin_token");
+
       if (!adminToken) {
         throw new Error("Admin session not found. Please log in again.");
       }
+
+      // Compute client URL dynamically
+      const origin = window.location.origin;
+      const userAppUrl = origin.includes("localhost")
+        ? origin.replace(":5174", ":5173")
+        : "https://parceldrop.in";
 
       const response = await fetch(
         `${API_BASE_URL}/admin/impersonate/start`,
@@ -164,6 +198,7 @@ function Users() {
             target_user_id: impersonateUser.id,
             reason: impersonateReason.trim() || "Customer Support / Troubleshooting",
             admin_return_url: window.location.href,
+            user_app_url: userAppUrl,
           }),
         }
       );
@@ -177,17 +212,34 @@ function Users() {
       }
 
       toast.success(
-        `Opening dashboard for ${impersonateUser.full_name || "Merchant"}...`
+        `Opening dashboard for ${impersonateUser.full_name || "Merchant"} in new tab...`
       );
 
-      handleCloseImpersonateModal();
-
-      // Directly navigate to user dashboard without popup blocker interception
       if (data.redirect_url) {
-        window.location.href = data.redirect_url;
+        setDirectRedirectUrl(data.redirect_url);
+
+        // Redirect the already-opened new tab
+        if (newTab && !newTab.closed) {
+          newTab.location.href = data.redirect_url;
+        } else {
+          // If popup was somehow blocked, try window.open directly
+          const fallbackWin = window.open(data.redirect_url, "_blank");
+          if (!fallbackWin) {
+            // Popup blocker intercepted: direct clickable link will remain visible in the modal
+            return;
+          }
+        }
       }
+
+      // Close modal smoothly after brief moment
+      setTimeout(() => {
+        handleCloseImpersonateModal();
+      }, 700);
     } catch (err) {
       console.error("Impersonation error:", err);
+      if (newTab && !newTab.closed) {
+        newTab.close();
+      }
       setImpersonateError(err.message || "Failed to switch to user dashboard");
       toast.error(err.message || "Impersonation failed");
     } finally {
@@ -712,6 +764,26 @@ function Users() {
                   >
                     ×
                   </button>
+                </div>
+              )}
+              {directRedirectUrl && (
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50/90 p-3.5 text-center space-y-2">
+                  <div className="flex items-center justify-center gap-1.5 text-emerald-800 text-xs font-bold">
+                    <HiOutlineCheckCircle size={18} className="text-emerald-600 shrink-0" />
+                    <span>Support Session Ready!</span>
+                  </div>
+                  <p className="text-[11.5px] text-emerald-700">
+                    If the merchant dashboard did not open automatically in a new tab:
+                  </p>
+                  <a
+                    href={directRedirectUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-[#008dd2] text-white text-xs font-bold rounded-xl shadow-xs hover:bg-[#007cb8] transition"
+                  >
+                    <HiOutlineExternalLink size={15} />
+                    <span>Open Merchant Dashboard in New Tab &rarr;</span>
+                  </a>
                 </div>
               )}
             </div>

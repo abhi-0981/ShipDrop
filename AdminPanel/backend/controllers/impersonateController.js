@@ -183,9 +183,10 @@ const startImpersonation = async (req, res) => {
         JSON.stringify(safeUser),
         adminReturnUrl,
       ]
-    );
-
-    const userAppUrl = getUserAppUrl(req);
+    const userAppUrl =
+      (req.body.user_app_url &&
+        String(req.body.user_app_url).trim().replace(/\/+$/, "")) ||
+      getUserAppUrl(req);
     const redirectUrl = `${userAppUrl}/auth/impersonate?ticket=${ticketId}`;
 
     return res.status(200).json({

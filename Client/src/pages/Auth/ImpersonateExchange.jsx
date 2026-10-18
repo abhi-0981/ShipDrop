@@ -60,22 +60,32 @@ function ImpersonateExchange() {
 
         let data = null;
 
-        // 1. Try User backend exchange endpoint (/api/users/impersonate/exchange)
+        // 1. Try Admin backend first (where the ticket was directly generated)
         try {
-          const response = await api.post("/users/impersonate/exchange", { ticket });
-          data = response.data;
-        } catch (serverErr) {
-          // 2. Fallback: try Admin backend directly
           const adminBase = getAdminApiBase();
-          const fallbackRes = await fetch(`${adminBase}/admin/impersonate/exchange`, {
+          const adminRes = await fetch(`${adminBase}/admin/impersonate/exchange`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ ticket }),
           });
-          data = await fallbackRes.json().catch(() => ({}));
-          if (!fallbackRes.ok || data.success === false) {
+          const adminJson = await adminRes.json().catch(() => ({}));
+          if (adminRes.ok && adminJson.token) {
+            data = adminJson;
+          }
+        } catch (adminErr) {
+          console.warn("Admin backend exchange attempt error:", adminErr.message);
+        }
+
+        // 2. Fallback: try User backend (/api/users/impersonate/exchange) if not yet resolved
+        if (!data || !data.token) {
+          try {
+            const userRes = await api.post("/users/impersonate/exchange", { ticket });
+            data = userRes.data;
+          } catch (serverErr) {
             throw new Error(
-              data.message || serverErr.response?.data?.message || serverErr.message || "Exchange failed"
+              serverErr.response?.data?.message ||
+              serverErr.message ||
+              "Failed to validate impersonation ticket. The link may have expired or already been used."
             );
           }
         }
@@ -114,10 +124,10 @@ function ImpersonateExchange() {
 
         setStatus("success");
 
-        // Redirect to dashboard
+        // Navigate cleanly to merchant dashboard with full refresh
         setTimeout(() => {
-          navigate("/dashboard", { replace: true });
-        }, 500);
+          window.location.replace("/dashboard");
+        }, 400);
       } catch (err) {
         console.error("Ticket exchange error:", err);
         setStatus("error");
