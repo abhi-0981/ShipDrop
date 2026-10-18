@@ -41,10 +41,81 @@ async function ensureIndexes() {
       name: "idx_wallets_user_id",
       columns: "user_id",
     },
+    {
+      table: "user_sessions",
+      name: "idx_user_sessions_user_id",
+      columns: "user_id",
+    },
+    {
+      table: "user_sessions",
+      name: "idx_user_sessions_session_id",
+      columns: "session_id",
+    },
+    {
+      table: "user_sessions",
+      name: "idx_user_sessions_user_revoked",
+      columns: "user_id, is_revoked",
+    },
+    {
+      table: "user_sessions",
+      name: "idx_user_sessions_expires_at",
+      columns: "expires_at",
+    },
   ];
 
   try {
     const promiseDb = db.promise();
+
+    // 1. Ensure user_sessions table exists
+    try {
+      await promiseDb.query(`
+        CREATE TABLE IF NOT EXISTS user_sessions (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          session_id VARCHAR(64) NOT NULL,
+          user_id INT NOT NULL,
+          ip_address VARCHAR(45) NULL,
+          user_agent VARCHAR(500) NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          expires_at TIMESTAMP NOT NULL,
+          is_revoked TINYINT(1) DEFAULT 0,
+          revoked_at TIMESTAMP NULL,
+          UNIQUE KEY uk_user_sessions_session_id (session_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+      `);
+
+      // Verify columns in user_sessions if table pre-existed with different columns
+      const [cols] = await promiseDb.query(`
+        SELECT COLUMN_NAME
+        FROM information_schema.columns
+        WHERE table_schema = DATABASE()
+          AND table_name = 'user_sessions'
+      `);
+      const existingCols = (cols || []).map((c) => c.COLUMN_NAME.toLowerCase());
+
+      if (!existingCols.includes("session_id")) {
+        await promiseDb.query("ALTER TABLE user_sessions ADD COLUMN session_id VARCHAR(64) NOT NULL");
+      }
+      if (!existingCols.includes("user_id")) {
+        await promiseDb.query("ALTER TABLE user_sessions ADD COLUMN user_id INT NOT NULL");
+      }
+      if (!existingCols.includes("expires_at")) {
+        await promiseDb.query("ALTER TABLE user_sessions ADD COLUMN expires_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP");
+      }
+      if (!existingCols.includes("is_revoked")) {
+        await promiseDb.query("ALTER TABLE user_sessions ADD COLUMN is_revoked TINYINT(1) DEFAULT 0");
+      }
+      if (!existingCols.includes("revoked_at")) {
+        await promiseDb.query("ALTER TABLE user_sessions ADD COLUMN revoked_at TIMESTAMP NULL");
+      }
+      if (!existingCols.includes("ip_address")) {
+        await promiseDb.query("ALTER TABLE user_sessions ADD COLUMN ip_address VARCHAR(45) NULL");
+      }
+      if (!existingCols.includes("user_agent")) {
+        await promiseDb.query("ALTER TABLE user_sessions ADD COLUMN user_agent VARCHAR(500) NULL");
+      }
+    } catch (tblErr) {
+      console.warn("[DB OPTIMIZE] user_sessions table check notice:", tblErr.message);
+    }
 
     for (const idx of indexesToEnsure) {
       try {

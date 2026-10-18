@@ -1031,10 +1031,21 @@
       document.documentElement.classList.toggle("dark");
     };
 
-    const handleLogout = () => {
-      localStorage.removeItem("user");
-      toast.success("Logged out successfully");
-      navigate("/login");
+    const handleLogout = async () => {
+      try {
+        await api.post("/users/logout");
+      } catch (err) {
+        console.warn("Global logout API call:", err?.message || err);
+      } finally {
+        try {
+          localStorage.removeItem("user");
+          localStorage.removeItem("token");
+        } catch {
+          // ignore
+        }
+        toast.success("Logged out successfully");
+        navigate("/login", { replace: true });
+      }
     };
 
     const openProfile = () => {

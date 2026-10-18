@@ -62,10 +62,15 @@ function Login() {
       });
 
       const user = response.data?.user;
+      const token = response.data?.token;
 
       if (!user?.id) {
         toast.error("Login failed. Please try again.");
         return;
+      }
+
+      if (token) {
+        localStorage.setItem("token", token);
       }
 
       localStorage.setItem(

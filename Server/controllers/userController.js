@@ -1,6 +1,8 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
 const userModel = require("../models/userModel");
+const sessionModel = require("../models/sessionModel");
 
 // ========================================
 // PASSWORD VALIDATION
@@ -357,7 +359,80 @@ const loginUser = (req, res) => {
         }
 
         // ----------------------------------
-        // NEVER SEND PASSWORD
+        // CREATE 24-HOUR DATABASE SESSION
+        // ----------------------------------
+
+        const sessionId = crypto.randomUUID
+          ? crypto.randomUUID()
+          : crypto.randomBytes(32).toString("hex");
+
+        // Exact 24-hour expiry strictly enforced from creation time
+        const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+        const ipAddress = (
+          req.headers["x-forwarded-for"] ||
+          req.socket?.remoteAddress ||
+          ""
+        )
+          .split(",")[0]
+          .trim()
+          .slice(0, 45);
+
+        const userAgent = String(req.headers["user-agent"] || "").slice(0, 500);
+
+        try {
+          await sessionModel.createSession({
+            sessionId,
+            userId: user.id,
+            ipAddress,
+            userAgent,
+            expiresAt,
+          });
+        } catch (sessionError) {
+          console.error("Session creation error:", sessionError);
+          return res.status(500).json({
+            message: "Unable to create login session. Please try again.",
+          });
+        }
+
+        // ----------------------------------
+        // SIGN JWT TOKEN (24h validity)
+        // ----------------------------------
+
+        const jwtSecret =
+          process.env.JWT_SECRET || "PARCELDROP8384930619PRAHLADSINGH";
+
+        const token = jwt.sign(
+          {
+            id: user.id,
+            user_id: user.id,
+            email: user.email,
+            role: user.role,
+            session_id: sessionId,
+          },
+          jwtSecret,
+          {
+            expiresIn: "24h",
+          }
+        );
+
+        // ----------------------------------
+        // PERSISTENT HTTPONLY COOKIE
+        // ----------------------------------
+
+        const isProd =
+          process.env.NODE_ENV === "production" || !!process.env.VERCEL;
+
+        res.cookie("token", token, {
+          httpOnly: true,
+          secure: isProd,
+          sameSite: isProd ? "none" : "lax",
+          maxAge: 24 * 60 * 60 * 1000, // 24 hours persistent
+          path: "/",
+        });
+
+        // ----------------------------------
+        // RESPONSE (NEVER SEND PASSWORD)
         // ----------------------------------
 
         const safeUser = {
@@ -373,9 +448,13 @@ const loginUser = (req, res) => {
         };
 
         return res.status(200).json({
+          success: true,
           message: "Login successful",
           role: user.role,
           user: safeUser,
+          token,
+          sessionId,
+          expiresAt: expiresAt.toISOString(),
         });
       },
     );
@@ -615,9 +694,76 @@ const updateUserProfile = (req, res) => {
   );
 };
 
+// ========================================
+// LOGOUT (GLOBAL LOGOUT)
+// Revokes ALL active sessions for this user in MySQL
+// ========================================
+
+const logoutUser = async (req, res) => {
+  try {
+    const userId = req.user?.id || req.user?.user_id;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        code: "AUTH_REQUIRED",
+        message: "User not authenticated",
+      });
+    }
+
+    // Global Logout: revoke ALL active sessions for this user in MySQL
+    const result = await sessionModel.revokeAllUserSessions(userId);
+
+    // Clear persistent cookie
+    const isProd =
+      process.env.NODE_ENV === "production" || !!process.env.VERCEL;
+
+    res.clearCookie("token", {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: isProd ? "none" : "lax",
+      path: "/",
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Logged out successfully from all devices",
+      revokedCount: result?.affectedRows || 0,
+    });
+  } catch (error) {
+    console.error("Logout error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Unable to logout. Please try again.",
+    });
+  }
+};
+
+// ========================================
+// VERIFY ACTIVE SESSION
+// Used by ProtectedRoute and heartbeat checks
+// ========================================
+
+const verifySession = async (req, res) => {
+  try {
+    return res.status(200).json({
+      success: true,
+      valid: true,
+      user: req.user,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Session verification error",
+    });
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
+  logoutUser,
+  verifySession,
   getUserProfile,
   updateUserProfile,
 };
