@@ -5,6 +5,7 @@ import { Routes, Route } from "react-router-dom";
 import Home from "./pages/Home/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import ImpersonateExchange from "./pages/Auth/ImpersonateExchange";
 
 import ProtectedRoute from "./components/ProtectedRoute/ProtectedRoute";
 import DashboardLayout from "./pages/Dashboard/DashboardLayout";
@@ -55,6 +56,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/auth/impersonate" element={<ImpersonateExchange />} />
 
         {/* ========================================
             PROTECTED ROUTES

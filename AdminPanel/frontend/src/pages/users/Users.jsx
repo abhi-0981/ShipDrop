@@ -9,7 +9,14 @@ import {
   HiOutlinePhone,
   HiOutlineOfficeBuilding,
   HiOutlineCreditCard,
+  HiOutlineDotsVertical,
+  HiOutlineEye,
+  HiOutlineSwitchHorizontal,
+  HiOutlineShieldCheck,
+  HiOutlineX,
+  HiOutlineExclamation,
 } from "react-icons/hi";
+import toast from "react-hot-toast";
 import { API_BASE_URL } from "../../config/api";
 
 function Users() {
@@ -23,6 +30,28 @@ function Users() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
+
+  // Action dropdown state
+  const [openMenuId, setOpenMenuId] = useState(null);
+
+  // Impersonation modal states
+  const [impersonateUser, setImpersonateUser] = useState(null);
+  const [impersonateReason, setImpersonateReason] = useState(
+    "Customer Support / Troubleshooting"
+  );
+  const [isImpersonating, setIsImpersonating] = useState(false);
+  const [impersonateError, setImpersonateError] = useState("");
+
+  // Close open dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (!e.target.closest(".action-menu-container")) {
+        setOpenMenuId(null);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // =====================================================
   // FETCH USERS
@@ -93,6 +122,81 @@ function Users() {
 
   const openUser = (userId) => {
     navigate(`/users/${userId}`);
+  };
+
+  // =====================================================
+  // LOGIN AS USER (IMPERSONATION)
+  // =====================================================
+
+  const handleOpenImpersonateModal = (user) => {
+    setImpersonateUser(user);
+    setImpersonateReason("Customer Support / Troubleshooting");
+    setImpersonateError("");
+  };
+
+  const handleCloseImpersonateModal = () => {
+    if (isImpersonating) return;
+    setImpersonateUser(null);
+    setImpersonateError("");
+  };
+
+  const handleConfirmImpersonate = async () => {
+    if (!impersonateUser) return;
+
+    try {
+      setIsImpersonating(true);
+      setImpersonateError("");
+
+      const adminToken = localStorage.getItem("adminToken");
+      if (!adminToken) {
+        throw new Error("Admin session not found. Please log in again.");
+      }
+
+      const response = await fetch(
+        `${API_BASE_URL}/admin/impersonate/start`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${adminToken}`,
+          },
+          body: JSON.stringify({
+            target_user_id: impersonateUser.id,
+            reason: impersonateReason.trim() || "Customer Support / Troubleshooting",
+            admin_return_url: window.location.href,
+          }),
+        }
+      );
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok || data.success === false) {
+        throw new Error(
+          data.message || `Failed to start impersonation session (Status: ${response.status})`
+        );
+      }
+
+      toast.success(
+        `Opening dashboard for ${impersonateUser.full_name || "Merchant"}...`
+      );
+
+      handleCloseImpersonateModal();
+
+      // Open user dashboard in a new tab so admin panel remains undisturbed
+      if (data.redirect_url) {
+        const newWindow = window.open(data.redirect_url, "_blank");
+        if (!newWindow || newWindow.closed || typeof newWindow.closed === "undefined") {
+          // If popup blocker intervened, redirect in current window
+          window.location.href = data.redirect_url;
+        }
+      }
+    } catch (err) {
+      console.error("Impersonation error:", err);
+      setImpersonateError(err.message || "Failed to switch to user dashboard");
+      toast.error(err.message || "Impersonation failed");
+    } finally {
+      setIsImpersonating(false);
+    }
   };
 
   // =====================================================
@@ -242,7 +346,51 @@ function Users() {
                   <span className="inline-flex rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-bold capitalize text-slate-600">
                     {user.role || "user"}
                   </span>
-                  <HiOutlineChevronRight size={15} className="text-slate-300" />
+                  <div className="relative action-menu-container">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setOpenMenuId(
+                          openMenuId === `m-${user.id}` ? null : `m-${user.id}`
+                        );
+                      }}
+                      className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 shadow-2xs transition hover:text-[#008dd2]"
+                      title="Actions"
+                    >
+                      <HiOutlineDotsVertical size={14} />
+                    </button>
+
+                    {openMenuId === `m-${user.id}` && (
+                      <div
+                        onClick={(e) => e.stopPropagation()}
+                        className="absolute right-0 z-50 mt-1 w-44 rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg animate-in fade-in zoom-in-95 duration-100"
+                      >
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setOpenMenuId(null);
+                            openUser(user.id);
+                          }}
+                          className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-[#008dd2]"
+                        >
+                          <HiOutlineEye size={15} className="text-slate-400" />
+                          View Profile
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setOpenMenuId(null);
+                            handleOpenImpersonateModal(user);
+                          }}
+                          className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-[#008dd2] hover:bg-[#008dd2]/10"
+                        >
+                          <HiOutlineSwitchHorizontal size={15} />
+                          Login as User
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -393,18 +541,51 @@ function Users() {
                     </td>
 
                     {/* ACTION */}
-                    <td className="px-5 py-3.5 text-right">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openUser(user.id);
-                        }}
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-[#008dd2]/10 hover:text-[#008dd2]"
-                        title="View Profile"
-                      >
-                        <HiOutlineChevronRight size={16} />
-                      </button>
+                    <td className="px-5 py-3.5 text-right relative">
+                      <div className="relative inline-block text-left action-menu-container">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setOpenMenuId(openMenuId === user.id ? null : user.id);
+                          }}
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 shadow-2xs transition hover:border-[#008dd2]/40 hover:text-[#008dd2] active:scale-95"
+                          title="Actions Menu"
+                        >
+                          <HiOutlineDotsVertical size={16} />
+                        </button>
+
+                        {openMenuId === user.id && (
+                          <div
+                            onClick={(e) => e.stopPropagation()}
+                            className="absolute right-0 z-50 mt-1 w-48 rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg animate-in fade-in zoom-in-95 duration-100 text-left"
+                          >
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setOpenMenuId(null);
+                                openUser(user.id);
+                              }}
+                              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-[#008dd2]"
+                            >
+                              <HiOutlineEye size={15} className="text-slate-400" />
+                              View Profile
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setOpenMenuId(null);
+                                handleOpenImpersonateModal(user);
+                              }}
+                              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-[#008dd2] transition hover:bg-[#008dd2]/10"
+                            >
+                              <HiOutlineSwitchHorizontal size={15} />
+                              Login as User
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -413,6 +594,165 @@ function Users() {
           </table>
         </div>
       </div>
+
+      {/* ================================================= */}
+      {/* CONFIRMATION MODAL: LOGIN AS USER (IMPERSONATION) */}
+      {/* ================================================= */}
+      {impersonateUser && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4 animate-in fade-in duration-150"
+          onClick={handleCloseImpersonateModal}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150"
+          >
+            {/* MODAL HEADER */}
+            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4 bg-slate-50/60">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#008dd2]/10 text-[#008dd2]">
+                  <HiOutlineShieldCheck size={22} />
+                </div>
+                <div>
+                  <h3 className="text-sm sm:text-base font-bold text-slate-900 leading-tight">
+                    Login as User (Support Mode)
+                  </h3>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    Authorized troubleshooting access to merchant dashboard
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                disabled={isImpersonating}
+                onClick={handleCloseImpersonateModal}
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 disabled:opacity-50"
+              >
+                <HiOutlineX size={18} />
+              </button>
+            </div>
+
+            {/* MODAL BODY */}
+            <div className="p-5 space-y-4">
+              {/* TARGET USER CARD */}
+              <div className="rounded-xl border border-slate-200/80 bg-slate-50/80 p-3.5 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    Target Merchant Account
+                  </span>
+                  <span className="font-mono text-[10px] font-bold text-[#008dd2] bg-[#008dd2]/10 px-2 py-0.5 rounded-md">
+                    UID #{impersonateUser.id}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-3 pt-1">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[#008dd2]/10 text-[#008dd2]">
+                    {impersonateUser.profile_image ? (
+                      <img
+                        src={impersonateUser.profile_image}
+                        alt=""
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <HiOutlineUserCircle size={24} />
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs sm:text-sm font-bold text-slate-900 truncate">
+                      {impersonateUser.full_name || "Merchant"}
+                    </p>
+                    <p className="text-[11px] text-slate-500 truncate mt-0.5">
+                      {impersonateUser.email || "No email"}
+                    </p>
+                    {impersonateUser.company_name && (
+                      <p className="text-[10px] text-slate-400 truncate mt-0.5 font-medium">
+                        {impersonateUser.company_name}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* WARNING NOTICE */}
+              <div className="rounded-xl border border-amber-200 bg-amber-50/80 p-3.5 flex items-start gap-2.5 text-amber-900">
+                <HiOutlineExclamation
+                  size={18}
+                  className="shrink-0 text-amber-600 mt-0.5"
+                />
+                <div className="text-[11.5px] leading-relaxed">
+                  <p className="font-bold text-amber-800">
+                    Authorized Troubleshooting Notice
+                  </p>
+                  <p className="mt-0.5 text-amber-700">
+                    You are accessing this merchant's account without requiring their password. All actions taken will be recorded in the security audit log with your Administrator ID. Sensitive actions like resetting passwords are automatically restricted.
+                  </p>
+                </div>
+              </div>
+
+              {/* REASON INPUT */}
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+                  Reason for Access (Audit Trail)
+                </label>
+                <input
+                  type="text"
+                  value={impersonateReason}
+                  onChange={(e) => setImpersonateReason(e.target.value)}
+                  disabled={isImpersonating}
+                  placeholder="e.g. Troubleshooting shipment tracking issue..."
+                  className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-[#008dd2] focus:ring-2 focus:ring-[#008dd2]/10 disabled:bg-slate-50 disabled:text-slate-400"
+                />
+              </div>
+
+              {/* ERROR NOTICE */}
+              {impersonateError && (
+                <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700 flex items-center justify-between">
+                  <span>{impersonateError}</span>
+                  <button
+                    type="button"
+                    onClick={() => setImpersonateError("")}
+                    className="text-rose-400 hover:text-rose-600 font-bold ml-2"
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* MODAL FOOTER */}
+            <div className="flex items-center justify-end gap-2.5 border-t border-slate-100 bg-slate-50/80 px-5 py-3.5">
+              <button
+                type="button"
+                disabled={isImpersonating}
+                onClick={handleCloseImpersonateModal}
+                className="h-9 rounded-xl border border-slate-200 bg-white px-4 text-xs font-bold text-slate-600 transition hover:bg-slate-50 hover:text-slate-800 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                disabled={isImpersonating}
+                onClick={handleConfirmImpersonate}
+                className="inline-flex h-9 items-center justify-center gap-2 rounded-xl bg-[#008dd2] px-4 text-xs font-bold text-white shadow-xs transition hover:bg-[#007cb8] active:scale-95 disabled:opacity-60 disabled:pointer-events-none"
+              >
+                {isImpersonating ? (
+                  <>
+                    <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                    <span>Accessing Dashboard...</span>
+                  </>
+                ) : (
+                  <>
+                    <HiOutlineSwitchHorizontal size={16} />
+                    <span>Confirm & Login as User</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

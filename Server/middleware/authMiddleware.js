@@ -135,6 +135,9 @@ const authenticateUser = async (req, res, next) => {
       profile_image: user.profile_image || null,
       created_at: user.created_at,
       session_id: sessionId,
+      is_impersonated: Boolean(decoded.is_impersonated),
+      impersonated_by: decoded.impersonated_by || null,
+      impersonation_log_id: decoded.impersonation_log_id || null,
     };
 
     return next();

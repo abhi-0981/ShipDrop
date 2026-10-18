@@ -53,7 +53,10 @@ console.log(
 
 require("./config/db");
 const { ensureIndexes } = require("./config/ensureIndexes");
+const { ensureTables } = require("./config/ensureTables");
+
 ensureIndexes().catch((err) => console.warn("ensureIndexes notice:", err.message));
+ensureTables().catch((err) => console.warn("ensureTables notice:", err.message));
 
 
 // ======================================================

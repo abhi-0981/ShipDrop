@@ -456,6 +456,14 @@ const getSessionUser = (req, res) => {
     return res.status(200).json({
       success: true,
       user: safeUser,
+      impersonation: req.user.is_impersonated
+        ? {
+            active: true,
+            admin: req.user.impersonated_by,
+            session_id: req.user.session_id,
+            log_id: req.user.impersonation_log_id,
+          }
+        : null,
     });
   } catch (error) {
     console.error("Get session user error:", error);
@@ -483,7 +491,33 @@ const logoutUser = async (req, res) => {
 
     const promiseDb = db.promise();
 
-    // Revoke all active sessions belonging to this user
+    // If an admin is impersonating the user, revoke ONLY this specific impersonation session
+    if (req.user.is_impersonated) {
+      await promiseDb.query(
+        `
+        UPDATE user_sessions
+        SET revoked_at = NOW()
+        WHERE session_id = ?
+        `,
+        [req.user.session_id]
+      );
+
+      await promiseDb.query(
+        `
+        UPDATE admin_impersonation_logs
+        SET status = 'ENDED', ended_at = NOW()
+        WHERE session_id = ? AND status = 'ACTIVE'
+        `,
+        [req.user.session_id]
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: "Admin support session ended successfully.",
+      });
+    }
+
+    // Normal User Logout: Revoke all active sessions belonging to this user
     await promiseDb.query(
       `
       UPDATE user_sessions
@@ -571,6 +605,17 @@ const getUserProfile = (req, res) => {
 // ========================================
 
 const updateUserProfile = (req, res) => {
+  // Security restriction during impersonation
+  if (req.user?.is_impersonated) {
+    if (req.body.password || req.body.new_password || req.body.current_password) {
+      return res.status(403).json({
+        success: false,
+        message:
+          "Security restriction: Modifying account credentials is not permitted in Admin Support mode.",
+      });
+    }
+  }
+
   let {
     user_id,
     full_name,

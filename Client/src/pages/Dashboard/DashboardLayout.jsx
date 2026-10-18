@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 
 import Sidebar from "../../components/Sidebar/Sidebar";
 import TopNavbar from "../../components/Navbar/TopNavbar";
+import ImpersonationBanner from "../../components/Common/ImpersonationBanner";
 import { setupOrderCrossTabSync } from "../../services/orderEvents";
 
 function DashboardLayout() {
@@ -44,6 +45,9 @@ function DashboardLayout() {
           collapsed ? "pl-0" : "pl-0 lg:pl-[250px]"
         }`}
       >
+        {/* ADMIN SUPPORT MODE BANNER (Rendered when active) */}
+        <ImpersonationBanner />
+
         <div className="w-full max-w-[1600px] mx-auto">
           <Outlet />
         </div>

@@ -20,6 +20,12 @@ const rateCardRoutes = require("./routes/rateCardRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const userRoutes = require("./routes/userRoutes");
 const weightCheckingRoutes = require("./routes/weightCheckingRoutes");  
+const impersonateRoutes = require("./routes/impersonateRoutes");
+const { ensureTables } = require("./config/ensureTables");
+
+ensureTables().catch((err) =>
+  console.warn("AdminPanel ensureTables notice:", err.message)
+);
 
 // =====================================================
 // APP
@@ -290,6 +296,15 @@ app.use(
 app.use(
   "/api/admin/weight-checking",
   weightCheckingRoutes
+);
+
+// =====================================================
+// IMPERSONATION ROUTES (LOGIN AS USER)
+// =====================================================
+
+app.use(
+  "/api/admin/impersonate",
+  impersonateRoutes
 );
 
 // =====================================================

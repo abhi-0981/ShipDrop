@@ -1032,6 +1032,32 @@
     };
 
     const handleLogout = async () => {
+      const rawImp = localStorage.getItem("shipdrop_impersonation");
+      let impersonation = null;
+      try {
+        impersonation = rawImp ? JSON.parse(rawImp) : null;
+      } catch {
+        // parsing error
+      }
+
+      if (impersonation?.active) {
+        try {
+          await api.post("/users/impersonate/end", {
+            session_id: impersonation.session_id,
+          });
+        } catch {
+          // continue
+        }
+        const returnUrl =
+          impersonation.admin_return_url || "http://localhost:5174/users";
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        localStorage.removeItem("shipdrop_impersonation");
+        toast.success("Returned from Admin Support mode");
+        window.location.href = returnUrl;
+        return;
+      }
+
       try {
         await api.post("/users/logout");
         localStorage.removeItem("token");

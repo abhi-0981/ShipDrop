@@ -52,9 +52,21 @@ api.interceptors.response.use(
       requestUrl.includes("/users/register");
 
     if (status === 401 && !isAuthRoute) {
+      let adminReturnUrl = null;
+      try {
+        const rawImp = localStorage.getItem("shipdrop_impersonation");
+        if (rawImp) {
+          const parsed = JSON.parse(rawImp);
+          adminReturnUrl = parsed.admin_return_url;
+        }
+      } catch (e) {
+        // Storage access safety
+      }
+
       try {
         localStorage.removeItem("token");
         localStorage.removeItem("user");
+        localStorage.removeItem("shipdrop_impersonation");
       } catch (e) {
         // Storage access safety
       }
@@ -64,11 +76,15 @@ api.interceptors.response.use(
         typeof window !== "undefined" ? window.location.pathname : "";
 
       // Guard against redirect loops and duplicate triggers from concurrent requests
-      if (!isRedirecting && !publicPaths.includes(currentPath)) {
+      if (!isRedirecting && (!publicPaths.includes(currentPath) || adminReturnUrl)) {
         isRedirecting = true;
         if (typeof window !== "undefined") {
           window.dispatchEvent(new CustomEvent("shipdrop:session-expired"));
-          window.location.href = "/login";
+          if (adminReturnUrl) {
+            window.location.href = adminReturnUrl;
+          } else {
+            window.location.href = "/login";
+          }
         }
       }
     }

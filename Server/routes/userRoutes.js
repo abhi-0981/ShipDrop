@@ -11,6 +11,11 @@ const {
   updateUserProfile,
 } = require("../controllers/userController");
 
+const {
+  exchangeTicket,
+  endImpersonationSession,
+} = require("../controllers/impersonationController");
+
 const { authenticateUser } = require("../middleware/authMiddleware");
 
 // ========================================
@@ -20,6 +25,16 @@ const { authenticateUser } = require("../middleware/authMiddleware");
 router.post("/register", registerUser);
 
 router.post("/login", loginUser);
+
+// ========================================
+// IMPERSONATION ROUTES
+// ========================================
+
+// Public exchange of single-use ticket for user session token
+router.post("/impersonate/exchange", exchangeTicket);
+
+// End impersonation session
+router.post("/impersonate/end", authenticateUser, endImpersonationSession);
 
 // ========================================
 // PROTECTED SESSION MANAGEMENT ROUTES
