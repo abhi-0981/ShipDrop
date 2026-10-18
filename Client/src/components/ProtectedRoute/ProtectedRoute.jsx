@@ -19,11 +19,48 @@ function ProtectedRoute() {
     );
   }
 
-  const [isValidating, setIsValidating] = useState(true);
-  const [isValidSession, setIsValidSession] = useState(false);
+  // Check if current session is an active admin support (impersonation) session
+  let isImpersonated = false;
+  try {
+    const rawImp = localStorage.getItem("shipdrop_impersonation");
+    if (rawImp) {
+      const parsed = JSON.parse(rawImp);
+      if (parsed.active && parsed.target_user_id) {
+        isImpersonated = true;
+      }
+    }
+  } catch (e) {
+    // Storage access safety
+  }
+
+  // Support mode sessions are verified by the single-use ticket exchange, so bypass blocking loader
+  const [isValidating, setIsValidating] = useState(!isImpersonated);
+  const [isValidSession, setIsValidSession] = useState(isImpersonated);
 
   useEffect(() => {
     let isMounted = true;
+
+    // If support mode is active, do not block the UI or wipe credentials on background check
+    if (isImpersonated) {
+      setIsValidSession(true);
+      setIsValidating(false);
+
+      // Opportunistically fetch session updates in background without blocking
+      api
+        .get("/users/session")
+        .then((response) => {
+          if (isMounted && response.data?.user) {
+            localStorage.setItem("user", JSON.stringify(response.data.user));
+          }
+        })
+        .catch((err) => {
+          console.warn("Background session check in support mode:", err.message);
+        });
+
+      return () => {
+        isMounted = false;
+      };
+    }
 
     const validateSession = async () => {
       try {
@@ -50,7 +87,7 @@ function ProtectedRoute() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [isImpersonated]);
 
   // Do not expose protected pages before server-side validation completes
   if (isValidating) {

@@ -52,15 +52,26 @@ api.interceptors.response.use(
       requestUrl.includes("/users/register");
 
     if (status === 401 && !isAuthRoute) {
+      let isImpersonated = false;
       let adminReturnUrl = null;
+
       try {
         const rawImp = localStorage.getItem("shipdrop_impersonation");
         if (rawImp) {
           const parsed = JSON.parse(rawImp);
+          if (parsed.active) {
+            isImpersonated = true;
+          }
           adminReturnUrl = parsed.admin_return_url;
         }
       } catch (e) {
         // Storage access safety
+      }
+
+      // If active in support mode, do not abruptly destroy session and bounce back to admin panel
+      if (isImpersonated) {
+        console.warn("API 401 caught while in support mode for:", requestUrl);
+        return Promise.reject(error);
       }
 
       try {
@@ -76,15 +87,11 @@ api.interceptors.response.use(
         typeof window !== "undefined" ? window.location.pathname : "";
 
       // Guard against redirect loops and duplicate triggers from concurrent requests
-      if (!isRedirecting && (!publicPaths.includes(currentPath) || adminReturnUrl)) {
+      if (!isRedirecting && !publicPaths.includes(currentPath)) {
         isRedirecting = true;
         if (typeof window !== "undefined") {
           window.dispatchEvent(new CustomEvent("shipdrop:session-expired"));
-          if (adminReturnUrl) {
-            window.location.href = adminReturnUrl;
-          } else {
-            window.location.href = "/login";
-          }
+          window.location.href = "/login";
         }
       }
     }
