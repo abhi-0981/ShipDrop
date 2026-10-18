@@ -10,6 +10,28 @@
     rel="stylesheet">
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ParcelDrop</title>
+    <script>
+      (function() {
+        try {
+          var saved = localStorage.getItem("parceldrop_theme");
+          if (!saved) {
+            var raw = localStorage.getItem("user");
+            if (raw) {
+              var user = JSON.parse(raw);
+              saved = user && user.theme_preference;
+            }
+          }
+          var valid = ["ocean-blue", "forest-mint", "mahogany-taupe", "midnight-purple", "forest-olive", "midnight-teal"];
+          if (saved && valid.indexOf(saved) !== -1) {
+            document.documentElement.setAttribute("data-theme", saved);
+          } else {
+            document.documentElement.setAttribute("data-theme", "ocean-blue");
+          }
+        } catch (e) {
+          document.documentElement.setAttribute("data-theme", "ocean-blue");
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

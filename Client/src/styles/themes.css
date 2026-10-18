@@ -1,0 +1,252 @@
+/* ============================================================================
+   PARCELDROP THEME ENGINE — CENTRALIZED CSS VARIABLES & ADAPTIVE STYLES
+   ============================================================================ */
+
+/* ----------------------------------------------------------------------------
+   1. CSS VARIABLES DECLARATIONS PER THEME
+   ---------------------------------------------------------------------------- */
+
+:root,
+[data-theme="ocean-blue"] {
+  --theme-primary: #008DD2;
+  --theme-primary-hover: #007bb8;
+  --theme-primary-light: #EDF8FF;
+  --theme-primary-border: rgba(0, 141, 210, 0.25);
+  --theme-primary-ring: rgba(0, 141, 210, 0.18);
+  --theme-bg: #f6f8fb;
+  --theme-surface: #FFFFFF;
+  --theme-text: #172033;
+  --theme-text-muted: #64748B;
+  --theme-border: #E2E8F0;
+  --theme-input-bg: #FFFFFF;
+  --theme-header-bg: #FFFFFF;
+  --theme-sidebar-bg: #FFFFFF;
+}
+
+[data-theme="forest-mint"] {
+  --theme-primary: #075E46;
+  --theme-primary-hover: #054835;
+  --theme-primary-light: #D8F5E5;
+  --theme-primary-border: rgba(7, 94, 70, 0.35);
+  --theme-primary-ring: rgba(7, 94, 70, 0.2);
+  --theme-bg: #E8FFF2;
+  --theme-surface: #FFFFFF;
+  --theme-text: #064E3B;
+  --theme-text-muted: #1e6b56;
+  --theme-border: #BCEBD2;
+  --theme-input-bg: #FFFFFF;
+  --theme-header-bg: #FFFFFF;
+  --theme-sidebar-bg: #FFFFFF;
+}
+
+[data-theme="mahogany-taupe"] {
+  --theme-primary: #1E1211;
+  --theme-primary-hover: #382523;
+  --theme-primary-light: #E5DEDA;
+  --theme-primary-border: rgba(30, 18, 17, 0.35);
+  --theme-primary-ring: rgba(30, 18, 17, 0.2);
+  --theme-bg: #B2A39D;
+  --theme-surface: #F2EAE6;
+  --theme-text: #2A1D1A;
+  --theme-text-muted: #574642;
+  --theme-border: #9F8F88;
+  --theme-input-bg: #F8F3F0;
+  --theme-header-bg: #F2EAE6;
+  --theme-sidebar-bg: #F2EAE6;
+}
+
+[data-theme="midnight-purple"] {
+  --theme-primary: #291A40;
+  --theme-primary-hover: #402C60;
+  --theme-primary-light: #E4E0EC;
+  --theme-primary-border: rgba(41, 26, 64, 0.35);
+  --theme-primary-ring: rgba(41, 26, 64, 0.2);
+  --theme-bg: #B6B6B6;
+  --theme-surface: #F1F0F3;
+  --theme-text: #241832;
+  --theme-text-muted: #554A65;
+  --theme-border: #A4A2A8;
+  --theme-input-bg: #F8F7F9;
+  --theme-header-bg: #F1F0F3;
+  --theme-sidebar-bg: #F1F0F3;
+}
+
+[data-theme="forest-olive"] {
+  --theme-primary: #173B16;
+  --theme-primary-hover: #2A5A29;
+  --theme-primary-light: #DBE4CB;
+  --theme-primary-border: rgba(23, 59, 22, 0.35);
+  --theme-primary-ring: rgba(23, 59, 22, 0.2);
+  --theme-bg: #767D66;
+  --theme-surface: #E8EBDD;
+  --theme-text: #182817;
+  --theme-text-muted: #495443;
+  --theme-border: #5F6851;
+  --theme-input-bg: #F2F4EC;
+  --theme-header-bg: #E8EBDD;
+  --theme-sidebar-bg: #E8EBDD;
+}
+
+[data-theme="midnight-teal"] {
+  --theme-primary: #0B2C3D;
+  --theme-primary-hover: #164861;
+  --theme-primary-light: #D8E2CF;
+  --theme-primary-border: rgba(11, 44, 61, 0.35);
+  --theme-primary-ring: rgba(11, 44, 61, 0.2);
+  --theme-bg: #858D71;
+  --theme-surface: #E8EBDD;
+  --theme-text: #142D32;
+  --theme-text-muted: #485C5B;
+  --theme-border: #6D765B;
+  --theme-input-bg: #F2F4EC;
+  --theme-header-bg: #E8EBDD;
+  --theme-sidebar-bg: #E8EBDD;
+}
+
+/* ----------------------------------------------------------------------------
+   2. APPLIED RULES FOR OPTIONAL THEMES (NON-DEFAULT)
+   When data-theme="ocean-blue", NONE of these override rules apply.
+   ParcelDrop Classic remains 100% untouched and original.
+   ---------------------------------------------------------------------------- */
+
+/* Canvas / Page Background */
+html[data-theme]:not([data-theme="ocean-blue"]),
+html[data-theme]:not([data-theme="ocean-blue"]) body,
+html[data-theme]:not([data-theme="ocean-blue"]) .bg-\[\#f6f8fb\],
+html[data-theme]:not([data-theme="ocean-blue"]) main {
+  background-color: var(--theme-bg) !important;
+  color: var(--theme-text);
+}
+
+/* Primary Color Overrides (Buttons, Badges, Icons, Brand Headings) */
+html[data-theme]:not([data-theme="ocean-blue"]) .bg-\[\#008dd2\],
+html[data-theme]:not([data-theme="ocean-blue"]) [class*="bg-[#008dd2]"] {
+  background-color: var(--theme-primary) !important;
+  color: #FFFFFF !important;
+}
+
+html[data-theme]:not([data-theme="ocean-blue"]) .text-\[\#008dd2\],
+html[data-theme]:not([data-theme="ocean-blue"]) [class*="text-[#008dd2]"] {
+  color: var(--theme-primary) !important;
+}
+
+html[data-theme]:not([data-theme="ocean-blue"]) .border-\[\#008dd2\],
+html[data-theme]:not([data-theme="ocean-blue"]) [class*="border-[#008dd2]"] {
+  border-color: var(--theme-primary) !important;
+}
+
+html[data-theme]:not([data-theme="ocean-blue"]) [class*="hover:bg-[#007fbd]"]:hover,
+html[data-theme]:not([data-theme="ocean-blue"]) [class*="hover:bg-[#007ab6]"]:hover {
+  background-color: var(--theme-primary-hover) !important;
+}
+
+html[data-theme]:not([data-theme="ocean-blue"]) [class*="focus:border-[#008dd2]"]:focus {
+  border-color: var(--theme-primary) !important;
+}
+
+html[data-theme]:not([data-theme="ocean-blue"]) [class*="focus:ring-[#008dd2]"]:focus,
+html[data-theme]:not([data-theme="ocean-blue"]) [class*="focus-within:ring-[#008dd2]"]:focus-within {
+  --tw-ring-color: var(--theme-primary-ring) !important;
+}
+
+/* Light primary accents (active submenus, stat icons, pills) */
+html[data-theme]:not([data-theme="ocean-blue"]) .bg-sky-50,
+html[data-theme]:not([data-theme="ocean-blue"]) .bg-blue-50,
+html[data-theme]:not([data-theme="ocean-blue"]) .bg-\[\#edf8ff\],
+html[data-theme]:not([data-theme="ocean-blue"]) [class*="bg-[#edf8ff]"] {
+  background-color: var(--theme-primary-light) !important;
+}
+
+html[data-theme]:not([data-theme="ocean-blue"]) .text-sky-600,
+html[data-theme]:not([data-theme="ocean-blue"]) .text-blue-600 {
+  color: var(--theme-primary) !important;
+}
+
+/* Header, Sidebar, and Mobile Nav Surfaces */
+html[data-theme]:not([data-theme="ocean-blue"]) header,
+html[data-theme]:not([data-theme="ocean-blue"]) aside,
+html[data-theme]:not([data-theme="ocean-blue"]) nav.fixed.bottom-0 {
+  background-color: var(--theme-surface) !important;
+  border-color: var(--theme-border) !important;
+}
+
+/* Surface Cards & Containers inside dashboard main content (preserving colored status badges) */
+html[data-theme]:not([data-theme="ocean-blue"]) main .bg-white:not([class*="bg-[#008dd2]"]):not([class*="bg-emerald"]):not([class*="bg-amber"]):not([class*="bg-rose"]):not([class*="bg-red"]):not([class*="bg-green"]):not([class*="bg-blue-500"]):not([class*="bg-indigo"]),
+html[data-theme]:not([data-theme="ocean-blue"]) aside .bg-white:not([class*="bg-[#008dd2]"]):not([class*="bg-emerald"]):not([class*="bg-amber"]):not([class*="bg-rose"]):not([class*="bg-red"]) {
+  background-color: var(--theme-surface) !important;
+  border-color: var(--theme-border) !important;
+}
+
+/* Modals & Dropdown menus */
+html[data-theme]:not([data-theme="ocean-blue"]) [role="dialog"] .bg-white:not([class*="bg-[#008dd2]"]):not([class*="bg-emerald"]):not([class*="bg-amber"]):not([class*="bg-rose"]):not([class*="bg-red"]),
+html[data-theme]:not([data-theme="ocean-blue"]) [role="menu"],
+html[data-theme]:not([data-theme="ocean-blue"]) .shadow-2xl.bg-white,
+html[data-theme]:not([data-theme="ocean-blue"]) .shadow-xl.bg-white {
+  background-color: var(--theme-surface) !important;
+  border-color: var(--theme-border) !important;
+}
+
+/* Form Inputs, Dropdowns, Selects, and Textareas */
+html[data-theme]:not([data-theme="ocean-blue"]) input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="file"]),
+html[data-theme]:not([data-theme="ocean-blue"]) select,
+html[data-theme]:not([data-theme="ocean-blue"]) textarea {
+  background-color: var(--theme-input-bg) !important;
+  border-color: var(--theme-border) !important;
+  color: var(--theme-text) !important;
+}
+
+html[data-theme]:not([data-theme="ocean-blue"]) input::placeholder,
+html[data-theme]:not([data-theme="ocean-blue"]) textarea::placeholder {
+  color: var(--theme-text-muted) !important;
+  opacity: 0.75;
+}
+
+/* Headings & High Contrast Text */
+html[data-theme]:not([data-theme="ocean-blue"]) .text-slate-900,
+html[data-theme]:not([data-theme="ocean-blue"]) .text-slate-800,
+html[data-theme]:not([data-theme="ocean-blue"]) .text-slate-700,
+html[data-theme]:not([data-theme="ocean-blue"]) .text-gray-900,
+html[data-theme]:not([data-theme="ocean-blue"]) .text-gray-800,
+html[data-theme]:not([data-theme="ocean-blue"]) .text-\[\#172033\] {
+  color: var(--theme-text) !important;
+}
+
+/* Muted & Secondary Text */
+html[data-theme]:not([data-theme="ocean-blue"]) .text-slate-600,
+html[data-theme]:not([data-theme="ocean-blue"]) .text-slate-500,
+html[data-theme]:not([data-theme="ocean-blue"]) .text-slate-400,
+html[data-theme]:not([data-theme="ocean-blue"]) .text-gray-600,
+html[data-theme]:not([data-theme="ocean-blue"]) .text-gray-500 {
+  color: var(--theme-text-muted) !important;
+}
+
+/* Borders & Dividers */
+html[data-theme]:not([data-theme="ocean-blue"]) .border-slate-100,
+html[data-theme]:not([data-theme="ocean-blue"]) .border-slate-200,
+html[data-theme]:not([data-theme="ocean-blue"]) .border-gray-100,
+html[data-theme]:not([data-theme="ocean-blue"]) .border-gray-200,
+html[data-theme]:not([data-theme="ocean-blue"]) .divide-slate-100 > :not([hidden]) ~ :not([hidden]),
+html[data-theme]:not([data-theme="ocean-blue"]) .divide-slate-200 > :not([hidden]) ~ :not([hidden]) {
+  border-color: var(--theme-border) !important;
+}
+
+/* Tables & Table Headers */
+html[data-theme]:not([data-theme="ocean-blue"]) table thead,
+html[data-theme]:not([data-theme="ocean-blue"]) table thead tr,
+html[data-theme]:not([data-theme="ocean-blue"]) table thead th {
+  background-color: var(--theme-primary-light) !important;
+  color: var(--theme-text) !important;
+  border-color: var(--theme-border) !important;
+}
+
+html[data-theme]:not([data-theme="ocean-blue"]) table tbody tr:hover {
+  background-color: var(--theme-primary-light) !important;
+}
+
+/* Subtle smooth transition for themes */
+html[data-theme] body,
+html[data-theme] aside,
+html[data-theme] header,
+html[data-theme] main {
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}

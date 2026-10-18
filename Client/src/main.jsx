@@ -5,16 +5,18 @@ import { Toaster } from "react-hot-toast";
 
 import "./index.css";
 import App from "./App.jsx";
+import { ThemeProvider } from "./context/ThemeContext";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <BrowserRouter>
-      <App />
-
-      <Toaster
-        position="top-right"
-        reverseOrder={false}
-      />
+      <ThemeProvider>
+        <App />
+        <Toaster
+          position="top-right"
+          reverseOrder={false}
+        />
+      </ThemeProvider>
     </BrowserRouter>
   </StrictMode>
 );

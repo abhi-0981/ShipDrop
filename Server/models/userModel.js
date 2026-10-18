@@ -161,6 +161,24 @@ const findUserById = (user_id, callback) => {
   );
 };
 
+// ========================================
+// UPDATE THEME PREFERENCE
+// ========================================
+
+const updateThemePreference = (user_id, theme_preference, callback) => {
+  const query = `
+    UPDATE users
+    SET theme_preference = ?
+    WHERE id = ?
+  `;
+
+  db.query(
+    query,
+    [theme_preference, user_id],
+    callback,
+  );
+};
+
 module.exports = {
   checkUser,
   createUser,
@@ -168,4 +186,5 @@ module.exports = {
   updateUserProfile,
   checkDuplicateUser,
   findUserById,
+  updateThemePreference,
 };

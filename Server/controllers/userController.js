@@ -371,6 +371,7 @@ const loginUser = (req, res) => {
           phone_no: user.phone_no,
           role: user.role,
           profile_image: user.profile_image || null,
+          theme_preference: user.theme_preference || "ocean-blue",
           created_at: user.created_at,
         };
 
@@ -450,6 +451,7 @@ const getSessionUser = (req, res) => {
       phone_no: req.user.phone_no,
       role: req.user.role,
       profile_image: req.user.profile_image || null,
+      theme_preference: req.user.theme_preference || "ocean-blue",
       created_at: req.user.created_at,
     };
 
@@ -752,6 +754,65 @@ const updateUserProfile = (req, res) => {
   );
 };
 
+// ========================================
+// UPDATE THEME PREFERENCE
+// ========================================
+
+const ALLOWED_THEMES = [
+  "ocean-blue",
+  "forest-mint",
+  "mahogany-taupe",
+  "midnight-purple",
+  "forest-olive",
+  "midnight-teal",
+];
+
+const updateThemePreference = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized. Please log in to update your theme preference.",
+      });
+    }
+
+    const theme = String(
+      req.body.theme || req.body.theme_preference || ""
+    ).trim();
+
+    if (!ALLOWED_THEMES.includes(theme)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid theme. Supported themes are: ${ALLOWED_THEMES.join(", ")}`,
+      });
+    }
+
+    userModel.updateThemePreference(userId, theme, (err) => {
+      if (err) {
+        console.error("Update theme preference error:", err);
+        return res.status(500).json({
+          success: false,
+          message: "Failed to update theme preference in database.",
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "Theme preference updated successfully.",
+        theme,
+      });
+    });
+  } catch (error) {
+    console.error("Theme preference error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "An unexpected error occurred while saving theme preference.",
+    });
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
@@ -759,4 +820,5 @@ module.exports = {
   logoutUser,
   getUserProfile,
   updateUserProfile,
+  updateThemePreference,
 };
