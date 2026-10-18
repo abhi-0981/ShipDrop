@@ -362,7 +362,7 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
               S
             </div>
             <h1 className="text-[21px] font-bold tracking-tight text-[#008dd2]">
-              ParcelDropp
+              ParcelDrop
             </h1>
           </div>
 
