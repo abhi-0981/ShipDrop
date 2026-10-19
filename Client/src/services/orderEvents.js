@@ -19,8 +19,8 @@ export const fetchOrderStatusCounts = async (userId, force = false) => {
     return inFlightRequest;
   }
 
-  // If called within 1500ms without force, return the cached result instantly
-  if (!force && cachedCounts && now - lastFetchTime < 1500) {
+  // If called within 300ms without force, return the cached result
+  if (!force && cachedCounts && now - lastFetchTime < 300) {
     return cachedCounts;
   }
 

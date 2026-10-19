@@ -498,7 +498,6 @@ const getAllOrdersController = async (req, res) => {
     const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 50));
     const search = String(req.query.search || "").trim();
     const status = String(req.query.status || req.query.statusScope || "").trim();
-    const skipCount = req.query.skip_count === "true" || req.query.skip_count === true;
 
     // ==================================================
     // USER ID
@@ -522,7 +521,6 @@ const getAllOrdersController = async (req, res) => {
       limit,
       search,
       status,
-      skipCount,
       async (error, rows, totalOrders) => {
         console.log(
           `GET ALL ORDERS DB TIME: ${Date.now() - dbStart} ms | ROWS: ${

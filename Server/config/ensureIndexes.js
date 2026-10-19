@@ -77,16 +77,6 @@ async function ensureIndexes() {
       columns: "user_id",
     },
     {
-      table: "orders",
-      name: "idx_orders_user_id_desc",
-      columns: "user_id, id DESC",
-    },
-    {
-      table: "orders",
-      name: "idx_orders_user_status_id_desc",
-      columns: "user_id, status, id DESC",
-    },
-    {
       table: "user_sessions",
       name: "idx_user_sessions_user_id",
       columns: "user_id",
@@ -95,16 +85,6 @@ async function ensureIndexes() {
       table: "user_sessions",
       name: "idx_user_sessions_expiry",
       columns: "expires_at",
-    },
-    {
-      table: "pincode_cache",
-      name: "idx_pincode_cache_city_state",
-      columns: "city, state",
-    },
-    {
-      table: "pincode_distances",
-      name: "idx_pincode_dist_pickup_delivery",
-      columns: "pickup_pincode, delivery_pincode",
     },
   ];
 

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import api from "../../services/api";
-import { subscribeToOrderUpdates, fetchOrderStatusCounts } from "../../services/orderEvents";
+import { subscribeToOrderUpdates } from "../../services/orderEvents";
 import { useNavigate } from "react-router-dom";
 
 // ======================================================
@@ -254,35 +254,10 @@ function Dashboard() {
   const navigate = useNavigate();
 
   const [user, setUser] = useState(null);
-  const [orders, setOrders] = useState(() => {
-    try {
-      return JSON.parse(sessionStorage.getItem("shipdrop_dash_orders") || "[]");
-    } catch {
-      return [];
-    }
-  });
-  const [statusCounts, setStatusCounts] = useState(() => {
-    try {
-      return JSON.parse(sessionStorage.getItem("shipdrop_dash_counts") || "null");
-    } catch {
-      return null;
-    }
-  });
-  const [walletBalance, setWalletBalance] = useState(() => {
-    try {
-      return Number(sessionStorage.getItem("shipdrop_dash_wallet") || 0);
-    } catch {
-      return 0;
-    }
-  });
-  // If we already have cached data in sessionStorage, render instantly without blocking spinner
-  const [pageLoading, setPageLoading] = useState(() => {
-    try {
-      return !sessionStorage.getItem("shipdrop_dash_counts");
-    } catch {
-      return true;
-    }
-  });
+  const [orders, setOrders] = useState([]);
+  const [statusCounts, setStatusCounts] = useState(null);
+  const [walletBalance, setWalletBalance] = useState(0);
+  const [pageLoading, setPageLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [dashboardError, setDashboardError] = useState("");
 
@@ -334,21 +309,21 @@ function Dashboard() {
     setDashboardError("");
 
     try {
-      // Parallelize fast status counts, recent 6 orders (with skip_count), and wallet balance
-      const [ordersResponse, countsData, walletResponse] = await Promise.all([
+      // Parallelize fast status counts, recent 6 orders, and wallet balance
+      const [ordersResponse, countsResponse, walletResponse] = await Promise.all([
         api.get("/orders/all", {
           params: {
             user_id: currentUser.id,
             limit: 6,
-            skip_count: true,
             include_tracking: false,
           },
         }),
-        fetchOrderStatusCounts(currentUser.id, false),
+        api.get(`/orders/status-counts?user_id=${currentUser.id}`),
         api.get(`/payments/wallet?user_id=${currentUser.id}`),
       ]);
 
       const ordersData = ordersResponse?.data;
+      const countsData = countsResponse?.data?.counts || null;
       const walletData = walletResponse?.data;
 
       if (!ordersData?.success) {
@@ -362,20 +337,8 @@ function Dashboard() {
         : [];
 
       setOrders(orderList);
-      if (countsData) {
-        setStatusCounts(countsData);
-      }
-      const newBalance = Number(walletData?.balance || 0);
-      setWalletBalance(newBalance);
-
-      // Persist in sessionStorage for instant load next time
-      try {
-        sessionStorage.setItem("shipdrop_dash_orders", JSON.stringify(orderList));
-        if (countsData) {
-          sessionStorage.setItem("shipdrop_dash_counts", JSON.stringify(countsData));
-        }
-        sessionStorage.setItem("shipdrop_dash_wallet", String(newBalance));
-      } catch (e) {}
+      setStatusCounts(countsData);
+      setWalletBalance(Number(walletData?.balance || 0));
     } catch (error) {
       console.error("Dashboard loading error:", error);
       setDashboardError(
@@ -392,9 +355,7 @@ function Dashboard() {
 
   useEffect(() => {
     if (user?.id) {
-      // If we already have cached data in sessionStorage, do silent background update
-      const hasCached = !!sessionStorage.getItem("shipdrop_dash_counts");
-      loadDashboard(!hasCached);
+      loadDashboard(true);
     }
   }, [user]);
 

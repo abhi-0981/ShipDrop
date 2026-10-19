@@ -61,38 +61,7 @@ async function ensureTables() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
 
-    // 3. Persistent Pincode Cache Table
-    await db.query(`
-      CREATE TABLE IF NOT EXISTS pincode_cache (
-        pincode VARCHAR(10) PRIMARY KEY,
-        city VARCHAR(100) NOT NULL,
-        state VARCHAR(100) NOT NULL,
-        region VARCHAR(100) NULL,
-        district VARCHAR(100) NULL,
-        country VARCHAR(50) DEFAULT 'india',
-        lat DECIMAL(10, 7) NULL,
-        lon DECIMAL(10, 7) NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        INDEX idx_pincode_cache_city (city),
-        INDEX idx_pincode_cache_state (state)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-    `);
-
-    // 4. Persistent Pincode Distance Cache Table
-    await db.query(`
-      CREATE TABLE IF NOT EXISTS pincode_distances (
-        distance_key VARCHAR(25) PRIMARY KEY,
-        pickup_pincode VARCHAR(10) NOT NULL,
-        delivery_pincode VARCHAR(10) NOT NULL,
-        distance_km DECIMAL(10, 2) NOT NULL,
-        source VARCHAR(20) DEFAULT 'OSRM',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        INDEX idx_pincode_dist_pickup_delivery (pickup_pincode, delivery_pincode)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-    `);
-
-    console.log("AdminPanel: Database tables (sessions, audit, tickets, pincode cache) verified successfully.");
+    console.log("AdminPanel: Impersonation audit and ticket tables verified successfully.");
   } catch (error) {
     console.warn("AdminPanel ensureTables notice:", error.message);
   }

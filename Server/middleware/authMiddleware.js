@@ -78,32 +78,17 @@ const authenticateUser = async (req, res, next) => {
 
     const promiseDb = db.promise();
 
-    let sessions = [];
-    try {
-      const [rows] = await promiseDb.query(
-        `
-        SELECT session_id, user_id, expires_at, revoked_at,
-               (expires_at > NOW()) AS is_not_expired
-        FROM user_sessions
-        WHERE session_id = ? AND user_id = ?
-        LIMIT 1
-        `,
-        [sessionId, String(userId)]
-      );
-      sessions = rows;
-    } catch (sessionErr) {
-      console.warn("AuthMiddleware session check fallback:", sessionErr.message);
-      // Fallback: If table is missing or transiently inaccessible, trust the signed token
-      sessions = [
-        {
-          session_id: sessionId,
-          user_id: String(userId),
-          expires_at: new Date(Date.now() + 24 * 3600 * 1000),
-          revoked_at: null,
-          is_not_expired: 1,
-        },
-      ];
-    }
+    // Check user_sessions table: must exist, not be revoked, and not expired
+    let [sessions] = await promiseDb.query(
+      `
+      SELECT session_id, user_id, expires_at, revoked_at,
+             (expires_at > NOW()) AS is_not_expired
+      FROM user_sessions
+      WHERE session_id = ? AND user_id = ?
+      LIMIT 1
+      `,
+      [sessionId, String(userId)]
+    );
 
     if (!sessions || sessions.length === 0) {
       if (decoded.is_impersonated) {

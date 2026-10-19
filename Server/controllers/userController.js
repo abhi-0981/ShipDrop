@@ -275,9 +275,10 @@ const registerUser = async (req, res) => {
 
 const loginUser = (req, res) => {
   try {
-    const body = req.body || {};
-    let email = body.email;
-    let password = body.password;
+    let {
+      email,
+      password,
+    } = req.body;
 
     email = String(email || "")
       .trim()
@@ -308,161 +309,120 @@ const loginUser = (req, res) => {
     userModel.findUserByEmail(
       email,
       async (err, result) => {
-        try {
-          if (err) {
-            console.error("Login database error:", err);
+        if (err) {
+          console.error("Login database error:", err);
 
-            return res.status(500).json({
-              message: `DB Error: ${err.message || err.code || "Database query failed"}`,
-            });
-          }
-
-          // Generic response for security
-          if (!result || result.length === 0) {
-            return res.status(401).json({
-              message: "Email or password is incorrect",
-            });
-          }
-
-          const user = result[0];
-
-          // ----------------------------------
-          // COMPARE PASSWORD (BCRYPT + SAFE FALLBACK)
-          // ----------------------------------
-
-          let passwordMatched = false;
-
-          try {
-            const storedPassword = String(user.password || "");
-
-            if (storedPassword.startsWith("$2a$") || storedPassword.startsWith("$2b$") || storedPassword.startsWith("$2y$")) {
-              passwordMatched = await bcrypt.compare(password, storedPassword);
-            } else if (storedPassword && storedPassword === password) {
-              // Plaintext password match (legacy or manual db insert): migrate to bcrypt immediately
-              passwordMatched = true;
-              try {
-                const newHash = await bcrypt.hash(password, 10);
-                db.query("UPDATE users SET password = ? WHERE id = ?", [newHash, user.id]);
-              } catch (hashErr) {
-                console.error("Auto-hash migration warning:", hashErr.message);
-              }
-            } else {
-              passwordMatched = false;
-            }
-          } catch (compareError) {
-            console.error("Password comparison error:", compareError);
-
-            // If bcrypt failed due to invalid hash format, check if it matches plaintext
-            if (user.password && String(user.password) === password) {
-              passwordMatched = true;
-            } else {
-              return res.status(500).json({
-                message: `Password verification error: ${compareError.message}`,
-              });
-            }
-          }
-
-          if (!passwordMatched) {
-            return res.status(401).json({
-              message: "Email or password is incorrect",
-            });
-          }
-
-          // ----------------------------------
-          // NEVER SEND PASSWORD
-          // ----------------------------------
-
-          const safeUser = {
-            id: user.id,
-            full_name: user.full_name,
-            company_name: user.company_name,
-            gst_no: user.gst_no,
-            email: user.email,
-            phone_no: user.phone_no,
-            role: user.role,
-            profile_image: user.profile_image || null,
-            created_at: user.created_at,
-          };
-
-          // ----------------------------------
-          // CREATE 24-HOUR DATABASE SESSION
-          // ----------------------------------
-          const sessionId = crypto.randomUUID();
-          const jwtSecret = process.env.JWT_SECRET || "default_jwt_secret_shipdrop";
-
-          const promiseDb = db.promise();
-          try {
-            await promiseDb.query(
-              `
-              INSERT INTO user_sessions (session_id, user_id, expires_at, revoked_at, created_at)
-              VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 24 HOUR), NULL, NOW())
-              `,
-              [sessionId, String(user.id)]
-            );
-          } catch (sessionErr) {
-            console.warn("Session table notice:", sessionErr.message);
-            // Self-healing: if user_sessions table doesn't exist, create it immediately and retry insert
-            if (
-              sessionErr.code === "ER_NO_SUCH_TABLE" ||
-              (sessionErr.message && sessionErr.message.includes("user_sessions"))
-            ) {
-              try {
-                await promiseDb.query(`
-                  CREATE TABLE IF NOT EXISTS user_sessions (
-                    session_id VARCHAR(64) PRIMARY KEY,
-                    user_id VARCHAR(64) NOT NULL,
-                    expires_at DATETIME NOT NULL,
-                    revoked_at DATETIME NULL,
-                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                    INDEX idx_user_sessions_user_id (user_id),
-                    INDEX idx_user_sessions_expiry (expires_at)
-                  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-                `);
-                await promiseDb.query(
-                  `
-                  INSERT INTO user_sessions (session_id, user_id, expires_at, revoked_at, created_at)
-                  VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 24 HOUR), NULL, NOW())
-                  `,
-                  [sessionId, String(user.id)]
-                );
-              } catch (healingErr) {
-                console.warn("Self-healing table creation notice:", healingErr.message);
-              }
-            }
-          }
-
-          // Sign authentication token with session_id and user_id
-          const token = jwt.sign(
-            {
-              id: user.id,
-              user_id: user.id,
-              session_id: sessionId,
-              email: user.email,
-              role: user.role,
-            },
-            jwtSecret,
-            { expiresIn: "24h" }
-          );
-
-          return res.status(200).json({
-            message: "Login successful",
-            role: user.role,
-            token,
-            user: safeUser,
-          });
-        } catch (innerErr) {
-          console.error("Login inner error:", innerErr);
           return res.status(500).json({
-            message: `Login processing error: ${innerErr.message || "Failed"}`,
+            message:
+              "Unable to login. Please try again.",
           });
         }
+
+        // Generic response for security
+        if (result.length === 0) {
+          return res.status(401).json({
+            message:
+              "Email or password is incorrect",
+          });
+        }
+
+        const user = result[0];
+
+        // ----------------------------------
+        // COMPARE BCRYPT PASSWORD
+        // ----------------------------------
+
+        let passwordMatched = false;
+
+        try {
+          passwordMatched = await bcrypt.compare(
+            password,
+            user.password,
+          );
+        } catch (compareError) {
+          console.error(
+            "Password comparison error:",
+            compareError,
+          );
+
+          return res.status(500).json({
+            message:
+              "Unable to login. Please try again.",
+          });
+        }
+
+        if (!passwordMatched) {
+          return res.status(401).json({
+            message:
+              "Email or password is incorrect",
+          });
+        }
+
+        // ----------------------------------
+        // NEVER SEND PASSWORD
+        // ----------------------------------
+
+        const safeUser = {
+          id: user.id,
+          full_name: user.full_name,
+          company_name: user.company_name,
+          gst_no: user.gst_no,
+          email: user.email,
+          phone_no: user.phone_no,
+          role: user.role,
+          profile_image: user.profile_image || null,
+          created_at: user.created_at,
+        };
+
+        // ----------------------------------
+        // CREATE 24-HOUR DATABASE SESSION
+        // ----------------------------------
+        const sessionId = crypto.randomUUID();
+        const jwtSecret = process.env.JWT_SECRET || "default_jwt_secret_shipdrop";
+
+        const promiseDb = db.promise();
+        try {
+          await promiseDb.query(
+            `
+            INSERT INTO user_sessions (session_id, user_id, expires_at, revoked_at, created_at)
+            VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 24 HOUR), NULL, NOW())
+            `,
+            [sessionId, String(user.id)]
+          );
+        } catch (sessionErr) {
+          console.error("Failed to insert session row:", sessionErr);
+          return res.status(500).json({
+            message: "Unable to establish secure login session. Please try again.",
+          });
+        }
+
+        // Sign authentication token with session_id and user_id
+        const token = jwt.sign(
+          {
+            id: user.id,
+            user_id: user.id,
+            session_id: sessionId,
+            email: user.email,
+            role: user.role,
+          },
+          jwtSecret,
+          { expiresIn: "24h" }
+        );
+
+        return res.status(200).json({
+          message: "Login successful",
+          role: user.role,
+          token,
+          user: safeUser,
+        });
       },
     );
   } catch (error) {
     console.error("Login error:", error);
 
     return res.status(500).json({
-      message: `Login error: ${error.message || "Unknown error"}`,
+      message:
+        "Unable to login. Please try again.",
     });
   }
 };

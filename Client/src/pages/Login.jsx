@@ -97,18 +97,10 @@ function Login() {
         replace: true,
       });
     } catch (error) {
-      console.error("Login request error:", error);
-      if (!error.response) {
-        toast.error(
-          "Server connect nahi ho raha hai. Kripya check karein Backend Server chalu hai ya nahi."
-        );
-      } else {
-        const data = error.response.data;
-        const msg =
-          (typeof data === "string" ? data : data?.message || data?.error) ||
-          `Server Error (${error.response.status}). Please check backend console.`;
-        toast.error(msg);
-      }
+      toast.error(
+        error.response?.data?.message ||
+          "Unable to login. Please try again."
+      );
     } finally {
       setLoading(false);
     }

@@ -403,17 +403,10 @@ o.dangerous_good,
 // GET ALL ORDERS
 // ======================================================
 
-const getAllOrders = (user_id, page = 1, limit = 50, search = "", status = "", skipCountOrCb = false, callback) => {
-  let skipCount = false;
+const getAllOrders = (user_id, page = 1, limit = 50, search = "", status = "", callback) => {
   if (typeof status === "function") {
     callback = status;
     status = "";
-    skipCount = false;
-  } else if (typeof skipCountOrCb === "function") {
-    callback = skipCountOrCb;
-    skipCount = false;
-  } else {
-    skipCount = Boolean(skipCountOrCb);
   }
 
   const safePage = Math.max(1, Number(page) || 1);
@@ -575,22 +568,7 @@ const getAllOrders = (user_id, page = 1, limit = 50, search = "", status = "", s
       pkg.package_count,
       pkg.volumetric_weight
 
-    FROM (
-      SELECT o_sub.*
-      FROM orders o_sub
-      WHERE
-        o_sub.user_id = ?
-        ${statusCondition.replace(/\bo\./g, "o_sub.")}
-        AND (
-          ? = ''
-          OR CAST(o_sub.order_id AS CHAR) LIKE ?
-          OR UPPER(TRIM(COALESCE(o_sub.awb, ''))) LIKE UPPER(?)
-          OR UPPER(TRIM(COALESCE(o_sub.consignee_name, ''))) LIKE UPPER(?)
-          OR TRIM(COALESCE(o_sub.mobile, '')) LIKE ?
-        )
-      ORDER BY o_sub.id DESC
-      LIMIT ? OFFSET ?
-    ) o
+    FROM orders o
 
     LEFT JOIN pickup_addresses pa
       ON pa.id = o.pickup_address_id
@@ -599,21 +577,39 @@ const getAllOrders = (user_id, page = 1, limit = 50, search = "", status = "", s
       ON w.id = o.warehouse_id
       AND w.user_id = o.user_id
 
-    LEFT JOIN order_products op
-      ON op.id = (
-        SELECT MIN(op_sub.id)
-        FROM order_products op_sub
-        WHERE op_sub.order_id = o.id
-      )
+    LEFT JOIN (
+      SELECT op1.order_id, op1.product_name, op1.sku, op1.price, op1.qty, op1.tax
+      FROM order_products op1
+      INNER JOIN (
+        SELECT order_id, MIN(id) AS min_id
+        FROM order_products
+        GROUP BY order_id
+      ) op2 ON op1.id = op2.min_id
+    ) op ON op.order_id = o.id
 
-    LEFT JOIN order_packages pkg
-      ON pkg.id = (
-        SELECT MIN(pkg_sub.id)
-        FROM order_packages pkg_sub
-        WHERE pkg_sub.order_id = o.id
+    LEFT JOIN (
+      SELECT pkg1.order_id, pkg1.length, pkg1.width, pkg1.height, pkg1.weight, pkg1.package_count, pkg1.volumetric_weight
+      FROM order_packages pkg1
+      INNER JOIN (
+        SELECT order_id, MIN(id) AS min_id
+        FROM order_packages
+        GROUP BY order_id
+      ) pkg2 ON pkg1.id = pkg2.min_id
+    ) pkg ON pkg.order_id = o.id
+
+    WHERE
+      o.user_id = ?
+      ${statusCondition}
+      AND (
+        ? = ''
+        OR CAST(o.order_id AS CHAR) LIKE ?
+        OR UPPER(TRIM(COALESCE(o.awb, ''))) LIKE UPPER(?)
+        OR UPPER(TRIM(COALESCE(o.consignee_name, ''))) LIKE UPPER(?)
+        OR TRIM(COALESCE(o.mobile, '')) LIKE ?
       )
 
     ORDER BY o.id DESC
+    LIMIT ? OFFSET ?
   `;
 
   const countQuery = `
@@ -655,9 +651,7 @@ const getAllOrders = (user_id, page = 1, limit = 50, search = "", status = "", s
 
   Promise.all([
     db.promise().query(query, queryParams),
-    skipCount
-      ? Promise.resolve([[{ total: 0 }]])
-      : db.promise().query(countQuery, countParams),
+    db.promise().query(countQuery, countParams),
   ])
     .then(([orderRowsResult, countRowsResult]) => {
       const rows = orderRowsResult[0] || [];
