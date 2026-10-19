@@ -22,6 +22,11 @@ async function ensureIndexes() {
       columns: "user_id, awb",
     },
     {
+      table: "orders",
+      name: "idx_orders_user_created",
+      columns: "user_id, created_at DESC",
+    },
+    {
       table: "manifests",
       name: "idx_manifests_user_status_order",
       columns: "user_id, status, order_id",
@@ -39,6 +44,36 @@ async function ensureIndexes() {
     {
       table: "wallets",
       name: "idx_wallets_user_id",
+      columns: "user_id",
+    },
+    {
+      table: "wallet_transactions",
+      name: "idx_wallet_tx_user_created",
+      columns: "user_id, created_at DESC",
+    },
+    {
+      table: "tickets",
+      name: "idx_tickets_user_status",
+      columns: "user_id, status",
+    },
+    {
+      table: "tickets",
+      name: "idx_tickets_number",
+      columns: "ticket_number",
+    },
+    {
+      table: "ticket_messages",
+      name: "idx_ticket_messages_ticket",
+      columns: "ticket_id, id",
+    },
+    {
+      table: "warehouses",
+      name: "idx_warehouses_user",
+      columns: "user_id",
+    },
+    {
+      table: "return_addresses",
+      name: "idx_return_addr_user",
       columns: "user_id",
     },
     {

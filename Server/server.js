@@ -212,6 +212,17 @@ app.use(
 // ======================================================
 
 app.get("/api/db-test", async (req, res) => {
+  // Hide internal database diagnostics in production unless requested with admin secret
+  if (
+    process.env.NODE_ENV === "production" &&
+    (!process.env.CRON_SECRET || req.query.secret !== process.env.CRON_SECRET)
+  ) {
+    return res.status(404).json({
+      success: false,
+      message: "Route not found",
+    });
+  }
+
   try {
     const db = require("./config/db");
 
@@ -219,7 +230,7 @@ app.get("/api/db-test", async (req, res) => {
 
     return res.json({
       success: true,
-      message: "Aiven DB connected successfully",
+      message: "DB connection verified",
       data: rows,
     });
 
@@ -229,14 +240,11 @@ app.get("/api/db-test", async (req, res) => {
       code: error.code,
       errno: error.errno,
       message: error.message,
-      address: error.address,
-      port: error.port,
     });
 
     return res.status(500).json({
       success: false,
-      code: error.code,
-      message: error.message,
+      message: "Database connection failed",
     });
   }
 });
@@ -422,7 +430,30 @@ app.use(
 // CRON TRIGGER ENDPOINTS (FOR VERCEL / EXTERNAL CRON)
 // ======================================================
 
-app.get("/api/cron/track-orders", async (req, res) => {
+const verifyCronAuth = (req, res, next) => {
+  const cronSecret = process.env.CRON_SECRET;
+  if (!cronSecret) {
+    if (process.env.NODE_ENV === "production" && process.env.VERCEL) {
+      console.warn("[SECURITY NOTICE] CRON_SECRET is not configured in production environment variables.");
+    }
+    return next();
+  }
+
+  const authHeader = req.headers.authorization || "";
+  const bearer = authHeader.replace(/^Bearer\s+/i, "").trim();
+  const provided = bearer || req.query.secret || req.headers["x-cron-secret"];
+
+  if (provided !== cronSecret) {
+    return res.status(401).json({
+      success: false,
+      message: "Unauthorized: Invalid or missing cron secret token",
+    });
+  }
+
+  return next();
+};
+
+app.get("/api/cron/track-orders", verifyCronAuth, async (req, res) => {
   try {
     const { runTrackingJob } = require("./jobs/trackActiveOrders");
     await runTrackingJob();
@@ -438,7 +469,7 @@ app.get("/api/cron/track-orders", async (req, res) => {
   }
 });
 
-app.get("/api/cron/auto-cancel", async (req, res) => {
+app.get("/api/cron/auto-cancel", verifyCronAuth, async (req, res) => {
   try {
     const { runAutoCancel } = require("./jobs/autoCancelManifestedOrders");
     await runAutoCancel();

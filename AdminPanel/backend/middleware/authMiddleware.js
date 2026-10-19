@@ -28,12 +28,15 @@ const verifyAdmin = async (req, res, next) => {
     }
 
     const token = parts[1];
-    const candidateSecrets = [
-      process.env.JWT_SECRET,
-      "shipdrop_admin_8384930617_secure",
-      "shipdrop_admin_jwt_secret_key_default",
-      "PARCELDROP8384930619PRAHLADSINGH",
-    ].filter(Boolean);
+    const candidateSecrets =
+      process.env.NODE_ENV === "production" && process.env.JWT_SECRET
+        ? [process.env.JWT_SECRET]
+        : [
+            process.env.JWT_SECRET,
+            "shipdrop_admin_8384930617_secure",
+            "shipdrop_admin_jwt_secret_key_default",
+            "PARCELDROP8384930619PRAHLADSINGH",
+          ].filter(Boolean);
 
     let decoded = null;
     let lastError = null;

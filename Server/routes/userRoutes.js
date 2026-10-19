@@ -17,14 +17,15 @@ const {
 } = require("../controllers/impersonationController");
 
 const { authenticateUser } = require("../middleware/authMiddleware");
+const { authRateLimiter } = require("../middleware/rateLimitMiddleware");
 
 // ========================================
 // PUBLIC ROUTES: REGISTER & LOGIN
 // ========================================
 
-router.post("/register", registerUser);
+router.post("/register", authRateLimiter, registerUser);
 
-router.post("/login", loginUser);
+router.post("/login", authRateLimiter, loginUser);
 
 // ========================================
 // IMPERSONATION ROUTES

@@ -28,12 +28,15 @@ const authenticateUser = async (req, res, next) => {
     }
 
     const token = parts[1];
-    const candidateSecrets = [
-      process.env.JWT_SECRET,
-      "PARCELDROP8384930619PRAHLADSINGH",
-      "default_jwt_secret_shipdrop",
-      "shipdrop_admin_8384930617_secure",
-    ].filter(Boolean);
+    const candidateSecrets =
+      process.env.NODE_ENV === "production" && process.env.JWT_SECRET
+        ? [process.env.JWT_SECRET]
+        : [
+            process.env.JWT_SECRET,
+            "PARCELDROP8384930619PRAHLADSINGH",
+            "default_jwt_secret_shipdrop",
+            "shipdrop_admin_8384930617_secure",
+          ].filter(Boolean);
 
     let decoded = null;
     let lastJwtError = null;

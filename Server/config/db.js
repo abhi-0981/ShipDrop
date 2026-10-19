@@ -79,11 +79,13 @@ if (
 
 Object.assign(dbConfig, {
   waitForConnections: true,
-connectionLimit: Number(process.env.DB_CONNECTION_LIMIT || 10),
+  connectionLimit: Number(process.env.DB_CONNECTION_LIMIT || (isRemote ? 10 : 5)),
+  maxIdle: Number(process.env.DB_MAX_IDLE || 4),
+  idleTimeout: 30000,
   queueLimit: 0,
   enableKeepAlive: true,
-  keepAliveInitialDelay: 0,
-  connectTimeout: 15000,
+  keepAliveInitialDelay: 10000,
+  connectTimeout: 10000,
   charset: "utf8mb4",
 });
 
