@@ -103,10 +103,11 @@ function Login() {
           "Server connect nahi ho raha hai. Kripya check karein Backend Server chalu hai ya nahi."
         );
       } else {
-        toast.error(
-          error.response?.data?.message ||
-            "Unable to login. Please try again."
-        );
+        const data = error.response.data;
+        const msg =
+          (typeof data === "string" ? data : data?.message || data?.error) ||
+          `Server Error (${error.response.status}). Please check backend console.`;
+        toast.error(msg);
       }
     } finally {
       setLoading(false);
