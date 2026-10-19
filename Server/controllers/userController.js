@@ -314,47 +314,63 @@ const loginUser = (req, res) => {
 
           return res.status(500).json({
             message:
-              "Unable to login. Please try again.",
+              process.env.NODE_ENV === "production"
+                ? "Database connection error. Please try again."
+                : `DB Error: ${err.message || err.code || "Query failed"}`,
           });
         }
 
         // Generic response for security
         if (result.length === 0) {
           return res.status(401).json({
-            message:
-              "Email or password is incorrect",
+            message: "Email or password is incorrect",
           });
         }
 
         const user = result[0];
 
         // ----------------------------------
-        // COMPARE BCRYPT PASSWORD
+        // COMPARE PASSWORD (BCRYPT + SAFE FALLBACK)
         // ----------------------------------
 
         let passwordMatched = false;
 
         try {
-          passwordMatched = await bcrypt.compare(
-            password,
-            user.password,
-          );
-        } catch (compareError) {
-          console.error(
-            "Password comparison error:",
-            compareError,
-          );
+          const storedPassword = String(user.password || "");
 
-          return res.status(500).json({
-            message:
-              "Unable to login. Please try again.",
-          });
+          if (storedPassword.startsWith("$2a$") || storedPassword.startsWith("$2b$") || storedPassword.startsWith("$2y$")) {
+            passwordMatched = await bcrypt.compare(password, storedPassword);
+          } else if (storedPassword && storedPassword === password) {
+            // Plaintext password match (legacy or manual db insert): migrate to bcrypt immediately
+            passwordMatched = true;
+            try {
+              const newHash = await bcrypt.hash(password, 10);
+              db.query("UPDATE users SET password = ? WHERE id = ?", [newHash, user.id]);
+            } catch (hashErr) {
+              console.error("Auto-hash migration warning:", hashErr.message);
+            }
+          } else {
+            passwordMatched = false;
+          }
+        } catch (compareError) {
+          console.error("Password comparison error:", compareError);
+
+          // If bcrypt failed due to invalid hash format, check if it matches plaintext
+          if (user.password && String(user.password) === password) {
+            passwordMatched = true;
+          } else {
+            return res.status(500).json({
+              message:
+                process.env.NODE_ENV === "production"
+                  ? "Unable to verify password. Please try again."
+                  : `Password verification error: ${compareError.message}`,
+            });
+          }
         }
 
         if (!passwordMatched) {
           return res.status(401).json({
-            message:
-              "Email or password is incorrect",
+            message: "Email or password is incorrect",
           });
         }
 
@@ -422,7 +438,9 @@ const loginUser = (req, res) => {
 
     return res.status(500).json({
       message:
-        "Unable to login. Please try again.",
+        process.env.NODE_ENV === "production"
+          ? "Unable to login. Please try again."
+          : `Login error: ${error.message || "Unknown error"}`,
     });
   }
 };
