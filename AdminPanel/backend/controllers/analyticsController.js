@@ -305,6 +305,33 @@ const getBusinessSummary = async (req, res) => {
       ORDER BY period_key ASC
     `;
 
+    // 7. ZONE DISTRIBUTION
+    const zoneQuery = `
+      SELECT
+        UPPER(TRIM(COALESCE(m.zone, 'Other'))) AS zone_name,
+        COUNT(m.id) AS count,
+        COALESCE(SUM(m.shipping_charge), 0) AS freight
+      FROM manifests m
+      INNER JOIN orders o ON o.id = m.order_id
+      WHERE ${orderWhereSql}
+      GROUP BY zone_name
+      ORDER BY count DESC
+      LIMIT 10
+    `;
+
+    // 8. SERVICE TYPE (ROAD vs AIR)
+    const serviceQuery = `
+      SELECT
+        UPPER(TRIM(COALESCE(m.service_type, 'ROAD'))) AS service_name,
+        COUNT(m.id) AS count,
+        COALESCE(SUM(m.shipping_charge), 0) AS freight
+      FROM manifests m
+      INNER JOIN orders o ON o.id = m.order_id
+      WHERE ${orderWhereSql}
+      GROUP BY service_name
+      ORDER BY count DESC
+    `;
+
     // Execute queries in parallel
     const [
       [orderSummaryRows],
@@ -313,6 +340,8 @@ const getBusinessSummary = async (req, res) => {
       [walletHoldRows],
       [userRows],
       [trendRows],
+      [zoneRows],
+      [serviceRows],
     ] = await Promise.all([
       db.query(orderSummaryQuery, orderParams),
       db.query(codSummaryQuery, remParams),
@@ -320,6 +349,8 @@ const getBusinessSummary = async (req, res) => {
       db.query(walletHoldQuery, walletHoldParams),
       db.query(userBreakdownQuery, userBreakdownParams),
       db.query(trendQuery, orderParams),
+      db.query(zoneQuery, orderParams),
+      db.query(serviceQuery, orderParams),
     ]);
 
     const orderStats = orderSummaryRows[0] || {};
@@ -422,6 +453,8 @@ const getBusinessSummary = async (req, res) => {
       },
       kpis,
       trend: trendRows || [],
+      zoneDistribution: zoneRows || [],
+      serviceDistribution: serviceRows || [],
       userBreakdown,
     });
   } catch (error) {

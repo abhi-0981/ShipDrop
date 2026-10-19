@@ -19,6 +19,10 @@ import {
   HiOutlineAdjustments,
   HiOutlineCalendar,
   HiOutlineInformationCircle,
+  HiOutlineSparkles,
+  HiOutlineShieldExclamation,
+  HiOutlineLocationMarker,
+  HiOutlineLightningBolt,
 } from "react-icons/hi";
 import toast from "react-hot-toast";
 import * as XLSX from "xlsx";
@@ -32,6 +36,16 @@ const formatMoney = (val) =>
 
 const formatNumber = (val) =>
   new Intl.NumberFormat("en-IN").format(Number(val || 0));
+
+const getZoneDescription = (zoneName) => {
+  const zn = String(zoneName || "").toUpperCase();
+  if (zn.includes("A")) return "Intracity / Local Hubs";
+  if (zn.includes("B")) return "Within State / Regional";
+  if (zn.includes("C")) return "Metro to Metro Commercial";
+  if (zn.includes("D")) return "Rest of India (National)";
+  if (zn.includes("E")) return "Special / NE & J&K Hills";
+  return "Standard Route";
+};
 
 export default function BusinessAnalytics() {
   const navigate = useNavigate();
@@ -55,6 +69,7 @@ export default function BusinessAnalytics() {
   const [sortBy, setSortBy] = useState("freightSpent"); // freightSpent, codRemitted, profit, ordersCount, balance
   const [sortOrder, setSortOrder] = useState("desc");
   const [currentPage, setCurrentPage] = useState(1);
+  const [chartViewMode, setChartViewMode] = useState("both"); // "both", "revenue", "orders"
   const pageSize = 15;
 
   // -----------------------------------------------------
@@ -86,6 +101,8 @@ export default function BusinessAnalytics() {
       avgOrderFreight: 0,
     },
     trend: [],
+    zoneDistribution: [],
+    serviceDistribution: [],
     userBreakdown: [],
   });
 
@@ -147,6 +164,8 @@ export default function BusinessAnalytics() {
       setAnalyticsData({
         kpis: data.kpis || {},
         trend: data.trend || [],
+        zoneDistribution: data.zoneDistribution || [],
+        serviceDistribution: data.serviceDistribution || [],
         userBreakdown: data.userBreakdown || [],
       });
       setCurrentPage(1);
@@ -197,10 +216,7 @@ export default function BusinessAnalytics() {
       let valA = a[sortBy];
       let valB = b[sortBy];
 
-      if (sortBy === "profit") {
-        valA = a.estimatedProfit;
-        valB = b.estimatedProfit;
-      } else if (sortBy === "balance") {
+      if (sortBy === "balance") {
         valA = a.currentWalletBalance;
         valB = b.currentWalletBalance;
       }
@@ -215,6 +231,30 @@ export default function BusinessAnalytics() {
 
     return list;
   }, [analyticsData.userBreakdown, tableSearch, sortBy, sortOrder]);
+
+  // Top 4 volume sellers
+  const topVolumeSellers = useMemo(() => {
+    return [...(analyticsData.userBreakdown || [])]
+      .filter((u) => u.ordersCount > 0)
+      .sort((a, b) => b.ordersCount - a.ordersCount)
+      .slice(0, 4);
+  }, [analyticsData.userBreakdown]);
+
+  // Top 4 payout recipients
+  const topPayoutSellers = useMemo(() => {
+    return [...(analyticsData.userBreakdown || [])]
+      .filter((u) => u.codRemitted > 0)
+      .sort((a, b) => b.codRemitted - a.codRemitted)
+      .slice(0, 4);
+  }, [analyticsData.userBreakdown]);
+
+  // High RTO watchlist (sellers with >= 2 orders and >= 15% RTO)
+  const highRtoWatchlist = useMemo(() => {
+    return [...(analyticsData.userBreakdown || [])]
+      .filter((u) => u.ordersCount >= 2 && u.rtoCount > 0 && ((u.rtoCount / u.ordersCount) * 100) >= 15)
+      .sort((a, b) => (b.rtoCount / b.ordersCount) - (a.rtoCount / a.ordersCount))
+      .slice(0, 4);
+  }, [analyticsData.userBreakdown]);
 
   const totalPages = Math.ceil(processedUsers.length / pageSize) || 1;
   const paginatedUsers = useMemo(() => {
@@ -247,7 +287,6 @@ export default function BusinessAnalytics() {
         "Pending COD Remittance (INR)": u.codPending,
         "Total Wallet Recharged (INR)": u.totalRecharged,
         "Current Wallet Balance (INR)": u.currentWalletBalance,
-        "Estimated Platform Profit (INR)": u.estimatedProfit,
       }));
 
       const kpiRows = [
@@ -256,7 +295,7 @@ export default function BusinessAnalytics() {
         { Metric: "Payment Type Filter", Value: paymentType },
         { Metric: "Order Status Filter", Value: orderStatus },
         { Metric: "Total Gross Freight Turnover", Value: formatMoney(analyticsData.kpis.totalRevenue) },
-        { Metric: "Estimated Platform Profit", Value: formatMoney(analyticsData.kpis.estimatedProfit) },
+        { Metric: "Total COD Collection Value (GMV)", Value: formatMoney(analyticsData.kpis.totalCODOrderValue) },
         { Metric: "Total Orders Booked", Value: analyticsData.kpis.totalOrders },
         { Metric: "Total COD Remitted (User Payouts)", Value: formatMoney(analyticsData.kpis.totalCODRemitted) },
         { Metric: "Pending COD Remittances", Value: formatMoney(analyticsData.kpis.pendingCODRemittance) },
@@ -272,7 +311,7 @@ export default function BusinessAnalytics() {
       XLSX.utils.book_append_sheet(wb, wsKPI, "Executive Summary");
 
       const wsUsers = XLSX.utils.json_to_sheet(exportRows);
-      XLSX.utils.book_append_sheet(wb, wsUsers, "User Payouts & Profit");
+      XLSX.utils.book_append_sheet(wb, wsUsers, "User Payouts & Performance");
 
       const timestamp = new Date().toISOString().slice(0, 10);
       XLSX.writeFile(wb, `ShipDrop_Business_Analytics_${timestamp}.xlsx`);
@@ -854,14 +893,56 @@ export default function BusinessAnalytics() {
                 Periodic trend breakdown based on currently applied filters
               </p>
             </div>
-            <div className="flex items-center gap-4 text-xs font-semibold">
-              <div className="flex items-center gap-1.5">
-                <span className="h-2.5 w-2.5 rounded-xs bg-[#008dd2]" />
-                <span className="text-slate-600">Freight (₹)</span>
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center rounded-lg border border-slate-200 bg-slate-50 p-0.5 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setChartViewMode("both")}
+                  className={`rounded-md px-2.5 py-0.5 font-semibold transition ${
+                    chartViewMode === "both"
+                      ? "bg-white text-slate-800 shadow-xs"
+                      : "text-slate-500 hover:text-slate-700"
+                  }`}
+                >
+                  Both
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setChartViewMode("revenue")}
+                  className={`rounded-md px-2.5 py-0.5 font-semibold transition ${
+                    chartViewMode === "revenue"
+                      ? "bg-[#008dd2] text-white shadow-xs"
+                      : "text-slate-500 hover:text-slate-700"
+                  }`}
+                >
+                  Freight ₹
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setChartViewMode("orders")}
+                  className={`rounded-md px-2.5 py-0.5 font-semibold transition ${
+                    chartViewMode === "orders"
+                      ? "bg-emerald-500 text-white shadow-xs"
+                      : "text-slate-500 hover:text-slate-700"
+                  }`}
+                >
+                  Orders
+                </button>
               </div>
-              <div className="flex items-center gap-1.5">
-                <span className="h-2.5 w-2.5 rounded-xs bg-emerald-400" />
-                <span className="text-slate-600">Orders</span>
+
+              <div className="hidden sm:flex items-center gap-3 text-xs font-semibold">
+                {(chartViewMode === "both" || chartViewMode === "revenue") && (
+                  <div className="flex items-center gap-1.5">
+                    <span className="h-2.5 w-2.5 rounded-xs bg-[#008dd2]" />
+                    <span className="text-slate-600">Freight (₹)</span>
+                  </div>
+                )}
+                {(chartViewMode === "both" || chartViewMode === "orders") && (
+                  <div className="flex items-center gap-1.5">
+                    <span className="h-2.5 w-2.5 rounded-xs bg-emerald-400" />
+                    <span className="text-slate-600">Orders</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -903,16 +984,20 @@ export default function BusinessAnalytics() {
                           </div>
                         </div>
 
-                        {/* Dual Bars */}
+                        {/* Bars */}
                         <div className="flex items-end gap-1 w-full justify-center">
-                          <div
-                            style={{ height: `${revenueHeight}%` }}
-                            className="w-1/2 rounded-t-sm bg-[#008dd2] transition-all group-hover:brightness-110"
-                          />
-                          <div
-                            style={{ height: `${ordersHeight}%` }}
-                            className="w-1/2 rounded-t-sm bg-emerald-400 transition-all group-hover:brightness-110"
-                          />
+                          {(chartViewMode === "both" || chartViewMode === "revenue") && (
+                            <div
+                              style={{ height: `${revenueHeight}%` }}
+                              className={`${chartViewMode === "both" ? "w-1/2" : "w-4/5"} rounded-t-sm bg-[#008dd2] transition-all group-hover:brightness-110`}
+                            />
+                          )}
+                          {(chartViewMode === "both" || chartViewMode === "orders") && (
+                            <div
+                              style={{ height: `${ordersHeight}%` }}
+                              className={`${chartViewMode === "both" ? "w-1/2" : "w-4/5"} rounded-t-sm bg-emerald-400 transition-all group-hover:brightness-110`}
+                            />
+                          )}
                         </div>
 
                         {/* Date Label */}
@@ -1082,6 +1167,329 @@ export default function BusinessAnalytics() {
       </div>
 
       {/* ===================================================
+          EXECUTIVE SELLER LEADERBOARDS & RISK WATCHLIST
+      =================================================== */}
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+        {/* 1. TOP VOLUME SELLERS */}
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-[#008dd2]">
+                <HiOutlineTruck size={18} />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-slate-900">Top Volume Sellers</h3>
+                <p className="text-[11px] text-slate-500">Highest parcel bookings</p>
+              </div>
+            </div>
+            <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-[#008dd2]">
+              Ranked by Orders
+            </span>
+          </div>
+
+          <div className="mt-3.5 space-y-2.5">
+            {topVolumeSellers.length === 0 ? (
+              <p className="py-6 text-center text-xs text-slate-400">No seller order data in this period</p>
+            ) : (
+              topVolumeSellers.map((seller, idx) => {
+                const rankColors = [
+                  "bg-amber-100 text-amber-800 border-amber-300",
+                  "bg-slate-100 text-slate-700 border-slate-300",
+                  "bg-amber-50 text-amber-700 border-amber-200",
+                  "bg-slate-50 text-slate-600 border-slate-200",
+                ];
+                return (
+                  <div
+                    key={seller.userId}
+                    className="group flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/50 p-2.5 hover:border-blue-200 hover:bg-blue-50/30 transition"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-[11px] font-black ${rankColors[idx] || rankColors[3]}`}>
+                        {idx + 1}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="truncate text-xs font-bold text-slate-800 group-hover:text-[#008dd2] transition">
+                          {seller.name}
+                        </p>
+                        <p className="truncate text-[10px] text-slate-500">
+                          {seller.company || "Individual"} • UID #{seller.userId}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0 pl-2">
+                      <p className="text-xs font-black text-slate-900">
+                        {formatNumber(seller.ordersCount)}{" "}
+                        <span className="text-[10px] font-medium text-slate-500">pkgs</span>
+                      </p>
+                      <button
+                        onClick={() => {
+                          setSelectedUserId(String(seller.userId));
+                          window.scrollTo({ top: 0, behavior: "smooth" });
+                        }}
+                        className="text-[10px] font-semibold text-[#008dd2] hover:underline"
+                      >
+                        Inspect &rarr;
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        {/* 2. TOP COD PAYOUT RECIPIENTS */}
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+                <HiOutlineCash size={18} />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-slate-900">Highest COD Payouts</h3>
+                <p className="text-[11px] text-slate-500">Top remittance recipients</p>
+              </div>
+            </div>
+            <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
+              Ranked by Remitted
+            </span>
+          </div>
+
+          <div className="mt-3.5 space-y-2.5">
+            {topPayoutSellers.length === 0 ? (
+              <p className="py-6 text-center text-xs text-slate-400">No COD payouts in this period</p>
+            ) : (
+              topPayoutSellers.map((seller, idx) => (
+                <div
+                  key={seller.userId}
+                  className="group flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/50 p-2.5 hover:border-emerald-200 hover:bg-emerald-50/30 transition"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-100 border border-emerald-300 text-[11px] font-black text-emerald-800">
+                      {idx + 1}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate text-xs font-bold text-slate-800 group-hover:text-emerald-700 transition">
+                        {seller.name}
+                      </p>
+                      <p className="truncate text-[10px] text-slate-500">
+                        {seller.company || "Individual"} • UID #{seller.userId}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0 pl-2">
+                    <p className="text-xs font-black text-emerald-700">
+                      {formatMoney(seller.codRemitted)}
+                    </p>
+                    <p className="text-[10px] text-slate-400">
+                      {seller.codPending > 0 ? `+${formatMoney(seller.codPending)} pend` : "No pending"}
+                    </p>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* 3. HIGH RTO RISK WATCHLIST */}
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-50 text-rose-600">
+                <HiOutlineShieldExclamation size={18} />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-slate-900">RTO Risk Watchlist</h3>
+                <p className="text-[11px] text-slate-500">Sellers with RTO rate &ge; 15%</p>
+              </div>
+            </div>
+            <span className="rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-semibold text-rose-700">
+              Needs Attention
+            </span>
+          </div>
+
+          <div className="mt-3.5 space-y-2.5">
+            {highRtoWatchlist.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-6 text-center">
+                <HiOutlineCheckCircle size={28} className="text-emerald-500 mb-1" />
+                <p className="text-xs font-bold text-slate-700">All Sellers in Safe Range</p>
+                <p className="text-[11px] text-slate-400 mt-0.5">No seller currently exceeds the 15% RTO alert threshold.</p>
+              </div>
+            ) : (
+              highRtoWatchlist.map((seller) => {
+                const rtoRate = seller.ordersCount > 0 ? ((seller.rtoCount / seller.ordersCount) * 100).toFixed(1) : 0;
+                return (
+                  <div
+                    key={seller.userId}
+                    className="flex items-center justify-between rounded-xl border border-rose-100 bg-rose-50/40 p-2.5"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-xs font-bold text-slate-800">
+                        {seller.name}
+                      </p>
+                      <p className="truncate text-[10px] text-slate-500">
+                        {seller.company || "Individual"} • UID #{seller.userId}
+                      </p>
+                    </div>
+                    <div className="text-right shrink-0 pl-2">
+                      <span className="inline-block rounded-md bg-rose-100 px-1.5 py-0.5 text-xs font-black text-rose-800">
+                        {rtoRate}% RTO
+                      </span>
+                      <p className="text-[10px] text-slate-500 mt-0.5">
+                        {seller.rtoCount} of {seller.ordersCount} failed
+                      </p>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ===================================================
+          LOGISTICS & ROUTING INTELLIGENCE (ZONES & SERVICE MODES)
+      =================================================== */}
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+        {/* Geographic Zone Traffic */}
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
+                <HiOutlineLocationMarker size={18} />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-slate-900">Geographic Zone Distribution</h3>
+                <p className="text-[11px] text-slate-500">Package concentration across logistics zones</p>
+              </div>
+            </div>
+            <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-semibold text-slate-600">
+              India Routing
+            </span>
+          </div>
+
+          <div className="mt-4 space-y-3.5">
+            {(!analyticsData.zoneDistribution || analyticsData.zoneDistribution.length === 0) ? (
+              <div className="py-8 text-center text-xs text-slate-400">
+                No zone-tagged manifest data available for the selected filters
+              </div>
+            ) : (
+              (() => {
+                const totalZonePkgs = analyticsData.zoneDistribution.reduce((acc, z) => acc + Number(z.count || 0), 0) || 1;
+                return analyticsData.zoneDistribution.map((zone, idx) => {
+                  const pct = Math.round((Number(zone.count || 0) / totalZonePkgs) * 100);
+                  const zoneDesc = getZoneDescription(zone.zone_name);
+                  const barColors = [
+                    "bg-[#008dd2]",
+                    "bg-indigo-500",
+                    "bg-emerald-500",
+                    "bg-amber-500",
+                    "bg-purple-500",
+                    "bg-rose-500",
+                  ];
+                  return (
+                    <div key={zone.zone_name || idx} className="space-y-1">
+                      <div className="flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-slate-800">
+                            {zone.zone_name || "Zone Other"}
+                          </span>
+                          <span className="text-[11px] text-slate-400 font-normal">
+                            ({zoneDesc})
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 font-medium">
+                          <span className="text-slate-900 font-bold">{formatNumber(zone.count)} pkgs</span>
+                          <span className="text-slate-400 text-[11px]">({pct}%)</span>
+                          <span className="text-[#008dd2] font-semibold text-[11px]">{formatMoney(zone.freight)}</span>
+                        </div>
+                      </div>
+                      <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+                        <div
+                          style={{ width: `${pct}%` }}
+                          className={`h-full rounded-full transition-all ${barColors[idx % barColors.length]}`}
+                        />
+                      </div>
+                    </div>
+                  );
+                });
+              })()
+            )}
+          </div>
+        </div>
+
+        {/* Shipping Service Mode (Surface / Road vs Express Air) */}
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-50 text-cyan-600">
+                <HiOutlineLightningBolt size={18} />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-slate-900">Transport & Mode Distribution</h3>
+                <p className="text-[11px] text-slate-500">Surface / Road vs Air Express shipment split</p>
+              </div>
+            </div>
+            <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-semibold text-slate-600">
+              Service Split
+            </span>
+          </div>
+
+          <div className="mt-4 space-y-4">
+            {(!analyticsData.serviceDistribution || analyticsData.serviceDistribution.length === 0) ? (
+              <div className="py-8 text-center text-xs text-slate-400">
+                No service type manifest data available for the selected filters
+              </div>
+            ) : (
+              (() => {
+                const totalServicePkgs = analyticsData.serviceDistribution.reduce((acc, s) => acc + Number(s.count || 0), 0) || 1;
+                return (
+                  <>
+                    <div className="space-y-3">
+                      {analyticsData.serviceDistribution.map((srv, idx) => {
+                        const pct = Math.round((Number(srv.count || 0) / totalServicePkgs) * 100);
+                        const isAir = String(srv.service_name || "").toUpperCase().includes("AIR") || String(srv.service_name || "").toUpperCase().includes("EXPRESS");
+                        return (
+                          <div key={srv.service_name || idx} className="space-y-1.5">
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="font-bold text-slate-800 flex items-center gap-1.5">
+                                <span className={`h-2 w-2 rounded-full ${isAir ? "bg-cyan-500" : "bg-[#008dd2]"}`} />
+                                {srv.service_name === "ROAD" ? "Surface / Road Logistics" : srv.service_name === "AIR" ? "Air Express Cargo" : srv.service_name}
+                              </span>
+                              <div className="flex items-center gap-2 font-medium">
+                                <span className="text-slate-900 font-bold">{formatNumber(srv.count)} pkgs</span>
+                                <span className="text-slate-400 text-[11px]">({pct}%)</span>
+                                <span className="text-[#008dd2] font-semibold text-[11px]">{formatMoney(srv.freight)}</span>
+                              </div>
+                            </div>
+                            <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+                              <div
+                                style={{ width: `${pct}%` }}
+                                className={`h-full rounded-full transition-all ${isAir ? "bg-cyan-500" : "bg-[#008dd2]"}`}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3 mt-3">
+                      <div className="flex items-start gap-2 text-xs text-slate-600">
+                        <HiOutlineInformationCircle size={16} className="text-[#008dd2] shrink-0 mt-0.5" />
+                        <span>
+                          <strong>Logistics Tip:</strong> Surface/Road shipments represent cost-effective regional movement, while Air Express delivers expedited delivery for high-ticket COD orders.
+                        </span>
+                      </div>
+                    </div>
+                  </>
+                );
+              })()
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ===================================================
           PER-USER FINANCIAL & PAYOUT INTELLIGENCE TABLE
           Directly delivers: "kon sa user monthly kitna pesa
           nikal raha hai sare kitne nikal rahe hai pura sab kuch"
@@ -1092,14 +1500,14 @@ export default function BusinessAnalytics() {
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-base font-bold text-slate-900">
-                Seller-wise Payouts & Profit Breakdown
+                Seller-wise Payouts & Performance Breakdown
               </h2>
               <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-semibold text-[#008dd2]">
                 {processedUsers.length} Sellers
               </span>
             </div>
             <p className="mt-0.5 text-xs text-slate-500">
-              Live tracking of kitna paisa har user nikal raha hai (COD Remittance), unki shipping spend, aur profit.
+              Live tracking of kitna paisa har user nikal raha hai (COD Remittance), unki shipping spend, aur wallet balance.
             </p>
           </div>
 
@@ -1131,7 +1539,6 @@ export default function BusinessAnalytics() {
             >
               <option value="freightSpent">Sort: Highest Freight Spend</option>
               <option value="codRemitted">Sort: Most COD Remitted (Payout)</option>
-              <option value="profit">Sort: Highest Platform Profit</option>
               <option value="ordersCount">Sort: Most Orders Booked</option>
               <option value="balance">Sort: Highest Wallet Balance</option>
             </select>
@@ -1161,9 +1568,6 @@ export default function BusinessAnalytics() {
                   Pending Remittance
                 </th>
                 <th className="px-4 py-3 text-right">Wallet Balance</th>
-                <th className="px-4 py-3 text-right text-emerald-900 bg-emerald-50/30">
-                  Est. Net Profit
-                </th>
                 <th className="px-4 py-3 text-center">Success %</th>
                 <th className="px-4 py-3 text-center sm:px-5">Action</th>
               </tr>
@@ -1171,7 +1575,7 @@ export default function BusinessAnalytics() {
             <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
               {paginatedUsers.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="py-12 text-center text-slate-400">
+                  <td colSpan={8} className="py-12 text-center text-slate-400">
                     No seller records found matching the specified filters.
                   </td>
                 </tr>
@@ -1263,14 +1667,6 @@ export default function BusinessAnalytics() {
                         </div>
                         <div className="text-[10px] text-slate-400">
                           Total Dep: {formatMoney(u.totalRecharged)}
-                        </div>
-                      </td>
-
-                      {/* ESTIMATED PROFIT */}
-                      <td className="px-4 py-3 text-right bg-emerald-50/20 font-bold text-emerald-600">
-                        <div>{formatMoney(u.estimatedProfit)}</div>
-                        <div className="text-[10px] font-medium text-emerald-700/70">
-                          Margin Generated
                         </div>
                       </td>
 
