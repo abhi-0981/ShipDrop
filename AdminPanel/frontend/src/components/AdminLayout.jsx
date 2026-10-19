@@ -65,7 +65,7 @@ function AdminLayout({ children }) {
 
   const menuItems = [
     { name: "Dashboard", path: "/dashboard", icon: HiOutlineViewGrid },
-    { name: "Business Analytics", path: "/analytics", icon: HiOutlinePresentationChartLine },
+    { name: "Businesss Analytics", path: "/analytics", icon: HiOutlinePresentationChartLine },
     { name: "All Orders", path: "/orders", icon: HiOutlineClipboardList },
     { name: "COD Remittance", path: "/cod-remittance", icon: HiOutlineCurrencyRupee },
     { name: "Weight Checking", path: "/weight-checking", icon: HiOutlineScale },
