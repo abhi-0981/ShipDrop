@@ -15,17 +15,11 @@ function Home() {
     <>
       <Navbar />
 
-      <PublicTracking />
+      <main>
+        <PublicTracking />
+      </main>
 
-      {/* Temporarily hidden */}
-      {false && <Slider />}
-      {false && <Banner />}
-      {false && <RTO />}
-      {false && <Partners />}
-      {false && <AppDownload />}
-      {false && <Testimonials />}
-      {false && <CTA />}
-      {false && <Footer />}
+      <Footer />
     </>
   );
 }

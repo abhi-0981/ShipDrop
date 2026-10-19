@@ -1,0 +1,21 @@
+# Robots.txt for ParcelDrop (https://parceldrop.in)
+User-agent: *
+Allow: /
+Allow: /login
+Allow: /register
+
+# Disallow private user dashboard and session URLs from search indexing
+Disallow: /dashboard
+Disallow: /create-order
+Disallow: /processing-orders
+Disallow: /orders/
+Disallow: /all-orders
+Disallow: /manifested
+Disallow: /wallet/
+Disallow: /settings/
+Disallow: /tickets/
+Disallow: /auth/
+Disallow: /api/
+
+# Sitemap location
+Sitemap: https://parceldrop.in/sitemap.xml
