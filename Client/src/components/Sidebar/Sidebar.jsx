@@ -280,7 +280,8 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
       }
     };
 
-    fetchStatusCounts(true);
+    // Use deduplicated fetch on mount so we don't spam the API simultaneously with Dashboard
+    fetchStatusCounts(false);
 
     const handleUpdate = () => {
       fetchStatusCounts(true);
