@@ -13,6 +13,7 @@ const {
   searchPreviousCustomers,
   searchTracking,
   getOrderStatusCounts,
+  getDashboardSummary,
 } = require("../controllers/orderController");
 
 const {
@@ -101,6 +102,17 @@ router.get(
 router.get(
   "/status-counts",
   getOrderStatusCounts
+);
+
+// ======================================================
+// DASHBOARD SUMMARY (FAST UNIFIED ENDPOINT)
+// IMPORTANT:
+// Ye /:id se PEHLE hona chahiye.
+// ======================================================
+
+router.get(
+  "/dashboard-summary",
+  getDashboardSummary
 );
 
 // ======================================================

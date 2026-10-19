@@ -498,7 +498,7 @@ const getTrackingForWaybills = async (
                 "application/json",
             },
 
-            timeout: 30000,
+            timeout: 10000,
           }
         );
 

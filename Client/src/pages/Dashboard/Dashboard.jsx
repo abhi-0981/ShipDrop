@@ -253,11 +253,50 @@ const StatCard = ({
 function Dashboard() {
   const navigate = useNavigate();
 
-  const [user, setUser] = useState(null);
-  const [orders, setOrders] = useState([]);
-  const [statusCounts, setStatusCounts] = useState(null);
-  const [walletBalance, setWalletBalance] = useState(0);
-  const [pageLoading, setPageLoading] = useState(true);
+  const [user, setUser] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("user") || "null");
+    } catch {
+      return null;
+    }
+  });
+
+  const [orders, setOrders] = useState(() => {
+    try {
+      const cached = sessionStorage.getItem("shipdrop_dash_orders");
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const [statusCounts, setStatusCounts] = useState(() => {
+    try {
+      const cached = sessionStorage.getItem("shipdrop_dash_counts");
+      return cached ? JSON.parse(cached) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const [walletBalance, setWalletBalance] = useState(() => {
+    try {
+      const cached = sessionStorage.getItem("shipdrop_dash_wallet");
+      return cached ? Number(cached) : 0;
+    } catch {
+      return 0;
+    }
+  });
+
+  // If cached data is present, render immediately without full-screen loading spinner
+  const [pageLoading, setPageLoading] = useState(() => {
+    try {
+      return !sessionStorage.getItem("shipdrop_dash_counts");
+    } catch {
+      return true;
+    }
+  });
+
   const [refreshing, setRefreshing] = useState(false);
   const [dashboardError, setDashboardError] = useState("");
 
@@ -271,21 +310,7 @@ function Dashboard() {
   const [rateError, setRateError] = useState("");
   const [shippingOptions, setShippingOptions] = useState(null);
 
-  useEffect(() => {
-    try {
-      const savedUser = JSON.parse(
-        localStorage.getItem("user") || "null"
-      );
-
-      if (savedUser?.id) {
-        setUser(savedUser);
-      }
-    } catch (error) {
-      console.error("Dashboard user error:", error);
-    }
-  }, []);
-
-  const loadDashboard = async (showLoader = true) => {
+  const loadDashboard = async (showLoader = false) => {
     let currentUser = user;
 
     try {
@@ -309,36 +334,73 @@ function Dashboard() {
     setDashboardError("");
 
     try {
-      // Parallelize fast status counts, recent 6 orders, and wallet balance
-      const [ordersResponse, countsResponse, walletResponse] = await Promise.all([
-        api.get("/orders/all", {
-          params: {
-            user_id: currentUser.id,
-            limit: 6,
-            include_tracking: false,
-          },
-        }),
-        api.get(`/orders/status-counts?user_id=${currentUser.id}`),
-        api.get(`/payments/wallet?user_id=${currentUser.id}`),
-      ]);
-
-      const ordersData = ordersResponse?.data;
-      const countsData = countsResponse?.data?.counts || null;
-      const walletData = walletResponse?.data;
-
-      if (!ordersData?.success) {
-        throw new Error(
-          ordersData?.message || "Unable to load orders"
-        );
+      // 1. Try unified fast summary endpoint (single HTTP request + single DB query roundtrip)
+      let summaryData = null;
+      try {
+        const summaryResponse = await api.get("/orders/dashboard-summary", {
+          params: { user_id: currentUser.id },
+        });
+        if (summaryResponse?.data?.success) {
+          summaryData = summaryResponse.data;
+        }
+      } catch (e) {
+        // Fallback gracefully if summary endpoint is temporarily unavailable
       }
 
-      const orderList = Array.isArray(ordersData?.orders)
-        ? ordersData.orders
-        : [];
+      if (summaryData) {
+        const orderList = Array.isArray(summaryData.orders) ? summaryData.orders : [];
+        const counts = summaryData.statusCounts || null;
+        const balance = Number(summaryData.walletBalance || 0);
 
-      setOrders(orderList);
-      setStatusCounts(countsData);
-      setWalletBalance(Number(walletData?.balance || 0));
+        setOrders(orderList);
+        setStatusCounts(counts);
+        setWalletBalance(balance);
+
+        try {
+          sessionStorage.setItem("shipdrop_dash_orders", JSON.stringify(orderList));
+          sessionStorage.setItem("shipdrop_dash_counts", JSON.stringify(counts));
+          sessionStorage.setItem("shipdrop_dash_wallet", String(balance));
+        } catch {}
+      } else {
+        // Fallback: Parallelize fast status counts, recent 6 orders, and wallet balance
+        const [ordersResponse, countsResponse, walletResponse] = await Promise.all([
+          api.get("/orders/all", {
+            params: {
+              user_id: currentUser.id,
+              limit: 6,
+              include_tracking: false,
+            },
+          }),
+          api.get(`/orders/status-counts?user_id=${currentUser.id}`),
+          api.get(`/payments/wallet?user_id=${currentUser.id}`),
+        ]);
+
+        const ordersData = ordersResponse?.data;
+        const countsData = countsResponse?.data?.counts || null;
+        const walletData = walletResponse?.data;
+
+        if (!ordersData?.success) {
+          throw new Error(
+            ordersData?.message || "Unable to load orders"
+          );
+        }
+
+        const orderList = Array.isArray(ordersData?.orders)
+          ? ordersData.orders
+          : [];
+
+        const balance = Number(walletData?.balance || 0);
+
+        setOrders(orderList);
+        setStatusCounts(countsData);
+        setWalletBalance(balance);
+
+        try {
+          sessionStorage.setItem("shipdrop_dash_orders", JSON.stringify(orderList));
+          sessionStorage.setItem("shipdrop_dash_counts", JSON.stringify(countsData));
+          sessionStorage.setItem("shipdrop_dash_wallet", String(balance));
+        } catch {}
+      }
     } catch (error) {
       console.error("Dashboard loading error:", error);
       setDashboardError(
@@ -354,10 +416,9 @@ function Dashboard() {
   };
 
   useEffect(() => {
-    if (user?.id) {
-      loadDashboard(true);
-    }
-  }, [user]);
+    // Initial fetch on mount
+    loadDashboard(pageLoading);
+  }, []);
 
   useEffect(() => {
     const handleWalletUpdated = (event) => {

@@ -11,6 +11,7 @@ const {
   searchPreviousCustomers,
   searchOrderForTracking,
   getOrderStatusCounts,
+  getDashboardSummary,
 } = require("../models/orderModel");
 
 const {
@@ -614,7 +615,7 @@ const getAllOrdersController = async (req, res) => {
           console.log(
             `GET ALL ORDERS LIVE TRACKING TIME: ${Date.now() - trackingStart} ms`,
           );
-        } else {
+        } else if (req.query.include_tracking !== "false") {
           // Asynchronously check for any untracked active orders in background without blocking response
           const untrackedAwbs = ordersWithStoredTracking
             .filter((o) => o.awb && !o.tracking_status && String(o.status || "").toUpperCase() !== "DELIVERED")
@@ -1058,6 +1059,42 @@ const getOrderStatusCountsController = async (req, res) => {
 };
 
 // ======================================================
+// GET DASHBOARD SUMMARY (FAST UNIFIED ENDPOINT)
+// ======================================================
+
+const getDashboardSummaryController = async (req, res) => {
+  try {
+    const userId = Number(
+      req.query?.user_id ||
+      req.user?.id ||
+      req.user?.user_id ||
+      req.user?.userId
+    );
+
+    if (!userId || !Number.isInteger(userId) || userId <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Valid user ID is required",
+      });
+    }
+
+    const summary = await getDashboardSummary(userId);
+
+    return res.status(200).json({
+      success: true,
+      ...summary,
+    });
+  } catch (error) {
+    console.error("Get dashboard summary error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Unable to fetch dashboard summary",
+    });
+  }
+};
+
+// ======================================================
 // EXPORT
 // ======================================================
 
@@ -1079,4 +1116,7 @@ module.exports = {
   searchTracking: searchTrackingController,
 
   getOrderStatusCounts: getOrderStatusCountsController,
+
+  getDashboardSummary: getDashboardSummaryController,
 };
+

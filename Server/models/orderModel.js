@@ -555,18 +555,18 @@ const getAllOrders = (user_id, page = 1, limit = 50, search = "", status = "", c
       w.delhivery_registered,
       w.status AS warehouse_status,
 
-      op.product_name,
-      op.sku,
-      op.price,
-      op.qty,
-      op.tax,
+      (SELECT op.product_name FROM order_products op WHERE op.order_id = o.id ORDER BY op.id ASC LIMIT 1) AS product_name,
+      (SELECT op.sku FROM order_products op WHERE op.order_id = o.id ORDER BY op.id ASC LIMIT 1) AS sku,
+      (SELECT op.price FROM order_products op WHERE op.order_id = o.id ORDER BY op.id ASC LIMIT 1) AS price,
+      (SELECT op.qty FROM order_products op WHERE op.order_id = o.id ORDER BY op.id ASC LIMIT 1) AS qty,
+      (SELECT op.tax FROM order_products op WHERE op.order_id = o.id ORDER BY op.id ASC LIMIT 1) AS tax,
 
-      pkg.length,
-      pkg.width,
-      pkg.height,
-      pkg.weight,
-      pkg.package_count,
-      pkg.volumetric_weight
+      (SELECT pkg.length FROM order_packages pkg WHERE pkg.order_id = o.id ORDER BY pkg.id ASC LIMIT 1) AS length,
+      (SELECT pkg.width FROM order_packages pkg WHERE pkg.order_id = o.id ORDER BY pkg.id ASC LIMIT 1) AS width,
+      (SELECT pkg.height FROM order_packages pkg WHERE pkg.order_id = o.id ORDER BY pkg.id ASC LIMIT 1) AS height,
+      (SELECT pkg.weight FROM order_packages pkg WHERE pkg.order_id = o.id ORDER BY pkg.id ASC LIMIT 1) AS weight,
+      (SELECT pkg.package_count FROM order_packages pkg WHERE pkg.order_id = o.id ORDER BY pkg.id ASC LIMIT 1) AS package_count,
+      (SELECT pkg.volumetric_weight FROM order_packages pkg WHERE pkg.order_id = o.id ORDER BY pkg.id ASC LIMIT 1) AS volumetric_weight
 
     FROM orders o
 
@@ -576,26 +576,6 @@ const getAllOrders = (user_id, page = 1, limit = 50, search = "", status = "", c
     LEFT JOIN warehouses w
       ON w.id = o.warehouse_id
       AND w.user_id = o.user_id
-
-    LEFT JOIN (
-      SELECT op1.order_id, op1.product_name, op1.sku, op1.price, op1.qty, op1.tax
-      FROM order_products op1
-      INNER JOIN (
-        SELECT order_id, MIN(id) AS min_id
-        FROM order_products
-        GROUP BY order_id
-      ) op2 ON op1.id = op2.min_id
-    ) op ON op.order_id = o.id
-
-    LEFT JOIN (
-      SELECT pkg1.order_id, pkg1.length, pkg1.width, pkg1.height, pkg1.weight, pkg1.package_count, pkg1.volumetric_weight
-      FROM order_packages pkg1
-      INNER JOIN (
-        SELECT order_id, MIN(id) AS min_id
-        FROM order_packages
-        GROUP BY order_id
-      ) pkg2 ON pkg1.id = pkg2.min_id
-    ) pkg ON pkg.order_id = o.id
 
     WHERE
       o.user_id = ?
@@ -1560,6 +1540,58 @@ const getOrderStatusCounts = async (userId) => {
 };
 
 // ======================================================
+// GET UNIFIED DASHBOARD SUMMARY (FAST SINGLE ROUND-TRIP)
+// ======================================================
+
+const getDashboardSummary = async (userId) => {
+  const numericUserId = Number(userId);
+  if (!numericUserId || !Number.isInteger(numericUserId) || numericUserId <= 0) {
+    throw new Error("Valid user ID is required");
+  }
+
+  const promiseDb = db.promise();
+
+  const [walletResult, countsResult, ordersResult] = await Promise.all([
+    promiseDb.query(
+      `SELECT balance FROM wallets WHERE user_id = ? LIMIT 1`,
+      [numericUserId]
+    ),
+    getOrderStatusCounts(numericUserId),
+    promiseDb.query(
+      `SELECT
+         o.id,
+         o.order_id,
+         o.user_id,
+         o.awb,
+         o.consignee_name,
+         o.payment_type,
+         o.status,
+         CASE
+           WHEN UPPER(TRIM(COALESCE(o.status, ''))) IN ('CANCELLED', 'CANCELED') THEN 'CANCELLED'
+           ELSE o.tracking_status
+         END AS tracking_status,
+         o.created_at
+       FROM orders o
+       WHERE o.user_id = ?
+       ORDER BY o.id DESC
+       LIMIT 6`,
+      [numericUserId]
+    ),
+  ]);
+
+  const walletRows = walletResult[0] || [];
+  const balance = Number(walletRows[0]?.balance || 0);
+  const statusCounts = countsResult || {};
+  const orders = ordersResult[0] || [];
+
+  return {
+    walletBalance: balance,
+    statusCounts,
+    orders,
+  };
+};
+
+// ======================================================
 // EXPORTS
 // ======================================================
 
@@ -1577,5 +1609,7 @@ module.exports = {
   searchOrderForTracking,
   getOrderStatusCounts,
   clearOrderStatusCountsCache,
+  getDashboardSummary,
 };
+
 

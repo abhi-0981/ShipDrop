@@ -167,6 +167,11 @@ const isAllowedOrigin = (origin) => {
 
 console.log("Allowed CORS origins:", explicitAllowedOrigins);
 
+const { securityHeaders } = require("./middleware/securityHeaders");
+const { generalApiLimiter } = require("./middleware/rateLimitMiddleware");
+
+app.use(securityHeaders);
+
 app.use(
   cors({
     origin: function (origin, callback) {
@@ -205,6 +210,9 @@ app.use(
     limit: "10mb",
   })
 );
+
+// Apply rate limiter to /api routes
+app.use("/api", generalApiLimiter);
 
 
 // ======================================================
@@ -504,5 +512,17 @@ if (require.main === module && !process.env.VERCEL) {
     startTrackingJob();
   });
 }
+
+// ======================================================
+// PROCESS CRASH GUARDS
+// ======================================================
+
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("Unhandled Promise Rejection at:", promise, "reason:", reason);
+});
+
+process.on("uncaughtException", (error) => {
+  console.error("Uncaught Exception thrown:", error);
+});
 
 module.exports = app;

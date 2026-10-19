@@ -69,7 +69,22 @@ const authRateLimiter = createRateLimiter({
   message: "Too many login/registration attempts. Please wait 15 minutes before trying again.",
 });
 
+const publicTrackingLimiter = createRateLimiter({
+  windowMs: 60 * 1000, // 1 minute
+  maxRequests: 60, // 60 requests per minute per IP
+  message: "Tracking request limit reached. Please wait a minute and try again.",
+});
+
+const generalApiLimiter = createRateLimiter({
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  maxRequests: 600, // 600 requests per 5 minutes per IP
+  message: "Request rate limit exceeded. Please slow down.",
+});
+
 module.exports = {
   createRateLimiter,
   authRateLimiter,
+  publicTrackingLimiter,
+  generalApiLimiter,
 };
+
