@@ -57,6 +57,13 @@ export const notifyOrderChange = (detail = {}) => {
   cachedCounts = null;
   lastFetchTime = 0;
 
+  try {
+    sessionStorage.removeItem("shipdrop_dash_orders");
+    sessionStorage.removeItem("shipdrop_dash_counts");
+    sessionStorage.removeItem("shipdrop_all_orders_cache");
+    sessionStorage.removeItem("shipdrop_processing_orders_cache");
+  } catch {}
+
   // 1. Dispatch standard unified events on the current window
   window.dispatchEvent(
     new CustomEvent("shipdrop:orders-updated", { detail })

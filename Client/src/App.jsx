@@ -46,6 +46,21 @@ const RouteLoader = () => (
   </div>
 );
 
+// Preload high-frequency routes during browser idle time for zero-delay tab switching
+if (typeof window !== "undefined") {
+  const preloadCoreRoutes = () => {
+    import("./pages/Dashboard/Dashboard");
+    import("./pages/Dashboard/AllOrders");
+    import("./pages/Dashboard/ProcessingOrders");
+    import("./pages/Dashboard/CreateOrder");
+  };
+  if ("requestIdleCallback" in window) {
+    window.requestIdleCallback(preloadCoreRoutes, { timeout: 2500 });
+  } else {
+    setTimeout(preloadCoreRoutes, 1200);
+  }
+}
+
 function App() {
   return (
     <ErrorBoundary>

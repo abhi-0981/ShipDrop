@@ -80,8 +80,21 @@ const Icon = ({ name, size = 16 }) => {
 };
 
 function ProcessingOrders() {
-  const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [orders, setOrders] = useState(() => {
+    try {
+      const cached = sessionStorage.getItem("shipdrop_processing_orders_cache");
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [loading, setLoading] = useState(() => {
+    try {
+      return !sessionStorage.getItem("shipdrop_processing_orders_cache");
+    } catch {
+      return true;
+    }
+  });
   const navigate = useNavigate();
 
   const [selectedOrders, setSelectedOrders] = useState([]);
@@ -132,7 +145,11 @@ function ProcessingOrders() {
       const data = response.data?.orders ?? response.data ?? [];
 
       rateCacheRef.current.clear();
-      setOrders(Array.isArray(data) ? data : []);
+      const list = Array.isArray(data) ? data : [];
+      setOrders(list);
+      try {
+        sessionStorage.setItem("shipdrop_processing_orders_cache", JSON.stringify(list));
+      } catch {}
     } catch (error) {
       // console.log("Processing orders error:", error);
       setOrders([]);

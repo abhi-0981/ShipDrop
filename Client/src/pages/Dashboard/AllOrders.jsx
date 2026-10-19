@@ -452,11 +452,36 @@ const StatusBadge = ({ status }) => {
 // ======================================================
 
 function AllOrders() {
-  const [orders, setOrders] = useState([]);
+  const [orders, setOrders] = useState(() => {
+    try {
+      const cached = sessionStorage.getItem("shipdrop_all_orders_cache");
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalOrderCount, setTotalOrderCount] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [totalPages, setTotalPages] = useState(() => {
+    try {
+      return Number(sessionStorage.getItem("shipdrop_all_orders_pages")) || 1;
+    } catch {
+      return 1;
+    }
+  });
+  const [totalOrderCount, setTotalOrderCount] = useState(() => {
+    try {
+      return Number(sessionStorage.getItem("shipdrop_all_orders_total")) || 0;
+    } catch {
+      return 0;
+    }
+  });
+  const [loading, setLoading] = useState(() => {
+    try {
+      return !sessionStorage.getItem("shipdrop_all_orders_cache");
+    } catch {
+      return true;
+    }
+  });
 
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -549,6 +574,14 @@ function AllOrders() {
       setTotalOrderCount(Number(data?.pagination?.totalOrders) || 0);
       setOrders(uniqueOrders);
       setSelectedIds([]);
+
+      if (currentPage === 1 && !debouncedSearch.trim()) {
+        try {
+          sessionStorage.setItem("shipdrop_all_orders_cache", JSON.stringify(uniqueOrders.slice(0, 50)));
+          sessionStorage.setItem("shipdrop_all_orders_pages", String(data?.pagination?.totalPages || 1));
+          sessionStorage.setItem("shipdrop_all_orders_total", String(data?.pagination?.totalOrders || 0));
+        } catch {}
+      }
     } catch (error) {
       if (requestId !== requestIdRef.current) return;
 

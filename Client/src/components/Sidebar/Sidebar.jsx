@@ -92,7 +92,14 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
     location.pathname.startsWith("/settings"),
   );
 
-  const [statusCounts, setStatusCounts] = useState({});
+  const [statusCounts, setStatusCounts] = useState(() => {
+    try {
+      const cached = sessionStorage.getItem("shipdrop_dash_counts");
+      return cached ? JSON.parse(cached) : {};
+    } catch {
+      return {};
+    }
+  });
   // ================= SIDEBAR SEARCH =================
   const [sidebarSearch, setSidebarSearch] = useState("");
   const [selectedSearchIndex, setSelectedSearchIndex] = useState(0);
@@ -274,6 +281,9 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
         const counts = await fetchOrderStatusCounts(userId, force);
         if (isMounted && counts) {
           setStatusCounts(counts);
+          try {
+            sessionStorage.setItem("shipdrop_dash_counts", JSON.stringify(counts));
+          } catch {}
         }
       } catch (error) {
         console.error("Sidebar status count error:", error);

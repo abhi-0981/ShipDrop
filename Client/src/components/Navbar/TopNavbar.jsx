@@ -92,7 +92,14 @@
       return typeof window !== "undefined" ? window.innerWidth < 1024 : false;
     });
 
-    const [balance, setBalance] = useState(0);
+    const [balance, setBalance] = useState(() => {
+      try {
+        const cached = sessionStorage.getItem("shipdrop_dash_wallet");
+        return cached ? Number(cached) || 0 : 0;
+      } catch {
+        return 0;
+      }
+    });
     const [showRecharge, setShowRecharge] = useState(false);
     const [showProfile, setShowProfile] = useState(false);
     const profileRef = useRef(null);
