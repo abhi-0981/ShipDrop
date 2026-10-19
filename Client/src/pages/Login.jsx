@@ -97,10 +97,17 @@ function Login() {
         replace: true,
       });
     } catch (error) {
-      toast.error(
-        error.response?.data?.message ||
-          "Unable to login. Please try again."
-      );
+      console.error("Login request error:", error);
+      if (!error.response) {
+        toast.error(
+          "Server connect nahi ho raha hai. Kripya check karein Backend Server chalu hai ya nahi."
+        );
+      } else {
+        toast.error(
+          error.response?.data?.message ||
+            "Unable to login. Please try again."
+        );
+      }
     } finally {
       setLoading(false);
     }
