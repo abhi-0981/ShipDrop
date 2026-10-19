@@ -64,7 +64,7 @@ function AdminLayout({ children }) {
   const isUsersActive = location.pathname.startsWith("/users");
 
   const menuItems = [
-    { name: "Dashboardd", path: "/dashboard", icon: HiOutlineViewGrid },
+    { name: "Dashboard", path: "/dashboard", icon: HiOutlineViewGrid },
     { name: "Businesss Analytics", path: "/analytics", icon: HiOutlinePresentationChartLine },
     { name: "All Orders", path: "/orders", icon: HiOutlineClipboardList },
     { name: "COD Remittance", path: "/cod-remittance", icon: HiOutlineCurrencyRupee },

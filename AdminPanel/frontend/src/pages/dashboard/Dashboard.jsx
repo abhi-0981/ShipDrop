@@ -384,7 +384,7 @@ function Dashboard() {
             </div>
 
             <h1 className="mt-1 text-xl sm:text-[25px] font-bold tracking-tight text-slate-900">
-              Dashboard
+              Dashboardd
             </h1>
 
             <p className="mt-0.5 sm:mt-1 text-xs text-slate-500">
