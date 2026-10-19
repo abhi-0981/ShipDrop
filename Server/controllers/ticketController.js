@@ -155,6 +155,7 @@ const getTicketController = async (req, res) => {
         error.message || "Unable to fetch ticket",
     });
   }
+
 };
 
 // ======================================================
@@ -164,7 +165,6 @@ const getTicketController = async (req, res) => {
 const replyToTicketController = async (req, res) => {
   try {
     const ticketId = Number(req.params.id);
-
     const userId = Number(req.user?.id || req.body?.user_id);
     const {
       message,

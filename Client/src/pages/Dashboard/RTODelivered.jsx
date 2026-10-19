@@ -18,7 +18,7 @@ const PURPLE = "#7052ff";
 // ICON
 // ======================================================
 
-const Icon = ({
+const Icon =  ({
   name,
   size = 17,
   strokeWidth = 1.8,
