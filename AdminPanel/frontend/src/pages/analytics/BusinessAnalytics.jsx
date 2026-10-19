@@ -316,10 +316,10 @@ export default function BusinessAnalytics() {
             </span>
           </div>
           <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-            Business & Profit Analytics
+            Business & Financial Analytics
           </h1>
           <p className="mt-1 text-sm text-slate-500">
-            Pura business analysis, seller payout tracking, net margins & order pipelines.
+            Pura business analysis, seller payout tracking, wallet inflow & order pipelines.
           </p>
         </div>
 
@@ -653,29 +653,29 @@ export default function BusinessAnalytics() {
           </div>
         </div>
 
-        {/* CARD 2: ESTIMATED PLATFORM PROFIT */}
+        {/* CARD 2: TOTAL COD ORDER VALUE (GMV) */}
         <div className="relative overflow-hidden rounded-2xl border border-emerald-200/80 bg-gradient-to-br from-emerald-50/40 via-white to-white p-5 shadow-xs transition hover:shadow-md">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider text-emerald-800">
-              Net Platform Profit (Est.)
+              COD Collection Value (GMV)
             </span>
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
-              <HiOutlineTrendingUp size={20} />
+              <HiOutlineCurrencyRupee size={20} />
             </div>
           </div>
           <div className="mt-3">
-            <div className="text-2xl font-bold tracking-tight text-emerald-600">
-              {formatMoney(kpis.estimatedProfit)}
+            <div className="text-2xl font-bold tracking-tight text-emerald-700">
+              {formatMoney(kpis.totalCODOrderValue)}
             </div>
             <div className="mt-1 flex items-center justify-between text-xs text-emerald-800/80">
-              <span>Platform Margin</span>
+              <span>COD Volume</span>
               <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-bold text-emerald-800">
-                ~18% Spread
+                {kpis.codOrders} COD Orders
               </span>
             </div>
           </div>
           <div className="mt-3 border-t border-emerald-100 pt-2 text-[11px] text-emerald-700/70">
-            Aggregator freight margin profit
+            Total product value to be collected on delivery
           </div>
         </div>
 
