@@ -7,10 +7,4 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
-  build: {
-    target: "esnext",
-    minify: "esbuild",
-    cssCodeSplit: true,
-    chunkSizeWarningLimit: 2000,
-  },
 });
