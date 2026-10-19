@@ -193,9 +193,19 @@ const Icon = ({
 const getUserId = () => {
   try {
     const raw = localStorage.getItem("user");
-    if (!raw) return null;
-    const user = JSON.parse(raw);
-    return user?.id || user?.user_id || null;
+    if (raw) {
+      const user = JSON.parse(raw);
+      if (user?.id || user?.user_id) return user.id || user.user_id;
+    }
+    const token = localStorage.getItem("token");
+    if (token) {
+      const parts = token.split(".");
+      if (parts.length === 3) {
+        const payload = JSON.parse(atob(parts[1]));
+        return payload?.id || payload?.user_id || null;
+      }
+    }
+    return null;
   } catch {
     return null;
   }
@@ -433,14 +443,17 @@ function Tickets() {
     }
   }, [selectedTicket?.messages]);
 
+  const getActiveUserId = () => userId || getUserId();
+
   const fetchTickets = async ({
     searchValue = search,
     statusValue = statusFilter,
   } = {}) => {
-    if (!userId) throw new Error("Please login again to continue");
+    const activeUserId = getActiveUserId();
+    if (!activeUserId) throw new Error("Please login again to continue");
 
     const params = new URLSearchParams();
-    params.set("user_id", userId);
+    params.set("user_id", activeUserId);
     if (searchValue.trim()) params.set("search", searchValue.trim());
     if (statusValue) params.set("status", statusValue);
 
@@ -476,8 +489,9 @@ function Tickets() {
       await fetchTickets();
 
       if (selectedTicket?.id) {
+        const activeUserId = getActiveUserId();
         const data = await apiRequest(
-          `/tickets/${selectedTicket.id}?user_id=${userId}`
+          `/tickets/${selectedTicket.id}?user_id=${activeUserId}`
         );
         setSelectedTicket(data.ticket);
       }
@@ -492,7 +506,8 @@ function Tickets() {
   const openTicket = async (ticketId) => {
     try {
       setDetailLoading(true);
-      const data = await apiRequest(`/tickets/${ticketId}?user_id=${userId}`);
+      const activeUserId = getActiveUserId();
+      const data = await apiRequest(`/tickets/${ticketId}?user_id=${activeUserId}`);
       setSelectedTicket(data.ticket);
       setReply("");
       setShowMobileInfo(false);
@@ -517,8 +532,9 @@ function Tickets() {
 
     try {
       setCreating(true);
+      const activeUserId = getActiveUserId();
       const payload = {
-        user_id: Number(userId),
+        user_id: Number(activeUserId),
         category: newTicket.category,
         priority: newTicket.priority,
         subject: newTicket.subject.trim(),
@@ -572,17 +588,18 @@ function Tickets() {
 
     try {
       setSendingReply(true);
+      const activeUserId = getActiveUserId();
       await apiRequest(`/tickets/${selectedTicket.id}/reply`, {
         method: "POST",
         body: JSON.stringify({
-          user_id: Number(userId),
+          user_id: Number(activeUserId),
           message,
         }),
       });
 
       setReply("");
       const data = await apiRequest(
-        `/tickets/${selectedTicket.id}?user_id=${userId}`
+        `/tickets/${selectedTicket.id}?user_id=${activeUserId}`
       );
       setSelectedTicket(data.ticket);
       await fetchTickets();
@@ -600,13 +617,14 @@ function Tickets() {
 
     try {
       setClosing(true);
+      const activeUserId = getActiveUserId();
       await apiRequest(`/tickets/${selectedTicket.id}/close`, {
         method: "POST",
-        body: JSON.stringify({ user_id: Number(userId) }),
+        body: JSON.stringify({ user_id: Number(activeUserId) }),
       });
 
       const data = await apiRequest(
-        `/tickets/${selectedTicket.id}?user_id=${userId}`
+        `/tickets/${selectedTicket.id}?user_id=${activeUserId}`
       );
       setSelectedTicket(data.ticket);
       await fetchTickets();

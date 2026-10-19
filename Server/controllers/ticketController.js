@@ -165,10 +165,10 @@ const replyToTicketController = async (req, res) => {
   try {
     const ticketId = Number(req.params.id);
 
-    const userId = Number(req.user?.id || req.body.user_id);
+    const userId = Number(req.user?.id || req.body?.user_id);
     const {
       message,
-    } = req.body;
+    } = req.body || {};
 
     if (
       !Number.isInteger(ticketId) ||
@@ -181,8 +181,8 @@ const replyToTicketController = async (req, res) => {
     }
 
     if (
-      !Number.isInteger(Number(user_id)) ||
-      Number(user_id) <= 0
+      !Number.isInteger(userId) ||
+      userId <= 0
     ) {
       return res.status(400).json({
         success: false,
