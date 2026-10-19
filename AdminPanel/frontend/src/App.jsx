@@ -12,6 +12,8 @@ import Login from "./pages/Login";
 
 import Dashboard from "./pages/dashboard/Dashboard";
 
+import BusinessAnalytics from "./pages/analytics/BusinessAnalytics";
+
 import RateCard from "./rate-card/RateCard";
 
 import SetRate from "./rate-card/SetRate";
@@ -90,6 +92,16 @@ function App() {
           element={
             <AdminPage>
               <Dashboard />
+            </AdminPage>
+          }
+        />
+
+        {/* BUSINESS ANALYTICS */}
+        <Route
+          path="/analytics"
+          element={
+            <AdminPage>
+              <BusinessAnalytics />
             </AdminPage>
           }
         />

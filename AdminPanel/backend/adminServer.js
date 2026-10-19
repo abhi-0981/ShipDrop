@@ -21,6 +21,7 @@ const adminRoutes = require("./routes/adminRoutes");
 const userRoutes = require("./routes/userRoutes");
 const weightCheckingRoutes = require("./routes/weightCheckingRoutes");  
 const impersonateRoutes = require("./routes/impersonateRoutes");
+const analyticsRoutes = require("./routes/analyticsRoutes");
 const { ensureTables } = require("./config/ensureTables");
 
 ensureTables().catch((err) =>
@@ -305,6 +306,15 @@ app.use(
 app.use(
   "/api/admin/impersonate",
   impersonateRoutes
+);
+
+// =====================================================
+// BUSINESS ANALYTICS & PROFIT ROUTES
+// =====================================================
+
+app.use(
+  "/api/admin/analytics",
+  analyticsRoutes
 );
 
 // =====================================================
