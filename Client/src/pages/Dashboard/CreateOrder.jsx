@@ -1986,9 +1986,7 @@ const handleRequiredFieldEnter = (e) => {
                     <option value="">-- No Party Selected --</option>
                     {partyIdentities.map((party) => (
                       <option key={party.id} value={party.id}>
-                        {party.name}
-                        {party.company_name ? ` (${party.company_name})` : ""}
-                        {party.reference_name ? ` [${party.reference_name}]` : ""}
+                        {party.reference_name || party.name}
                       </option>
                     ))}
                   </select>
@@ -2004,14 +2002,12 @@ const handleRequiredFieldEnter = (e) => {
                     const party = partyIdentities.find((p) => Number(p.id) === Number(selectedPartyIdentityId));
                     return (
                       <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px] font-medium text-slate-500">
-                        <span className="rounded-md bg-sky-50 px-2 py-0.5 font-bold text-[#008dd2] border border-sky-100 truncate" title={party?.name}>
-                          {party?.name || "Selected"}
+                        <span
+                          className="rounded-md bg-sky-50 px-2 py-0.5 font-bold text-[#008dd2] border border-sky-100 truncate"
+                          title={party?.reference_name ? `${party.reference_name} — ${party.name}` : party?.name}
+                        >
+                          {party?.reference_name || party?.name || "Selected"}
                         </span>
-                        {party?.company_name && (
-                          <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-slate-600 truncate max-w-[140px]" title={party.company_name}>
-                            {party.company_name}
-                          </span>
-                        )}
                         <button
                           type="button"
                           onClick={() => setSelectedPartyIdentityId(null)}
