@@ -1928,7 +1928,7 @@ const handleRequiredFieldEnter = (e) => {
               <div className="relative md:col-span-1">
                 <div className="flex items-center justify-between mb-1.5 gap-1.5">
                   <label className="block text-[11px] sm:text-xs font-bold text-slate-600 truncate">
-                    Party Identity <span className="text-slate-400 font-normal text-[10px]">(Optional)</span>
+                    Party Identity 
                   </label>
                   <Link
                     to="/settings/party-identities"
@@ -1949,7 +1949,7 @@ const handleRequiredFieldEnter = (e) => {
                     disabled={partyIdentitiesLoading}
                     className={`${inputClass} appearance-none pr-8 cursor-pointer truncate text-xs`}
                   >
-                    <option value="">-- No Party (Default) --</option>
+                    <option value="">-- No Party Selected --</option>
                     {partyIdentities.map((party) => (
                       <option key={party.id} value={party.id}>
                         {party.name}
@@ -1971,14 +1971,14 @@ const handleRequiredFieldEnter = (e) => {
                     <button
                       type="button"
                       onClick={() => setSelectedPartyIdentityId(null)}
-                      className="text-slate-400 hover:text-slate-600 text-[10px] underline shrink-0"
+                      className="text-slate-400 hover:text-slate-600 text-[10px] underline shrink-0 cursor-pointer "
                     >
                       Clear
                     </button>
                   </div>
                 ) : (
                   <p className="mt-2 text-[10px] sm:text-[11px] text-slate-400 truncate">
-                    Optional: Select party
+                    Select party
                   </p>
                 )}
               </div>

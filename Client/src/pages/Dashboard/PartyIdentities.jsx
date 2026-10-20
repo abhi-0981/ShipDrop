@@ -283,22 +283,6 @@ export default function PartyIdentities() {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,0.02)] sm:col-span-2 lg:col-span-1 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                Account Isolation
-              </p>
-              <p className="mt-1 text-xs text-emerald-600 font-medium">
-                ✓ 100% Private to your account
-              </p>
-              <p className="text-[11px] text-slate-400 mt-0.5">
-                Never shared across users
-              </p>
-            </div>
-            <div className="h-10 w-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-sm font-bold">
-              🔒
-            </div>
-          </div>
         </div>
 
         {/* ==================================================
@@ -378,9 +362,7 @@ export default function PartyIdentities() {
                     <th className="w-[45%] px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-500">
                       Party Identity Name
                     </th>
-                    <th className="w-[18%] px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                      Linked Orders
-                    </th>
+                   
                     <th className="w-[15%] px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-500">
                       Created
                     </th>
@@ -405,12 +387,7 @@ export default function PartyIdentities() {
                           {identity.name}
                         </span>
                       </td>
-                      <td className="px-4 py-3">
-                        <span className="inline-flex items-center gap-1.5 rounded-md bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
-                          <HiOutlineCube size={13} className="text-slate-500" />
-                          {Number(identity.linked_orders_count) || 0} {Number(identity.linked_orders_count) === 1 ? "order" : "orders"}
-                        </span>
-                      </td>
+                      
                       <td className="px-4 py-3 text-xs text-slate-500">
                         {formatDate(identity.created_at)}
                       </td>
