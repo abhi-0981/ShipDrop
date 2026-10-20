@@ -82,6 +82,7 @@ function CreateOrder() {
   const [formData, setFormData] = useState(initialFormData);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingOrderId, setEditingOrderId] = useState(null);
+  const [editWarehouseId, setEditWarehouseId] = useState(null);
 
   const [products, setProducts] = useState([{ ...initialProduct }]);
   const [packages, setPackages] = useState([{ ...initialPackage }]);
@@ -173,6 +174,9 @@ function CreateOrder() {
 
       setIsEditMode(true);
       setEditingOrderId(order.id || order.order_id);
+      if (order.warehouse_id) {
+        setEditWarehouseId(Number(order.warehouse_id));
+      }
 
       if (order.party_identity_id) {
         setSelectedPartyIdentityId(Number(order.party_identity_id));
@@ -248,15 +252,22 @@ dangerous_good: order.dangerous_good === true ||
 
   // Restore warehouse when warehouses list is loaded in edit mode
   useEffect(() => {
-    const storedOrder = sessionStorage.getItem("editingProcessingOrder");
-    if (!storedOrder || !warehouses.length || selectedWarehouse) return;
+    const targetWarehouseId =
+      editWarehouseId ||
+      (() => {
+        try {
+          const stored = sessionStorage.getItem("editingProcessingOrder");
+          return stored ? JSON.parse(stored)?.warehouse_id : null;
+        } catch {
+          return null;
+        }
+      })();
+
+    if (!targetWarehouseId || !warehouses.length || selectedWarehouse) return;
 
     try {
-      const order = JSON.parse(storedOrder);
-      if (!order?.warehouse_id) return;
-
       const matchingWarehouse = warehouses.find(
-        (w) => Number(w.id) === Number(order.warehouse_id),
+        (w) => Number(w.id) === Number(targetWarehouseId),
       );
 
       if (matchingWarehouse) {
@@ -272,12 +283,31 @@ dangerous_good: order.dangerous_good === true ||
     } catch (error) {
       console.log("Edit warehouse restore error:", error);
     }
-  }, [warehouses, selectedWarehouse]);
+  }, [warehouses, selectedWarehouse, editWarehouseId]);
+
+  // When leaving Create Order page (changing tab / navigating away), clear edit session
+  useEffect(() => {
+    const handleReset = () => {
+      sessionStorage.removeItem("editingProcessingOrder");
+      setIsEditMode(false);
+      setEditingOrderId(null);
+      setEditWarehouseId(null);
+      resetForm();
+    };
+
+    window.addEventListener("shipdrop:resetCreateOrder", handleReset);
+
+    return () => {
+      window.removeEventListener("shipdrop:resetCreateOrder", handleReset);
+      sessionStorage.removeItem("editingProcessingOrder");
+    };
+  }, []);
 
   const cancelEdit = () => {
     sessionStorage.removeItem("editingProcessingOrder");
     setIsEditMode(false);
     setEditingOrderId(null);
+    setEditWarehouseId(null);
     resetForm();
     toast("Edit cancelled");
   };
@@ -1373,6 +1403,7 @@ dangerous_good: order.dangerous_good === true ||
     resetShippingRate();
     setIsEditMode(false);
     setEditingOrderId(null);
+    setEditWarehouseId(null);
     sessionStorage.removeItem("editingProcessingOrder");
   };
 

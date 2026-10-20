@@ -210,6 +210,7 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
   };
 
   const handleNavClick = () => {
+    sessionStorage.removeItem("editingProcessingOrder");
     if (window.innerWidth < 1024) {
       handleToggle(true);
     }
@@ -416,6 +417,10 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
                         to={item.path}
                         onClick={() => {
                           setSidebarSearch("");
+                          sessionStorage.removeItem("editingProcessingOrder");
+                          if (item.path === "/create-order") {
+                            window.dispatchEvent(new Event("shipdrop:resetCreateOrder"));
+                          }
                           handleNavClick();
                         }}
                         className={`block px-3 py-2.5 text-[13px] transition ${
@@ -451,7 +456,11 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
           {/* CREATE ORDER */}
           <Link
             to="/create-order"
-            onClick={handleNavClick}
+            onClick={() => {
+              sessionStorage.removeItem("editingProcessingOrder");
+              window.dispatchEvent(new Event("shipdrop:resetCreateOrder"));
+              handleNavClick();
+            }}
             className={`flex items-center rounded-xl px-3 py-2.5 text-[14px] transition duration-150 ${activeClass(
               "/create-order",
             )}`}
@@ -753,6 +762,10 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
 
         <Link
           to="/create-order"
+          onClick={() => {
+            sessionStorage.removeItem("editingProcessingOrder");
+            window.dispatchEvent(new Event("shipdrop:resetCreateOrder"));
+          }}
           className="-mt-5 flex h-12 w-12 items-center justify-center rounded-full bg-[#008dd2] text-white shadow-lg shadow-[#008dd2]/30 transition active:scale-90"
         >
           <HiOutlinePlusCircle size={26} />

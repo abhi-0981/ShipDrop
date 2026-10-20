@@ -615,6 +615,8 @@ function Dashboard() {
   };
 
   const handleCreateOrder = () => {
+    sessionStorage.removeItem("editingProcessingOrder");
+    window.dispatchEvent(new Event("shipdrop:resetCreateOrder"));
     navigate("/create-order");
   };
 
