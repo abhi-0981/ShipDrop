@@ -66,11 +66,11 @@ const generateUniqueOrderId = (callback, attempts = 0) => {
 // ======================================================
 
 const createOrder = (orderData, callback) => {
-  generateUniqueOrderId((idError, publicOrderId) => {
-    if (idError) {
-      return callback(idError);
-    }
+  const isManualCarrier = Boolean(
+    orderData.carrier && orderData.carrier !== "Delivery"
+  );
 
+  const proceedWithInsert = (publicOrderId) => {
     const query = `
         INSERT INTO orders
         (
@@ -79,6 +79,11 @@ const createOrder = (orderData, callback) => {
           pickup_address_id,
           warehouse_id,
           party_identity_id,
+
+          carrier,
+          consignment_no,
+          package_type,
+          manual_amount_including_gst,
 
           return_address_id,
           return_name,
@@ -107,19 +112,20 @@ const createOrder = (orderData, callback) => {
           state,
           country,
           payment_type,
-risk_type,
-fragile_shipment,
-dangerous_good,
-status
+          risk_type,
+          fragile_shipment,
+          dangerous_good,
+          status
         )
         VALUES (
-  ?, ?, ?, ?, ?,
-  ?, ?, ?, ?, ?, ?,
-  ?, ?, ?, ?, ?,
-  ?, ?, ?, ?, ?, ?,
-  ?, ?, ?, ?, ?, ?,
-  ?, ?, ?, ?, ?, ?, ?
-)
+          ?, ?, ?, ?, ?,
+          ?, ?, ?, ?,
+          ?, ?, ?, ?, ?, ?,
+          ?, ?, ?, ?, ?,
+          ?, ?, ?, ?, ?, ?,
+          ?, ?, ?, ?, ?, ?,
+          ?, ?, ?, ?, ?, ?, ?
+        )
       `;
 
     db.query(
@@ -134,6 +140,16 @@ status
         orderData.pickup_address_id,
         orderData.warehouse_id || null,
         orderData.party_identity_id || null,
+
+        // ==========================================
+        // MANUAL CARRIER FIELDS
+        // ==========================================
+        orderData.carrier || "Delivery",
+        orderData.consignment_no || null,
+        orderData.package_type || null,
+        orderData.manual_amount_including_gst !== undefined && orderData.manual_amount_including_gst !== null
+          ? Number(orderData.manual_amount_including_gst)
+          : null,
 
         // ==========================================
         // RETURN ADDRESS
@@ -170,13 +186,14 @@ status
         orderData.state,
         orderData.country || "India",
 
-orderData.payment_type || "Prepaid",
-orderData.risk_type || "Owner Risk",
-orderData.fragile_shipment ? 1 : 0,
-orderData.dangerous_good ? 1 : 0,
+        orderData.payment_type || "Prepaid",
+        orderData.risk_type || "Owner Risk",
+        orderData.fragile_shipment ? 1 : 0,
+        orderData.dangerous_good ? 1 : 0,
 
-// New order starts in Processing.
-"Processing",],
+        // New order starts in Processing for Delivery, or Booked for manual carriers
+        orderData.status || (isManualCarrier ? "Booked" : "Processing"),
+      ],
       (err, result) => {
         if (err) {
           return callback(err);
@@ -186,13 +203,31 @@ orderData.dangerous_good ? 1 : 0,
         return callback(null, {
           id: result.insertId,
           order_id: publicOrderId,
+          carrier: orderData.carrier || "Delivery",
+          consignment_no: orderData.consignment_no || null,
+          package_type: orderData.package_type || null,
+          manual_amount_including_gst: orderData.manual_amount_including_gst || null,
+          status: orderData.status || (isManualCarrier ? "Booked" : "Processing"),
           warehouse_id: orderData.warehouse_id || null,
           return_address_id: orderData.return_address_id || null,
           message: "Order created successfully",
         });
       },
     );
-  });
+  };
+
+  if (isManualCarrier) {
+    // For manual carrier orders, order_id must remain NULL. Do not generate a random order ID.
+    proceedWithInsert(null);
+  } else {
+    // Delivery orders use unique 6-digit public order ID
+    generateUniqueOrderId((idError, publicOrderId) => {
+      if (idError) {
+        return callback(idError);
+      }
+      proceedWithInsert(publicOrderId);
+    });
+  }
 };
 
 // ======================================================
@@ -463,6 +498,10 @@ const getAllOrders = (user_id, page = 1, limit = 50, search = "", status = "", c
       o.id,
       o.order_id,
       o.user_id,
+      o.carrier,
+      o.consignment_no,
+      o.package_type,
+      o.manual_amount_including_gst,
       o.party_identity_id,
       pi.name AS party_name,
       pi.reference_name AS party_reference_name,
@@ -603,6 +642,8 @@ const getAllOrders = (user_id, page = 1, limit = 50, search = "", status = "", c
         OR UPPER(TRIM(COALESCE(o.consignee_name, ''))) LIKE UPPER(?)
         OR TRIM(COALESCE(o.mobile, '')) LIKE ?
         OR UPPER(TRIM(COALESCE(pi.name, ''))) LIKE UPPER(?)
+        OR UPPER(TRIM(COALESCE(o.consignment_no, ''))) LIKE UPPER(?)
+        OR UPPER(TRIM(COALESCE(o.carrier, ''))) LIKE UPPER(?)
       )
 
     ORDER BY o.id DESC
@@ -625,6 +666,8 @@ const getAllOrders = (user_id, page = 1, limit = 50, search = "", status = "", c
         OR UPPER(TRIM(COALESCE(o.consignee_name, ''))) LIKE UPPER(?)
         OR TRIM(COALESCE(o.mobile, '')) LIKE ?
         OR UPPER(TRIM(COALESCE(pi.name, ''))) LIKE UPPER(?)
+        OR UPPER(TRIM(COALESCE(o.consignment_no, ''))) LIKE UPPER(?)
+        OR UPPER(TRIM(COALESCE(o.carrier, ''))) LIKE UPPER(?)
       )
   `;
 
@@ -632,6 +675,8 @@ const getAllOrders = (user_id, page = 1, limit = 50, search = "", status = "", c
     user_id,
     ...statusParams,
     searchTerm,
+    searchValue,
+    searchValue,
     searchValue,
     searchValue,
     searchValue,
@@ -645,6 +690,8 @@ const getAllOrders = (user_id, page = 1, limit = 50, search = "", status = "", c
     user_id,
     ...countStatusParams,
     searchTerm,
+    searchValue,
+    searchValue,
     searchValue,
     searchValue,
     searchValue,
@@ -678,6 +725,10 @@ const getOrderById = (orderId, userId) => {
           o.id,
           o.order_id,
           o.user_id,
+          o.carrier,
+          o.consignment_no,
+          o.package_type,
+          o.manual_amount_including_gst,
           o.party_identity_id,
           pi.name AS party_name,
           pi.reference_name AS party_reference_name,
@@ -827,6 +878,14 @@ o.status,
 
         user_id: firstRow.user_id,
 
+        carrier: firstRow.carrier || "Delivery",
+
+        consignment_no: firstRow.consignment_no || null,
+
+        package_type: firstRow.package_type || null,
+
+        manual_amount_including_gst: firstRow.manual_amount_including_gst || null,
+
         pickup_address_id: firstRow.pickup_address_id,
 
         warehouse_id: firstRow.warehouse_id,
@@ -834,6 +893,8 @@ o.status,
         party_identity_id: firstRow.party_identity_id || null,
 
         party_name: firstRow.party_name || null,
+
+        party_reference_name: firstRow.party_reference_name || null,
 
         return_address_id: firstRow.return_address_id,
 

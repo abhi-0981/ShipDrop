@@ -107,7 +107,41 @@ async function ensureTables() {
       }
     }
 
-    console.log("Core tables including party_identities verified successfully.");
+    // 4. Manual carrier order support on orders table
+    // Ensure order_id is nullable for manual carrier orders
+    try {
+      await promiseDb.query(
+        "ALTER TABLE orders MODIFY COLUMN order_id VARCHAR(50) NULL DEFAULT NULL"
+      );
+    } catch (orderIdErr) {
+      console.warn("Notice modifying orders.order_id to NULL:", orderIdErr.message);
+    }
+
+    const orderCarrierColumns = [
+      { name: "carrier", type: "VARCHAR(50) NOT NULL DEFAULT 'Delivery'" },
+      { name: "consignment_no", type: "VARCHAR(100) NULL DEFAULT NULL" },
+      { name: "package_type", type: "VARCHAR(50) NULL DEFAULT NULL" },
+      { name: "manual_amount_including_gst", type: "DECIMAL(10, 2) NULL DEFAULT NULL" },
+    ];
+
+    for (const col of orderCarrierColumns) {
+      try {
+        const [existing] = await promiseDb.query(
+          `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'orders' AND COLUMN_NAME = ?`,
+          [col.name]
+        );
+        if (!existing || existing.length === 0) {
+          await promiseDb.query(
+            `ALTER TABLE orders ADD COLUMN ${col.name} ${col.type}`
+          );
+          console.log(`Added column ${col.name} to orders.`);
+        }
+      } catch (colErr) {
+        console.warn(`Column check/add notice for orders.${col.name}:`, colErr.message);
+      }
+    }
+
+    console.log("Core tables and manual carrier columns verified successfully.");
   } catch (error) {
     console.warn("ensureTables notice:", error.message);
   }

@@ -27,6 +27,16 @@ async function ensureIndexes() {
       columns: "user_id, created_at DESC",
     },
     {
+      table: "orders",
+      name: "idx_orders_carrier",
+      columns: "carrier",
+    },
+    {
+      table: "orders",
+      name: "idx_orders_consignment_no",
+      columns: "consignment_no",
+    },
+    {
       table: "manifests",
       name: "idx_manifests_user_status_order",
       columns: "user_id, status, order_id",

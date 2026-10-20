@@ -184,6 +184,9 @@ const getAWB = (order) => {
 };
 
 const getOrderId = (order) => {
+  if (order?.carrier && order.carrier !== "Delivery") {
+    return order?.order_id || "—";
+  }
   return order?.order_id || order?.id || "—";
 };
 
@@ -258,6 +261,10 @@ const getPaymentType = (order) => {
 };
 
 const getAmount = (order) => {
+  if (order?.carrier && order.carrier !== "Delivery") {
+    const manualAmt = Number(order?.manual_amount_including_gst);
+    return Number.isFinite(manualAmt) ? manualAmt : 0;
+  }
   const amount = Number(
     order?.shipping_charge ??
       order?.shipping_charges ??
@@ -383,6 +390,13 @@ const formatTime = (value) => {
 };
 
 const getStatus = (order) => {
+  if (order?.carrier && order.carrier !== "Delivery") {
+    return safeString(order?.status || "BOOKED")
+      .trim()
+      .toUpperCase()
+      .replace(/[-_]+/g, " ")
+      .replace(/\s+/g, " ");
+  }
   return safeString(
     order?.tracking_status ||
       order?.status ||
@@ -407,6 +421,9 @@ const StatusBadge = ({ status }) => {
   let className = "bg-slate-50 text-slate-600";
 
   switch (status) {
+    case "BOOKED":
+      className = "bg-emerald-50 text-emerald-700 border border-emerald-200/60";
+      break;
     case "MANIFESTED":
       className = "bg-sky-50 text-sky-600";
       break;
@@ -762,6 +779,10 @@ useEffect(() => {
       toast.error("Unable to print this label");
       return;
     }
+    if (order.carrier && order.carrier !== "Delivery") {
+      toast.error("Courier labels are not available for manual carriers");
+      return;
+    }
 
     await printShippingLabels([order], "ParcelDrop Shipping Label");
   };
@@ -772,8 +793,17 @@ useEffect(() => {
       return;
     }
 
+    const eligibleOrders = selectedOrders.filter(
+      (order) => !order.carrier || order.carrier === "Delivery"
+    );
+
+    if (eligibleOrders.length === 0) {
+      toast.error("Courier labels are only available for Delivery carrier orders");
+      return;
+    }
+
     await printShippingLabels(
-      selectedOrders,
+      eligibleOrders,
       "ParcelDrop Shipping Labels",
     );
   };
@@ -781,6 +811,10 @@ useEffect(() => {
   const handleDownloadSingleLabel = async (order) => {
     if (!order) {
       toast.error("Unable to download this label");
+      return;
+    }
+    if (order.carrier && order.carrier !== "Delivery") {
+      toast.error("Courier labels are not available for manual carriers");
       return;
     }
 
@@ -793,7 +827,16 @@ useEffect(() => {
       return;
     }
 
-    await downloadShippingLabels(selectedOrders);
+    const eligibleOrders = selectedOrders.filter(
+      (order) => !order.carrier || order.carrier === "Delivery"
+    );
+
+    if (eligibleOrders.length === 0) {
+      toast.error("Courier labels are only available for Delivery carrier orders");
+      return;
+    }
+
+    await downloadShippingLabels(eligibleOrders);
   };
 
   const handleExport = () => {
@@ -806,32 +849,40 @@ useEffect(() => {
       selectedOrders.length > 0 ? selectedOrders : nonProcessingOrders;
 
     const headers = [
+      "Carrier",
+      "Consignment No",
       "AWB",
       "Order ID",
       "Party",
       "Customer",
       "Mobile",
       "Shipment",
+      "Package Type",
       "Service Type",
       "From",
       "To",
       "Payment",
+      "Amount (₹)",
       "Weight (Kg)",
       "Status",
       "Created",
     ];
 
     const rows = exportOrders.map((order) => [
+      order?.carrier || "Delivery",
+      order?.consignment_no || "—",
       getAWB(order),
       getOrderId(order),
       getPartyName(order),
       getCustomerName(order),
       getMobile(order),
       getShipmentName(order),
+      order?.package_type || "Box",
       getServiceType(order),
       getPickupCity(order),
       getDeliveryCity(order),
       getPaymentType(order),
+      getAmount(order).toFixed(2),
       getWeight(order).toFixed(2),
       getStatus(order),
       getCreatedAt(order) || "",
@@ -1087,6 +1138,7 @@ useEffect(() => {
                 className="h-10 w-full sm:min-w-[130px] rounded-xl border border-slate-200 bg-white px-2.5 text-xs text-slate-600 outline-none focus:border-[#008dd2]"
               >
                 <option value="ALL">All Status</option>
+                <option value="BOOKED">Booked</option>
                 <option value="MANIFESTED">Manifested</option>
                 <option value="NOT PICKED">Not Picked</option>
                 <option value="PENDING">Pending</option>
@@ -1181,6 +1233,7 @@ useEffect(() => {
               const weight = getWeight(order);
               const status = getStatus(order);
               const awb = getAWB(order);
+              const isManual = Boolean(order?.carrier && order.carrier !== "Delivery");
 
               return (
                 <div
@@ -1206,9 +1259,15 @@ useEffect(() => {
                         <Icon name="check" size={11} />
                       </button>
 
-                      <span className="font-mono text-xs font-bold text-slate-800">
-                        #{getOrderId(order)}
-                      </span>
+                      {isManual ? (
+                        <span className="rounded bg-sky-50 border border-sky-200 px-2 py-0.5 text-[11px] font-bold text-[#008dd2]">
+                          {order.carrier}
+                        </span>
+                      ) : (
+                        <span className="font-mono text-xs font-bold text-slate-800">
+                          #{getOrderId(order)}
+                        </span>
+                      )}
                     </div>
 
                     <div className="flex items-center justify-center gap-1">
@@ -1245,47 +1304,73 @@ useEffect(() => {
                       </div>
                     )}
 
-                    {/* AWB TOUCH/CLICK ACTION BAR */}
-                    <div className="flex items-center justify-between font-mono text-[11px] text-slate-600 bg-slate-50/70 px-2 py-1.5 rounded-lg border border-slate-100">
-                      <span
-                        onTouchEnd={() => handleTouchTracking(awb)}
-                        onClick={() => triggerTracking(awb)}
-                        className="truncate font-semibold select-none cursor-pointer"
-                        title="Double-tap or click Track to track order"
-                      >
-                        AWB: {awb}
-                      </span>
+                    {/* AWB / CONSIGNMENT ACTION BAR */}
+                    {isManual ? (
+                      <div className="flex items-center justify-between font-mono text-[11px] text-slate-600 bg-slate-50/70 px-2 py-1.5 rounded-lg border border-slate-100">
+                        <span className="truncate font-semibold select-none">
+                          Consignment: {order.consignment_no || "—"}
+                        </span>
 
-                      {awb && awb !== "—" && (
-                        <div className="flex items-center gap-2 shrink-0">
-                          {/* 1-TAP TRACK BUTTON FOR MOBILE TOUCH */}
-                          <button
-                            type="button"
-                            onClick={() => triggerTracking(awb)}
-                            className="flex items-center gap-1 rounded-md bg-[#008dd2]/10 px-2 py-0.5 text-[10px] font-bold text-[#008dd2] active:scale-95 transition"
-                          >
-                            <Icon name="truck" size={11} />
-                            Track
-                          </button>
-
+                        {order.consignment_no && (
                           <button
                             type="button"
                             onClick={async () => {
                               try {
-                                await navigator.clipboard.writeText(String(awb));
-                                toast.success("AWB copied");
+                                await navigator.clipboard.writeText(String(order.consignment_no));
+                                toast.success("Consignment No copied");
                               } catch {
-                                toast.error("Unable to copy AWB");
+                                toast.error("Unable to copy Consignment No");
                               }
                             }}
                             className="text-slate-400 hover:text-slate-700 flex items-center p-0.5"
-                            title="Copy AWB"
+                            title="Copy Consignment No"
                           >
                             <Icon name="copy" size={12} />
                           </button>
-                        </div>
-                      )}
-                    </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between font-mono text-[11px] text-slate-600 bg-slate-50/70 px-2 py-1.5 rounded-lg border border-slate-100">
+                        <span
+                          onTouchEnd={() => handleTouchTracking(awb)}
+                          onClick={() => triggerTracking(awb)}
+                          className="truncate font-semibold select-none cursor-pointer"
+                          title="Double-tap or click Track to track order"
+                        >
+                          AWB: {awb}
+                        </span>
+
+                        {awb && awb !== "—" && (
+                          <div className="flex items-center gap-2 shrink-0">
+                            {/* 1-TAP TRACK BUTTON FOR MOBILE TOUCH */}
+                            <button
+                              type="button"
+                              onClick={() => triggerTracking(awb)}
+                              className="flex items-center gap-1 rounded-md bg-[#008dd2]/10 px-2 py-0.5 text-[10px] font-bold text-[#008dd2] active:scale-95 transition"
+                            >
+                              <Icon name="truck" size={11} />
+                              Track
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                try {
+                                  await navigator.clipboard.writeText(String(awb));
+                                  toast.success("AWB copied");
+                                } catch {
+                                  toast.error("Unable to copy AWB");
+                                }
+                              }}
+                              className="text-slate-400 hover:text-slate-700 flex items-center p-0.5"
+                              title="Copy AWB"
+                            >
+                              <Icon name="copy" size={12} />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     {/* ROUTE */}
                     <div className="flex items-center justify-between text-[11px] text-slate-500 pt-0.5">
@@ -1301,8 +1386,9 @@ useEffect(() => {
                     {/* SPECS */}
                     <div className="flex items-center justify-between text-[11px] text-slate-400 border-t border-slate-50 pt-1.5">
                       <span>
-                        {service === "AIR" ? "By Air" : "By Road"} •{" "}
-                        {weight.toFixed(2)} Kg
+                        {isManual
+                          ? `${order.package_type || "Package"} • Amount: ₹${getAmount(order).toFixed(2)}`
+                          : `${service === "AIR" ? "By Air" : "By Road"} • ${weight.toFixed(2)} Kg`}
                       </span>
                       <span className="font-semibold text-slate-600">
                         {formatDate(getCreatedAt(order))}
@@ -1330,24 +1416,28 @@ useEffect(() => {
                       Duplicate
                     </button>
 
-                    <button
-                      type="button"
-                      onClick={() => handlePrintSingleLabel(order)}
-                      title="Print Shipping Label"
-                      className="flex h-8 items-center gap-1 rounded-lg bg-[#008dd2] px-3 text-xs font-bold text-white shadow-xs active:scale-95"
-                    >
-                      <Icon name="printer" size={13} />
-                      Print
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDownloadSingleLabel(order)}
-                      title="Download Shipping Label"
-                      className="flex h-8 items-center gap-1 rounded-lg border border-[#b9dff0] bg-white px-3 text-xs font-bold text-[#008dd2] active:scale-95"
-                    >
-                      <Icon name="download" size={13} />
-                      Download
-                    </button>
+                    {!isManual && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => handlePrintSingleLabel(order)}
+                          title="Print Shipping Label"
+                          className="flex h-8 items-center gap-1 rounded-lg bg-[#008dd2] px-3 text-xs font-bold text-white shadow-xs active:scale-95"
+                        >
+                          <Icon name="printer" size={13} />
+                          Print
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDownloadSingleLabel(order)}
+                          title="Download Shipping Label"
+                          className="flex h-8 items-center gap-1 rounded-lg border border-[#b9dff0] bg-white px-3 text-xs font-bold text-[#008dd2] active:scale-95"
+                        >
+                          <Icon name="download" size={13} />
+                          Download
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
               );
@@ -1449,6 +1539,8 @@ useEffect(() => {
                     const weight = getWeight(order);
                     const status = getStatus(order);
                     const awb = getAWB(order);
+                    const isManual = isManualCarrierOrder(order);
+                    const manualCarrier = order?.carrier || "Manual";
 
                     return (
                       <tr
@@ -1499,168 +1591,236 @@ useEffect(() => {
                             )}
 
                             <div className="mt-0.5 -ml-0.5">
-  <StatusBadge status={status} />
-</div>
+                              <StatusBadge status={status} />
+                            </div>
                           </div>
                         </td>
 
                         <td className="px-2 py-2.5 break-words">
                           <div className="min-w-0">
-                            {status !== "PROCESSING" && (
+                            {isManual ? (
                               <>
                                 <div className="flex items-center gap-1.5 min-w-0">
-                                  <p
-                                    onClick={() => triggerTracking(awb)}
-                                    title="click to track"
-                                    className="truncate text-[13px] font-semibold text-slate-800 cursor-pointer select-none hover:text-[#008dd2] "
-                                  >
-                                    {awb}
-                                  </p>
-
-                                  {awb && awb !== "—" && (
+                                  <span className="inline-block rounded bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 text-[10px] font-bold text-indigo-700 tracking-wide uppercase">
+                                    {manualCarrier}
+                                  </span>
+                                </div>
+                                <div className="mt-1 flex items-center gap-1 min-w-0">
+                                  <span className="text-[11px] text-slate-400">CN:</span>
+                                  <span className="truncate text-[12px] font-semibold text-slate-800">
+                                    {order?.consignment_no || "—"}
+                                  </span>
+                                  {order?.consignment_no && (
                                     <button
                                       type="button"
                                       onClick={async (event) => {
                                         event.stopPropagation();
                                         try {
-                                          await navigator.clipboard.writeText(
-                                            String(awb),
-                                          );
-                                          toast.success("AWB copied");
+                                          await navigator.clipboard.writeText(String(order.consignment_no));
+                                          toast.success("Consignment No copied");
                                         } catch {
-                                          toast.error("Unable to copy AWB");
+                                          toast.error("Unable to copy");
                                         }
                                       }}
-                                      title="Copy AWB"
+                                      title="Copy Consignment No"
                                       className="shrink-0 p-0.5 text-slate-400 hover:text-slate-700 transition"
                                     >
-                                      <Icon name="copy" size={14} />
+                                      <Icon name="copy" size={13} />
                                     </button>
                                   )}
                                 </div>
+                                <p className="mt-0.5 text-[11px] text-slate-500">
+                                  Pkg: {order?.package_type || "Box"}
+                                </p>
+                              </>
+                            ) : (
+                              <>
+                                {status !== "PROCESSING" && (
+                                  <>
+                                    <div className="flex items-center gap-1.5 min-w-0">
+                                      <p
+                                        onClick={() => triggerTracking(awb)}
+                                        title="click to track"
+                                        className="truncate text-[13px] font-semibold text-slate-800 cursor-pointer select-none hover:text-[#008dd2]"
+                                      >
+                                        {awb}
+                                      </p>
+
+                                      {awb && awb !== "—" && (
+                                        <button
+                                          type="button"
+                                          onClick={async (event) => {
+                                            event.stopPropagation();
+                                            try {
+                                              await navigator.clipboard.writeText(
+                                                String(awb),
+                                              );
+                                              toast.success("AWB copied");
+                                            } catch {
+                                              toast.error("Unable to copy AWB");
+                                            }
+                                          }}
+                                          title="Copy AWB"
+                                          className="shrink-0 p-0.5 text-slate-400 hover:text-slate-700 transition"
+                                        >
+                                          <Icon name="copy" size={14} />
+                                        </button>
+                                      )}
+                                    </div>
+
+                                    <p className="mt-0.5 text-[11px] text-slate-500">
+                                      Pickup ID:{" "}
+                                      {order?.pickup_id || order?.pickupId || order?.pickup_request_id || "—"}
+                                    </p>
+                                  </>
+                                )}
 
                                 <p className="mt-0.5 text-[11px] text-slate-500">
-                                  Pickup ID:{" "}
-                                  {order?.pickup_id || order?.pickupId || order?.pickup_request_id || "—"}
+                                  {getShipmentName(order)} -{" "}
+                                  {service === "AIR" ? "By Air" : "By Surface"}
                                 </p>
                               </>
                             )}
-
-                            <p className="mt-0.5 text-[11px] text-slate-500">
-                              {getShipmentName(order)} -{" "}
-                              {service === "AIR" ? "By Air" : "By Surface"}
-                            </p>
                           </div>
                         </td>
 
-                        
-<td className="px-2 py-2.5">
-  <div className="flex flex-col gap-0">
-    {/* Pickup */}
-    <div className="flex min-w-0 items-center gap-1.5">
-      <svg
-        width="13"
-        height="13"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="#008dd2"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="shrink-0"
-      >
-        <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" />
-        <circle cx="12" cy="10" r="2.5" />
-      </svg>
+                        <td className="px-2 py-2.5">
+                          <div className="flex flex-col gap-0">
+                            {/* Pickup */}
+                            <div className="flex min-w-0 items-center gap-1.5">
+                              <svg
+                                width="13"
+                                height="13"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="#008dd2"
+                                strokeWidth="1.8"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className="shrink-0"
+                              >
+                                <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" />
+                                <circle cx="12" cy="10" r="2.5" />
+                              </svg>
 
-      <p className="truncate text-[12px] font-medium text-slate-700">
-        {getPickupCity(order)}
-        {getPickupPincode(order) && (
-          <span className="ml-1 text-[10px] text-slate-400">
-            ({getPickupPincode(order)})
-          </span>
-        )}
-      </p>
-    </div>
+                              <p className="truncate text-[12px] font-medium text-slate-700">
+                                {getPickupCity(order)}
+                                {getPickupPincode(order) && (
+                                  <span className="ml-1 text-[10px] text-slate-400">
+                                    ({getPickupPincode(order)})
+                                  </span>
+                                )}
+                              </p>
+                            </div>
 
-    {/* Route connector */}
-<div className="ml-[5px] flex h-2.5 flex-col justify-between">
-  <span className="h-1 border-l border-dashed border-slate-300" />
-  <span className="h-1 border-l border-dashed border-slate-300" />
-</div>    {/* Delivery */}
-    <div className="flex min-w-0 items-center gap-1.5">
-      <svg
-        width="13"
-        height="13"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="#94a3b8"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="shrink-0"
-      >
-        <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" />
-        <circle cx="12" cy="10" r="2.5" />
-      </svg>
+                            {/* Route connector */}
+                            <div className="ml-[5px] flex h-2.5 flex-col justify-between">
+                              <span className="h-1 border-l border-dashed border-slate-300" />
+                              <span className="h-1 border-l border-dashed border-slate-300" />
+                            </div>
 
-      <p className="truncate text-[12px] font-medium text-slate-700">
-        {getDeliveryCity(order)}
-        {getDeliveryPincode(order) && (
-          <span className="ml-1 text-[10px] text-slate-400">
-            ({getDeliveryPincode(order)})
-          </span>
-        )}
-      </p>
-    </div>
-  </div>
-</td>
+                            {/* Delivery */}
+                            <div className="flex min-w-0 items-center gap-1.5">
+                              <svg
+                                width="13"
+                                height="13"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="#94a3b8"
+                                strokeWidth="1.8"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className="shrink-0"
+                              >
+                                <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" />
+                                <circle cx="12" cy="10" r="2.5" />
+                              </svg>
 
-
-                        <td className="px-2 py-2.5 break-words">
-                          <div>
-                            <p
-                              className={`text-[12px] font-semibold ${
-                                payment === "COD"
-                                  ? "text-amber-600"
-                                  : "text-[#008dd2]"
-                              }`}
-                            >
-                              {payment}
-                            </p>
-
-                            <p className="mt-0.5 text-[10px] text-slate-400">
-                              {payment === "COD"
-                                ? "Cash on Delivery"
-                                : "Prepaid"}
-                            </p>
-
-                            <p className="text-[10px] text-slate-400">
-                              Charge: ₹
-                              {Number(order?.shipping_charge || 0).toFixed(2)}
-                            </p>
+                              <p className="truncate text-[12px] font-medium text-slate-700">
+                                {getDeliveryCity(order)}
+                                {getDeliveryPincode(order) && (
+                                  <span className="ml-1 text-[10px] text-slate-400">
+                                    ({getDeliveryPincode(order)})
+                                  </span>
+                                )}
+                              </p>
+                            </div>
                           </div>
                         </td>
 
                         <td className="px-2 py-2.5 break-words">
                           <div>
-                            <p className="text-[12px] font-semibold text-slate-700">
-                              Box: {getPackageCount(order)}
-                            </p>
+                            {isManual ? (
+                              <>
+                                <p className="text-[12px] font-semibold text-slate-700">
+                                  Manual
+                                </p>
+                                <p className="mt-0.5 text-[12px] font-bold text-emerald-600">
+                                  ₹{getAmount(order).toFixed(2)}
+                                </p>
+                                <p className="text-[10px] text-slate-400">
+                                  (Incl. GST)
+                                </p>
+                              </>
+                            ) : (
+                              <>
+                                <p
+                                  className={`text-[12px] font-semibold ${
+                                    payment === "COD"
+                                      ? "text-amber-600"
+                                      : "text-[#008dd2]"
+                                  }`}
+                                >
+                                  {payment}
+                                </p>
 
-                            <p className="mt-0.5 text-[10px] text-slate-400">
-                              Wt: {weight.toFixed(2)} kg
-                            </p>
+                                <p className="mt-0.5 text-[10px] text-slate-400">
+                                  {payment === "COD"
+                                    ? "Cash on Delivery"
+                                    : "Prepaid"}
+                                </p>
 
-                            <p className="text-[10px] text-slate-400">
-                              Vol: {getVolumetricWeight(order).toFixed(2)} kg
-                            </p>
+                                <p className="text-[10px] text-slate-400">
+                                  Charge: ₹
+                                  {Number(order?.shipping_charge || 0).toFixed(2)}
+                                </p>
+                              </>
+                            )}
+                          </div>
+                        </td>
+
+                        <td className="px-2 py-2.5 break-words">
+                          <div>
+                            {isManual ? (
+                              <>
+                                <p className="text-[12px] font-semibold text-slate-700">
+                                  {order?.package_type || "Box"}
+                                </p>
+                                <p className="mt-0.5 text-[10px] text-slate-400">
+                                  Wt: {weight > 0 ? `${weight.toFixed(2)} kg` : "—"}
+                                </p>
+                              </>
+                            ) : (
+                              <>
+                                <p className="text-[12px] font-semibold text-slate-700">
+                                  Box: {getPackageCount(order)}
+                                </p>
+
+                                <p className="mt-0.5 text-[10px] text-slate-400">
+                                  Wt: {weight.toFixed(2)} kg
+                                </p>
+
+                                <p className="text-[10px] text-slate-400">
+                                  Vol: {getVolumetricWeight(order).toFixed(2)} kg
+                                </p>
+                              </>
+                            )}
                           </div>
                         </td>
 
                         <td className="px-2 py-2.5 break-words">
                           <p className="text-[12px] font-medium text-slate-700">
-                            #{getOrderId(order)}
+                            {isManual ? "—" : `#${getOrderId(order)}`}
                           </p>
 
                           <p className="mt-0.5 text-[10px] text-slate-400">
@@ -1669,32 +1829,39 @@ useEffect(() => {
                               : "Created: "}
                             {formatDate(getCreatedAt(order))}{" "}{formatTime(getCreatedAt(order))}
                           </p>
-
-                          
                         </td>
 
-                      
-<td className="px-1 py-2.5">
-  <div className="flex items-center justify-start gap-1">
-    {/* Print */}
-    <button
-      type="button"
-      onClick={() => handlePrintSingleLabel(order)}
-      title="Print Shipping Label"
-      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[#008dd2] bg-[#008dd2] text-white transition hover:bg-[#007dbb]"
-    >
-      <Icon name="printer" size={15} />
-    </button>
+                        <td className="px-1 py-2.5">
+                          <div className="flex items-center justify-start gap-1">
+                            {/* Print */}
+                            <button
+                              type="button"
+                              disabled={isManual}
+                              onClick={() => !isManual && handlePrintSingleLabel(order)}
+                              title={isManual ? "Label not available for manual carrier orders" : "Print Shipping Label"}
+                              className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md border transition ${
+                                isManual
+                                  ? "border-slate-200 bg-slate-100 text-slate-300 cursor-not-allowed"
+                                  : "border-[#008dd2] bg-[#008dd2] text-white hover:bg-[#007dbb]"
+                              }`}
+                            >
+                              <Icon name="printer" size={15} />
+                            </button>
 
-    {/* Download */}
-    <button
-      type="button"
-      onClick={() => handleDownloadSingleLabel(order)}
-      title="Download Shipping Label"
-      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[#008dd2] bg-[#008dd2] text-white transition hover:bg-[#007dbb]"
-    >
-      <Icon name="download" size={13} />
-    </button>
+                            {/* Download */}
+                            <button
+                              type="button"
+                              disabled={isManual}
+                              onClick={() => !isManual && handleDownloadSingleLabel(order)}
+                              title={isManual ? "Label not available for manual carrier orders" : "Download Shipping Label"}
+                              className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md border transition ${
+                                isManual
+                                  ? "border-slate-200 bg-slate-100 text-slate-300 cursor-not-allowed"
+                                  : "border-[#008dd2] bg-[#008dd2] text-white hover:bg-[#007dbb]"
+                              }`}
+                            >
+                              <Icon name="download" size={13} />
+                            </button>
 
     {/* More Actions */}
 <div

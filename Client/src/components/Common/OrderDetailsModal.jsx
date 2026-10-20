@@ -4,8 +4,17 @@ const safeString = (value) => {
   if (value === null || value === undefined) return "";
   return String(value);
 };
+const isManualCarrierOrder = (order) => {
+  const carrier = order?.carrier;
+  return Boolean(carrier && carrier !== "Delivery");
+};
 
-const getOrderId = (order) => order?.order_id || order?.id || "—";
+const getOrderId = (order) => {
+  if (isManualCarrierOrder(order)) {
+    return order?.order_id || "—";
+  }
+  return order?.order_id || order?.id || "—";
+};
 const getAWB = (order) => order?.awb || order?.waybill || order?.awb_number || "—";
 const getStatus = (order) => {
   const primary = safeString(order?.status || order?.order_status).trim().toUpperCase();
@@ -61,12 +70,25 @@ export default function OrderDetailsModal({ order, loading = false, onClose, onT
             <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-4 py-3 sm:px-5">
               <div className="min-w-0">
                 <h2 className="text-[15px] font-semibold text-slate-900 sm:text-base">
-                  Order Details <span className="text-slate-400">— #{getOrderId(order)}</span>
+                  Order Details{" "}
+                  {isManualCarrierOrder(order) ? (
+                    <span className="ml-2 inline-block rounded bg-indigo-50 border border-indigo-200 px-2 py-0.5 text-xs font-bold text-indigo-700 uppercase">
+                      {order.carrier}
+                    </span>
+                  ) : (
+                    <span className="text-slate-400">— #{getOrderId(order)}</span>
+                  )}
                 </h2>
-                {getAWB(order) && getAWB(order) !== "—" && (
+                {isManualCarrierOrder(order) ? (
                   <p className="mt-0.5 truncate text-[11px] text-slate-500">
-                    AWB: <button type="button" onClick={() => onTrack(getAWB(order))} className="font-mono font-semibold text-[#008dd2] hover:underline">{getAWB(order)}</button>
+                    Consignment No: <span className="font-mono font-semibold text-slate-800">{order?.consignment_no || "—"}</span>
                   </p>
+                ) : (
+                  getAWB(order) && getAWB(order) !== "—" && (
+                    <p className="mt-0.5 truncate text-[11px] text-slate-500">
+                      AWB: <button type="button" onClick={() => onTrack(getAWB(order))} className="font-mono font-semibold text-[#008dd2] hover:underline">{getAWB(order)}</button>
+                    </p>
+                  )
                 )}
               </div>
               <button type="button" onClick={() => onClose()} aria-label="Close details" className="ml-3 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700">
@@ -115,21 +137,35 @@ export default function OrderDetailsModal({ order, loading = false, onClose, onT
                   ["Contact", pickupPhone],
                   ["Pickup Address", pickupAddress],
                 ].filter(([, value]) => present(value));
-                const shipmentFields = [
-                  ["Order ID", `#${getOrderId(o)}`],
-                  ["Party Identity", o.party_reference_name ? `${o.party_reference_name}${o.party_name ? ` (${o.party_name})` : ""}` : (o.party_name || o.party_identity_name || o.party)],
-                  ["AWB", getAWB(o)],
-                  ["Pickup ID", o.pickup_id || o.pickupId || o.pickup_request_id],
-                  ["Status", getStatusLabel(getStatus(o))],
-                  ["Payment", getPaymentType(o)],
-                  ["Service", getServiceType(o) === "AIR" ? "By Air" : "By Surface"],
-                  ["Shipping Charge", present(o.shipping_charge) ? `₹${Number(o.shipping_charge).toFixed(2)}` : ""],
-                  ["Order Value", present(o.total_amount ?? o.total ?? o.amount) ? `₹${Number(o.total_amount ?? o.total ?? o.amount).toFixed(2)}` : ""],
-                  ["COD Amount", present(o.cod_amount) ? `₹${Number(o.cod_amount).toFixed(2)}` : ""],
-                  ["Distance", present(o.distance) ? `${o.distance} Km` : ""],
-                  ["Risk Type", o.risk_type],
-                  ["Created", present(getCreatedAt(o)) ? `${formatDate(getCreatedAt(o))} ${formatTime(getCreatedAt(o))}`.trim() : ""],
-                ].filter(([, value]) => present(value) && value !== "—");
+                const isManual = isManualCarrierOrder(o);
+                const shipmentFields = isManual
+                  ? [
+                      ["Carrier", o.carrier],
+                      ["Consignment No", o.consignment_no],
+                      ["Package Type", o.package_type],
+                      ["Amount (Incl. GST)", present(o.manual_amount_including_gst) ? `₹${Number(o.manual_amount_including_gst).toFixed(2)}` : ""],
+                      ["Status", "BOOKED"],
+                      ["Party Identity", o.party_reference_name ? `${o.party_reference_name}${o.party_name ? ` (${o.party_name})` : ""}` : (o.party_name || o.party_identity_name || o.party)],
+                      ["Order ID", getOrderId(o)],
+                      ["Pickup ID", "—"],
+                      ["Payment", getPaymentType(o) || "Manual"],
+                      ["Created", present(getCreatedAt(o)) ? `${formatDate(getCreatedAt(o))} ${formatTime(getCreatedAt(o))}`.trim() : ""],
+                    ].filter(([, value]) => present(value) && value !== "—")
+                  : [
+                      ["Order ID", `#${getOrderId(o)}`],
+                      ["Party Identity", o.party_reference_name ? `${o.party_reference_name}${o.party_name ? ` (${o.party_name})` : ""}` : (o.party_name || o.party_identity_name || o.party)],
+                      ["AWB", getAWB(o)],
+                      ["Pickup ID", o.pickup_id || o.pickupId || o.pickup_request_id],
+                      ["Status", getStatusLabel(getStatus(o))],
+                      ["Payment", getPaymentType(o)],
+                      ["Service", getServiceType(o) === "AIR" ? "By Air" : "By Surface"],
+                      ["Shipping Charge", present(o.shipping_charge) ? `₹${Number(o.shipping_charge).toFixed(2)}` : ""],
+                      ["Order Value", present(o.total_amount ?? o.total ?? o.amount) ? `₹${Number(o.total_amount ?? o.total ?? o.amount).toFixed(2)}` : ""],
+                      ["COD Amount", present(o.cod_amount) ? `₹${Number(o.cod_amount).toFixed(2)}` : ""],
+                      ["Distance", present(o.distance) ? `${o.distance} Km` : ""],
+                      ["Risk Type", o.risk_type],
+                      ["Created", present(getCreatedAt(o)) ? `${formatDate(getCreatedAt(o))} ${formatTime(getCreatedAt(o))}`.trim() : ""],
+                    ].filter(([, value]) => present(value) && value !== "—");
 
                 const products = Array.isArray(o.products) ? o.products : [];
                 const packages = Array.isArray(o.packages) ? o.packages : [];
@@ -250,12 +286,16 @@ export default function OrderDetailsModal({ order, loading = false, onClose, onT
                     Duplicate Order
                   </button>
                 )}
-                <button type="button" onClick={() => onDownload(order)} className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[#b9dff0] bg-white px-3 text-[11px] font-semibold text-[#008dd2] hover:bg-[#edf8ff]">
-                  <Icon name="download" size={13} /> Download Label
-                </button>
-                <button type="button" onClick={() => onPrint(order)} className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-[#008dd2] px-3 text-[11px] font-semibold text-white hover:bg-[#007dbb]">
-                  <Icon name="printer" size={13} /> Print Label
-                </button>
+                {!isManualCarrierOrder(order) && (
+                  <>
+                    <button type="button" onClick={() => onDownload(order)} className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[#b9dff0] bg-white px-3 text-[11px] font-semibold text-[#008dd2] hover:bg-[#edf8ff]">
+                      <Icon name="download" size={13} /> Download Label
+                    </button>
+                    <button type="button" onClick={() => onPrint(order)} className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-[#008dd2] px-3 text-[11px] font-semibold text-white hover:bg-[#007dbb]">
+                      <Icon name="printer" size={13} /> Print Label
+                    </button>
+                  </>
+                )}
               </div>
               <button type="button" onClick={() => onClose()} className="h-8 rounded-lg border border-slate-200 bg-white px-4 text-[11px] font-semibold text-slate-600 hover:bg-slate-50">
                 Close

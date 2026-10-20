@@ -216,6 +216,105 @@ dangerous_good: nestedOrderData.dangerous_good === true ||
     finalOrderData.party_identity_id = validatedPartyIdentityId;
 
     // ==================================================
+    // WAREHOUSE OWNERSHIP VALIDATION
+    // ==================================================
+    if (finalOrderData.warehouse_id) {
+      const [warehouseRows] = await db.promise().query(
+        "SELECT id FROM warehouses WHERE id = ? AND user_id = ? LIMIT 1",
+        [Number(finalOrderData.warehouse_id), user_id]
+      );
+      if (!warehouseRows || warehouseRows.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Selected warehouse does not belong to your account",
+        });
+      }
+    }
+
+    // ==================================================
+    // CARRIER & MANUAL CARRIER FIELDS VALIDATION
+    // ==================================================
+    const ALLOWED_CARRIERS = [
+      "Delivery",
+      "MARK EXPRESS",
+      "TIRUPATI COURIER",
+      "DTDC",
+      "TRACKON COURIER",
+      "SELF",
+    ];
+
+    const rawCarrier = body.carrier || nestedOrderData.carrier || "Delivery";
+    const selectedCarrier = String(rawCarrier).trim();
+
+    if (!ALLOWED_CARRIERS.includes(selectedCarrier)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid carrier selected",
+      });
+    }
+
+    finalOrderData.carrier = selectedCarrier;
+
+    if (selectedCarrier !== "Delivery") {
+      const rawConsignment =
+        body.consignment_no !== undefined
+          ? body.consignment_no
+          : nestedOrderData.consignment_no;
+      const consignmentNo = String(rawConsignment ?? "").trim();
+
+      if (!consignmentNo) {
+        return res.status(400).json({
+          success: false,
+          message: "Consignment No is required for manual carrier orders",
+        });
+      }
+
+      const rawPackageType =
+        body.package_type !== undefined
+          ? body.package_type
+          : nestedOrderData.package_type;
+      const packageType = String(rawPackageType ?? "").trim();
+
+      if (!packageType) {
+        return res.status(400).json({
+          success: false,
+          message: "Package Type is required for manual carrier orders",
+        });
+      }
+
+      const rawManualAmount =
+        body.manual_amount_including_gst !== undefined
+          ? body.manual_amount_including_gst
+          : nestedOrderData.manual_amount_including_gst;
+      const parsedAmount = Number(rawManualAmount);
+
+      if (
+        rawManualAmount === undefined ||
+        rawManualAmount === null ||
+        rawManualAmount === "" ||
+        !Number.isFinite(parsedAmount) ||
+        parsedAmount < 0
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "A valid non-negative Amount (Including GST) is required for manual carrier orders",
+        });
+      }
+
+      finalOrderData.consignment_no = consignmentNo;
+      finalOrderData.package_type = packageType;
+      finalOrderData.manual_amount_including_gst = parsedAmount;
+      finalOrderData.status = "Booked";
+    } else {
+      finalOrderData.carrier = "Delivery";
+      finalOrderData.consignment_no = null;
+      finalOrderData.package_type = null;
+      finalOrderData.manual_amount_including_gst = null;
+      finalOrderData.status = "Processing";
+    }
+
+    // ==================================================
     // PICKUP ADDRESS VALIDATION
     // ==================================================
 
@@ -461,16 +560,18 @@ dangerous_good: nestedOrderData.dangerous_good === true ||
 
     return res.status(201).json({
       success: true,
-
       id: createdOrder.id,
-
       order_id: createdOrder.order_id,
-
+      carrier: createdOrder.carrier,
+      consignment_no: createdOrder.consignment_no,
+      package_type: createdOrder.package_type,
+      manual_amount_including_gst: createdOrder.manual_amount_including_gst,
+      status: createdOrder.status,
       pickup_address_id: finalPickupAddressId,
-
       warehouse_id: finalOrderData.warehouse_id || null,
-
-      message: "Order created successfully",
+      message: createdOrder.order_id
+        ? "Order created successfully"
+        : "Manual carrier order saved successfully",
     });
   } catch (error) {
     console.log("Create order error:", error);
