@@ -1840,9 +1840,9 @@ const handleRequiredFieldEnter = (e) => {
               </h2>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 items-start">
-              {/* PICKUP WAREHOUSE */}
-              <div className="relative">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3 sm:gap-4 items-start">
+              {/* PICKUP WAREHOUSE (75%) */}
+              <div className="relative md:col-span-3">
                 <label className={labelClass}>Pickup Warehouse *</label>
                 <div className="flex items-center gap-2">
                   <div ref={warehouseDropdownRef} className="relative flex-1">
@@ -1924,18 +1924,18 @@ const handleRequiredFieldEnter = (e) => {
                 )}
               </div>
 
-              {/* PARTY IDENTITY (OPTIONAL) */}
-              <div className="relative">
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-[11px] sm:text-xs font-bold text-slate-600">
-                    Party Identity <span className="text-slate-400 font-normal text-[11px]">(Optional)</span>
+              {/* PARTY IDENTITY (25%) */}
+              <div className="relative md:col-span-1">
+                <div className="flex items-center justify-between mb-1.5 gap-1.5">
+                  <label className="block text-[11px] sm:text-xs font-bold text-slate-600 truncate">
+                    Party Identity <span className="text-slate-400 font-normal text-[10px]">(Optional)</span>
                   </label>
                   <Link
                     to="/settings/party-identities"
-                    className="text-[11px] font-semibold text-[#008dd2] hover:underline"
+                    className="text-[10px] sm:text-[11px] font-semibold text-[#008dd2] hover:underline shrink-0"
                     tabIndex={-1}
                   >
-                    + Manage Identities
+                    + Manage
                   </Link>
                 </div>
 
@@ -1947,16 +1947,16 @@ const handleRequiredFieldEnter = (e) => {
                       setSelectedPartyIdentityId(e.target.value ? Number(e.target.value) : null)
                     }
                     disabled={partyIdentitiesLoading}
-                    className={`${inputClass} appearance-none pr-9 cursor-pointer`}
+                    className={`${inputClass} appearance-none pr-8 cursor-pointer truncate text-xs`}
                   >
-                    <option value="">-- No Party Identity (Default) --</option>
+                    <option value="">-- No Party (Default) --</option>
                     {partyIdentities.map((party) => (
                       <option key={party.id} value={party.id}>
                         {party.name}
                       </option>
                     ))}
                   </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-400">
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-slate-400">
                     <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                     </svg>
@@ -1964,21 +1964,21 @@ const handleRequiredFieldEnter = (e) => {
                 </div>
 
                 {selectedPartyIdentityId ? (
-                  <div className="mt-2 flex items-center gap-2 text-[11px] font-medium text-slate-500">
-                    <span className="rounded-md bg-sky-50 px-2 py-0.5 font-bold text-[#008dd2] border border-sky-100">
-                      Party: {partyIdentities.find((p) => Number(p.id) === Number(selectedPartyIdentityId))?.name || "Selected"}
+                  <div className="mt-2 flex items-center gap-1.5 text-[11px] font-medium text-slate-500">
+                    <span className="rounded-md bg-sky-50 px-2 py-0.5 font-bold text-[#008dd2] border border-sky-100 truncate">
+                      {partyIdentities.find((p) => Number(p.id) === Number(selectedPartyIdentityId))?.name || "Selected"}
                     </span>
                     <button
                       type="button"
                       onClick={() => setSelectedPartyIdentityId(null)}
-                      className="text-slate-400 hover:text-slate-600 text-[10px] underline"
+                      className="text-slate-400 hover:text-slate-600 text-[10px] underline shrink-0"
                     >
                       Clear
                     </button>
                   </div>
                 ) : (
-                  <p className="mt-2 text-[11px] text-slate-400">
-                    Optional: Select a party identity to tag this order.
+                  <p className="mt-2 text-[10px] sm:text-[11px] text-slate-400 truncate">
+                    Optional: Select party
                   </p>
                 )}
               </div>
