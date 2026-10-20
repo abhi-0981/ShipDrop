@@ -158,6 +158,8 @@ function CreateOrder() {
   const [consignmentNo, setConsignmentNo] = useState("");
   const [packageType, setPackageType] = useState("");
   const [manualAmount, setManualAmount] = useState("");
+  const [manualPaymentType, setManualPaymentType] = useState("Prepaid");
+  const [manualShippingMode, setManualShippingMode] = useState("Surface");
 
   const inputClass =
     "h-10.5 sm:h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-[13px] sm:text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-[#008dd2] focus:ring-2 focus:ring-[#008dd2]/10";
@@ -362,6 +364,14 @@ dangerous_good: order.dangerous_good === true ||
         parsedAmt < 0
       ) {
         toast.error("Please enter a valid non-negative Amount (Including GST)");
+        return false;
+      }
+      if (!String(manualPaymentType || "").trim()) {
+        toast.error("Please select Payment Type (Prepaid / COD)");
+        return false;
+      }
+      if (!String(manualShippingMode || "").trim()) {
+        toast.error("Please select Shipping Mode (Surface / Air / Fast Track)");
         return false;
       }
     }
@@ -1433,6 +1443,8 @@ dangerous_good: order.dangerous_good === true ||
     setConsignmentNo("");
     setPackageType("");
     setManualAmount("");
+    setManualPaymentType("Prepaid");
+    setManualShippingMode("Surface");
 
     setProducts([{ ...initialProduct }]);
     setPackages([{ ...initialPackage }]);
@@ -1761,6 +1773,8 @@ const handleRequiredFieldEnter = (e) => {
         consignment_no: carrier !== "Delivery" ? String(consignmentNo).trim() : null,
         package_type: carrier !== "Delivery" ? String(packageType).trim() : null,
         manual_amount_including_gst: carrier !== "Delivery" ? Number(manualAmount) : null,
+        shipping_mode: carrier !== "Delivery" ? manualShippingMode : null,
+        payment_type: carrier !== "Delivery" ? manualPaymentType : formData.payment_type,
         orderData,
         products: productData,
         packages: packageData,
@@ -2128,7 +2142,7 @@ const handleRequiredFieldEnter = (e) => {
                   </span>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                   {/* CONSIGNMENT NO */}
                   <div>
                     <label className={labelClass}>Consignment No *</label>
@@ -2190,6 +2204,54 @@ const handleRequiredFieldEnter = (e) => {
                         className={`${inputClass} pl-7`}
                         required
                       />
+                    </div>
+                  </div>
+
+                  {/* PAYMENT TYPE (PREPAID / COD) */}
+                  <div>
+                    <label className={labelClass}>Payment Type *</label>
+                    <div className="relative">
+                      <select
+                        name="manual_payment_type"
+                        value={manualPaymentType}
+                        onChange={(e) => {
+                          setManualPaymentType(e.target.value);
+                          setFormData((p) => ({ ...p, payment_type: e.target.value }));
+                        }}
+                        className={`${inputClass} appearance-none pr-8 cursor-pointer text-xs font-medium`}
+                        required
+                      >
+                        <option value="Prepaid">Prepaid</option>
+                        <option value="COD">COD</option>
+                      </select>
+                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-slate-400">
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* SHIPPING MODE (SURFACE / AIR / FAST TRACK) */}
+                  <div>
+                    <label className={labelClass}>Shipping Mode *</label>
+                    <div className="relative">
+                      <select
+                        name="manual_shipping_mode"
+                        value={manualShippingMode}
+                        onChange={(e) => setManualShippingMode(e.target.value)}
+                        className={`${inputClass} appearance-none pr-8 cursor-pointer text-xs font-medium`}
+                        required
+                      >
+                        <option value="Surface">Surface</option>
+                        <option value="Air">Air</option>
+                        <option value="Fast Track">Fast Track</option>
+                      </select>
+                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-slate-400">
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
                     </div>
                   </div>
                 </div>

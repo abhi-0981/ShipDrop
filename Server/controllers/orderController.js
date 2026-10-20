@@ -302,15 +302,33 @@ dangerous_good: nestedOrderData.dangerous_good === true ||
         });
       }
 
+      const rawShippingMode =
+        body.shipping_mode !== undefined
+          ? body.shipping_mode
+          : nestedOrderData.shipping_mode;
+      const shippingMode = String(rawShippingMode ?? "Surface").trim();
+
+      const rawPaymentType =
+        body.payment_type !== undefined
+          ? body.payment_type
+          : nestedOrderData.payment_type;
+      const paymentType =
+        String(rawPaymentType ?? "Prepaid").trim().toUpperCase() === "COD"
+          ? "COD"
+          : "Prepaid";
+
       finalOrderData.consignment_no = consignmentNo;
       finalOrderData.package_type = packageType;
       finalOrderData.manual_amount_including_gst = parsedAmount;
+      finalOrderData.shipping_mode = shippingMode || "Surface";
+      finalOrderData.payment_type = paymentType;
       finalOrderData.status = "Booked";
     } else {
       finalOrderData.carrier = "Delivery";
       finalOrderData.consignment_no = null;
       finalOrderData.package_type = null;
       finalOrderData.manual_amount_including_gst = null;
+      finalOrderData.shipping_mode = null;
       finalOrderData.status = "Processing";
     }
 
@@ -566,6 +584,8 @@ dangerous_good: nestedOrderData.dangerous_good === true ||
       consignment_no: createdOrder.consignment_no,
       package_type: createdOrder.package_type,
       manual_amount_including_gst: createdOrder.manual_amount_including_gst,
+      shipping_mode: createdOrder.shipping_mode,
+      payment_type: createdOrder.payment_type,
       status: createdOrder.status,
       pickup_address_id: finalPickupAddressId,
       warehouse_id: finalOrderData.warehouse_id || null,

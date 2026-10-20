@@ -14,6 +14,14 @@ db.query(
     if (err) console.warn("Notice ensuring orders.order_id NULL:", err.message);
   }
 );
+db.query(
+  "ALTER TABLE orders ADD COLUMN shipping_mode VARCHAR(50) NULL DEFAULT NULL",
+  (err) => {
+    if (err && err.errno !== 1060 && !err.message.includes("Duplicate")) {
+      console.warn("Notice ensuring orders.shipping_mode:", err.message);
+    }
+  }
+);
 
 // ======================================================
 // CREATE PICKUP ADDRESS
@@ -98,6 +106,7 @@ const createOrder = (orderData, callback) => {
           consignment_no,
           package_type,
           manual_amount_including_gst,
+          shipping_mode,
 
           return_address_id,
           return_name,
@@ -133,7 +142,7 @@ const createOrder = (orderData, callback) => {
         )
         VALUES (
           ?, ?, ?, ?, ?,
-          ?, ?, ?, ?,
+          ?, ?, ?, ?, ?,
           ?, ?, ?, ?, ?, ?,
           ?, ?, ?, ?, ?,
           ?, ?, ?, ?, ?, ?,
@@ -162,6 +171,7 @@ const createOrder = (orderData, callback) => {
         orderData.manual_amount_including_gst !== undefined && orderData.manual_amount_including_gst !== null
           ? Number(orderData.manual_amount_including_gst)
           : null,
+        orderData.shipping_mode || (isManualCarrier ? "Surface" : null),
 
         // ==========================================
         // RETURN ADDRESS
@@ -233,6 +243,7 @@ const createOrder = (orderData, callback) => {
                   consignment_no: orderData.consignment_no || null,
                   package_type: orderData.package_type || null,
                   manual_amount_including_gst: orderData.manual_amount_including_gst || null,
+                  shipping_mode: orderData.shipping_mode || (isManualCarrier ? "Surface" : null),
                   status: orderData.status || (isManualCarrier ? "Booked" : "Processing"),
                   warehouse_id: orderData.warehouse_id || null,
                   return_address_id: orderData.return_address_id || null,
@@ -253,6 +264,7 @@ const createOrder = (orderData, callback) => {
         consignment_no: orderData.consignment_no || null,
         package_type: orderData.package_type || null,
         manual_amount_including_gst: orderData.manual_amount_including_gst || null,
+        shipping_mode: orderData.shipping_mode || (isManualCarrier ? "Surface" : null),
         status: orderData.status || (isManualCarrier ? "Booked" : "Processing"),
         warehouse_id: orderData.warehouse_id || null,
         return_address_id: orderData.return_address_id || null,
@@ -547,6 +559,7 @@ const getAllOrders = (user_id, page = 1, limit = 50, search = "", status = "", c
       o.consignment_no,
       o.package_type,
       o.manual_amount_including_gst,
+      o.shipping_mode,
       o.party_identity_id,
       pi.name AS party_name,
       pi.reference_name AS party_reference_name,
@@ -774,6 +787,7 @@ const getOrderById = (orderId, userId) => {
           o.consignment_no,
           o.package_type,
           o.manual_amount_including_gst,
+          o.shipping_mode,
           o.party_identity_id,
           pi.name AS party_name,
           pi.reference_name AS party_reference_name,
@@ -930,6 +944,8 @@ o.status,
         package_type: firstRow.package_type || null,
 
         manual_amount_including_gst: firstRow.manual_amount_including_gst || null,
+
+        shipping_mode: firstRow.shipping_mode || null,
 
         pickup_address_id: firstRow.pickup_address_id,
 

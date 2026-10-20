@@ -132,6 +132,7 @@ async function ensureTables() {
       { name: "consignment_no", type: "VARCHAR(100) NULL DEFAULT NULL" },
       { name: "package_type", type: "VARCHAR(50) NULL DEFAULT NULL" },
       { name: "manual_amount_including_gst", type: "DECIMAL(10, 2) NULL DEFAULT NULL" },
+      { name: "shipping_mode", type: "VARCHAR(50) NULL DEFAULT NULL" },
     ];
 
     for (const col of orderCarrierColumns) {

@@ -143,12 +143,13 @@ export default function OrderDetailsModal({ order, loading = false, onClose, onT
                       ["Carrier", o.carrier],
                       ["Consignment No", o.consignment_no],
                       ["Package Type", o.package_type],
+                      ["Shipping Mode", o.shipping_mode || o.service_type || "Surface"],
+                      ["Payment", o.payment_type || getPaymentType(o) || "Prepaid"],
                       ["Amount (Incl. GST)", present(o.manual_amount_including_gst) ? `₹${Number(o.manual_amount_including_gst).toFixed(2)}` : ""],
                       ["Status", "BOOKED"],
                       ["Party Identity", o.party_reference_name ? `${o.party_reference_name}${o.party_name ? ` (${o.party_name})` : ""}` : (o.party_name || o.party_identity_name || o.party)],
                       ["Order ID", getOrderId(o)],
                       ["Pickup ID", "—"],
-                      ["Payment", getPaymentType(o) || "Manual"],
                       ["Created", present(getCreatedAt(o)) ? `${formatDate(getCreatedAt(o))} ${formatTime(getCreatedAt(o))}`.trim() : ""],
                     ].filter(([, value]) => present(value) && value !== "—")
                   : [
