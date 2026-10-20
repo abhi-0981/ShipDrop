@@ -299,6 +299,7 @@ const getProcessingOrders = (user_id, callback) => {
       o.user_id,
       o.party_identity_id,
       pi.name AS party_name,
+      pi.reference_name AS party_reference_name,
 
       o.pickup_address_id,
       o.warehouse_id,
@@ -464,6 +465,7 @@ const getAllOrders = (user_id, page = 1, limit = 50, search = "", status = "", c
       o.user_id,
       o.party_identity_id,
       pi.name AS party_name,
+      pi.reference_name AS party_reference_name,
 
       o.pickup_address_id,
       o.warehouse_id,
@@ -678,6 +680,7 @@ const getOrderById = (orderId, userId) => {
           o.user_id,
           o.party_identity_id,
           pi.name AS party_name,
+          pi.reference_name AS party_reference_name,
 
           o.pickup_address_id,
           o.warehouse_id,

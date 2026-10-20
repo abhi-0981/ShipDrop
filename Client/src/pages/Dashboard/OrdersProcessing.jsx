@@ -232,7 +232,7 @@ function ProcessingOrders() {
   };
 
   const getParty = (order) => {
-    return order.party_name || order.party_identity_name || order.party || "—";
+    return order.party_reference_name || order.party_name || order.party_identity_name || order.party || "—";
   };
 
   const getCustomer = (order) => {
@@ -1410,7 +1410,7 @@ function ProcessingOrders() {
                           {getParty(order) !== "—" ? (
                             <span
                               className="inline-block max-w-full truncate rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-700"
-                              title={getParty(order)}
+                              title={order.party_name && order.party_reference_name ? `${order.party_reference_name} — ${order.party_name}` : getParty(order)}
                             >
                               {getParty(order)}
                             </span>

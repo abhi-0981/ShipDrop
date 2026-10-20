@@ -83,6 +83,7 @@ const getManifestedOrders = async (
         o.id AS order_db_id,
         o.party_identity_id,
         pi.name AS party_name,
+        pi.reference_name AS party_reference_name,
 o.order_id AS display_order_id,
 o.awb,
 

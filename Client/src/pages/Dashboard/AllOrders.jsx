@@ -166,7 +166,7 @@ const getCustomerName = (order) => {
 };
 
 const getPartyName = (order) => {
-  return order?.party_name || order?.party_identity_name || order?.party || "—";
+  return order?.party_reference_name || order?.party_name || order?.party_identity_name || order?.party || "—";
 };
 
 const getMobile = (order) => {
@@ -1476,7 +1476,7 @@ useEffect(() => {
                             {getPartyName(order) !== "—" ? (
                               <span
                                 className="inline-block max-w-full truncate rounded-md bg-slate-100 px-1.5 py-0.5 text-[11px] font-semibold text-slate-700"
-                                title={getPartyName(order)}
+                                title={order?.party_name && order?.party_reference_name ? `${order.party_reference_name} — ${order.party_name}` : getPartyName(order)}
                               >
                                 {getPartyName(order)}
                               </span>
