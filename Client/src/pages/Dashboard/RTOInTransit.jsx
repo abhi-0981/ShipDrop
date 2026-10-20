@@ -1232,23 +1232,23 @@ function RTOInTransit() {
                     </button>
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[19%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[17%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Customer
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[17%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[16%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Shipment
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[17%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[15%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Route
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[12%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[11%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Payment
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[10%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[8%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Weight
                   </th>
 
@@ -1256,7 +1256,7 @@ function RTOInTransit() {
                     Created
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[10%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[18%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Actions
                   </th>
                 </tr>
@@ -1475,30 +1475,30 @@ function RTOInTransit() {
 
                         {/* ACTIONS */}
                         <td className="px-2 py-2.5">
-                          <div className="flex items-center justify-start gap-1 whitespace-nowrap">
+                          <div className="flex items-center justify-start gap-1.5 whitespace-nowrap">
                             <button
                               type="button"
                               onClick={() => handlePrintSingleLabel(order)}
                               title="Print label"
-                              className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-md border border-[#008dd2] bg-[#008dd2] text-white transition hover:bg-[#007ab6]"
+                              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[#008dd2] bg-[#008dd2] text-white transition hover:bg-[#007ab6] active:scale-95"
                             >
-                              <Icon name="printer" size={15} />
+                              <Icon name="printer" size={13} />
                             </button>
                             <button
                               type="button"
                               onClick={() => handleDuplicate(order)}
                               title="Duplicate order"
-                              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[#008dd2] bg-[#008dd2] text-white transition hover:bg-[#007ab6]"
+                              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[#008dd2] bg-[#008dd2] text-white transition hover:bg-[#007ab6] active:scale-95"
                             >
-                              <Icon name="copy" size={15} />
+                              <Icon name="copy" size={13} />
                             </button>
                             <button
                               type="button"
                               onClick={() => handleView(order)}
                               title="Order details"
-                              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 transition hover:border-[#008dd2] hover:bg-[#edf8ff] hover:text-[#008dd2]"
+                              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 transition hover:border-[#008dd2] hover:bg-[#edf8ff] hover:text-[#008dd2] active:scale-95"
                             >
-                              <Icon name="eye" size={15} />
+                              <Icon name="eye" size={13} />
                             </button>
                           </div>
                         </td>
