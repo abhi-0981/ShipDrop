@@ -179,15 +179,20 @@ const getMobile = (order) => {
   );
 };
 
+const isManualCarrierOrder = (order) => {
+  const carrier = order?.carrier;
+  return Boolean(carrier && carrier !== "Delivery");
+};
+
 const getAWB = (order) => {
-  if (order?.carrier && order.carrier !== "Delivery") {
+  if (isManualCarrierOrder(order)) {
     return order?.consignment_no || "—";
   }
   return order?.awb || order?.waybill || order?.awb_number || "—";
 };
 
 const getOrderId = (order) => {
-  if (order?.carrier && order.carrier !== "Delivery") {
+  if (isManualCarrierOrder(order)) {
     return order?.order_id || "—";
   }
   return order?.order_id || order?.id || "—";
@@ -1236,7 +1241,7 @@ useEffect(() => {
               const weight = getWeight(order);
               const status = getStatus(order);
               const awb = getAWB(order);
-              const isManual = Boolean(order?.carrier && order.carrier !== "Delivery");
+              const isManual = isManualCarrierOrder(order);
 
               return (
                 <div
