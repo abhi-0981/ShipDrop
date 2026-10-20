@@ -752,6 +752,7 @@ const updateOrderController = async (req, res) => {
   try {
     const orderId = Number(req.params.id);
 
+    const body = req.body || {};
     const {
       user_id,
       warehouse_id,
@@ -762,7 +763,7 @@ const updateOrderController = async (req, res) => {
       orderData,
       products,
       packages,
-    } = req.body;
+    } = body;
 
     const userId = Number(req.user?.id || user_id);
 

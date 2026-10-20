@@ -1553,7 +1553,12 @@ dangerous_good: Boolean(formData.dangerous_good),
       toast.success("Shipping rates calculated!");
     } catch (error) {
       resetShippingRate();
-      toast.error(error.message || "Failed to calculate rates");
+      const serverMessage =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        error.message ||
+        "Failed to calculate rates";
+      toast.error(serverMessage);
     } finally {
       setRateLoading(false);
     }
@@ -1700,7 +1705,13 @@ const handleRequiredFieldEnter = (e) => {
       resetForm(true);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (error) {
-      toast.error(error.message || "Failed to create order");
+      console.error("Create order error:", error);
+      const serverMessage =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        error.message ||
+        "Failed to create order";
+      toast.error(serverMessage);
     } finally {
       setLoading(false);
     }
@@ -1733,15 +1744,21 @@ const handleRequiredFieldEnter = (e) => {
 
       let orderId = null;
 
+      let orderInternalId = null;
+      let orderPublicId = null;
+
       // Edit existing order first if in edit mode
       if (isEditMode && editingOrderId) {
         orderId = Number(editingOrderId);
+        orderInternalId = orderId;
+        orderPublicId = orderId;
         await api.put(`/orders/${orderId}`, {
           user_id: Number(user.id),
           pickup_address: formData.pickup_address,
           pickup_pincode: formData.pickup_pincode,
           pickup_city: formData.pickup_city,
           warehouse_id: selectedWarehouse?.id || null,
+          party_identity_id: selectedPartyIdentityId ? Number(selectedPartyIdentityId) : null,
           orderData: { ...baseOrderData, id: orderId },
           products: productData,
           packages: packageData,
@@ -1760,18 +1777,24 @@ const handleRequiredFieldEnter = (e) => {
         };
 
         const orderResponse = await api.post("/orders/create", orderPayload);
-        orderId = orderResponse.data?.order_id;
+        orderInternalId = orderResponse.data?.id;
+        orderPublicId = orderResponse.data?.order_id;
+        orderId = orderPublicId || orderInternalId;
         if (!orderId) throw new Error("Order creation failed");
       }
 
       const shipmentData = {
         user_id: user.id,
-        order_id: Number(orderId),
+        order_id: orderInternalId || Number(orderId) || orderId,
         pickup_address: formData.pickup_address,
         pickup_pincode: formData.pickup_pincode,
         pickup_city: formData.pickup_city,
         warehouse_id: selectedWarehouse?.id || null,
-        orderData: { ...baseOrderData, id: Number(orderId) },
+        orderData: {
+          ...baseOrderData,
+          id: orderInternalId || Number(orderId) || orderId,
+          order_id: orderPublicId || orderId,
+        },
         products: productData,
         packages: packageData,
         service_type: selectedShippingType,
@@ -1790,7 +1813,13 @@ const handleRequiredFieldEnter = (e) => {
       resetForm(true);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (error) {
-      toast.error(error.message || "Unable to confirm shipment");
+      console.error("Confirm shipment error:", error);
+      const serverMessage =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        error.message ||
+        "Unable to confirm shipment";
+      toast.error(serverMessage);
     } finally {
       setLoading(false);
     }
