@@ -700,6 +700,7 @@ const getAllOrders = (user_id, page = 1, limit = 50, search = "", status = "", c
         OR UPPER(TRIM(COALESCE(o.consignee_name, ''))) LIKE UPPER(?)
         OR TRIM(COALESCE(o.mobile, '')) LIKE ?
         OR UPPER(TRIM(COALESCE(pi.name, ''))) LIKE UPPER(?)
+        OR UPPER(TRIM(COALESCE(pi.reference_name, ''))) LIKE UPPER(?)
         OR UPPER(TRIM(COALESCE(o.consignment_no, ''))) LIKE UPPER(?)
         OR UPPER(TRIM(COALESCE(o.carrier, ''))) LIKE UPPER(?)
       )
@@ -724,6 +725,7 @@ const getAllOrders = (user_id, page = 1, limit = 50, search = "", status = "", c
         OR UPPER(TRIM(COALESCE(o.consignee_name, ''))) LIKE UPPER(?)
         OR TRIM(COALESCE(o.mobile, '')) LIKE ?
         OR UPPER(TRIM(COALESCE(pi.name, ''))) LIKE UPPER(?)
+        OR UPPER(TRIM(COALESCE(pi.reference_name, ''))) LIKE UPPER(?)
         OR UPPER(TRIM(COALESCE(o.consignment_no, ''))) LIKE UPPER(?)
         OR UPPER(TRIM(COALESCE(o.carrier, ''))) LIKE UPPER(?)
       )
@@ -740,6 +742,7 @@ const getAllOrders = (user_id, page = 1, limit = 50, search = "", status = "", c
     searchValue,
     searchValue,
     searchValue,
+    searchValue,
     safeLimit,
     offset,
   ];
@@ -748,6 +751,7 @@ const getAllOrders = (user_id, page = 1, limit = 50, search = "", status = "", c
     user_id,
     ...countStatusParams,
     searchTerm,
+    searchValue,
     searchValue,
     searchValue,
     searchValue,

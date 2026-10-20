@@ -522,8 +522,28 @@ function AllOrders() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [isFetching, setIsFetching] = useState(false);
   const [statusFilter, setStatusFilter] = useState("ALL");
+  const [partyFilter, setPartyFilter] = useState("ALL");
   const [serviceFilter, setServiceFilter] = useState("ALL");
   const [paymentFilter, setPaymentFilter] = useState("ALL");
+  const [partyIdentities, setPartyIdentities] = useState([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const loadPartyIdentities = async () => {
+      try {
+        const response = await api.get("/party-identities");
+        if (isMounted && response?.data?.success) {
+          setPartyIdentities(response.data.partyIdentities || []);
+        }
+      } catch (error) {
+        console.log("Unable to load party identities in AllOrders:", error);
+      }
+    };
+    loadPartyIdentities();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const [selectedIds, setSelectedIds] = useState([]);
   const [viewingOrder, setViewingOrder] = useState(null);
@@ -698,6 +718,32 @@ useEffect(() => {
     (order) => !isProcessingOrder(order),
   );
 
+  const partyOptions = useMemo(() => {
+    const map = new Map();
+
+    partyIdentities.forEach((p) => {
+      if (p?.id) {
+        map.set(String(p.id), {
+          id: String(p.id),
+          reference_name: p.reference_name || p.name || `Party #${p.id}`,
+          name: p.name || "",
+        });
+      }
+    });
+
+    orders.forEach((o) => {
+      if (o?.party_identity_id && !map.has(String(o.party_identity_id))) {
+        map.set(String(o.party_identity_id), {
+          id: String(o.party_identity_id),
+          reference_name: o.party_reference_name || o.party_name || `Party #${o.party_identity_id}`,
+          name: o.party_name || "",
+        });
+      }
+    });
+
+    return Array.from(map.values());
+  }, [partyIdentities, orders]);
+
   const filteredOrders = nonProcessingOrders.filter((order) => {
     const status = getStatus(order);
     const service = getServiceType(order);
@@ -709,7 +755,26 @@ useEffect(() => {
     const serviceMatch = serviceFilter === "ALL" || service === serviceFilter;
     const paymentMatch = paymentFilter === "ALL" || payment === paymentFilter;
 
-    return statusMatch && serviceMatch && paymentMatch;
+    const selectedParty =
+      partyFilter === "ALL"
+        ? null
+        : partyOptions.find((p) => String(p.id) === String(partyFilter));
+
+    const partyMatch =
+      partyFilter === "ALL" ||
+      (selectedParty &&
+        ((order?.party_identity_id &&
+          Number(order.party_identity_id) === Number(partyFilter)) ||
+          (order?.party_reference_name &&
+            selectedParty.reference_name &&
+            String(order.party_reference_name).trim().toLowerCase() ===
+              String(selectedParty.reference_name).trim().toLowerCase()) ||
+          (order?.party_name &&
+            selectedParty.name &&
+            String(order.party_name).trim().toLowerCase() ===
+              String(selectedParty.name).trim().toLowerCase())));
+
+    return statusMatch && serviceMatch && paymentMatch && partyMatch;
   });
 
   const sortedFilteredOrders = useMemo(() => {
@@ -1139,11 +1204,11 @@ useEffect(() => {
             </div>
 
             {/* FILTER DROPDOWNS */}
-            <div className="grid grid-cols-3 sm:flex sm:items-center gap-1.5 sm:gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 sm:flex sm:items-center gap-1.5 sm:gap-2">
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="h-10 w-full sm:min-w-[130px] rounded-xl border border-slate-200 bg-white px-2.5 text-xs text-slate-600 outline-none focus:border-[#008dd2]"
+                className="h-10 w-full sm:min-w-[125px] rounded-xl border border-slate-200 bg-white px-2.5 text-xs text-slate-600 outline-none focus:border-[#008dd2]"
               >
                 <option value="ALL">All Status</option>
                 <option value="BOOKED">Booked</option>
@@ -1159,9 +1224,23 @@ useEffect(() => {
               </select>
 
               <select
+                value={partyFilter}
+                onChange={(e) => setPartyFilter(e.target.value)}
+                className="h-10 w-full sm:min-w-[130px] max-w-[180px] rounded-xl border border-slate-200 bg-white px-2.5 text-xs text-slate-600 outline-none focus:border-[#008dd2] truncate"
+                title="Filter by Party Reference Name"
+              >
+                <option value="ALL">All Reference</option>
+                {partyOptions.map((party) => (
+                  <option key={party.id} value={party.id}>
+                    {party.reference_name || party.name}
+                  </option>
+                ))}
+              </select>
+
+              <select
                 value={serviceFilter}
                 onChange={(e) => setServiceFilter(e.target.value)}
-                className="h-10 w-full sm:min-w-[110px] rounded-xl border border-slate-200 bg-white px-2.5 text-xs text-slate-600 outline-none focus:border-[#008dd2]"
+                className="h-10 w-full sm:min-w-[105px] rounded-xl border border-slate-200 bg-white px-2.5 text-xs text-slate-600 outline-none focus:border-[#008dd2]"
               >
                 <option value="ALL">All Mode</option>
                 <option value="ROAD">Surface</option>
@@ -1171,7 +1250,7 @@ useEffect(() => {
               <select
                 value={paymentFilter}
                 onChange={(e) => setPaymentFilter(e.target.value)}
-                className="h-10 w-full sm:min-w-[110px] rounded-xl border border-slate-200 bg-white px-2.5 text-xs text-slate-600 outline-none focus:border-[#008dd2]"
+                className="h-10 w-full sm:min-w-[105px] rounded-xl border border-slate-200 bg-white px-2.5 text-xs text-slate-600 outline-none focus:border-[#008dd2]"
               >
                 <option value="ALL">All Pay</option>
                 <option value="PREPAID">Prepaid</option>
