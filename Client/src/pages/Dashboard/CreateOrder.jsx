@@ -1343,7 +1343,7 @@ dangerous_good: order.dangerous_good === true ||
     return Math.max(getTotalWeight(), getTotalVolumetricWeight());
   };
 
-  const resetForm = (preservePickup = false) => {
+  const resetForm = (preservePickup = false, preserveParty = preservePickup) => {
     const preservedPickup = preservePickup
       ? {
           pickup_address: formData.pickup_address,
@@ -1363,7 +1363,10 @@ dangerous_good: order.dangerous_good === true ||
     setShowWarehouseDropdown(false);
     setPreviousCustomers([]);
     setShowPreviousCustomers(false);
-    setSelectedPartyIdentityId(null);
+
+    if (!preserveParty) {
+      setSelectedPartyIdentityId(null);
+    }
 
     setProducts([{ ...initialProduct }]);
     setPackages([{ ...initialPackage }]);
