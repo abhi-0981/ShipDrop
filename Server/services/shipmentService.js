@@ -336,17 +336,21 @@ const createDelhiveryShipment = async (
         };
       }
 
-      throw new Error(
-
+      let finalErrorMessage =
         packageError ||
-
         data.rmk ||
-
         data.message ||
+        "Delhivery shipment creation failed";
 
-        "Delhivery shipment creation failed"
+      if (
+        finalErrorMessage.toLowerCase().includes("prepaid client manifest charge") ||
+        finalErrorMessage.toLowerCase().includes("charge api failed due to insufficient balance")
+      ) {
+        finalErrorMessage =
+          "Delhivery courier account balance is insufficient. Please recharge your Delhivery portal (one.delhivery.com) balance to continue shipping.";
+      }
 
-      );
+      throw new Error(finalErrorMessage);
     }
 
     return data;
@@ -417,19 +421,22 @@ const createDelhiveryShipment = async (
               )
           : "";
 
-      throw new Error(
-
+      let finalErrorMessage =
         packageError ||
-
         apiData.rmk ||
-
         apiData.message ||
-
         apiData.error ||
+        "Delhivery shipment creation failed";
 
-        "Delhivery shipment creation failed"
+      if (
+        finalErrorMessage.toLowerCase().includes("prepaid client manifest charge") ||
+        finalErrorMessage.toLowerCase().includes("charge api failed due to insufficient balance")
+      ) {
+        finalErrorMessage =
+          "Delhivery courier account balance is insufficient. Please recharge your Delhivery portal (one.delhivery.com) balance to continue shipping.";
+      }
 
-      );
+      throw new Error(finalErrorMessage);
     }
 
     throw new Error(
