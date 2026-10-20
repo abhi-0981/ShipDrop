@@ -117,6 +117,16 @@ async function ensureTables() {
       console.warn("Notice modifying orders.order_id to NULL:", orderIdErr.message);
     }
 
+    // Ensure status is VARCHAR(50) so 'Booked' and other dynamic statuses are accepted without truncation
+    try {
+      await promiseDb.query(
+        "ALTER TABLE orders MODIFY COLUMN status VARCHAR(50) NOT NULL DEFAULT 'Processing'"
+      );
+      console.log("Modified orders.status to VARCHAR(50) successfully.");
+    } catch (statusErr) {
+      console.warn("Notice modifying orders.status to VARCHAR(50):", statusErr.message);
+    }
+
     const orderCarrierColumns = [
       { name: "carrier", type: "VARCHAR(50) NOT NULL DEFAULT 'Delivery'" },
       { name: "consignment_no", type: "VARCHAR(100) NULL DEFAULT NULL" },

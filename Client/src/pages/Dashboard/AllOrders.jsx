@@ -180,6 +180,9 @@ const getMobile = (order) => {
 };
 
 const getAWB = (order) => {
+  if (order?.carrier && order.carrier !== "Delivery") {
+    return order?.consignment_no || "—";
+  }
   return order?.awb || order?.waybill || order?.awb_number || "—";
 };
 
@@ -1120,7 +1123,7 @@ useEffect(() => {
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search customer, AWB, Order ID or mobile..."
+                placeholder="Search customer, AWB, Consignment, Order ID or mobile..."
                 className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-24 text-xs text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#008dd2] focus:ring-2 focus:ring-[#008dd2]/10"
               />
               {isFetching && hasLoadedRef.current && (
@@ -1600,35 +1603,44 @@ useEffect(() => {
                           <div className="min-w-0">
                             {isManual ? (
                               <>
+                                {/* Consignment No in place of AWB */}
                                 <div className="flex items-center gap-1.5 min-w-0">
-                                  <span className="inline-block rounded bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 text-[10px] font-bold text-indigo-700 tracking-wide uppercase">
-                                    {manualCarrier}
-                                  </span>
-                                </div>
-                                <div className="mt-1 flex items-center gap-1 min-w-0">
-                                  <span className="text-[11px] text-slate-400">CN:</span>
-                                  <span className="truncate text-[12px] font-semibold text-slate-800">
-                                    {order?.consignment_no || "—"}
-                                  </span>
-                                  {order?.consignment_no && (
+                                  <p
+                                    className="truncate text-[13px] font-semibold text-slate-800 select-none"
+                                    title={`Consignment No: ${order?.consignment_no || awb || "—"}`}
+                                  >
+                                    {order?.consignment_no || awb || "—"}
+                                  </p>
+
+                                  {(order?.consignment_no || (awb && awb !== "—")) && (
                                     <button
                                       type="button"
                                       onClick={async (event) => {
                                         event.stopPropagation();
                                         try {
-                                          await navigator.clipboard.writeText(String(order.consignment_no));
+                                          await navigator.clipboard.writeText(
+                                            String(order?.consignment_no || awb),
+                                          );
                                           toast.success("Consignment No copied");
                                         } catch {
-                                          toast.error("Unable to copy");
+                                          toast.error("Unable to copy Consignment No");
                                         }
                                       }}
                                       title="Copy Consignment No"
-                                      className="shrink-0 p-0.5 text-slate-400 hover:text-slate-700 transition"
+                                      className="shrink-0 p-0.5 text-slate-400 hover:text-slate-700 transition cursor-pointer"
                                     >
-                                      <Icon name="copy" size={13} />
+                                      <Icon name="copy" size={14} />
                                     </button>
                                   )}
                                 </div>
+
+                                <p className="mt-0.5 text-[11px] text-slate-500">
+                                  Carrier:{" "}
+                                  <span className="font-semibold text-slate-700">
+                                    {manualCarrier}
+                                  </span>
+                                </p>
+
                                 <p className="mt-0.5 text-[11px] text-slate-500">
                                   Pkg: {order?.package_type || "Box"}
                                 </p>

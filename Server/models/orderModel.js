@@ -1,6 +1,20 @@
 const db = require("../config/db");
 const crypto = require("crypto");
 
+// Immediate migration check to guarantee orders.status supports 'Booked' and order_id supports NULL
+db.query(
+  "ALTER TABLE orders MODIFY COLUMN status VARCHAR(50) NOT NULL DEFAULT 'Processing'",
+  (err) => {
+    if (err) console.warn("Notice ensuring orders.status VARCHAR(50):", err.message);
+  }
+);
+db.query(
+  "ALTER TABLE orders MODIFY COLUMN order_id VARCHAR(50) NULL DEFAULT NULL",
+  (err) => {
+    if (err) console.warn("Notice ensuring orders.order_id NULL:", err.message);
+  }
+);
+
 // ======================================================
 // CREATE PICKUP ADDRESS
 // ======================================================
@@ -128,9 +142,7 @@ const createOrder = (orderData, callback) => {
         )
       `;
 
-    db.query(
-      query,
-      [
+    const params = [
         // ==========================================
         // ORDER
         // ==========================================
@@ -193,27 +205,60 @@ const createOrder = (orderData, callback) => {
 
         // New order starts in Processing for Delivery, or Booked for manual carriers
         orderData.status || (isManualCarrier ? "Booked" : "Processing"),
-      ],
-      (err, result) => {
-        if (err) {
-          return callback(err);
-        }
+      ];
 
-        clearOrderStatusCountsCache(orderData.user_id);
-        return callback(null, {
-          id: result.insertId,
-          order_id: publicOrderId,
-          carrier: orderData.carrier || "Delivery",
-          consignment_no: orderData.consignment_no || null,
-          package_type: orderData.package_type || null,
-          manual_amount_including_gst: orderData.manual_amount_including_gst || null,
-          status: orderData.status || (isManualCarrier ? "Booked" : "Processing"),
-          warehouse_id: orderData.warehouse_id || null,
-          return_address_id: orderData.return_address_id || null,
-          message: "Order created successfully",
-        });
-      },
-    );
+    db.query(query, params, (err, result) => {
+      if (err) {
+        if (
+          err.code === "WARN_DATA_TRUNCATED" ||
+          err.errno === 1265 ||
+          (err.message && err.message.toLowerCase().includes("status"))
+        ) {
+          console.warn("orders.status truncated, altering column to VARCHAR(50) and retrying...");
+          return db.query(
+            "ALTER TABLE orders MODIFY COLUMN status VARCHAR(50) NOT NULL DEFAULT 'Processing'",
+            (alterErr) => {
+              if (alterErr) {
+                console.error("Failed to alter status column:", alterErr);
+                return callback(err);
+              }
+              // Retry insertion
+              db.query(query, params, (retryErr, retryResult) => {
+                if (retryErr) return callback(retryErr);
+                clearOrderStatusCountsCache(orderData.user_id);
+                return callback(null, {
+                  id: retryResult.insertId,
+                  order_id: publicOrderId,
+                  carrier: orderData.carrier || "Delivery",
+                  consignment_no: orderData.consignment_no || null,
+                  package_type: orderData.package_type || null,
+                  manual_amount_including_gst: orderData.manual_amount_including_gst || null,
+                  status: orderData.status || (isManualCarrier ? "Booked" : "Processing"),
+                  warehouse_id: orderData.warehouse_id || null,
+                  return_address_id: orderData.return_address_id || null,
+                  message: "Order created successfully",
+                });
+              });
+            }
+          );
+        }
+        return callback(err);
+      }
+
+      clearOrderStatusCountsCache(orderData.user_id);
+      return callback(null, {
+        id: result.insertId,
+        order_id: publicOrderId,
+        carrier: orderData.carrier || "Delivery",
+        consignment_no: orderData.consignment_no || null,
+        package_type: orderData.package_type || null,
+        manual_amount_including_gst: orderData.manual_amount_including_gst || null,
+        status: orderData.status || (isManualCarrier ? "Booked" : "Processing"),
+        warehouse_id: orderData.warehouse_id || null,
+        return_address_id: orderData.return_address_id || null,
+        message: "Order created successfully",
+      });
+    });
   };
 
   if (isManualCarrier) {
