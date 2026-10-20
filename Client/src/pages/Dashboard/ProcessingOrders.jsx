@@ -172,6 +172,8 @@ function ProcessingOrders() {
   }, []);
 
   const getId = (order, index = 0) => order.id ?? order.order_id ?? index;
+  const getParty = (order) =>
+    order.party_name || order.party_identity_name || order.party || "—";
   const getCustomer = (order) =>
     order.consignee_name || order.customer_name || order.name || "—";
   const getMobile = (order) =>
@@ -477,6 +479,7 @@ function ProcessingOrders() {
     if (!searchText) return true;
     const searchableText = [
       getId(order),
+      getParty(order),
       getCustomer(order),
       getMobile(order),
       getPickupCity(order),
@@ -1018,6 +1021,11 @@ function ProcessingOrders() {
                     <span className="text-xs font-bold text-slate-900">
                       #{order.order_id || id}
                     </span>
+                    {getParty(order) !== "—" && (
+                      <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-700 truncate max-w-[100px]">
+                        {getParty(order)}
+                      </span>
+                    )}
                   </label>
 
                   <div className="flex items-center gap-1.5">
@@ -1149,11 +1157,12 @@ function ProcessingOrders() {
                     className="h-4 w-4 rounded accent-[#008dd2] cursor-pointer"
                   />
                 </th>
-                <th className="py-2.5 px-2 w-[17%]">Customer</th>
-                <th className="py-2.5 px-2 w-[24%]">Route</th>
+                <th className="py-2.5 px-1.5 w-[7%]">Party</th>
+                <th className="py-2.5 px-2 w-[16%]">Customer</th>
+                <th className="py-2.5 px-2 w-[22%]">Route</th>
                 <th className="py-2.5 px-2 w-[10%]">Payment</th>
-                <th className="py-2.5 px-2 w-[17%]">Order & Item</th>
-                <th className="py-2.5 px-2 w-[13%]">Weight</th>
+                <th className="py-2.5 px-2 w-[16%]">Order & Item</th>
+                <th className="py-2.5 px-2 w-[12%]">Weight</th>
                 <th className="py-2.5 px-2 w-[17%] text-right">Actions</th>
               </tr>
             </thead>
@@ -1161,7 +1170,7 @@ function ProcessingOrders() {
             <tbody className="divide-y divide-slate-100 text-xs">
               {filteredOrders.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="p-0">
+                  <td colSpan={8} className="p-0">
                     <div className="flex min-h-[280px] w-full flex-col items-center justify-center px-4 py-10 text-center">
                       <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-slate-400">
                         <Icon name="file" size={30} />
@@ -1197,7 +1206,23 @@ function ProcessingOrders() {
                         />
                       </td>
 
-                      {/* 2. CUSTOMER */}
+                      {/* 2. PARTY */}
+                      <td className="py-2.5 px-1.5 align-middle">
+                        <div className="min-w-0">
+                          {getParty(order) !== "—" ? (
+                            <span
+                              className="inline-block max-w-full truncate rounded-md bg-slate-100 px-1.5 py-0.5 text-[11px] font-semibold text-slate-700"
+                              title={getParty(order)}
+                            >
+                              {getParty(order)}
+                            </span>
+                          ) : (
+                            <span className="text-[12px] text-slate-400 font-normal">—</span>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* 3. CUSTOMER */}
                       <td className="py-2.5 px-2 align-middle">
                         <div className="font-bold text-slate-900">
                           {getCustomer(order)}

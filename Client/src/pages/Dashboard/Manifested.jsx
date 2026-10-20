@@ -184,6 +184,9 @@ const getOrderId = (order) =>
       order.id,
   );
 
+const getPartyName = (order) =>
+  text(order.party_name || order.party_identity_name || order.party, "—");
+
 const getCustomerName = (order) =>
   text(
     order.consignee_name || order.customer_name || order.customer || order.name,
@@ -593,6 +596,7 @@ const manifestedCount = useMemo(() => {
 
     return orders.filter((order) => {
       const searchable = [
+        getPartyName(order),
         getCustomerName(order),
         getMobile(order),
         getAWB(order),
@@ -1113,6 +1117,7 @@ const manifestedCount = useMemo(() => {
     const headers = [
       "AWB",
       "Order ID",
+      "Party Identity",
       "Customer",
       "Mobile",
       "Pickup ID",
@@ -1130,6 +1135,7 @@ const manifestedCount = useMemo(() => {
     const rows = exportOrders.map((order) => [
       getAWB(order),
       getOrderId(order),
+      getPartyName(order),
       getCustomerName(order),
       getMobile(order),
       getPickupId(order),
@@ -1461,6 +1467,12 @@ const manifestedCount = useMemo(() => {
                       <span className="font-mono text-xs font-bold text-slate-800 truncate">
                         #{getOrderId(order)}
                       </span>
+
+                      {getPartyName(order) !== "—" && (
+                        <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-700 truncate max-w-[100px]">
+                          {getPartyName(order)}
+                        </span>
+                      )}
                     </div>
 
                     <div className="flex items-center gap-1.5 shrink-0">
@@ -1652,31 +1664,35 @@ const manifestedCount = useMemo(() => {
                     </button>
                   </th>
 
-                  <th className="w-[17%] px-3 py-3.5 text-left text-[13px] font-medium text-slate-700">
+                  <th className="w-[7%] px-2 py-3.5 text-left text-[12px] font-medium text-slate-700">
+                    Party
+                  </th>
+
+                  <th className="w-[16%] px-3 py-3.5 text-left text-[13px] font-medium text-slate-700">
                     Customer
                   </th>
 
-                  <th className="w-[15%] px-3 py-3.5 text-left text-[13px] font-medium text-slate-700">
+                  <th className="w-[14%] px-3 py-3.5 text-left text-[13px] font-medium text-slate-700">
                     Shipment
                   </th>
 
-                  <th className="w-[15%] px-3 py-3.5 text-left text-[13px] font-medium text-slate-700">
+                  <th className="w-[14%] px-3 py-3.5 text-left text-[13px] font-medium text-slate-700">
                     Route
                   </th>
 
-                  <th className="w-[12%] px-3 py-3.5 text-left text-[13px] font-medium text-slate-700">
+                  <th className="w-[11%] px-3 py-3.5 text-left text-[13px] font-medium text-slate-700">
                     Payment
                   </th>
 
-                  <th className="w-[12%] px-3 py-3.5 text-left text-[13px] font-medium text-slate-700">
+                  <th className="w-[11%] px-3 py-3.5 text-left text-[13px] font-medium text-slate-700">
                     Weight
                   </th>
 
-                  <th className="w-[13%] px-3 py-3.5 text-left text-[13px] font-medium text-slate-700">
+                  <th className="w-[12%] px-3 py-3.5 text-left text-[13px] font-medium text-slate-700">
                     Created
                   </th>
 
-                  <th className="w-[12%] px-3 py-3.5 text-left text-[13px] font-medium text-slate-700">
+                  <th className="w-[11%] px-3 py-3.5 text-left text-[13px] font-medium text-slate-700">
                     Actions
                   </th>
                 </tr>
@@ -1685,7 +1701,7 @@ const manifestedCount = useMemo(() => {
               <tbody>
                 {!filteredOrders.length ? (
                   <tr>
-                    <td colSpan="8" className="px-6 py-16 text-center">
+                    <td colSpan="9" className="px-6 py-16 text-center">
                       <div className="mx-auto flex max-w-sm flex-col items-center">
                         <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400">
                           <Icon name="box" size={21} />
@@ -1744,6 +1760,21 @@ const manifestedCount = useMemo(() => {
                           >
                             <Icon name="check" size={11} />
                           </button>
+                        </td>
+
+                        <td className="px-2 py-4 align-middle">
+                          <div className="min-w-0">
+                            {getPartyName(order) !== "—" ? (
+                              <span
+                                className="inline-block max-w-full truncate rounded-md bg-slate-100 px-1.5 py-0.5 text-[11px] font-semibold text-slate-700"
+                                title={getPartyName(order)}
+                              >
+                                {getPartyName(order)}
+                              </span>
+                            ) : (
+                              <span className="text-[12px] text-slate-400 font-normal">—</span>
+                            )}
+                          </div>
                         </td>
 
                         <td className="px-3 py-4 align-middle">

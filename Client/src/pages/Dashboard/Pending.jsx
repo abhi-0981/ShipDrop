@@ -267,6 +267,14 @@ const getPaymentType = (order) => {
 };
 
 /* =========================================================
+   PARTY
+========================================================= */
+
+const getPartyName = (order) => {
+  return order?.party_name || order?.party_identity_name || order?.party || "-";
+};
+
+/* =========================================================
    CUSTOMER
 ========================================================= */
 
@@ -525,6 +533,7 @@ function Pending() {
         getOrderId(order),
         order?.id,
         getAWB(order),
+        getPartyName(order),
         getCustomerName(order),
         order?.user_id,
         order?.pickup_address_id,
@@ -750,6 +759,7 @@ const triggerTracking = (awb) => {
           payment_type: source?.payment_type || "Prepaid",
           risk_type: source?.risk_type || "Owner Risk",
           warehouse_id: warehouseId,
+          party_identity_id: source?.party_identity_id || order?.party_identity_id || null,
           fragile_shipment: Number(source?.fragile_shipment) === 1 ? 1 : 0,
           dangerous_good: Number(source?.dangerous_good) === 1 ? 1 : 0,
         },
@@ -957,25 +967,28 @@ const triggerTracking = (awb) => {
                     className="h-3.5 w-3.5 cursor-pointer rounded border-slate-300 accent-[#008dd2]"
                   />
                 </th>
-                <th className="w-[17%] px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                <th className="w-[7%] px-1.5 py-3 text-left text-[12px] font-medium text-slate-700">
+                  Party
+                </th>
+                <th className="w-[16%] px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                   Customer
                 </th>
-                <th className="w-[17%] px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                <th className="w-[16%] px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                   Shipment
                 </th>
-                <th className="w-[17%] px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                <th className="w-[16%] px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                   Route
                 </th>
                 <th className="w-[11%] px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                   Payment
                 </th>
-                <th className="w-[10%] px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                <th className="w-[9%] px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                   Weight
                 </th>
-                <th className="w-[12%] px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                <th className="w-[10%] px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                   Created
                 </th>
-                <th className="w-[12%] px-2 py-3 text-center text-[12px] font-medium text-slate-700">
+                <th className="w-[11%] px-2 py-3 text-center text-[12px] font-medium text-slate-700">
                   Actions
                 </th>
               </tr>
@@ -983,7 +996,7 @@ const triggerTracking = (awb) => {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-16 text-center">
+                  <td colSpan={9} className="px-6 py-16 text-center">
                     <div className="mx-auto h-7 w-7 animate-spin rounded-full border-2 border-slate-200 border-t-[#008dd2]" />
                     <div className="mt-3 text-[12px] font-medium text-slate-500">
                       Loading undelivered orders...
@@ -992,7 +1005,7 @@ const triggerTracking = (awb) => {
                 </tr>
               ) : filteredOrders.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-16 text-center">
+                  <td colSpan={9} className="px-6 py-16 text-center">
                     <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-slate-50 text-slate-400">
                       <HiOutlineSearch className="text-[21px]" />
                     </div>
@@ -1075,6 +1088,20 @@ const triggerTracking = (awb) => {
                           onChange={() => handleSelect(order)}
                           className="h-3.5 w-3.5 cursor-pointer rounded border-slate-300 accent-[#008dd2]"
                         />
+                      </td>
+                      <td className="px-1.5 py-3 align-middle">
+                        <div className="min-w-0">
+                          {getPartyName(order) !== "-" ? (
+                            <span
+                              className="inline-block max-w-full truncate rounded-md bg-slate-100 px-1.5 py-0.5 text-[11px] font-semibold text-slate-700"
+                              title={getPartyName(order)}
+                            >
+                              {getPartyName(order)}
+                            </span>
+                          ) : (
+                            <span className="text-[12px] text-slate-400 font-normal">—</span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-2 py-3 align-middle">
                         <div className="min-w-0">

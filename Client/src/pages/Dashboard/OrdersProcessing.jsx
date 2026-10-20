@@ -231,6 +231,10 @@ function ProcessingOrders() {
     return order.id ?? order.order_id ?? index;
   };
 
+  const getParty = (order) => {
+    return order.party_name || order.party_identity_name || order.party || "—";
+  };
+
   const getCustomer = (order) => {
     return order.consignee_name || order.customer_name || order.name || "—";
   };
@@ -1316,6 +1320,7 @@ function ProcessingOrders() {
           <table className="w-full min-w-[1160px] table-fixed border-collapse">
             <colgroup>
               <col className="w-[60px]" />
+              <col className="w-[100px]" />
               <col className="w-[183px]" />
               <col className="w-[165px]" />
               <col className="w-[140px]" />
@@ -1333,6 +1338,10 @@ function ProcessingOrders() {
                     onChange={toggleAll}
                     className="h-[16px] w-[16px] cursor-pointer accent-[#7451ff]"
                   />
+                </th>
+
+                <th className="border-r border-b border-slate-200 px-3 text-left text-[14px] font-medium text-slate-800">
+                  Party
                 </th>
 
                 <th className="border-r border-b border-slate-200 px-4 text-left text-[14px] font-medium text-slate-800">
@@ -1364,7 +1373,7 @@ function ProcessingOrders() {
             <tbody>
               {filteredOrders.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="h-[280px] text-center">
+                  <td colSpan="8" className="h-[280px] text-center">
                     <div className="flex flex-col items-center justify-center">
                       <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-100">
                         <Icon name={searchText ? "search" : "file"} size={21} />
@@ -1394,6 +1403,21 @@ function ProcessingOrders() {
                           onChange={() => toggleOrder(id)}
                           className="h-[16px] w-[16px] cursor-pointer accent-[#7451ff]"
                         />
+                      </td>
+
+                      <td className="border-r border-b border-slate-200 px-3">
+                        <div className="min-w-0">
+                          {getParty(order) !== "—" ? (
+                            <span
+                              className="inline-block max-w-full truncate rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-700"
+                              title={getParty(order)}
+                            >
+                              {getParty(order)}
+                            </span>
+                          ) : (
+                            <span className="text-[12px] text-slate-400 font-normal">—</span>
+                          )}
+                        </div>
                       </td>
 
                       <td className="border-r border-b border-slate-200 px-4">

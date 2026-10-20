@@ -81,6 +81,8 @@ const getManifestedOrders = async (
         m.pickup_request_id,
 
         o.id AS order_db_id,
+        o.party_identity_id,
+        pi.name AS party_name,
 o.order_id AS display_order_id,
 o.awb,
 
@@ -135,7 +137,9 @@ o.awb,
         ON o.id = m.order_id
        AND o.user_id = m.user_id
 
-   
+      LEFT JOIN party_identities pi
+        ON pi.id = o.party_identity_id
+       AND pi.user_id = o.user_id
 
       LEFT JOIN pickup_addresses pa
   ON pa.id = o.pickup_address_id
@@ -311,6 +315,12 @@ pickup_id:
 
         order_status:
           row.order_status,
+
+        party_identity_id:
+          row.party_identity_id || null,
+
+        party_name:
+          row.party_name || null,
 
         tracking_status:
           row.tracking_status || row.order_status || "MANIFESTED",
