@@ -362,7 +362,9 @@ export default function PartyIdentities() {
                     <th className="w-[45%] px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-500">
                       Party Identity Name
                     </th>
-                   
+                    <th className="w-[18%] px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                      Linked Orders
+                    </th>
                     <th className="w-[15%] px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-500">
                       Created
                     </th>
@@ -387,7 +389,12 @@ export default function PartyIdentities() {
                           {identity.name}
                         </span>
                       </td>
-                      
+                      <td className="px-4 py-3">
+                        <span className="inline-flex items-center gap-1.5 rounded-md bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+                          <HiOutlineCube size={13} className="text-slate-500" />
+                          {Number(identity.linked_orders_count) || 0} {Number(identity.linked_orders_count) === 1 ? "order" : "orders"}
+                        </span>
+                      </td>
                       <td className="px-4 py-3 text-xs text-slate-500">
                         {formatDate(identity.created_at)}
                       </td>
