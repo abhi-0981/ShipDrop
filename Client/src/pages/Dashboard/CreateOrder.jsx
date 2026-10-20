@@ -2004,9 +2004,9 @@ const handleRequiredFieldEnter = (e) => {
                       <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px] font-medium text-slate-500">
                         <span
                           className="rounded-md bg-sky-50 px-2 py-0.5 font-bold text-[#008dd2] border border-sky-100 truncate"
-                          title={party?.reference_name ? `${party.reference_name} — ${party.name}` : party?.name}
+                          title={party?.name}
                         >
-                          {party?.reference_name || party?.name || "Selected"}
+                          {party?.name || "Selected"}
                         </span>
                         <button
                           type="button"
