@@ -117,6 +117,7 @@ export default function OrderDetailsModal({ order, loading = false, onClose, onT
                 ].filter(([, value]) => present(value));
                 const shipmentFields = [
                   ["Order ID", `#${getOrderId(o)}`],
+                  ["Party Identity", o.party_name || o.party_identity_name || o.party],
                   ["AWB", getAWB(o)],
                   ["Pickup ID", o.pickup_id || o.pickupId || o.pickup_request_id],
                   ["Status", getStatusLabel(getStatus(o))],

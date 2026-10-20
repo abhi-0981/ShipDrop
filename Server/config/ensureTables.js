@@ -63,7 +63,20 @@ async function ensureTables() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
 
-    console.log("Impersonation audit and ticket tables verified successfully.");
+    // 3. Party identities table
+    await promiseDb.query(`
+      CREATE TABLE IF NOT EXISTS party_identities (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        name VARCHAR(150) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_user_party_name (user_id, name),
+        INDEX idx_party_identities_user_id (user_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
+    console.log("Core tables including party_identities verified successfully.");
   } catch (error) {
     console.warn("ensureTables notice:", error.message);
   }

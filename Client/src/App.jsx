@@ -27,6 +27,7 @@ const WalletHistory = lazy(() => import("./pages/Dashboard/WalletHistory"));
 const PickupAddress = lazy(() => import("./pages/Dashboard/PickupAddress"));
 const ReturnAddresses = lazy(() => import("./pages/Dashboard/ReturnAddresses"));
 const LabelSettings = lazy(() => import("./pages/Dashboard/LabelSettings"));
+const PartyIdentities = lazy(() => import("./pages/Dashboard/PartyIdentities"));
 const NotPicked = lazy(() => import("./pages/Dashboard/NotPicked"));
 const InTransit = lazy(() => import("./pages/Dashboard/InTransit"));
 const OutForDelivery = lazy(() => import("./pages/Dashboard/OutForDelivery"));
@@ -375,6 +376,24 @@ function App() {
               element={
                 <Suspense fallback={<RouteLoader />}>
                   <LabelSettings />
+                </Suspense>
+              }
+            />
+
+            <Route
+              path="/settings/party-identities"
+              element={
+                <Suspense fallback={<RouteLoader />}>
+                  <PartyIdentities />
+                </Suspense>
+              }
+            />
+
+            <Route
+              path="/party-identities"
+              element={
+                <Suspense fallback={<RouteLoader />}>
+                  <PartyIdentities />
                 </Suspense>
               }
             />

@@ -425,6 +425,7 @@ function ProcessingOrders() {
         pickup_pincode: source.pickup_pincode || order.pickup_pincode || null,
         pickup_city: source.pickup_city || order.pickup_city || null,
         warehouse_id: warehouseId,
+        party_identity_id: source.party_identity_id || order.party_identity_id || null,
         pickup_address_id: source.pickup_address_id || order.pickup_address_id || null,
         orderData: {
           consignee_name: source.consignee_name,
@@ -444,6 +445,7 @@ function ProcessingOrders() {
           payment_type: source.payment_type || "Prepaid",
           risk_type: source.risk_type || "Owner Risk",
           warehouse_id: warehouseId,
+          party_identity_id: source.party_identity_id || order.party_identity_id || null,
         },
         products: Array.isArray(source.products) ? source.products : [],
         packages: Array.isArray(source.packages) ? source.packages : [],

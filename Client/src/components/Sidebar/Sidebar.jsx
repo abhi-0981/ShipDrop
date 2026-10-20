@@ -128,6 +128,7 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
     { name: "Pickup Address", path: "/settings/pickup-address" },
     { name: "Return Addresses", path: "/settings/return-addresses" },
     { name: "Label Settings", path: "/settings/label-settings" },
+    { name: "Party Identities", path: "/settings/party-identities" },
   ];
 
   const filteredSearchItems = sidebarSearch.trim()
@@ -700,6 +701,15 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
                   )}`}
                 >
                   Label Settings
+                </Link>
+                <Link
+                  to="/settings/party-identities"
+                  onClick={handleNavClick}
+                  className={`block rounded-lg px-2.5 py-1.5 text-[13px] transition ${subActiveClass(
+                    "/settings/party-identities",
+                  )}`}
+                >
+                  Party Identities
                 </Link>
               </div>
             )}

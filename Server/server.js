@@ -105,6 +105,9 @@ const serviceabilityRoutes =
 const publicTrackingRoutes =
   require("./routes/publicTrackingRoutes");
 
+const partyIdentityRoutes =
+  require("./routes/partyIdentityRoutes");
+
 
 // ======================================================
 // MIDDLEWARE
@@ -367,6 +370,17 @@ app.use(
 app.use(
   "/api/public/tracking",
   publicTrackingRoutes
+);
+
+// PARTY IDENTITIES
+app.use(
+  "/api/party-identities",
+  partyIdentityRoutes
+);
+
+app.use(
+  "/party-identities",
+  partyIdentityRoutes
 );
 
 

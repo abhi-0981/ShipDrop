@@ -78,6 +78,7 @@ const createOrder = (orderData, callback) => {
           user_id,
           pickup_address_id,
           warehouse_id,
+          party_identity_id,
 
           return_address_id,
           return_name,
@@ -112,7 +113,7 @@ dangerous_good,
 status
         )
         VALUES (
-  ?, ?, ?, ?,
+  ?, ?, ?, ?, ?,
   ?, ?, ?, ?, ?, ?,
   ?, ?, ?, ?, ?,
   ?, ?, ?, ?, ?, ?,
@@ -132,6 +133,7 @@ status
         orderData.user_id,
         orderData.pickup_address_id,
         orderData.warehouse_id || null,
+        orderData.party_identity_id || null,
 
         // ==========================================
         // RETURN ADDRESS
@@ -295,6 +297,8 @@ const getProcessingOrders = (user_id, callback) => {
       o.id,
       o.order_id,
       o.user_id,
+      o.party_identity_id,
+      pi.name AS party_name,
 
       o.pickup_address_id,
       o.warehouse_id,
@@ -383,6 +387,10 @@ o.dangerous_good,
       ON w.id = o.warehouse_id
       AND w.user_id = o.user_id
 
+    LEFT JOIN party_identities pi
+      ON pi.id = o.party_identity_id
+      AND pi.user_id = o.user_id
+
     LEFT JOIN order_products op
       ON op.order_id = o.id
 
@@ -454,6 +462,8 @@ const getAllOrders = (user_id, page = 1, limit = 50, search = "", status = "", c
       o.id,
       o.order_id,
       o.user_id,
+      o.party_identity_id,
+      pi.name AS party_name,
 
       o.pickup_address_id,
       o.warehouse_id,
@@ -577,6 +587,10 @@ const getAllOrders = (user_id, page = 1, limit = 50, search = "", status = "", c
       ON w.id = o.warehouse_id
       AND w.user_id = o.user_id
 
+    LEFT JOIN party_identities pi
+      ON pi.id = o.party_identity_id
+      AND pi.user_id = o.user_id
+
     WHERE
       o.user_id = ?
       ${statusCondition}
@@ -586,6 +600,7 @@ const getAllOrders = (user_id, page = 1, limit = 50, search = "", status = "", c
         OR UPPER(TRIM(COALESCE(o.awb, ''))) LIKE UPPER(?)
         OR UPPER(TRIM(COALESCE(o.consignee_name, ''))) LIKE UPPER(?)
         OR TRIM(COALESCE(o.mobile, '')) LIKE ?
+        OR UPPER(TRIM(COALESCE(pi.name, ''))) LIKE UPPER(?)
       )
 
     ORDER BY o.id DESC
@@ -595,6 +610,9 @@ const getAllOrders = (user_id, page = 1, limit = 50, search = "", status = "", c
   const countQuery = `
     SELECT COUNT(o.id) AS total
     FROM orders o
+    LEFT JOIN party_identities pi
+      ON pi.id = o.party_identity_id
+      AND pi.user_id = o.user_id
     WHERE
       o.user_id = ?
       ${statusCondition}
@@ -604,6 +622,7 @@ const getAllOrders = (user_id, page = 1, limit = 50, search = "", status = "", c
         OR UPPER(TRIM(COALESCE(o.awb, ''))) LIKE UPPER(?)
         OR UPPER(TRIM(COALESCE(o.consignee_name, ''))) LIKE UPPER(?)
         OR TRIM(COALESCE(o.mobile, '')) LIKE ?
+        OR UPPER(TRIM(COALESCE(pi.name, ''))) LIKE UPPER(?)
       )
   `;
 
@@ -611,6 +630,7 @@ const getAllOrders = (user_id, page = 1, limit = 50, search = "", status = "", c
     user_id,
     ...statusParams,
     searchTerm,
+    searchValue,
     searchValue,
     searchValue,
     searchValue,
@@ -623,6 +643,7 @@ const getAllOrders = (user_id, page = 1, limit = 50, search = "", status = "", c
     user_id,
     ...countStatusParams,
     searchTerm,
+    searchValue,
     searchValue,
     searchValue,
     searchValue,
@@ -655,6 +676,8 @@ const getOrderById = (orderId, userId) => {
           o.id,
           o.order_id,
           o.user_id,
+          o.party_identity_id,
+          pi.name AS party_name,
 
           o.pickup_address_id,
           o.warehouse_id,
@@ -766,6 +789,10 @@ o.status,
           ON w.id = o.warehouse_id
           AND w.user_id = o.user_id
 
+        LEFT JOIN party_identities pi
+          ON pi.id = o.party_identity_id
+          AND pi.user_id = o.user_id
+
         LEFT JOIN order_products op
           ON op.order_id = o.id
 
@@ -800,6 +827,10 @@ o.status,
         pickup_address_id: firstRow.pickup_address_id,
 
         warehouse_id: firstRow.warehouse_id,
+
+        party_identity_id: firstRow.party_identity_id || null,
+
+        party_name: firstRow.party_name || null,
 
         return_address_id: firstRow.return_address_id,
 
@@ -1073,13 +1104,14 @@ const updateOrder = (
         `
             UPDATE orders
             SET
-              warehouse_id = ?
+              warehouse_id = ?,
+              party_identity_id = ?
             WHERE
               id = ?
               AND user_id = ?
               AND UPPER(status) = 'PROCESSING'
           `,
-        [requestedWarehouseId, orderId, userId],
+        [requestedWarehouseId, orderData.party_identity_id || null, orderId, userId],
       );
 
       await txQuery(

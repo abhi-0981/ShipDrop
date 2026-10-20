@@ -14,6 +14,8 @@ const {
   getDashboardSummary,
 } = require("../models/orderModel");
 
+const db = require("../config/db");
+
 const {
   attachTrackingToOrders,
   getTrackingForWaybills,
@@ -175,6 +177,43 @@ const createOrderController = async (req, res) => {
 dangerous_good: nestedOrderData.dangerous_good === true ||
   nestedOrderData.dangerous_good === 1,
     };
+
+    // ==================================================
+    // PARTY IDENTITY VALIDATION
+    // ==================================================
+    let validatedPartyIdentityId = null;
+    const rawPartyIdentityId =
+      body.party_identity_id !== undefined
+        ? body.party_identity_id
+        : nestedOrderData.party_identity_id !== undefined
+        ? nestedOrderData.party_identity_id
+        : null;
+
+    if (rawPartyIdentityId) {
+      const parsedPid = Number(rawPartyIdentityId);
+      if (!Number.isInteger(parsedPid) || parsedPid <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Valid Party Identity ID is required",
+        });
+      }
+
+      const [partyRows] = await db.promise().query(
+        "SELECT id FROM party_identities WHERE id = ? AND user_id = ? LIMIT 1",
+        [parsedPid, user_id]
+      );
+
+      if (!partyRows || partyRows.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Selected Party Identity does not belong to your account",
+        });
+      }
+
+      validatedPartyIdentityId = parsedPid;
+    }
+
+    finalOrderData.party_identity_id = validatedPartyIdentityId;
 
     // ==================================================
     // PICKUP ADDRESS VALIDATION
@@ -770,6 +809,41 @@ const updateOrderController = async (req, res) => {
     }
 
     // ==================================================
+    // PARTY IDENTITY VALIDATION
+    // ==================================================
+    let validatedPartyIdentityId = null;
+    const rawPartyIdentityId =
+      body.party_identity_id !== undefined
+        ? body.party_identity_id
+        : nestedOrderData.party_identity_id !== undefined
+        ? nestedOrderData.party_identity_id
+        : null;
+
+    if (rawPartyIdentityId) {
+      const parsedPid = Number(rawPartyIdentityId);
+      if (!Number.isInteger(parsedPid) || parsedPid <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Valid Party Identity ID is required",
+        });
+      }
+
+      const [partyRows] = await db.promise().query(
+        "SELECT id FROM party_identities WHERE id = ? AND user_id = ? LIMIT 1",
+        [parsedPid, userId]
+      );
+
+      if (!partyRows || partyRows.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Selected Party Identity does not belong to your account",
+        });
+      }
+
+      validatedPartyIdentityId = parsedPid;
+    }
+
+    // ==================================================
     // FINAL ORDER DATA
     // ==================================================
 
@@ -781,6 +855,8 @@ const updateOrderController = async (req, res) => {
       warehouse_id: warehouse_id || nestedOrderData.warehouse_id || null,
 
       pickup_address_id: finalPickupAddressId,
+
+      party_identity_id: validatedPartyIdentityId,
     };
 
     // ==================================================

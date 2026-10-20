@@ -165,6 +165,10 @@ const getCustomerName = (order) => {
   );
 };
 
+const getPartyName = (order) => {
+  return order?.party_name || order?.party_identity_name || order?.party || "—";
+};
+
 const getMobile = (order) => {
   return (
     order?.mobile ||
@@ -798,6 +802,7 @@ useEffect(() => {
     const headers = [
       "AWB",
       "Order ID",
+      "Party",
       "Customer",
       "Mobile",
       "Shipment",
@@ -813,6 +818,7 @@ useEffect(() => {
     const rows = exportOrders.map((order) => [
       getAWB(order),
       getOrderId(order),
+      getPartyName(order),
       getCustomerName(order),
       getMobile(order),
       getShipmentName(order),
@@ -893,6 +899,7 @@ useEffect(() => {
         pickup_pincode: source?.pickup_pincode || null,
         pickup_city: source?.pickup_city || null,
         warehouse_id: warehouseId,
+        party_identity_id: source?.party_identity_id || order?.party_identity_id || null,
         pickup_address_id: source?.pickup_address_id || null,
         orderData: {
           consignee_name: source?.consignee_name || "",
@@ -912,6 +919,7 @@ useEffect(() => {
           payment_type: source?.payment_type || "Prepaid",
           risk_type: source?.risk_type || "Owner Risk",
           warehouse_id: warehouseId,
+          party_identity_id: source?.party_identity_id || order?.party_identity_id || null,
         },
         products: Array.isArray(source?.products)
           ? source.products.map((product) => ({
@@ -1222,6 +1230,15 @@ useEffect(() => {
                       </span>
                     </div>
 
+                    {getPartyName(order) !== "—" && (
+                      <div className="flex items-center gap-1.5 pt-0.5">
+                        <span className="text-[10px] text-slate-400 font-medium">Party:</span>
+                        <span className="rounded bg-sky-50 px-2 py-0.5 text-[11px] font-bold text-sky-700 border border-sky-100">
+                          {getPartyName(order)}
+                        </span>
+                      </div>
+                    )}
+
                     {/* AWB TOUCH/CLICK ACTION BAR */}
                     <div className="flex items-center justify-between font-mono text-[11px] text-slate-600 bg-slate-50/70 px-2 py-1.5 rounded-lg border border-slate-100">
                       <span
@@ -1360,31 +1377,35 @@ useEffect(() => {
                     </button>
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[17%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[10%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                    Party
+                  </th>
+
+                  <th className="sticky top-0 z-20 w-[15%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Customer
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[17%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[16%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Shipment
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[17%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[16%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Route
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[11%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[10%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Payment
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[9%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[8%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Weight
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[12%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[11%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Created
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[13%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[10%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Actions
                   </th>
                 </tr>
@@ -1393,7 +1414,7 @@ useEffect(() => {
               <tbody>
                 {filteredOrders.length === 0 ? (
                   <tr>
-                    <td colSpan="8" className="h-[300px] px-6 text-center">
+                    <td colSpan="9" className="h-[300px] px-6 text-center">
                       <div className="flex flex-col items-center justify-center">
                         <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-50 text-slate-300">
                           <Icon name="box" size={21} />
@@ -1442,6 +1463,21 @@ useEffect(() => {
                           >
                             <Icon name="check" size={11} />
                           </button>
+                        </td>
+
+                        <td className="px-2 py-2.5 break-words">
+                          <div className="min-w-0">
+                            {getPartyName(order) !== "—" ? (
+                              <span
+                                className="inline-block max-w-full truncate rounded-md bg-slate-100 px-2 py-0.5 text-[12px] font-semibold text-slate-700"
+                                title={getPartyName(order)}
+                              >
+                                {getPartyName(order)}
+                              </span>
+                            ) : (
+                              <span className="text-[13px] text-slate-400 font-normal">—</span>
+                            )}
+                          </div>
                         </td>
 
                         <td className="px-2 py-2.5 break-words">

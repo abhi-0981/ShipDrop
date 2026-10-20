@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import api from "../../services/api";
 import { notifyOrderChange } from "../../services/orderEvents";
@@ -146,6 +147,11 @@ function CreateOrder() {
   const [warehouseLocationLoading, setWarehouseLocationLoading] =
     useState(false);
 
+  // Party Identities
+  const [partyIdentities, setPartyIdentities] = useState([]);
+  const [partyIdentitiesLoading, setPartyIdentitiesLoading] = useState(false);
+  const [selectedPartyIdentityId, setSelectedPartyIdentityId] = useState(null);
+
   const inputClass =
     "h-10.5 sm:h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-[13px] sm:text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-[#008dd2] focus:ring-2 focus:ring-[#008dd2]/10";
 
@@ -167,6 +173,12 @@ function CreateOrder() {
 
       setIsEditMode(true);
       setEditingOrderId(order.id || order.order_id);
+
+      if (order.party_identity_id) {
+        setSelectedPartyIdentityId(Number(order.party_identity_id));
+      } else {
+        setSelectedPartyIdentityId(null);
+      }
 
       setFormData({
         pickup_address: order.pickup_address || "",
@@ -674,9 +686,24 @@ dangerous_good: order.dangerous_good === true ||
     };
   }, []);
 
+  const loadPartyIdentities = async () => {
+    try {
+      setPartyIdentitiesLoading(true);
+      const response = await api.get("/party-identities");
+      if (response?.data?.success) {
+        setPartyIdentities(response.data.partyIdentities || []);
+      }
+    } catch (error) {
+      console.log("Unable to load party identities:", error);
+    } finally {
+      setPartyIdentitiesLoading(false);
+    }
+  };
+
   useEffect(() => {
     loadWarehouses();
     loadDefaultReturnAddress();
+    loadPartyIdentities();
     const refreshDefaultWarehouse = () => {
       if (warehouses.length > 0) {
         applyDefaultWarehouseIfAvailable(warehouses);
@@ -1336,6 +1363,7 @@ dangerous_good: order.dangerous_good === true ||
     setShowWarehouseDropdown(false);
     setPreviousCustomers([]);
     setShowPreviousCustomers(false);
+    setSelectedPartyIdentityId(null);
 
     setProducts([{ ...initialProduct }]);
     setPackages([{ ...initialPackage }]);
@@ -1366,6 +1394,7 @@ dangerous_good: order.dangerous_good === true ||
 
     const orderData = {
       warehouse_id: selectedWarehouse?.id || null,
+      party_identity_id: selectedPartyIdentityId ? Number(selectedPartyIdentityId) : null,
 
       // Default Return Address
       return_address_id: returnAddress?.id || null,
@@ -1442,6 +1471,7 @@ dangerous_good: Boolean(formData.dangerous_good),
         pickup_pincode: formData.pickup_pincode,
         pickup_city: formData.pickup_city,
         warehouse_id: selectedWarehouse?.id || null,
+        party_identity_id: selectedPartyIdentityId ? Number(selectedPartyIdentityId) : null,
         orderData,
         products: productData,
         packages: packageData,
@@ -1656,6 +1686,7 @@ const handleRequiredFieldEnter = (e) => {
         pickup_pincode: formData.pickup_pincode,
         pickup_city: formData.pickup_city,
         warehouse_id: selectedWarehouse?.id || null,
+        party_identity_id: selectedPartyIdentityId ? Number(selectedPartyIdentityId) : null,
         orderData,
         products: productData,
         packages: packageData,
@@ -1722,6 +1753,7 @@ const handleRequiredFieldEnter = (e) => {
           pickup_pincode: formData.pickup_pincode,
           pickup_city: formData.pickup_city,
           warehouse_id: selectedWarehouse?.id || null,
+          party_identity_id: selectedPartyIdentityId ? Number(selectedPartyIdentityId) : null,
           orderData: baseOrderData,
           products: productData,
           packages: packageData,
@@ -1797,97 +1829,159 @@ const handleRequiredFieldEnter = (e) => {
           onKeyDown={handleRequiredFieldEnter}
           className="space-y-4 rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-6 md:p-7 shadow-[0_1px_4px_rgba(15,23,42,0.03)]"
         >
-          {/* 1. PICKUP LOCATION */}
+          {/* 1. PICKUP LOCATION & PARTY IDENTITY */}
           <div className="space-y-3 pb-5 border-b border-slate-100">
             <div className="flex items-center gap-2">
               <span className="flex h-5.5 w-5.5 items-center justify-center rounded-lg bg-[#008dd2]/10 text-xs font-bold text-[#008dd2]">
                 1
               </span>
               <h2 className="text-xs sm:text-sm font-bold tracking-wide uppercase text-slate-700">
-                Pickup From
+                Pickup & Party Details
               </h2>
             </div>
 
-            <div className="relative">
-              <label className={labelClass}>Pickup Warehouse *</label>
-              <div className="flex items-center gap-2">
-                <div ref={warehouseDropdownRef} className="relative flex-1">
-                  <input
-                    name="pickup_address"
-                    data-enter-required="true"
-                    value={
-                      selectedWarehouse
-                        ? getWarehouseDisplayAddress(selectedWarehouse)
-                        : warehouseSearch
-                    }
-                    onChange={(e) => {
-                      setSelectedWarehouse(null);
-                      setWarehouseSearch(e.target.value);
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 items-start">
+              {/* PICKUP WAREHOUSE */}
+              <div className="relative">
+                <label className={labelClass}>Pickup Warehouse *</label>
+                <div className="flex items-center gap-2">
+                  <div ref={warehouseDropdownRef} className="relative flex-1">
+                    <input
+                      name="pickup_address"
+                      data-enter-required="true"
+                      value={
+                        selectedWarehouse
+                          ? getWarehouseDisplayAddress(selectedWarehouse)
+                          : warehouseSearch
+                      }
+                      onChange={(e) => {
+                        setSelectedWarehouse(null);
+                        setWarehouseSearch(e.target.value);
 
-                      setFormData((prev) => ({
-                        ...prev,
-                        pickup_address: "",
-                        pickup_pincode: "",
-                        pickup_city: "",
-                      }));
+                        setFormData((prev) => ({
+                          ...prev,
+                          pickup_address: "",
+                          pickup_pincode: "",
+                          pickup_city: "",
+                        }));
 
-                      setShowWarehouseDropdown(true);
-                      resetShippingRate();
-                    }}
-                    onFocus={() => {
-                      setWarehouseSearch("");
-                      setShowWarehouseDropdown(true);
-                    }}
-                    placeholder="Search saved warehouse address..."
-                    className={`${inputClass} pr-10`}
-                    autoComplete="off"
-                  />
+                        setShowWarehouseDropdown(true);
+                        resetShippingRate();
+                      }}
+                      onFocus={() => {
+                        setWarehouseSearch("");
+                        setShowWarehouseDropdown(true);
+                      }}
+                      placeholder="Search saved warehouse address..."
+                      className={`${inputClass} pr-10`}
+                      autoComplete="off"
+                    />
 
-                  {showWarehouseDropdown && (
-                    <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-40 max-h-60 overflow-y-auto rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl">
-                      {filteredWarehouses.length > 0 ? (
-                        filteredWarehouses.map((w) => (
-                          <button
-                            key={w.id}
-                            type="button"
-                            onClick={() => applyWarehouseToPickup(w)}
-                            className="flex w-full flex-col rounded-lg p-2.5 text-left hover:bg-sky-50/60 transition"
-                          >
-                            <span className="text-xs font-bold text-slate-800">
-                              {w.warehouse_name}
-                            </span>
-                            <span className="mt-0.5 text-[11px] text-slate-500 truncate">
-                              {getWarehouseDisplayAddress(w)}
-                            </span>
-                          </button>
-                        ))
-                      ) : (
-                        <p className="p-3 text-center text-xs text-slate-400">
-                          No warehouse found
-                        </p>
-                      )}
-                    </div>
-                  )}
+                    {showWarehouseDropdown && (
+                      <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-40 max-h-60 overflow-y-auto rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl">
+                        {filteredWarehouses.length > 0 ? (
+                          filteredWarehouses.map((w) => (
+                            <button
+                              key={w.id}
+                              type="button"
+                              onClick={() => applyWarehouseToPickup(w)}
+                              className="flex w-full flex-col rounded-lg p-2.5 text-left hover:bg-sky-50/60 transition"
+                            >
+                              <span className="text-xs font-bold text-slate-800">
+                                {w.warehouse_name}
+                              </span>
+                              <span className="mt-0.5 text-[11px] text-slate-500 truncate">
+                                {getWarehouseDisplayAddress(w)}
+                              </span>
+                            </button>
+                          ))
+                        ) : (
+                          <p className="p-3 text-center text-xs text-slate-400">
+                            No warehouse found
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={openWarehouseModal}
+                    className="flex h-10.5 sm:h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#008dd2] text-white shadow-xs transition hover:bg-[#007ab6] active:scale-90"
+                    title="Add New Warehouse"
+                  >
+                    <span className="text-xl font-bold">+</span>
+                  </button>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={openWarehouseModal}
-                  className="flex h-10.5 sm:h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#008dd2] text-white shadow-xs transition hover:bg-[#007ab6] active:scale-90"
-                  title="Add New Warehouse"
-                >
-                  <span className="text-xl font-bold">+</span>
-                </button>
+                {selectedWarehouse && (
+                  <div className="mt-2 flex items-center gap-2 text-[11px] font-medium text-slate-500">
+                    <span className="rounded-md bg-emerald-50 px-2 py-0.5 font-bold text-emerald-600">
+                      {selectedWarehouse.warehouse_name}
+                    </span>
+                    <span>PIN: {selectedWarehouse.pincode}</span>
+                  </div>
+                )}
               </div>
 
-              {selectedWarehouse && (
-                <div className="mt-2 flex items-center gap-2 text-[11px] font-medium text-slate-500">
-                  <span className="rounded-md bg-emerald-50 px-2 py-0.5 font-bold text-emerald-600">
-                    {selectedWarehouse.warehouse_name}
-                  </span>
-                  <span>PIN: {selectedWarehouse.pincode}</span>
+              {/* PARTY IDENTITY (OPTIONAL) */}
+              <div className="relative">
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-[11px] sm:text-xs font-bold text-slate-600">
+                    Party Identity <span className="text-slate-400 font-normal text-[11px]">(Optional)</span>
+                  </label>
+                  <Link
+                    to="/settings/party-identities"
+                    className="text-[11px] font-semibold text-[#008dd2] hover:underline"
+                    tabIndex={-1}
+                  >
+                    + Manage Identities
+                  </Link>
                 </div>
-              )}
+
+                <div className="relative">
+                  <select
+                    name="party_identity_id"
+                    value={selectedPartyIdentityId || ""}
+                    onChange={(e) =>
+                      setSelectedPartyIdentityId(e.target.value ? Number(e.target.value) : null)
+                    }
+                    disabled={partyIdentitiesLoading}
+                    className={`${inputClass} appearance-none pr-9 cursor-pointer`}
+                  >
+                    <option value="">-- No Party Identity (Default) --</option>
+                    {partyIdentities.map((party) => (
+                      <option key={party.id} value={party.id}>
+                        {party.name}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-400">
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
+
+                {selectedPartyIdentityId ? (
+                  <div className="mt-2 flex items-center gap-2 text-[11px] font-medium text-slate-500">
+                    <span className="rounded-md bg-sky-50 px-2 py-0.5 font-bold text-[#008dd2] border border-sky-100">
+                      Party: {partyIdentities.find((p) => Number(p.id) === Number(selectedPartyIdentityId))?.name || "Selected"}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedPartyIdentityId(null)}
+                      className="text-slate-400 hover:text-slate-600 text-[10px] underline"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                ) : (
+                  <p className="mt-2 text-[11px] text-slate-400">
+                    Optional: Select a party identity to tag this order.
+                  </p>
+                )}
+              </div>
             </div>
           </div>
 
