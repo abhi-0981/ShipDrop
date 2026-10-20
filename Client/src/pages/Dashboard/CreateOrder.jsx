@@ -1987,6 +1987,8 @@ const handleRequiredFieldEnter = (e) => {
                     {partyIdentities.map((party) => (
                       <option key={party.id} value={party.id}>
                         {party.name}
+                        {party.company_name ? ` (${party.company_name})` : ""}
+                        {party.reference_name ? ` [${party.reference_name}]` : ""}
                       </option>
                     ))}
                   </select>
@@ -1998,18 +2000,28 @@ const handleRequiredFieldEnter = (e) => {
                 </div>
 
                 {selectedPartyIdentityId ? (
-                  <div className="mt-2 flex items-center gap-1.5 text-[11px] font-medium text-slate-500">
-                    <span className="rounded-md bg-sky-50 px-2 py-0.5 font-bold text-[#008dd2] border border-sky-100 truncate">
-                      {partyIdentities.find((p) => Number(p.id) === Number(selectedPartyIdentityId))?.name || "Selected"}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedPartyIdentityId(null)}
-                      className="text-slate-400 hover:text-slate-600 text-[10px] underline shrink-0 cursor-pointer "
-                    >
-                      Clear
-                    </button>
-                  </div>
+                  (() => {
+                    const party = partyIdentities.find((p) => Number(p.id) === Number(selectedPartyIdentityId));
+                    return (
+                      <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px] font-medium text-slate-500">
+                        <span className="rounded-md bg-sky-50 px-2 py-0.5 font-bold text-[#008dd2] border border-sky-100 truncate" title={party?.name}>
+                          {party?.name || "Selected"}
+                        </span>
+                        {party?.company_name && (
+                          <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-slate-600 truncate max-w-[140px]" title={party.company_name}>
+                            {party.company_name}
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => setSelectedPartyIdentityId(null)}
+                          className="text-slate-400 hover:text-slate-600 text-[10px] underline shrink-0 cursor-pointer ml-auto"
+                        >
+                          Clear
+                        </button>
+                      </div>
+                    );
+                  })()
                 ) : (
                   <p className="mt-2 text-[10px] sm:text-[11px] text-slate-400 truncate">
                     Select party

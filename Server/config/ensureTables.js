@@ -69,12 +69,43 @@ async function ensureTables() {
         id INT AUTO_INCREMENT PRIMARY KEY,
         user_id INT NOT NULL,
         name VARCHAR(150) NOT NULL,
+        reference_name VARCHAR(150) NULL,
+        company_name VARCHAR(255) NULL,
+        gst_no VARCHAR(50) NULL,
+        phone_no VARCHAR(25) NULL,
+        address TEXT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         UNIQUE KEY unique_user_party_name (user_id, name),
         INDEX idx_party_identities_user_id (user_id)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
+
+    // Ensure columns exist if table was previously created with only (id, user_id, name)
+    const partyColumns = [
+      { name: "reference_name", type: "VARCHAR(150) NULL AFTER name" },
+      { name: "company_name", type: "VARCHAR(255) NULL AFTER reference_name" },
+      { name: "gst_no", type: "VARCHAR(50) NULL AFTER company_name" },
+      { name: "phone_no", type: "VARCHAR(25) NULL AFTER gst_no" },
+      { name: "address", type: "TEXT NULL AFTER phone_no" },
+    ];
+
+    for (const col of partyColumns) {
+      try {
+        const [existing] = await promiseDb.query(
+          `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'party_identities' AND COLUMN_NAME = ?`,
+          [col.name]
+        );
+        if (!existing || existing.length === 0) {
+          await promiseDb.query(
+            `ALTER TABLE party_identities ADD COLUMN ${col.name} ${col.type}`
+          );
+          console.log(`Added column ${col.name} to party_identities.`);
+        }
+      } catch (colErr) {
+        console.warn(`Column check/add notice for ${col.name}:`, colErr.message);
+      }
+    }
 
     console.log("Core tables including party_identities verified successfully.");
   } catch (error) {

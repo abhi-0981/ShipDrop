@@ -53,6 +53,11 @@ const createPartyIdentityController = async (req, res) => {
     }
 
     const rawName = String(req.body?.name || "").trim();
+    const rawRef = req.body?.reference_name !== undefined ? String(req.body.reference_name).trim() : (req.body?.referenceName !== undefined ? String(req.body.referenceName).trim() : null);
+    const rawCompany = req.body?.company_name !== undefined ? String(req.body.company_name).trim() : (req.body?.companyName !== undefined ? String(req.body.companyName).trim() : null);
+    const rawGst = req.body?.gst_no !== undefined ? String(req.body.gst_no).trim().toUpperCase() : (req.body?.gstNo !== undefined ? String(req.body.gstNo).trim().toUpperCase() : null);
+    const rawPhone = req.body?.phone_no !== undefined ? String(req.body.phone_no).trim() : (req.body?.phoneNo !== undefined ? String(req.body.phoneNo).trim() : (req.body?.phone !== undefined ? String(req.body.phone).trim() : null));
+    const rawAddress = req.body?.address !== undefined ? String(req.body.address).trim() : null;
 
     if (!rawName) {
       return res.status(400).json({
@@ -80,6 +85,11 @@ const createPartyIdentityController = async (req, res) => {
     const created = await createPartyIdentity({
       userId,
       name: rawName,
+      referenceName: rawRef || null,
+      companyName: rawCompany || null,
+      gstNo: rawGst || null,
+      phoneNo: rawPhone || null,
+      address: rawAddress || null,
     });
 
     return res.status(201).json({
@@ -129,6 +139,11 @@ const updatePartyIdentityController = async (req, res) => {
     }
 
     const rawName = String(req.body?.name || "").trim();
+    const rawRef = req.body?.reference_name !== undefined ? String(req.body.reference_name).trim() : (req.body?.referenceName !== undefined ? String(req.body.referenceName).trim() : null);
+    const rawCompany = req.body?.company_name !== undefined ? String(req.body.company_name).trim() : (req.body?.companyName !== undefined ? String(req.body.companyName).trim() : null);
+    const rawGst = req.body?.gst_no !== undefined ? String(req.body.gst_no).trim().toUpperCase() : (req.body?.gstNo !== undefined ? String(req.body.gstNo).trim().toUpperCase() : null);
+    const rawPhone = req.body?.phone_no !== undefined ? String(req.body.phone_no).trim() : (req.body?.phoneNo !== undefined ? String(req.body.phoneNo).trim() : (req.body?.phone !== undefined ? String(req.body.phone).trim() : null));
+    const rawAddress = req.body?.address !== undefined ? String(req.body.address).trim() : null;
 
     if (!rawName) {
       return res.status(400).json({
@@ -153,7 +168,14 @@ const updatePartyIdentityController = async (req, res) => {
       });
     }
 
-    await updatePartyIdentity(id, userId, { name: rawName });
+    await updatePartyIdentity(id, userId, {
+      name: rawName,
+      referenceName: rawRef || null,
+      companyName: rawCompany || null,
+      gstNo: rawGst || null,
+      phoneNo: rawPhone || null,
+      address: rawAddress || null,
+    });
 
     return res.status(200).json({
       success: true,
@@ -162,6 +184,11 @@ const updatePartyIdentityController = async (req, res) => {
         id,
         user_id: userId,
         name: rawName,
+        reference_name: rawRef || null,
+        company_name: rawCompany || null,
+        gst_no: rawGst || null,
+        phone_no: rawPhone || null,
+        address: rawAddress || null,
       },
     });
   } catch (error) {

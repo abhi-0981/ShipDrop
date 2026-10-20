@@ -25,6 +25,11 @@ const getPartyIdentitiesByUser = async (userId) => {
       pi.id,
       pi.user_id,
       pi.name,
+      pi.reference_name,
+      pi.company_name,
+      pi.gst_no,
+      pi.phone_no,
+      pi.address,
       pi.created_at,
       pi.updated_at,
       COUNT(o.id) AS linked_orders_count
@@ -33,7 +38,7 @@ const getPartyIdentitiesByUser = async (userId) => {
       ON o.party_identity_id = pi.id
       AND o.user_id = pi.user_id
     WHERE pi.user_id = ?
-    GROUP BY pi.id, pi.user_id, pi.name, pi.created_at, pi.updated_at
+    GROUP BY pi.id, pi.user_id, pi.name, pi.reference_name, pi.company_name, pi.gst_no, pi.phone_no, pi.address, pi.created_at, pi.updated_at
     ORDER BY pi.name ASC
   `;
 
@@ -51,6 +56,11 @@ const getPartyIdentityById = async (id, userId) => {
       pi.id,
       pi.user_id,
       pi.name,
+      pi.reference_name,
+      pi.company_name,
+      pi.gst_no,
+      pi.phone_no,
+      pi.address,
       pi.created_at,
       pi.updated_at,
       COUNT(o.id) AS linked_orders_count
@@ -60,7 +70,7 @@ const getPartyIdentityById = async (id, userId) => {
       AND o.user_id = pi.user_id
     WHERE pi.id = ?
       AND pi.user_id = ?
-    GROUP BY pi.id, pi.user_id, pi.name, pi.created_at, pi.updated_at
+    GROUP BY pi.id, pi.user_id, pi.name, pi.reference_name, pi.company_name, pi.gst_no, pi.phone_no, pi.address, pi.created_at, pi.updated_at
     LIMIT 1
   `;
 
@@ -98,19 +108,54 @@ const checkDuplicatePartyIdentity = async (name, userId, excludeId = null) => {
 // CREATE PARTY IDENTITY
 // ============================================================
 
-const createPartyIdentity = async ({ userId, name }) => {
+const createPartyIdentity = async ({
+  userId,
+  name,
+  referenceName = null,
+  companyName = null,
+  gstNo = null,
+  phoneNo = null,
+  address = null,
+}) => {
   const cleanName = String(name || "").trim();
+  const cleanRef = referenceName ? String(referenceName).trim() : null;
+  const cleanCompany = companyName ? String(companyName).trim() : null;
+  const cleanGst = gstNo ? String(gstNo).trim().toUpperCase() : null;
+  const cleanPhone = phoneNo ? String(phoneNo).trim() : null;
+  const cleanAddress = address ? String(address).trim() : null;
 
   const sql = `
-    INSERT INTO party_identities (user_id, name)
-    VALUES (?, ?)
+    INSERT INTO party_identities (
+      user_id,
+      name,
+      reference_name,
+      company_name,
+      gst_no,
+      phone_no,
+      address
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?)
   `;
 
-  const result = await query(sql, [userId, cleanName]);
+  const result = await query(sql, [
+    userId,
+    cleanName,
+    cleanRef,
+    cleanCompany,
+    cleanGst,
+    cleanPhone,
+    cleanAddress,
+  ]);
+
   return {
     id: result.insertId,
     user_id: userId,
     name: cleanName,
+    reference_name: cleanRef,
+    company_name: cleanCompany,
+    gst_no: cleanGst,
+    phone_no: cleanPhone,
+    address: cleanAddress,
   };
 };
 
@@ -118,17 +163,49 @@ const createPartyIdentity = async ({ userId, name }) => {
 // UPDATE PARTY IDENTITY
 // ============================================================
 
-const updatePartyIdentity = async (id, userId, { name }) => {
+const updatePartyIdentity = async (
+  id,
+  userId,
+  {
+    name,
+    referenceName = null,
+    companyName = null,
+    gstNo = null,
+    phoneNo = null,
+    address = null,
+  }
+) => {
   const cleanName = String(name || "").trim();
+  const cleanRef = referenceName ? String(referenceName).trim() : null;
+  const cleanCompany = companyName ? String(companyName).trim() : null;
+  const cleanGst = gstNo ? String(gstNo).trim().toUpperCase() : null;
+  const cleanPhone = phoneNo ? String(phoneNo).trim() : null;
+  const cleanAddress = address ? String(address).trim() : null;
 
   const sql = `
     UPDATE party_identities
-    SET name = ?
+    SET
+      name = ?,
+      reference_name = ?,
+      company_name = ?,
+      gst_no = ?,
+      phone_no = ?,
+      address = ?
     WHERE id = ?
       AND user_id = ?
   `;
 
-  const result = await query(sql, [cleanName, id, userId]);
+  const result = await query(sql, [
+    cleanName,
+    cleanRef,
+    cleanCompany,
+    cleanGst,
+    cleanPhone,
+    cleanAddress,
+    id,
+    userId,
+  ]);
+
   return result.affectedRows > 0;
 };
 
