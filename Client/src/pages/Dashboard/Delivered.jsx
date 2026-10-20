@@ -234,10 +234,16 @@ const getPaymentType = (order) => {
 
 const getAmount = (order) => {
   const amount = Number(
-    order?.total_amount ??
+    order?.shipping_charge ??
+      order?.shipping_charges ??
+      order?.charge ??
+      order?.shippingCharge ??
+      order?.final_rate ??
+      order?.manifest_shipping_charge ??
+      order?.total_amount ??
       order?.total ??
       order?.amount ??
-      order?.shipping_charges ??
+      order?.price ??
       0
   );
 
@@ -1490,68 +1496,59 @@ function Delivered() {
         ================================================== */}
 
         <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
-
-          <div className="max-h-[calc(100vh-180px)] overflow-auto">
-
-            <table className="w-full min-w-[1120px] border-collapse">
-
+          <div
+            className="orders-scrollbar max-h-[calc(100vh-180px)] overflow-y-auto overflow-x-hidden"
+            style={{
+              scrollbarWidth: "thin",
+              scrollbarColor: "#cbd5e1 transparent",
+            }}
+          >
+            <table className="w-full table-fixed border-collapse">
               {/* TABLE HEADER */}
-
               <thead className="sticky top-0 z-20 bg-white">
-
                 <tr className="border-b border-slate-200 bg-white">
-
-                  <th className="sticky top-0 z-20 w-[52px] bg-white px-4 py-3.5 text-left">
-
+                  <th className="sticky top-0 z-20 w-[4%] bg-white px-2 py-3 text-left">
                     <button
                       type="button"
-                      onClick={
-                        handleSelectAll
-                      }
+                      onClick={handleSelectAll}
                       className={`flex h-[17px] w-[17px] items-center justify-center rounded-[4px] border transition ${
                         allVisibleSelected
                           ? "border-[#008dd2] bg-[#008dd2] text-white"
                           : "border-slate-300 bg-white text-transparent"
                       }`}
                     >
-                      <Icon
-                        name="check"
-                        size={11}
-                      />
+                      <Icon name="check" size={11} />
                     </button>
-
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[190px] bg-white px-3 py-3.5 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[19%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Customer
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[175px] bg-white px-3 py-3.5 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[17%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Shipment
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[165px] bg-white px-3 py-3.5 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[17%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Route
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[145px] bg-white px-3 py-3.5 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[12%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Payment
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[125px] bg-white px-3 py-3.5 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[10%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Weight
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[155px] bg-white px-3 py-3.5 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[11%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Created
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[105px] bg-white px-3 py-3.5 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[10%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Actions
                   </th>
-
                 </tr>
-
               </thead>
 
               {/* TABLE BODY */}
@@ -1635,7 +1632,7 @@ function Delivered() {
 
                           {/* CHECKBOX */}
 
-                          <td className="px-4 py-3">
+                          <td className="px-2 py-2.5">
 
                             <button
                               type="button"
@@ -1662,7 +1659,7 @@ function Delivered() {
                               CUSTOMER
                           ================================== */}
 
-                          <td className="px-3 py-3">
+                          <td className="px-2 py-2.5 break-words">
 
                             <div className="min-w-0">
 
@@ -1698,7 +1695,7 @@ function Delivered() {
                               SHIPMENT
                           ================================== */}
 
-                          <td className="px-3 py-3">
+                          <td className="px-2 py-2.5 break-words">
 
                             <div className="min-w-0">
 
@@ -1736,7 +1733,7 @@ function Delivered() {
                               ROUTE
                           ================================== */}
 
-                          <td className="px-3 py-3">
+                          <td className="px-2 py-2.5 break-words">
 
                             <div>
 
@@ -1808,7 +1805,7 @@ function Delivered() {
                               PAYMENT
                           ================================== */}
 
-                          <td className="px-3 py-3">
+                          <td className="px-2 py-2.5 break-words">
 
                             <div>
 
@@ -1831,7 +1828,7 @@ function Delivered() {
                               </p>
 
                               <p className="text-[10px] text-slate-400">
-                                Total: ₹
+                                Charge: ₹
                                 {getAmount(
                                   order
                                 ).toFixed(2)}
@@ -1845,7 +1842,7 @@ function Delivered() {
                               WEIGHT
                           ================================== */}
 
-                          <td className="px-3 py-3">
+                          <td className="px-2 py-2.5 break-words">
 
                             <div>
 
@@ -1882,7 +1879,7 @@ function Delivered() {
                               CREATED
                           ================================== */}
 
-                          <td className="px-3 py-3">
+                          <td className="px-2 py-2.5 break-words">
 
                             <p className="text-[12px] font-medium text-slate-700">
                               #
@@ -1920,7 +1917,7 @@ function Delivered() {
                               ACTIONS
                           ================================== */}
 
-                          <td className="px-3 py-3">
+                          <td className="px-2 py-2.5">
 
                             <div className="flex items-center gap-1.5">
 

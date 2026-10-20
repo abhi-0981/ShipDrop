@@ -259,10 +259,16 @@ const getPaymentType = (order) => {
 
 const getAmount = (order) => {
   const amount = Number(
-    order?.total_amount ??
+    order?.shipping_charge ??
+      order?.shipping_charges ??
+      order?.charge ??
+      order?.shippingCharge ??
+      order?.final_rate ??
+      order?.manifest_shipping_charge ??
+      order?.total_amount ??
       order?.total ??
       order?.amount ??
-      order?.shipping_charges ??
+      order?.price ??
       0,
   );
   return Number.isFinite(amount) ? amount : 0;

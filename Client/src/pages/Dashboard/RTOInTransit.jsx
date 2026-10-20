@@ -226,10 +226,15 @@ const getPaymentType = (order) => {
 
 const getAmount = (order) => {
   const amount = Number(
-    order?.total_amount ??
+    order?.shipping_charge ??
+      order?.shipping_charges ??
+      order?.charge ??
+      order?.shippingCharge ??
+      order?.final_rate ??
+      order?.manifest_shipping_charge ??
+      order?.total_amount ??
       order?.total ??
       order?.amount ??
-      order?.shipping_charges ??
       0,
   );
 
@@ -1202,12 +1207,18 @@ function RTOInTransit() {
         {/* ==================================================
             2. DESKTOP & TABLET VIEW: STRUCTURED TABLE
         ================================================== */}
-        <div className="hidden sm:block overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xs">
-          <div className="max-h-[calc(100vh-180px)] overflow-auto">
-            <table className="w-full min-w-[1120px] border-collapse">
+        <div className="hidden sm:block overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
+          <div
+            className="orders-scrollbar max-h-[calc(100vh-180px)] overflow-y-auto overflow-x-hidden"
+            style={{
+              scrollbarWidth: "thin",
+              scrollbarColor: "#cbd5e1 transparent",
+            }}
+          >
+            <table className="w-full table-fixed border-collapse">
               <thead className="sticky top-0 z-20 bg-white">
                 <tr className="border-b border-slate-200 bg-white">
-                  <th className="sticky top-0 z-20 w-[52px] bg-white px-4 py-3.5 text-left">
+                  <th className="sticky top-0 z-20 w-[4%] bg-white px-2 py-3 text-left">
                     <button
                       type="button"
                       onClick={handleSelectAll}
@@ -1221,31 +1232,31 @@ function RTOInTransit() {
                     </button>
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[17%] bg-white px-3 py-3.5 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[19%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Customer
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[16%] bg-white px-3 py-3.5 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[17%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Shipment
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[18%] bg-white px-3 py-3.5 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[17%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Route
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[13%] bg-white px-3 py-3.5 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[12%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Payment
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[10%] bg-white px-3 py-3.5 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[10%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Weight
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[13%] bg-white px-3 py-3.5 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[11%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Created
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[125px] bg-white px-3 py-3.5 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[10%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Actions
                   </th>
                 </tr>
@@ -1292,7 +1303,7 @@ function RTOInTransit() {
                         } hover:bg-slate-50`}
                       >
                         {/* CHECKBOX */}
-                        <td className="px-4 py-3">
+                        <td className="px-2 py-2.5">
                           <button
                             type="button"
                             onClick={() => handleSelect(order)}
@@ -1307,7 +1318,7 @@ function RTOInTransit() {
                         </td>
 
                         {/* CUSTOMER */}
-                        <td className="px-3 py-2.5">
+                        <td className="px-2 py-2.5 break-words">
                           <div className="min-w-0 flex flex-col items-start">
                             <p className="w-full truncate text-[13px] font-semibold leading-[18px] text-slate-800">
                               {getCustomerName(order)}
@@ -1326,7 +1337,7 @@ function RTOInTransit() {
                         </td>
 
                         {/* SHIPMENT */}
-                        <td className="px-3 py-2.5">
+                        <td className="px-2 py-2.5 break-words">
                           <div className="min-w-0">
                             {status !== "PROCESSING" && (
                               <>
@@ -1370,7 +1381,7 @@ function RTOInTransit() {
                         </td>
 
                         {/* ROUTE */}
-                        <td className="px-3 py-2.5">
+                        <td className="px-2 py-2.5 break-words">
                           <div className="flex flex-col gap-0">
                             <div className="flex items-center gap-2 leading-[16px]">
                               <HiOutlineLocationMarker
@@ -1403,7 +1414,7 @@ function RTOInTransit() {
                         </td>
 
                         {/* PAYMENT */}
-                        <td className="px-3 py-2.5">
+                        <td className="px-2 py-2.5 break-words">
                           <div>
                             <p
                               className={`text-[12px] font-semibold ${
@@ -1422,13 +1433,13 @@ function RTOInTransit() {
                             </p>
 
                             <p className="text-[10px] text-slate-400">
-                              Total: ₹{getAmount(order).toFixed(2)}
+                              Charge: ₹{getAmount(order).toFixed(2)}
                             </p>
                           </div>
                         </td>
 
                         {/* WEIGHT */}
-                        <td className="px-3 py-2.5">
+                        <td className="px-2 py-2.5 break-words">
                           <div>
                             <p className="text-[12px] font-semibold text-slate-700">
                               Box: {getPackageCount(order)}
@@ -1445,7 +1456,7 @@ function RTOInTransit() {
                         </td>
 
                         {/* CREATED */}
-                        <td className="px-3 py-2.5">
+                        <td className="px-2 py-2.5 break-words">
                           <p className="text-[12px] font-medium text-slate-700">
                             #{getOrderId(order)}
                           </p>

@@ -249,6 +249,7 @@ const getAmount = (order) => {
     order?.selling_price,
     order?.sellingPrice,
     order?.price,
+    order?.shipping_charge,
     order?.shipping_charges,
   ];
 
@@ -1924,7 +1925,7 @@ function Cancelled() {
                               </p>
 
                               <p className="text-[10px] text-slate-400">
-                                Total: ₹
+                                Charge: ₹
                                 {getAmount(
                                   order
                                 ).toFixed(2)}
