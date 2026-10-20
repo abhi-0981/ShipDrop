@@ -8,7 +8,7 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   build: {
     target: "esnext",
-    minify: "esbuild",
+    minify: true,
     cssCodeSplit: true,
     chunkSizeWarningLimit: 2000,
   },
