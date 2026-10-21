@@ -1719,20 +1719,13 @@ useEffect(() => {
                                 </div>
 
                                 <p className="mt-0.5 text-[11px] text-slate-500">
-                                  Carrier:{" "}
+                                  
                                   <span className="font-semibold text-slate-700">
                                     {manualCarrier}
                                   </span>
                                 </p>
 
-                                <p className="mt-0.5 text-[11px] text-slate-500">
-                                  Pkg: {order?.package_type || "Box"}
-                                  {(order?.shipping_mode || order?.service_type) ? (
-                                    <span className="ml-1 font-semibold text-slate-700">
-                                      • {order?.shipping_mode || order?.service_type}
-                                    </span>
-                                  ) : null}
-                                </p>
+                             
                               </>
                             ) : (
                               <>
@@ -1865,9 +1858,7 @@ useEffect(() => {
                                 <p className="mt-0.5 text-[12px] font-bold text-emerald-600">
                                   ₹{getAmount(order).toFixed(2)}
                                 </p>
-                                <p className="text-[10px] text-slate-400">
-                                  (Incl. GST)
-                                </p>
+                               
                               </>
                             ) : (
                               <>
