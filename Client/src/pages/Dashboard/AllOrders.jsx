@@ -1789,7 +1789,7 @@ useEffect(() => {
 
                                 <p className="mt-0.5 text-[11px] text-slate-500">
                                   {getShipmentName(order)} -{" "}
-                                  {service === "AIR" ? "By Air" : "By Surface"}
+                                  {service === "AIR" ? "Air" : "Surface"}
                                 </p>
                               </>
                             )}
