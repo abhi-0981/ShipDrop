@@ -58,6 +58,30 @@ export default function OfflineOrders() {
     loadParties();
   }, []);
 
+  // Load default warehouse for route visualization (matching All Orders)
+  const [defaultWarehouse, setDefaultWarehouse] = useState(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    const loadDefaultWarehouse = async () => {
+      try {
+        const res = await api.get("/warehouses");
+        if (isMounted && res?.data?.success && Array.isArray(res.data.warehouses)) {
+          const list = res.data.warehouses;
+          const def =
+            list.find((w) => w.is_default || w.is_primary) || list[0] || null;
+          setDefaultWarehouse(def);
+        }
+      } catch (err) {
+        console.error("Unable to load warehouse in OfflineOrders:", err);
+      }
+    };
+    loadDefaultWarehouse();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   // Fetch offline orders
   const fetchOrders = async () => {
     try {
@@ -213,11 +237,42 @@ export default function OfflineOrders() {
   const formatDate = (dateStr) => {
     if (!dateStr) return "—";
     const d = new Date(dateStr);
+    if (Number.isNaN(d.getTime())) return "—";
     return d.toLocaleDateString("en-IN", {
       day: "2-digit",
       month: "short",
       year: "numeric",
     });
+  };
+
+  const formatTime = (dateStr) => {
+    if (!dateStr) return "";
+    const d = new Date(dateStr);
+    if (Number.isNaN(d.getTime())) return "";
+    return d.toLocaleTimeString("en-IN", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  const getPickupCity = (order) => {
+    return (
+      order?.pickup_city ||
+      order?.warehouse_city ||
+      order?.from_city ||
+      defaultWarehouse?.city ||
+      "Jaipur"
+    );
+  };
+
+  const getPickupPincode = (order) => {
+    return (
+      order?.pickup_pincode ||
+      order?.warehouse_pincode ||
+      order?.from_pincode ||
+      defaultWarehouse?.pincode ||
+      "302012"
+    );
   };
 
   const getChargeValue = (order) => {
@@ -514,20 +569,20 @@ export default function OfflineOrders() {
       ) : (
         <>
           {/* ==================================================
-              1. DESKTOP / TABLET STRUCTURED TABLE
+              1. DESKTOP / TABLET STRUCTURED TABLE (MATCHING ALL ORDERS)
           ================================================== */}
           <div className="hidden sm:block overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
             <div
-              className="orders-scrollbar max-h-[calc(100vh-220px)] overflow-y-auto overflow-x-auto"
+              className="orders-scrollbar max-h-[calc(100vh-180px)] overflow-y-auto overflow-x-hidden"
               style={{
                 scrollbarWidth: "thin",
                 scrollbarColor: "#cbd5e1 transparent",
               }}
             >
-              <table className="w-full min-w-[980px] table-fixed border-collapse">
+              <table className="w-full table-fixed border-collapse">
                 <thead className="sticky top-0 z-20 bg-white">
-                  <tr className="border-b border-slate-200 bg-slate-50/80">
-                    <th className="sticky top-0 z-20 w-[4%] min-w-[36px] bg-slate-50/80 px-3 py-3.5 text-left">
+                  <tr className="border-b border-slate-200 bg-white">
+                    <th className="sticky top-0 z-20 w-[4%] bg-white px-2 py-3 text-left">
                       <button
                         type="button"
                         onClick={handleSelectAll}
@@ -550,35 +605,35 @@ export default function OfflineOrders() {
                       </button>
                     </th>
 
-                    <th className="sticky top-0 z-20 w-[7%] min-w-[65px] bg-slate-50/80 px-3 py-3.5 text-left text-[12px] font-bold text-slate-700">
+                    <th className="sticky top-0 z-20 w-[7%] bg-white px-1.5 py-3 text-left text-[12px] font-medium text-slate-700">
                       Party
                     </th>
 
-                    <th className="sticky top-0 z-20 w-[16.5%] min-w-[160px] bg-slate-50/80 px-3 py-3.5 text-left text-[12px] font-bold text-slate-700">
+                    <th className="sticky top-0 z-20 w-[18%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                       Customer
                     </th>
 
-                    <th className="sticky top-0 z-20 w-[17.5%] min-w-[170px] bg-slate-50/80 px-3 py-3.5 text-left text-[12px] font-bold text-slate-700">
+                    <th className="sticky top-0 z-20 w-[16%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                       Shipment
                     </th>
 
-                    <th className="sticky top-0 z-20 w-[14%] min-w-[130px] bg-slate-50/80 px-3 py-3.5 text-left text-[12px] font-bold text-slate-700">
+                    <th className="sticky top-0 z-20 w-[16%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                       Route
                     </th>
 
-                    <th className="sticky top-0 z-20 w-[11%] min-w-[105px] bg-slate-50/80 px-3 py-3.5 text-left text-[12px] font-bold text-slate-700">
-                      Specs & Weight
+                    <th className="sticky top-0 z-20 w-[10%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                      Payment
                     </th>
 
-                    <th className="sticky top-0 z-20 w-[11%] min-w-[105px] bg-slate-50/80 px-3 py-3.5 text-left text-[12px] font-bold text-slate-700">
-                      Payment & Charge
+                    <th className="sticky top-0 z-20 w-[8%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                      Weight
                     </th>
 
-                    <th className="sticky top-0 z-20 w-[10%] min-w-[100px] bg-slate-50/80 px-3 py-3.5 text-left text-[12px] font-bold text-slate-700">
+                    <th className="sticky top-0 z-20 w-[11%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                       Created
                     </th>
 
-                    <th className="sticky top-0 z-20 w-[9%] min-w-[95px] bg-slate-50/80 px-3 py-3.5 text-center text-[12px] font-bold text-slate-700">
+                    <th className="sticky top-0 z-20 w-[10%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                       Actions
                     </th>
                   </tr>
@@ -588,16 +643,22 @@ export default function OfflineOrders() {
                   {orders.map((o) => {
                     const isSelected = selectedIds.includes(o.id);
                     const charge = getChargeValue(o);
+                    const payment = String(o.payment_mode || "PREPAID").toUpperCase();
+                    const status = String(o.status || "BOOKED").toUpperCase();
+                    const volWeight =
+                      o.length && o.width && o.height
+                        ? (Number(o.length) * Number(o.width) * Number(o.height)) / 5000
+                        : Number(o.weight || 0);
 
                     return (
                       <tr
                         key={o.id}
                         className={`border-b border-slate-100 transition last:border-b-0 ${
                           isSelected ? "bg-[#f8fcff]" : "bg-white"
-                        } hover:bg-slate-50/80`}
+                        } hover:bg-slate-50`}
                       >
                         {/* CHECKBOX */}
-                        <td className="px-3 py-3.5 align-middle">
+                        <td className="px-2 py-2.5">
                           <button
                             type="button"
                             onClick={() => handleSelect(o.id)}
@@ -621,11 +682,11 @@ export default function OfflineOrders() {
                         </td>
 
                         {/* PARTY */}
-                        <td className="px-3 py-3.5 align-middle break-words">
+                        <td className="px-1.5 py-2.5 break-words">
                           <div className="min-w-0">
                             {o.party_reference_name || o.party_name ? (
                               <span
-                                className="inline-block max-w-full truncate rounded-md bg-slate-100 border border-slate-200/80 px-2 py-0.5 text-[11px] font-bold text-slate-700"
+                                className="inline-block max-w-full truncate rounded-md bg-slate-100 px-1.5 py-0.5 text-[11px] font-semibold text-slate-700"
                                 title={
                                   o.party_reference_name && o.party_name
                                     ? `${o.party_reference_name} — ${o.party_name}`
@@ -642,169 +703,227 @@ export default function OfflineOrders() {
                           </div>
                         </td>
 
-                        {/* CUSTOMER & BOOKED BADGE */}
-                        <td className="px-3 py-3.5 align-middle break-words">
+                        {/* CUSTOMER & STATUS BADGE */}
+                        <td className="px-2 py-2.5 break-words">
                           <div className="min-w-0">
                             <p
-                              className="truncate text-[13.5px] font-bold text-slate-900"
+                              className="truncate text-[13px] font-semibold text-slate-800"
                               title={o.consignee_name}
                             >
                               {o.consignee_name}
                             </p>
 
                             {o.mobile && (
-                              <p className="mt-0.5 text-[12px] font-semibold text-slate-600 font-mono tracking-tight">
+                              <p className="mt-0.5 text-[11px] text-slate-400">
                                 {o.mobile}
                               </p>
                             )}
 
-                            {/* BOOKED BADGE DIRECTLY BENEATH MOBILE */}
-                            <div className="mt-1">
-                              <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-[9.5px] font-bold text-emerald-700 border border-emerald-200/80 shadow-2xs">
-                                Booked
+                            <div className="mt-0.5 -ml-0.5">
+                              <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/60 uppercase tracking-wider">
+                                {status}
                               </span>
                             </div>
                           </div>
                         </td>
 
                         {/* SHIPMENT (CONSIGNMENT NO + CARRIER + PRODUCT/MODE) */}
-                        <td className="px-3 py-3.5 align-middle break-words">
+                        <td className="px-2 py-2.5 break-words">
                           <div className="min-w-0">
                             <div className="flex items-center gap-1.5 min-w-0">
                               <p
-                                className="truncate text-[13.5px] font-bold text-slate-900 font-mono tracking-tight"
+                                className="truncate text-[13px] font-semibold text-slate-800"
                                 title={o.consignment_no}
                               >
                                 {o.consignment_no}
                               </p>
 
-                              <button
-                                type="button"
-                                onClick={async (e) => {
-                                  e.stopPropagation();
-                                  try {
-                                    await navigator.clipboard.writeText(
-                                      String(o.consignment_no),
-                                    );
-                                    toast.success("Consignment No copied");
-                                  } catch {
-                                    toast.error("Unable to copy");
-                                  }
-                                }}
-                                className="text-slate-400 hover:text-slate-700 shrink-0 p-0.5 transition"
-                                title="Copy Consignment No"
-                              >
-                                <svg
-                                  width="12"
-                                  height="12"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  strokeWidth="2"
+                              {o.consignment_no && (
+                                <button
+                                  type="button"
+                                  onClick={async (event) => {
+                                    event.stopPropagation();
+                                    try {
+                                      await navigator.clipboard.writeText(
+                                        String(o.consignment_no),
+                                      );
+                                      toast.success("Consignment No copied");
+                                    } catch {
+                                      toast.error("Unable to copy");
+                                    }
+                                  }}
+                                  title="Copy Consignment No"
+                                  className="shrink-0 p-0.5 text-slate-400 hover:text-slate-700 transition"
                                 >
-                                  <rect
-                                    x="9"
-                                    y="9"
-                                    width="10"
-                                    height="10"
-                                    rx="2"
-                                  />
-                                  <path d="M15 9V7a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2" />
-                                </svg>
-                              </button>
+                                  <svg
+                                    width="13"
+                                    height="13"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="1.8"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  >
+                                    <rect
+                                      x="9"
+                                      y="9"
+                                      width="13"
+                                      height="13"
+                                      rx="2"
+                                      ry="2"
+                                    />
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                                  </svg>
+                                </button>
+                              )}
                             </div>
 
-                            <p className="mt-0.5 text-[11.5px] font-bold text-[#008dd2] uppercase tracking-wide truncate">
+                            <p className="mt-0.5 text-[11px] text-slate-500 font-medium truncate">
                               {o.carrier}
                             </p>
 
-                            <p className="mt-0.5 text-[12px] text-slate-700 font-medium truncate">
-                              {o.product_name ? (
-                                <span className="font-semibold text-slate-800">
-                                  {o.product_name} •{" "}
-                                </span>
-                              ) : (
-                                ""
-                              )}
-                              <span className="font-semibold text-slate-600">
-                                {o.shipping_mode}
-                              </span>
+                            <p className="mt-0.5 text-[11px] text-slate-500 truncate">
+                              {o.product_name ? `${o.product_name} - ` : ""}
+                              {o.shipping_mode || "Surface"}
                             </p>
                           </div>
                         </td>
 
-                        {/* ROUTE */}
-                        <td className="px-3 py-3.5 align-middle break-words">
-                          <div className="min-w-0">
+                        {/* ROUTE (CONNECTED 2-STOP TIMELINE MATCHING ALL ORDERS) */}
+                        <td className="px-2 py-2.5">
+                          <div className="flex flex-col gap-0">
+                            {/* Pickup */}
+                            <div className="flex min-w-0 items-center gap-1.5">
+                              <svg
+                                width="13"
+                                height="13"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="#008dd2"
+                                strokeWidth="1.8"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className="shrink-0"
+                              >
+                                <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" />
+                                <circle cx="12" cy="10" r="2.5" />
+                              </svg>
+
+                              <p className="truncate text-[12px] font-medium text-slate-700">
+                                {getPickupCity(o)}
+                                {getPickupPincode(o) && (
+                                  <span className="ml-1 text-[10px] text-slate-400">
+                                    ({getPickupPincode(o)})
+                                  </span>
+                                )}
+                              </p>
+                            </div>
+
+                            {/* Route connector */}
+                            <div className="ml-[5px] flex h-2.5 flex-col justify-between">
+                              <span className="h-1 border-l border-dashed border-slate-300" />
+                              <span className="h-1 border-l border-dashed border-slate-300" />
+                            </div>
+
+                            {/* Delivery */}
+                            <div className="flex min-w-0 items-center gap-1.5">
+                              <svg
+                                width="13"
+                                height="13"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="#94a3b8"
+                                strokeWidth="1.8"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className="shrink-0"
+                              >
+                                <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" />
+                                <circle cx="12" cy="10" r="2.5" />
+                              </svg>
+
+                              <p className="truncate text-[12px] font-medium text-slate-700">
+                                {o.city || "—"}
+                                {o.pincode && (
+                                  <span className="ml-1 text-[10px] text-slate-400">
+                                    ({o.pincode})
+                                  </span>
+                                )}
+                              </p>
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* PAYMENT */}
+                        <td className="px-2 py-2.5 break-words">
+                          <div>
                             <p
-                              className="truncate text-[12.5px] font-semibold text-slate-800"
-                              title={`${o.city || ""}, ${o.state || ""}`}
-                            >
-                              {o.city}
-                              {o.state ? `, ${o.state}` : ""}
-                            </p>
-                            <p className="mt-0.5 text-[11.5px] font-semibold text-slate-600 font-mono">
-                              PIN: {o.pincode}
-                            </p>
-                          </div>
-                        </td>
-
-                        {/* SPECS & WEIGHT (DIMENSIONS REMOVED AS REQUESTED) */}
-                        <td className="px-3 py-3.5 align-middle break-words">
-                          <div className="min-w-0">
-                            <p className="text-[12.5px] font-bold text-slate-800 truncate">
-                              {o.package_type || "Box"}
-                            </p>
-                            <p className="mt-0.5 text-[12px] text-slate-600 font-medium">
-                              Wt:{" "}
-                              <b className="font-bold text-slate-900">
-                                {Number(o.weight || 0).toFixed(2)} kg
-                              </b>
-                            </p>
-                          </div>
-                        </td>
-
-                        {/* SINGLE UNIFIED PAYMENT & CHARGE */}
-                        <td className="px-3 py-3.5 align-middle break-words">
-                          <div className="min-w-0">
-                            <span
-                              className={`inline-block rounded-md px-2 py-0.5 text-[10.5px] font-bold ${
-                                o.payment_mode === "COD"
-                                  ? "bg-amber-50 text-amber-700 border border-amber-300"
-                                  : "bg-sky-50 text-[#008dd2] border border-sky-200"
+                              className={`text-[12px] font-semibold ${
+                                payment === "COD"
+                                  ? "text-amber-600"
+                                  : "text-[#008dd2]"
                               }`}
                             >
-                              {o.payment_mode}
-                            </span>
-                            <p className="mt-0.5 text-[14px] font-extrabold text-emerald-600">
-                              ₹{charge.toFixed(2)}
+                              {payment}
                             </p>
-                            <p className="text-[10px] font-semibold text-slate-600 leading-none">
-                              Incl. GST
+
+                            <p className="mt-0.5 text-[10px] text-slate-400">
+                              {payment === "COD"
+                                ? "Cash on Delivery"
+                                : "Prepaid"}
+                            </p>
+
+                            <p className="text-[10px] text-slate-400">
+                              Charge: ₹{charge.toFixed(2)}
+                            </p>
+                          </div>
+                        </td>
+
+                        {/* WEIGHT */}
+                        <td className="px-2 py-2.5 break-words">
+                          <div>
+                            <p className="text-[12px] font-semibold text-slate-700">
+                              {o.package_type || "Box"}: 1
+                            </p>
+
+                            <p className="mt-0.5 text-[10px] text-slate-400">
+                              Wt: {Number(o.weight || 0).toFixed(2)} kg
+                            </p>
+
+                            <p className="text-[10px] text-slate-400">
+                              Vol: {volWeight.toFixed(2)} kg
                             </p>
                           </div>
                         </td>
 
                         {/* CREATED */}
-                        <td className="px-3 py-3.5 align-middle whitespace-nowrap">
-                          <span className="text-[12px] font-semibold text-slate-700">
-                            {formatDate(o.created_at)}
-                          </span>
+                        <td className="px-2 py-2.5 break-words">
+                          <p className="text-[12px] font-medium text-slate-700">
+                            #{o.id}
+                          </p>
+
+                          <p className="mt-0.5 text-[10px] text-slate-400">
+                            Created: {formatDate(o.created_at)}
+                          </p>
+                          <p className="text-[10px] text-slate-400">
+                            {formatTime(o.created_at)}
+                          </p>
                         </td>
 
-                        {/* ACTIONS: EDIT & DELETE WITH GENEROUS SPACING */}
-                        <td className="px-3 py-3.5 align-middle text-center whitespace-nowrap">
-                          <div className="flex items-center justify-center gap-2">
-                            {/* EDIT BUTTON */}
+                        {/* ACTIONS */}
+                        <td className="px-2 py-2.5">
+                          <div className="flex items-center justify-start gap-1">
+                            {/* Edit Button */}
                             <button
                               type="button"
                               onClick={() => handleEdit(o)}
                               title="Edit Offline Order"
-                              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-sky-200 bg-sky-50 text-[#008dd2] hover:bg-[#008dd2] hover:text-white transition shadow-2xs active:scale-95 cursor-pointer"
+                              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[#008dd2] bg-[#008dd2] text-white transition hover:bg-[#007dbb] active:scale-95 cursor-pointer shadow-2xs"
                             >
                               <svg
-                                width="14"
-                                height="14"
+                                width="13"
+                                height="13"
                                 viewBox="0 0 24 24"
                                 fill="none"
                                 stroke="currentColor"
@@ -817,20 +936,20 @@ export default function OfflineOrders() {
                               </svg>
                             </button>
 
-                            {/* DELETE BUTTON */}
+                            {/* Delete Button */}
                             <button
                               type="button"
                               onClick={() => handleDelete(o.id)}
                               title="Delete Offline Order"
-                              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white transition shadow-2xs active:scale-95 cursor-pointer"
+                              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 transition hover:border-rose-400 hover:bg-rose-50 hover:text-rose-600 active:scale-95 cursor-pointer shadow-2xs"
                             >
                               <svg
-                                width="14"
-                                height="14"
+                                width="13"
+                                height="13"
                                 viewBox="0 0 24 24"
                                 fill="none"
                                 stroke="currentColor"
-                                strokeWidth="2"
+                                strokeWidth="1.8"
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
                               >
@@ -846,7 +965,6 @@ export default function OfflineOrders() {
                   })}
                 </tbody>
               </table>
-
             </div>
           </div>
 
@@ -857,6 +975,8 @@ export default function OfflineOrders() {
             {orders.map((o) => {
               const isSelected = selectedIds.includes(o.id);
               const charge = getChargeValue(o);
+              const payment = String(o.payment_mode || "PREPAID").toUpperCase();
+              const status = String(o.status || "BOOKED").toUpperCase();
 
               return (
                 <div
@@ -891,66 +1011,128 @@ export default function OfflineOrders() {
                         </svg>
                       </button>
 
+                      <span className="font-mono text-xs font-bold text-slate-800">
+                        #{o.id}
+                      </span>
+
                       <span className="rounded bg-sky-50 border border-sky-200 px-2 py-0.5 text-[11px] font-bold text-[#008dd2]">
                         {o.carrier}
                       </span>
-
-                      {(o.party_reference_name || o.party_name) && (
-                        <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-700 truncate max-w-[110px]">
-                          {o.party_reference_name || o.party_name}
-                        </span>
-                      )}
                     </div>
 
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center justify-center gap-1">
                       <span
                         className={`rounded-md border px-2 py-0.5 text-[10px] font-bold ${
-                          o.payment_mode === "COD"
+                          payment === "COD"
                             ? "border-amber-100 bg-amber-50 text-amber-600"
                             : "border-sky-100 bg-sky-50 text-[#008dd2]"
                         }`}
                       >
-                        {o.payment_mode}
+                        {payment}
+                      </span>
+
+                      <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/60 uppercase tracking-wider">
+                        {status}
                       </span>
                     </div>
                   </div>
 
-                  {/* CUSTOMER & STATUS BADGE RIGHT UNDER PHONE */}
+                  {/* CUSTOMER & PHONE */}
                   <div className="space-y-1 text-xs">
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-[13.5px] text-slate-900 truncate">
+                      <span className="font-bold text-slate-800 truncate">
                         {o.consignee_name}
                       </span>
-                      <span className="text-slate-600 text-[12px] font-semibold font-mono">
+                      <span className="text-slate-400 text-[11px]">
                         {o.mobile}
                       </span>
                     </div>
 
-                    {/* BOOKED BADGE RIGHT UNDER MOBILE */}
-                    <div>
-                      <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-[9.5px] font-bold text-emerald-700 border border-emerald-200/80 shadow-2xs">
-                        Booked
+                    {(o.party_reference_name || o.party_name) && (
+                      <div className="flex items-center gap-1.5 pt-0.5">
+                        <span className="text-[10px] text-slate-400 font-medium">Party:</span>
+                        <span className="rounded bg-sky-50 px-2 py-0.5 text-[11px] font-bold text-sky-700 border border-sky-100">
+                          {o.party_reference_name || o.party_name}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* CONSIGNMENT BAR */}
+                    <div className="flex items-center justify-between font-mono text-[11px] text-slate-600 bg-slate-50/70 px-2 py-1.5 rounded-lg border border-slate-100">
+                      <span className="truncate font-semibold select-none">
+                        Consignment: {o.consignment_no}
+                      </span>
+
+                      {o.consignment_no && (
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            try {
+                              await navigator.clipboard.writeText(
+                                String(o.consignment_no),
+                              );
+                              toast.success("Consignment No copied");
+                            } catch {
+                              toast.error("Unable to copy");
+                            }
+                          }}
+                          className="text-slate-400 hover:text-slate-700 flex items-center p-0.5"
+                          title="Copy Consignment No"
+                        >
+                          <svg
+                            width="12"
+                            height="12"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                          >
+                            <rect
+                              x="9"
+                              y="9"
+                              width="10"
+                              height="10"
+                              rx="2"
+                            />
+                            <path d="M15 9V7a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+
+                    {/* ROUTE */}
+                    <div className="flex items-center justify-between text-[11px] text-slate-500 pt-0.5">
+                      <span className="truncate max-w-[130px]">
+                        {getPickupCity(o)} ({getPickupPincode(o)})
+                      </span>
+                      <span className="text-slate-400 font-bold px-1">→</span>
+                      <span className="truncate max-w-[130px] text-right">
+                        {o.city || "—"} ({o.pincode || "—"})
                       </span>
                     </div>
 
-                    {/* CONSIGNMENT BAR */}
-                    <div className="flex items-center justify-between font-mono text-[11.5px] text-slate-800 bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-200/80">
-                      <span className="font-bold truncate">
-                        Consignment: {o.consignment_no}
+                    {/* SPECS & CHARGE */}
+                    <div className="flex items-center justify-between text-[11px] text-slate-400 border-t border-slate-50 pt-1.5">
+                      <span>
+                        {o.package_type || "Box"} • {o.shipping_mode || "Surface"} • {Number(o.weight || 0).toFixed(2)} Kg
                       </span>
+                      <span className="font-semibold text-slate-600">
+                        Charge: ₹{charge.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* CARD ACTIONS */}
+                  <div className="flex items-center justify-between border-t border-slate-100 pt-2 text-xs">
+                    <span className="text-[10px] text-slate-400">
+                      {formatDate(o.created_at)} {formatTime(o.created_at)}
+                    </span>
+
+                    <div className="flex items-center gap-1.5">
                       <button
                         type="button"
-                        onClick={async () => {
-                          try {
-                            await navigator.clipboard.writeText(
-                              String(o.consignment_no),
-                            );
-                            toast.success("Consignment No copied");
-                          } catch {
-                            toast.error("Unable to copy");
-                          }
-                        }}
-                        className="text-slate-400 hover:text-slate-700 p-0.5 shrink-0"
+                        onClick={() => handleEdit(o)}
+                        className="flex h-8 items-center gap-1 rounded-lg bg-[#008dd2] px-3 text-xs font-bold text-white shadow-xs active:scale-95"
                       >
                         <svg
                           width="12"
@@ -959,71 +1141,8 @@ export default function OfflineOrders() {
                           fill="none"
                           stroke="currentColor"
                           strokeWidth="2"
-                        >
-                          <rect
-                            x="9"
-                            y="9"
-                            width="10"
-                            height="10"
-                            rx="2"
-                          />
-                          <path d="M15 9V7a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2" />
-                        </svg>
-                      </button>
-                    </div>
-
-                    {/* ROUTE */}
-                    <div className="text-[12px] text-slate-700 pt-0.5">
-                      <span className="font-medium">
-                        {o.city}
-                        {o.state ? `, ${o.state}` : ""} - PIN:{" "}
-                        <span className="font-mono font-semibold">
-                          {o.pincode}
-                        </span>
-                      </span>
-                      {o.product_name && (
-                        <div className="text-slate-800 mt-0.5">
-                          Product: <b>{o.product_name}</b>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* SPECS & CHARGE (NO DIMENSIONS) */}
-                    <div className="flex items-center justify-between text-[11.5px] border-t border-slate-100 pt-1.5">
-                      <span className="text-slate-700 font-medium">
-                        {o.package_type || "Box"} • {o.shipping_mode} •{" "}
-                        <b className="font-bold text-slate-900">
-                          {Number(o.weight || 0).toFixed(2)} kg
-                        </b>
-                      </span>
-                      <span className="font-extrabold text-[13.5px] text-emerald-600">
-                        ₹{charge.toFixed(2)}{" "}
-                        <span className="text-[9.5px] text-slate-500 font-semibold">
-                          (Incl. GST)
-                        </span>
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* CARD ACTIONS: EDIT & DELETE */}
-                  <div className="flex items-center justify-between border-t border-slate-100 pt-2 text-xs">
-                    <span className="text-[10px] text-slate-400">
-                      {formatDate(o.created_at)}
-                    </span>
-
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => handleEdit(o)}
-                        className="flex h-7 items-center gap-1 rounded-lg border border-sky-200 bg-sky-50 px-2.5 text-[11px] font-semibold text-[#008dd2] hover:bg-sky-100 active:scale-95"
-                      >
-                        <svg
-                          width="11"
-                          height="11"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
                         >
                           <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
                           <path d="m15 5 4 4" />
@@ -1034,15 +1153,17 @@ export default function OfflineOrders() {
                       <button
                         type="button"
                         onClick={() => handleDelete(o.id)}
-                        className="flex h-7 items-center gap-1 rounded-lg border border-rose-200 bg-rose-50 px-2.5 text-[11px] font-semibold text-rose-600 hover:bg-rose-100 active:scale-95"
+                        className="flex h-8 items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 hover:border-rose-300 hover:bg-rose-50 hover:text-rose-600 active:scale-95"
                       >
                         <svg
-                          width="11"
-                          height="11"
+                          width="12"
+                          height="12"
                           viewBox="0 0 24 24"
                           fill="none"
                           stroke="currentColor"
-                          strokeWidth="2"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
                         >
                           <path d="M3 6h18" />
                           <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
