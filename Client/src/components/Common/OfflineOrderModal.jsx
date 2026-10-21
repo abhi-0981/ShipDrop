@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
 import { Link } from "react-router-dom";
 import api from "../../services/api";
+import { notifyOrderChange } from "../../services/orderEvents";
 
 const CARRIER_OPTIONS = [
   "MARK EXPRESS",
@@ -248,6 +249,8 @@ export default function OfflineOrderModal({
           );
         }
         toast.success("Offline Order updated successfully!");
+        notifyOrderChange();
+        window.dispatchEvent(new Event("offlineOrdersUpdated"));
         if (onSuccess) onSuccess(response.data.order, true);
         onClose();
       } else {
@@ -259,6 +262,8 @@ export default function OfflineOrderModal({
         }
 
         toast.success("Offline Order created successfully!");
+        notifyOrderChange();
+        window.dispatchEvent(new Event("offlineOrdersUpdated"));
         setFormData({ ...initialForm });
         if (onSuccess) onSuccess(response.data.order, false);
         onClose();

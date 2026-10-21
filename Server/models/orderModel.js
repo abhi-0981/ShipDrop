@@ -1668,6 +1668,19 @@ const getOrderStatusCounts = async (userId) => {
     db.promise().query(manifestsQuery, [numericUserId]),
   ]);
 
+  let offlineCount = 0;
+  try {
+    const [offlineResult] = await db
+      .promise()
+      .query(
+        "SELECT COUNT(*) AS offline_count FROM offline_orders WHERE user_id = ?",
+        [numericUserId]
+      );
+    offlineCount = Number(offlineResult[0]?.offline_count || 0);
+  } catch (err) {
+    offlineCount = 0;
+  }
+
   const row = orderRowsResult[0]?.[0] || {};
   const manifestedRow = manifestRowsResult[0]?.[0] || {};
 
@@ -1684,6 +1697,8 @@ const getOrderStatusCounts = async (userId) => {
     RETURNED: Number(row.returned_count || 0),
     CANCELLED: Number(row.cancelled_count || 0),
     PENDING: Number(row.pending_count || 0),
+    OFFLINE: offlineCount,
+    OFFLINE_ORDERS: offlineCount,
   };
 
   statusCountsCache.set(numericUserId, {

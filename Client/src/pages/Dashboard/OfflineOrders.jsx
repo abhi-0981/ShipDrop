@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo, useRef } from "react";
 import { toast } from "react-hot-toast";
 import api from "../../services/api";
 import OfflineOrderModal from "../../components/Common/OfflineOrderModal";
+import { notifyOrderChange } from "../../services/orderEvents";
 
 const PRIMARY = "#008dd2";
 
@@ -76,6 +77,7 @@ export default function OfflineOrders() {
         setOrders(res.data.orders || []);
         setTotalOrders(res.data.pagination?.total || 0);
         setTotalPages(res.data.pagination?.totalPages || 1);
+        window.dispatchEvent(new Event("offlineOrdersUpdated"));
       }
     } catch (err) {
       toast.error(
@@ -93,6 +95,11 @@ export default function OfflineOrders() {
     fetchOrders();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, debouncedSearch, carrierFilter, paymentFilter, partyFilter]);
+
+  useEffect(() => {
+    // Notify sidebar count immediately on page load
+    window.dispatchEvent(new Event("offlineOrdersUpdated"));
+  }, []);
 
   const allVisibleSelected =
     orders.length > 0 && selectedIds.length === orders.length;
@@ -128,6 +135,8 @@ export default function OfflineOrders() {
         setOrders((prev) => prev.filter((o) => o.id !== id));
         setTotalOrders((prev) => Math.max(0, prev - 1));
         setSelectedIds((prev) => prev.filter((item) => item !== id));
+        notifyOrderChange();
+        window.dispatchEvent(new Event("offlineOrdersUpdated"));
       }
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to delete order");
@@ -517,8 +526,8 @@ export default function OfflineOrders() {
             >
               <table className="w-full table-fixed border-collapse">
                 <thead className="sticky top-0 z-20 bg-white">
-                  <tr className="border-b border-slate-200 bg-white">
-                    <th className="sticky top-0 z-20 w-[4%] bg-white px-2 py-3 text-left">
+                  <tr className="border-b border-slate-200 bg-slate-50/80">
+                    <th className="sticky top-0 z-20 w-[3.5%] min-w-[36px] bg-slate-50/80 px-3 py-3.5 text-left">
                       <button
                         type="button"
                         onClick={handleSelectAll}
@@ -541,35 +550,35 @@ export default function OfflineOrders() {
                       </button>
                     </th>
 
-                    <th className="sticky top-0 z-20 w-[8%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                    <th className="sticky top-0 z-20 w-[8%] min-w-[70px] bg-slate-50/80 px-3 py-3.5 text-left text-[12px] font-bold text-slate-700">
                       Party
                     </th>
 
-                    <th className="sticky top-0 z-20 w-[18%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                    <th className="sticky top-0 z-20 w-[18%] min-w-[170px] bg-slate-50/80 px-3 py-3.5 text-left text-[12px] font-bold text-slate-700">
                       Customer
                     </th>
 
-                    <th className="sticky top-0 z-20 w-[19%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                    <th className="sticky top-0 z-20 w-[19%] min-w-[180px] bg-slate-50/80 px-3 py-3.5 text-left text-[12px] font-bold text-slate-700">
                       Shipment
                     </th>
 
-                    <th className="sticky top-0 z-20 w-[15%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                    <th className="sticky top-0 z-20 w-[15%] min-w-[130px] bg-slate-50/80 px-3 py-3.5 text-left text-[12px] font-bold text-slate-700">
                       Route
                     </th>
 
-                    <th className="sticky top-0 z-20 w-[14%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                    <th className="sticky top-0 z-20 w-[12%] min-w-[110px] bg-slate-50/80 px-3 py-3.5 text-left text-[12px] font-bold text-slate-700">
                       Specs & Weight
                     </th>
 
-                    <th className="sticky top-0 z-20 w-[11%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                    <th className="sticky top-0 z-20 w-[12%] min-w-[110px] bg-slate-50/80 px-3 py-3.5 text-left text-[12px] font-bold text-slate-700">
                       Payment & Charge
                     </th>
 
-                    <th className="sticky top-0 z-20 w-[6%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                    <th className="sticky top-0 z-20 w-[6.5%] min-w-[80px] bg-slate-50/80 px-3 py-3.5 text-left text-[12px] font-bold text-slate-700">
                       Created
                     </th>
 
-                    <th className="sticky top-0 z-20 w-[5%] bg-white px-2 py-3 text-center text-[12px] font-medium text-slate-700">
+                    <th className="sticky top-0 z-20 w-[8%] min-w-[95px] bg-slate-50/80 px-3 py-3.5 text-center text-[12px] font-bold text-slate-700">
                       Actions
                     </th>
                   </tr>
@@ -585,10 +594,10 @@ export default function OfflineOrders() {
                         key={o.id}
                         className={`border-b border-slate-100 transition last:border-b-0 ${
                           isSelected ? "bg-[#f8fcff]" : "bg-white"
-                        } hover:bg-slate-50`}
+                        } hover:bg-slate-50/80`}
                       >
                         {/* CHECKBOX */}
-                        <td className="px-2 py-2.5">
+                        <td className="px-3 py-3.5 align-middle">
                           <button
                             type="button"
                             onClick={() => handleSelect(o.id)}
@@ -612,11 +621,11 @@ export default function OfflineOrders() {
                         </td>
 
                         {/* PARTY */}
-                        <td className="px-2 py-2.5 break-words">
+                        <td className="px-3 py-3.5 align-middle break-words">
                           <div className="min-w-0">
                             {o.party_reference_name || o.party_name ? (
                               <span
-                                className="inline-block max-w-full truncate rounded-md bg-slate-100 px-1.5 py-0.5 text-[11px] font-semibold text-slate-700"
+                                className="inline-block max-w-full truncate rounded-md bg-slate-100 border border-slate-200/80 px-2 py-0.5 text-[11px] font-bold text-slate-700"
                                 title={
                                   o.party_reference_name && o.party_name
                                     ? `${o.party_reference_name} — ${o.party_name}`
@@ -633,25 +642,25 @@ export default function OfflineOrders() {
                           </div>
                         </td>
 
-                        {/* CUSTOMER & BOOKED BADGE RIGHT UNDER PHONE NUMBER */}
-                        <td className="px-2 py-2.5 break-words">
+                        {/* CUSTOMER & BOOKED BADGE */}
+                        <td className="px-3 py-3.5 align-middle break-words">
                           <div className="min-w-0">
                             <p
-                              className="truncate text-[13px] font-semibold text-slate-800"
+                              className="truncate text-[13.5px] font-bold text-slate-900"
                               title={o.consignee_name}
                             >
                               {o.consignee_name}
                             </p>
 
                             {o.mobile && (
-                              <p className="mt-0.5 text-[11px] text-slate-400 font-mono">
+                              <p className="mt-0.5 text-[12px] font-semibold text-slate-600 font-mono tracking-tight">
                                 {o.mobile}
                               </p>
                             )}
 
                             {/* BOOKED BADGE DIRECTLY BENEATH MOBILE */}
                             <div className="mt-1">
-                              <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[9px] font-semibold text-emerald-700 border border-emerald-200/60">
+                              <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-[9.5px] font-bold text-emerald-700 border border-emerald-200/80 shadow-2xs">
                                 Booked
                               </span>
                             </div>
@@ -659,11 +668,11 @@ export default function OfflineOrders() {
                         </td>
 
                         {/* SHIPMENT (CONSIGNMENT NO + CARRIER + PRODUCT/MODE) */}
-                        <td className="px-2 py-2.5 break-words">
+                        <td className="px-3 py-3.5 align-middle break-words">
                           <div className="min-w-0">
                             <div className="flex items-center gap-1.5 min-w-0">
                               <p
-                                className="truncate text-[13px] font-semibold text-slate-800 font-mono"
+                                className="truncate text-[13.5px] font-bold text-slate-900 font-mono tracking-tight"
                                 title={o.consignment_no}
                               >
                                 {o.consignment_no}
@@ -682,7 +691,7 @@ export default function OfflineOrders() {
                                     toast.error("Unable to copy");
                                   }
                                 }}
-                                className="text-slate-400 hover:text-slate-700 shrink-0 p-0.5"
+                                className="text-slate-400 hover:text-slate-700 shrink-0 p-0.5 transition"
                                 title="Copy Consignment No"
                               >
                                 <svg
@@ -705,13 +714,19 @@ export default function OfflineOrders() {
                               </button>
                             </div>
 
-                            <p className="mt-0.5 text-[11px] font-semibold text-[#008dd2] truncate">
+                            <p className="mt-0.5 text-[11.5px] font-bold text-[#008dd2] uppercase tracking-wide truncate">
                               {o.carrier}
                             </p>
 
-                            <p className="text-[11px] text-slate-400 truncate">
-                              {o.product_name ? `${o.product_name} • ` : ""}
-                              <span className="font-medium text-slate-600">
+                            <p className="mt-0.5 text-[12px] text-slate-700 font-medium truncate">
+                              {o.product_name ? (
+                                <span className="font-semibold text-slate-800">
+                                  {o.product_name} •{" "}
+                                </span>
+                              ) : (
+                                ""
+                              )}
+                              <span className="font-semibold text-slate-600">
                                 {o.shipping_mode}
                               </span>
                             </p>
@@ -719,85 +734,77 @@ export default function OfflineOrders() {
                         </td>
 
                         {/* ROUTE */}
-                        <td className="px-2 py-2.5 break-words">
+                        <td className="px-3 py-3.5 align-middle break-words">
                           <div className="min-w-0">
                             <p
-                              className="truncate text-[12px] font-medium text-slate-700"
+                              className="truncate text-[12.5px] font-semibold text-slate-800"
                               title={`${o.city || ""}, ${o.state || ""}`}
                             >
                               {o.city}
                               {o.state ? `, ${o.state}` : ""}
                             </p>
-                            <p className="mt-0.5 text-[11px] text-slate-400 font-mono">
+                            <p className="mt-0.5 text-[11.5px] font-semibold text-slate-600 font-mono">
                               PIN: {o.pincode}
                             </p>
                           </div>
                         </td>
 
-                        {/* SPECS & WEIGHT */}
-                        <td className="px-2 py-2.5 break-words">
+                        {/* SPECS & WEIGHT (DIMENSIONS REMOVED AS REQUESTED) */}
+                        <td className="px-3 py-3.5 align-middle break-words">
                           <div className="min-w-0">
-                            <p className="text-[12px] font-semibold text-slate-700 truncate">
+                            <p className="text-[12.5px] font-bold text-slate-800 truncate">
                               {o.package_type || "Box"}
                             </p>
-                            <p className="mt-0.5 text-[11px] text-slate-500">
+                            <p className="mt-0.5 text-[12px] text-slate-600 font-medium">
                               Wt:{" "}
-                              <b className="font-semibold text-slate-800">
+                              <b className="font-bold text-slate-900">
                                 {Number(o.weight || 0).toFixed(2)} kg
                               </b>
                             </p>
-                            {(Number(o.length) > 0 ||
-                              Number(o.width) > 0 ||
-                              Number(o.height) > 0) && (
-                              <p className="text-[10px] text-slate-400 font-mono">
-                                {o.length || 0}×{o.width || 0}×{o.height || 0}{" "}
-                                cm
-                              </p>
-                            )}
                           </div>
                         </td>
 
                         {/* SINGLE UNIFIED PAYMENT & CHARGE */}
-                        <td className="px-2 py-2.5 break-words">
+                        <td className="px-3 py-3.5 align-middle break-words">
                           <div className="min-w-0">
                             <span
-                              className={`inline-block rounded-md px-1.5 py-0.5 text-[10px] font-bold ${
+                              className={`inline-block rounded-md px-2 py-0.5 text-[10.5px] font-bold ${
                                 o.payment_mode === "COD"
-                                  ? "bg-amber-50 text-amber-700 border border-amber-200"
-                                  : "bg-sky-50 text-[#008dd2] border border-sky-100"
+                                  ? "bg-amber-50 text-amber-700 border border-amber-300"
+                                  : "bg-sky-50 text-[#008dd2] border border-sky-200"
                               }`}
                             >
                               {o.payment_mode}
                             </span>
-                            <p className="mt-0.5 text-[13px] font-bold text-emerald-600">
+                            <p className="mt-0.5 text-[14px] font-extrabold text-emerald-600">
                               ₹{charge.toFixed(2)}
                             </p>
-                            <p className="text-[10px] text-slate-400 leading-none">
+                            <p className="text-[10px] font-semibold text-slate-600 leading-none">
                               Incl. GST
                             </p>
                           </div>
                         </td>
 
                         {/* CREATED */}
-                        <td className="px-2 py-2.5">
-                          <span className="text-[11px] text-slate-500 font-medium">
+                        <td className="px-3 py-3.5 align-middle whitespace-nowrap">
+                          <span className="text-[12px] font-semibold text-slate-700">
                             {formatDate(o.created_at)}
                           </span>
                         </td>
 
-                        {/* ACTIONS: EDIT & DELETE */}
-                        <td className="px-2 py-2.5 text-center">
-                          <div className="flex items-center justify-center gap-1.5">
+                        {/* ACTIONS: EDIT & DELETE WITH GENEROUS SPACING */}
+                        <td className="px-3 py-3.5 align-middle text-center whitespace-nowrap">
+                          <div className="flex items-center justify-center gap-2">
                             {/* EDIT BUTTON */}
                             <button
                               type="button"
                               onClick={() => handleEdit(o)}
                               title="Edit Offline Order"
-                              className="flex h-7 w-7 items-center justify-center rounded-lg border border-sky-200 bg-sky-50 text-[#008dd2] hover:bg-sky-100 active:scale-95 transition"
+                              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-sky-200 bg-sky-50 text-[#008dd2] hover:bg-[#008dd2] hover:text-white transition shadow-2xs active:scale-95 cursor-pointer"
                             >
                               <svg
-                                width="13"
-                                height="13"
+                                width="14"
+                                height="14"
                                 viewBox="0 0 24 24"
                                 fill="none"
                                 stroke="currentColor"
@@ -815,11 +822,11 @@ export default function OfflineOrders() {
                               type="button"
                               onClick={() => handleDelete(o.id)}
                               title="Delete Offline Order"
-                              className="flex h-7 w-7 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100 active:scale-95 transition"
+                              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white transition shadow-2xs active:scale-95 cursor-pointer"
                             >
                               <svg
-                                width="13"
-                                height="13"
+                                width="14"
+                                height="14"
                                 viewBox="0 0 24 24"
                                 fill="none"
                                 stroke="currentColor"
@@ -839,6 +846,7 @@ export default function OfflineOrders() {
                   })}
                 </tbody>
               </table>
+
             </div>
           </div>
 
@@ -910,24 +918,24 @@ export default function OfflineOrders() {
                   {/* CUSTOMER & STATUS BADGE RIGHT UNDER PHONE */}
                   <div className="space-y-1 text-xs">
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-slate-800 truncate">
+                      <span className="font-bold text-[13.5px] text-slate-900 truncate">
                         {o.consignee_name}
                       </span>
-                      <span className="text-slate-400 text-[11px] font-mono">
+                      <span className="text-slate-600 text-[12px] font-semibold font-mono">
                         {o.mobile}
                       </span>
                     </div>
 
                     {/* BOOKED BADGE RIGHT UNDER MOBILE */}
                     <div>
-                      <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[9px] font-semibold text-emerald-700 border border-emerald-200/60">
+                      <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-[9.5px] font-bold text-emerald-700 border border-emerald-200/80 shadow-2xs">
                         Booked
                       </span>
                     </div>
 
                     {/* CONSIGNMENT BAR */}
-                    <div className="flex items-center justify-between font-mono text-[11px] text-slate-700 bg-slate-50/70 px-2.5 py-1.5 rounded-lg border border-slate-100">
-                      <span className="font-semibold truncate">
+                    <div className="flex items-center justify-between font-mono text-[11.5px] text-slate-800 bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-200/80">
+                      <span className="font-bold truncate">
                         Consignment: {o.consignment_no}
                       </span>
                       <button
@@ -965,27 +973,32 @@ export default function OfflineOrders() {
                     </div>
 
                     {/* ROUTE */}
-                    <div className="text-[11px] text-slate-500 pt-0.5">
-                      <span>
+                    <div className="text-[12px] text-slate-700 pt-0.5">
+                      <span className="font-medium">
                         {o.city}
-                        {o.state ? `, ${o.state}` : ""} - PIN: {o.pincode}
+                        {o.state ? `, ${o.state}` : ""} - PIN:{" "}
+                        <span className="font-mono font-semibold">
+                          {o.pincode}
+                        </span>
                       </span>
                       {o.product_name && (
-                        <div className="text-slate-600 mt-0.5">
+                        <div className="text-slate-800 mt-0.5">
                           Product: <b>{o.product_name}</b>
                         </div>
                       )}
                     </div>
 
-                    {/* SPECS & CHARGE */}
-                    <div className="flex items-center justify-between text-[11px] border-t border-slate-50 pt-1.5">
-                      <span className="text-slate-500">
+                    {/* SPECS & CHARGE (NO DIMENSIONS) */}
+                    <div className="flex items-center justify-between text-[11.5px] border-t border-slate-100 pt-1.5">
+                      <span className="text-slate-700 font-medium">
                         {o.package_type || "Box"} • {o.shipping_mode} •{" "}
-                        {Number(o.weight || 0).toFixed(2)} kg
+                        <b className="font-bold text-slate-900">
+                          {Number(o.weight || 0).toFixed(2)} kg
+                        </b>
                       </span>
-                      <span className="font-bold text-emerald-600">
+                      <span className="font-extrabold text-[13.5px] text-emerald-600">
                         ₹{charge.toFixed(2)}{" "}
-                        <span className="text-[9px] text-slate-400 font-normal">
+                        <span className="text-[9.5px] text-slate-500 font-semibold">
                           (Incl. GST)
                         </span>
                       </span>

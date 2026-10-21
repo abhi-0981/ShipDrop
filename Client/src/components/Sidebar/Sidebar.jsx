@@ -307,6 +307,7 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
       "orderUpdated",
       "orderDeleted",
       "ordersDeleted",
+      "offlineOrdersUpdated",
     ];
 
     updateEvents.forEach((eventName) => {
@@ -513,6 +514,7 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
                   {
                     name: "Offline Orders",
                     path: "/offline-orders",
+                    count: statusCounts.OFFLINE ?? statusCounts.OFFLINE_ORDERS ?? 0,
                   },
                   {
                     name: "Manifested",

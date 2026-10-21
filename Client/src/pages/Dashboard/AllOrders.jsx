@@ -179,6 +179,11 @@ const getMobile = (order) => {
   );
 };
 
+const isManualCarrierOrder = (order) => {
+  const carrier = order?.carrier;
+  return Boolean(carrier && String(carrier).trim().toLowerCase() !== "delivery");
+};
+
 const getAWB = (order) => {
   return order?.awb || order?.waybill || order?.awb_number || "—";
 };
