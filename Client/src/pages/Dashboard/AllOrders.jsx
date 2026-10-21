@@ -1484,7 +1484,7 @@ useEffect(() => {
                     <div className="flex items-center justify-between text-[11px] text-slate-400 border-t border-slate-50 pt-1.5">
                       <span>
                         {isManual
-                          ? `${order.package_type || "Package"}${order.shipping_mode ? ` • ${order.shipping_mode}` : ""} • ${payment === "COD" ? "COD" : "Prepaid"} • ₹${getAmount(order).toFixed(2)}`
+                          ? `${order.package_type || "Package"}${order.shipping_mode ? ` • ${order.shipping_mode}` : ""} • ${payment === "COD" ? "COD" : "PREPAID"} • ₹${getAmount(order).toFixed(2)}`
                           : `${service === "AIR" ? "By Air" : "By Road"} • ${weight.toFixed(2)} Kg`}
                       </span>
                       <span className="font-semibold text-slate-600">
