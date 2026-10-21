@@ -2312,7 +2312,7 @@ const handleRequiredFieldEnter = (e) => {
 
                 {serviceabilityStatus && !serviceabilityStatus.serviceable && (
                   <div className="mt-1.5 flex items-start gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs font-semibold text-rose-700 animate-fadeIn">
-                    <span className="shrink-0 text-sm">⚠️</span>
+                    {/* <span className="shrink-0 text-sm">⚠️</span> */}
                     <span>{serviceabilityStatus.message || "Delivery is not available at this pincode."}</span>
                   </div>
                 )}
