@@ -283,7 +283,39 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
 
         const counts = await fetchOrderStatusCounts(userId, force);
         if (isMounted && counts) {
-          setStatusCounts(counts);
+          setStatusCounts((prev) => {
+            if (prev && typeof prev === "object") {
+              const changed =
+                prev.in_transit_count !== counts.in_transit_count ||
+                prev.out_for_delivery_count !== counts.out_for_delivery_count ||
+                prev.delivered_count !== counts.delivered_count ||
+                prev.not_picked_count !== counts.not_picked_count ||
+                prev.manifested_count !== counts.manifested_count ||
+                prev.all_count !== counts.all_count ||
+                prev.cancelled_count !== counts.cancelled_count ||
+                prev.rto_in_transit_count !== counts.rto_in_transit_count ||
+                prev.pending_count !== counts.pending_count ||
+                prev.processing_count !== counts.processing_count;
+
+              if (changed) {
+                // Background tracking auto-updated order statuses:
+                // Notify all open pages to refresh their list silently
+                try {
+                  window.dispatchEvent(
+                    new CustomEvent("shipdrop:orders-updated", {
+                      detail: { type: "auto_sync", counts },
+                    })
+                  );
+                  window.dispatchEvent(
+                    new CustomEvent("orderStatusUpdated", {
+                      detail: { type: "auto_sync", counts },
+                    })
+                  );
+                } catch (e) {}
+              }
+            }
+            return counts;
+          });
           try {
             sessionStorage.setItem("shipdrop_dash_counts", JSON.stringify(counts));
           } catch {}
@@ -295,7 +327,8 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
 
     fetchStatusCounts(true);
 
-    const handleUpdate = () => {
+    const handleUpdate = (e) => {
+      if (e?.detail?.type === "auto_sync") return;
       fetchStatusCounts(true);
     };
 

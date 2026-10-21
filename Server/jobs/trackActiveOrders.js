@@ -62,33 +62,34 @@ const runTrackingJob = async () => {
     for (const awb of waybills) {
       const tracking = trackingMap?.[awb];
 
-      if (!tracking) {
-        unavailableCount++;
-        continue;
-      }
-
-      if (tracking.tracking_available === false) {
+      if (!tracking || tracking.tracking_available === false) {
         unavailableCount++;
         continue;
       }
 
       updatedCount++;
-
-      
     }
 
- 
+    try {
+      const { clearOrderStatusCountsCache } = require("../models/orderModel");
+      if (typeof clearOrderStatusCountsCache === "function") {
+        clearOrderStatusCountsCache();
+      }
+    } catch {}
+
+    console.log(
+      `[AUTO-TRACK CRON] Checked ${waybills.length} active AWBs: ${updatedCount} updated, ${unavailableCount} unavailable`
+    );
   } catch (error) {
+    console.error("[AUTO-TRACK CRON ERROR]:", error?.message || error);
   } finally {
     isRunning = false;
   }
 };
 
 const startTrackingJob = () => {
-
-
   cron.schedule(
-    "*/15 * * * *",
+    "*/5 * * * *",
     () => {
       runTrackingJob();
     },

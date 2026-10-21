@@ -397,6 +397,16 @@ const saveTrackingToDatabase = async (
       )
     );
   }
+
+  // Clear cached status counts so sidebar and dashboard reflect new statuses immediately
+  try {
+    const { clearOrderStatusCountsCache } = require("../models/orderModel");
+    if (typeof clearOrderStatusCountsCache === "function") {
+      clearOrderStatusCountsCache();
+    }
+  } catch (err) {
+    // silent
+  }
 };
 
 // ======================================================
@@ -857,4 +867,5 @@ module.exports = {
   getTrackingForWaybills,
   attachTrackingToOrders,
   normalizeTrackingStatus,
+  orderStatusMap,
 };

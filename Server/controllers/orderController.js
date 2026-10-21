@@ -12,6 +12,7 @@ const {
   searchOrderForTracking,
   getOrderStatusCounts,
   getDashboardSummary,
+  clearOrderStatusCountsCache,
 } = require("../models/orderModel");
 
 const db = require("../config/db");
@@ -19,7 +20,93 @@ const db = require("../config/db");
 const {
   attachTrackingToOrders,
   getTrackingForWaybills,
+  orderStatusMap,
 } = require("../services/delhiveryTrackingService");
+
+// ======================================================
+// ACTIVE TRACKING AUTO-SYNC HELPERS
+// ======================================================
+
+const isOrderActive = (order) => {
+  const awb = String(order?.awb || "").trim();
+  if (!awb) return false;
+  const status = String(order?.status || "").toUpperCase().trim();
+  const trackingStatus = String(order?.tracking_status || "").toUpperCase().trim();
+  const isTerminal =
+    status === "DELIVERED" ||
+    status === "CANCELLED" ||
+    status === "CANCELED" ||
+    status === "RTO DELIVERED" ||
+    trackingStatus === "DELIVERED" ||
+    trackingStatus === "CANCELLED" ||
+    trackingStatus === "CANCELED" ||
+    trackingStatus === "RTO DELIVERED";
+  return !isTerminal;
+};
+
+const isOrderTrackingStale = (order, staleMinutes = 2) => {
+  if (!isOrderActive(order)) return false;
+  if (!order.tracking_updated_at) return true;
+  const lastMs = new Date(order.tracking_updated_at).getTime();
+  if (isNaN(lastMs)) return true;
+  return Date.now() - lastMs > staleMinutes * 60 * 1000;
+};
+
+// Throttled background sync per user: at most once every 45s
+const userLastSyncMap = new Map();
+
+const triggerBackgroundActiveOrdersSync = (userId) => {
+  const numericUserId = Number(userId);
+  if (!numericUserId) return;
+
+  const lastSync = userLastSyncMap.get(numericUserId) || 0;
+  if (Date.now() - lastSync < 45 * 1000) {
+    return;
+  }
+  userLastSyncMap.set(numericUserId, Date.now());
+
+  if (userLastSyncMap.size > 500) {
+    const cutoff = Date.now() - 5 * 60 * 1000;
+    for (const [uid, time] of userLastSyncMap.entries()) {
+      if (time < cutoff) userLastSyncMap.delete(uid);
+    }
+  }
+
+  setImmediate(async () => {
+    try {
+      const [rows] = await db.promise().query(
+        `
+        SELECT awb FROM orders
+        WHERE user_id = ?
+          AND awb IS NOT NULL
+          AND TRIM(awb) <> ''
+          AND (carrier IS NULL OR carrier = 'Delivery')
+          AND UPPER(TRIM(COALESCE(status, ''))) NOT IN ('DELIVERED', 'CANCELLED', 'CANCELED', 'RTO DELIVERED')
+          AND UPPER(TRIM(COALESCE(tracking_status, ''))) NOT IN ('DELIVERED', 'CANCELLED', 'CANCELED', 'RTO DELIVERED')
+          AND (tracking_updated_at IS NULL OR tracking_updated_at < NOW() - INTERVAL 2 MINUTE)
+        ORDER BY COALESCE(tracking_updated_at, '2000-01-01') ASC
+        LIMIT 30
+      `,
+        [numericUserId]
+      );
+
+      if (!rows || rows.length === 0) return;
+
+      const waybills = [
+        ...new Set(
+          rows.map((r) => String(r.awb || "").trim()).filter(Boolean)
+        ),
+      ];
+
+      if (waybills.length > 0) {
+        await getTrackingForWaybills(waybills);
+        clearOrderStatusCountsCache(numericUserId);
+      }
+    } catch (err) {
+      console.warn("Background active orders sync notice:", err?.message || err);
+    }
+  });
+};
 
 // ======================================================
 // CREATE ORDER
@@ -761,8 +848,7 @@ const getAllOrdersController = async (req, res) => {
         });
 
         // ==================================================
-        // DELHIVERY LIVE TRACKING
-        // Only run synchronously if explicitly requested via refresh_tracking=true
+        // DELHIVERY LIVE / AUTO TRACKING SYNC
         // ==================================================
         const forceLiveTracking =
           String(req.query.refresh_tracking || req.query.live_tracking || "false").toLowerCase() === "true";
@@ -775,18 +861,63 @@ const getAllOrdersController = async (req, res) => {
           console.log(
             `GET ALL ORDERS LIVE TRACKING TIME: ${Date.now() - trackingStart} ms`,
           );
-        } else if (req.query.include_tracking !== "false") {
-          // Asynchronously check for any untracked active orders in background without blocking response
-          const untrackedAwbs = ordersWithStoredTracking
-            .filter((o) => o.awb && !o.tracking_status && String(o.status || "").toUpperCase() !== "DELIVERED")
-            .map((o) => o.awb)
-            .slice(0, 10);
+        } else {
+          // Identify any active orders on the current page with stale tracking (> 2 mins)
+          const stalePageAwbs = [
+            ...new Set(
+              ordersWithStoredTracking
+                .filter((o) => isOrderTrackingStale(o, 2))
+                .map((o) => String(o.awb || "").trim())
+                .filter(Boolean)
+            ),
+          ];
 
-          if (untrackedAwbs.length > 0) {
-            getTrackingForWaybills(untrackedAwbs).catch((err) => {
+          if (stalePageAwbs.length > 0 && stalePageAwbs.length <= 25) {
+            try {
+              const trackingPromise = getTrackingForWaybills(stalePageAwbs);
+              const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error("Tracking sync timeout")), 1800)
+              );
+              const freshTrackingMap = await Promise.race([
+                trackingPromise,
+                timeoutPromise,
+              ]);
+
+              if (freshTrackingMap && typeof freshTrackingMap === "object") {
+                clearOrderStatusCountsCache(user_id);
+                finalOrders = finalOrders.map((order) => {
+                  const awb = String(order.awb || "").trim();
+                  const fresh = freshTrackingMap[awb];
+                  if (fresh && fresh.tracking_available !== false) {
+                    const newStatus =
+                      fresh.tracking_status && orderStatusMap[fresh.tracking_status]
+                        ? orderStatusMap[fresh.tracking_status]
+                        : order.status;
+                    return {
+                      ...order,
+                      status: newStatus,
+                      tracking_status: fresh.tracking_status || order.tracking_status,
+                      tracking_data: fresh,
+                      tracking_updated_at: new Date(),
+                      tracking_available: true,
+                    };
+                  }
+                  return order;
+                });
+              }
+            } catch (syncErr) {
+              // If timeout or error, continue without blocking the response
+              // and let getTrackingForWaybills complete in the background
+              getTrackingForWaybills(stalePageAwbs).catch(() => {});
+            }
+          } else if (stalePageAwbs.length > 25) {
+            getTrackingForWaybills(stalePageAwbs.slice(0, 50)).catch((err) => {
               console.warn("Background tracking catch:", err?.message || err);
             });
           }
+
+          // Trigger throttled background sync for any other active orders across this user's account
+          triggerBackgroundActiveOrdersSync(user_id);
         }
 
         // ==================================================
@@ -1239,6 +1370,9 @@ const getOrderStatusCountsController = async (req, res) => {
       });
     }
 
+    // Auto-sync active orders in background whenever counts are fetched
+    triggerBackgroundActiveOrdersSync(userId);
+
     const counts = await getOrderStatusCounts(userId);
 
     return res.status(200).json({
@@ -1274,6 +1408,8 @@ const getDashboardSummaryController = async (req, res) => {
         message: "Valid user ID is required",
       });
     }
+
+    triggerBackgroundActiveOrdersSync(userId);
 
     const summary = await getDashboardSummary(userId);
 
