@@ -1308,7 +1308,7 @@ function CreateOrder() {
           serviceData?.message ||
           (serviceData?.status === "EMBARGO"
             ? "Delivery is temporarily unavailable at this pincode (Embargo)"
-            : "Delivery is not available at this pincode.");
+            : "Delivery is not available at this pincode");
 
         setServiceabilityStatus({
           serviceable: false,
@@ -2292,10 +2292,10 @@ function CreateOrder() {
                     inputMode="numeric"
                     maxLength={6}
                     className={`${inputClass} ${serviceabilityStatus && !serviceabilityStatus.serviceable
-                        ? "!border-rose-400 !focus:border-rose-500 !focus:ring-rose-200 bg-rose-50/20"
-                        : serviceabilityStatus && serviceabilityStatus.serviceable
-                          ? "!border-emerald-400 !focus:border-emerald-500 !focus:ring-emerald-200"
-                          : ""
+                      ? "!border-rose-400 !focus:border-rose-500 !focus:ring-rose-200 bg-rose-50/20"
+                      : serviceabilityStatus && serviceabilityStatus.serviceable
+                        ? "!border-emerald-400 !focus:border-emerald-500 !focus:ring-emerald-200"
+                        : ""
                       }`}
                   />
                   {pincodeLoading && (
@@ -2669,8 +2669,8 @@ function CreateOrder() {
                       setFormData((p) => ({ ...p, payment_type: "Prepaid" }))
                     }
                     className={`rounded-lg px-3.5 py-1 text-xs font-bold transition ${formData.payment_type === "Prepaid"
-                        ? "bg-white text-slate-900 shadow-xs"
-                        : "text-slate-500"
+                      ? "bg-white text-slate-900 shadow-xs"
+                      : "text-slate-500"
                       }`}
                   >
                     Prepaid
@@ -2681,8 +2681,8 @@ function CreateOrder() {
                       setFormData((p) => ({ ...p, payment_type: "COD" }))
                     }
                     className={`rounded-lg px-3.5 py-1 text-xs font-bold transition ${formData.payment_type === "COD"
-                        ? "bg-white text-slate-900 shadow-xs"
-                        : "text-slate-500"
+                      ? "bg-white text-slate-900 shadow-xs"
+                      : "text-slate-500"
                       }`}
                   >
                     COD
@@ -2883,8 +2883,8 @@ function CreateOrder() {
                   type="button"
                   onClick={() => selectShippingType("ROAD")}
                   className={`w-full rounded-2xl border p-3.5 text-left transition ${selectedShippingType === "ROAD"
-                      ? "border-[#008dd2] bg-[#008dd2]/5 ring-2 ring-[#008dd2]/10"
-                      : "border-slate-200 bg-white"
+                    ? "border-[#008dd2] bg-[#008dd2]/5 ring-2 ring-[#008dd2]/10"
+                    : "border-slate-200 bg-white"
                     }`}
                 >
                   <div className="flex items-center justify-between">
@@ -2910,8 +2910,8 @@ function CreateOrder() {
                   type="button"
                   onClick={() => selectShippingType("AIR")}
                   className={`w-full rounded-2xl border p-3.5 text-left transition ${selectedShippingType === "AIR"
-                      ? "border-[#7451ff] bg-[#7451ff]/5 ring-2 ring-[#7451ff]/10"
-                      : "border-slate-200 bg-white"
+                    ? "border-[#7451ff] bg-[#7451ff]/5 ring-2 ring-[#7451ff]/10"
+                    : "border-slate-200 bg-white"
                     }`}
                 >
                   <div className="flex items-center justify-between">
