@@ -177,8 +177,72 @@ const deleteOfflineOrder = (id, userId, callback) => {
   });
 };
 
+// ======================================================
+// UPDATE OFFLINE ORDER
+// ======================================================
+const updateOfflineOrder = (id, userId, orderData, callback) => {
+  const query = `
+    UPDATE offline_orders SET
+      party_identity_id = ?,
+      carrier = ?,
+      consignment_no = ?,
+      consignee_name = ?,
+      mobile = ?,
+      address = ?,
+      pincode = ?,
+      city = ?,
+      state = ?,
+      package_type = ?,
+      amount = ?,
+      shipping_mode = ?,
+      product_name = ?,
+      shipping_charge = ?,
+      payment_mode = ?,
+      length = ?,
+      width = ?,
+      height = ?,
+      weight = ?
+    WHERE id = ? AND user_id = ?
+  `;
+
+  const values = [
+    orderData.party_identity_id ? Number(orderData.party_identity_id) : null,
+    String(orderData.carrier || "").trim(),
+    String(orderData.consignment_no || "").trim(),
+    String(orderData.consignee_name || "").trim(),
+    String(orderData.mobile || "").trim(),
+    orderData.address ? String(orderData.address).trim() : null,
+    String(orderData.pincode || "").trim(),
+    String(orderData.city || "").trim(),
+    String(orderData.state || "").trim(),
+    String(orderData.package_type || "Box").trim(),
+    Number(orderData.amount) || 0,
+    String(orderData.shipping_mode || "Surface").trim(),
+    orderData.product_name ? String(orderData.product_name).trim() : null,
+    Number(orderData.shipping_charge) || 0,
+    String(orderData.payment_mode || "Prepaid").trim(),
+    Number(orderData.length) || 0,
+    Number(orderData.width) || 0,
+    Number(orderData.height) || 0,
+    Number(orderData.weight) || 0,
+    Number(id),
+    Number(userId),
+  ];
+
+  db.query(query, values, (error, result) => {
+    if (error) {
+      return callback(error, null);
+    }
+    if (result.affectedRows === 0) {
+      return callback(null, null);
+    }
+    return callback(null, { id: Number(id), ...orderData, status: "Booked" });
+  });
+};
+
 module.exports = {
   createOfflineOrder,
   getOfflineOrders,
+  updateOfflineOrder,
   deleteOfflineOrder,
 };

@@ -4,6 +4,7 @@ const router = express.Router();
 const {
   createOfflineOrderController,
   getOfflineOrdersController,
+  updateOfflineOrderController,
   deleteOfflineOrderController,
 } = require("../controllers/offlineOrderController");
 
@@ -18,6 +19,10 @@ router.get("/", getOfflineOrdersController);
 // POST /api/offline-orders
 router.post("/", createOfflineOrderController);
 router.post("/create", createOfflineOrderController);
+
+// PUT /api/offline-orders/:id
+router.put("/:id", updateOfflineOrderController);
+router.put("/update/:id", updateOfflineOrderController);
 
 // DELETE /api/offline-orders/:id
 router.delete("/:id", deleteOfflineOrderController);

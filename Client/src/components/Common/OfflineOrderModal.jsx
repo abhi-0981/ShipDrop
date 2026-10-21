@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
 import { Link } from "react-router-dom";
 import api from "../../services/api";
@@ -24,7 +24,14 @@ const PACKAGE_TYPES = [
 
 const SHIPPING_MODES = ["Surface", "Air", "Fast Track"];
 
-export default function OfflineOrderModal({ isOpen, onClose, onSuccess }) {
+export default function OfflineOrderModal({
+  isOpen,
+  onClose,
+  onSuccess,
+  orderToEdit = null,
+}) {
+  const isEdit = Boolean(orderToEdit?.id);
+
   const [loading, setLoading] = useState(false);
   const [pincodeLoading, setPincodeLoading] = useState(false);
   const [partyIdentities, setPartyIdentities] = useState([]);
@@ -41,7 +48,6 @@ export default function OfflineOrderModal({ isOpen, onClose, onSuccess }) {
     city: "",
     state: "",
     package_type: "Box",
-    amount: "",
     shipping_mode: "Surface",
     product_name: "",
     shipping_charge: "",
@@ -53,6 +59,58 @@ export default function OfflineOrderModal({ isOpen, onClose, onSuccess }) {
   };
 
   const [formData, setFormData] = useState({ ...initialForm });
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    if (orderToEdit) {
+      setFormData({
+        party_identity_id: orderToEdit.party_identity_id
+          ? String(orderToEdit.party_identity_id)
+          : "",
+        carrier: orderToEdit.carrier || "MARK EXPRESS",
+        consignment_no: orderToEdit.consignment_no || "",
+        consignee_name: orderToEdit.consignee_name || "",
+        mobile: orderToEdit.mobile || "",
+        address: orderToEdit.address || "",
+        pincode: orderToEdit.pincode || "",
+        city: orderToEdit.city || "",
+        state: orderToEdit.state || "",
+        package_type: orderToEdit.package_type || "Box",
+        shipping_mode: orderToEdit.shipping_mode || "Surface",
+        product_name: orderToEdit.product_name || "",
+        shipping_charge:
+          orderToEdit.shipping_charge !== null &&
+          orderToEdit.shipping_charge !== undefined &&
+          orderToEdit.shipping_charge !== ""
+            ? String(orderToEdit.shipping_charge)
+            : orderToEdit.amount !== null &&
+              orderToEdit.amount !== undefined &&
+              orderToEdit.amount !== ""
+            ? String(orderToEdit.amount)
+            : "",
+        length:
+          orderToEdit.length !== null && orderToEdit.length !== undefined
+            ? String(orderToEdit.length)
+            : "",
+        width:
+          orderToEdit.width !== null && orderToEdit.width !== undefined
+            ? String(orderToEdit.width)
+            : "",
+        height:
+          orderToEdit.height !== null && orderToEdit.height !== undefined
+            ? String(orderToEdit.height)
+            : "",
+        weight:
+          orderToEdit.weight !== null && orderToEdit.weight !== undefined
+            ? String(orderToEdit.weight)
+            : "",
+        payment_mode: orderToEdit.payment_mode || "Prepaid",
+      });
+    } else {
+      setFormData({ ...initialForm });
+    }
+  }, [isOpen, orderToEdit]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -133,7 +191,7 @@ export default function OfflineOrderModal({ isOpen, onClose, onSuccess }) {
       return toast.error("Consignment No is required");
     }
     if (!formData.consignee_name.trim()) {
-      return toast.error("Customer/Consignee Name is required");
+      return toast.error("Customer / Consignee Name is required");
     }
     if (!/^\d{10}$/.test(formData.mobile.trim())) {
       return toast.error("Valid 10-digit mobile number is required");
@@ -144,10 +202,9 @@ export default function OfflineOrderModal({ isOpen, onClose, onSuccess }) {
     if (!formData.city.trim() || !formData.state.trim()) {
       return toast.error("Please verify pincode for auto city and state");
     }
-    if (formData.amount === "" || Number(formData.amount) < 0) {
-      return toast.error("Valid non-negative Amount (Including GST) is required");
-    }
-    if (formData.shipping_charge === "" || Number(formData.shipping_charge) < 0) {
+
+    const parsedCharge = Number(formData.shipping_charge);
+    if (formData.shipping_charge === "" || !Number.isFinite(parsedCharge) || parsedCharge < 0) {
       return toast.error("Valid non-negative Shipping Charge is required");
     }
     if (formData.weight === "" || Number(formData.weight) <= 0) {
@@ -157,7 +214,9 @@ export default function OfflineOrderModal({ isOpen, onClose, onSuccess }) {
     setLoading(true);
     try {
       const payload = {
-        party_identity_id: formData.party_identity_id ? Number(formData.party_identity_id) : null,
+        party_identity_id: formData.party_identity_id
+          ? Number(formData.party_identity_id)
+          : null,
         carrier: formData.carrier.trim(),
         consignment_no: formData.consignment_no.trim(),
         consignee_name: formData.consignee_name.trim(),
@@ -167,10 +226,10 @@ export default function OfflineOrderModal({ isOpen, onClose, onSuccess }) {
         city: formData.city.trim(),
         state: formData.state.trim(),
         package_type: formData.package_type,
-        amount: Number(formData.amount),
+        amount: parsedCharge,
         shipping_mode: formData.shipping_mode,
         product_name: formData.product_name.trim() || null,
-        shipping_charge: Number(formData.shipping_charge),
+        shipping_charge: parsedCharge,
         length: Number(formData.length) || 0,
         width: Number(formData.width) || 0,
         height: Number(formData.height) || 0,
@@ -178,17 +237,38 @@ export default function OfflineOrderModal({ isOpen, onClose, onSuccess }) {
         payment_mode: formData.payment_mode,
       };
 
-      const response = await api.post("/offline-orders/create", payload);
-      if (!response.data?.success) {
-        throw new Error(response.data?.message || "Failed to create offline order");
-      }
+      if (isEdit) {
+        const response = await api.put(
+          `/offline-orders/${orderToEdit.id}`,
+          payload,
+        );
+        if (!response.data?.success) {
+          throw new Error(
+            response.data?.message || "Failed to update offline order",
+          );
+        }
+        toast.success("Offline Order updated successfully!");
+        if (onSuccess) onSuccess(response.data.order, true);
+        onClose();
+      } else {
+        const response = await api.post("/offline-orders/create", payload);
+        if (!response.data?.success) {
+          throw new Error(
+            response.data?.message || "Failed to create offline order",
+          );
+        }
 
-      toast.success("Offline Order created successfully!");
-      setFormData({ ...initialForm });
-      if (onSuccess) onSuccess(response.data.order);
-      onClose();
+        toast.success("Offline Order created successfully!");
+        setFormData({ ...initialForm });
+        if (onSuccess) onSuccess(response.data.order, false);
+        onClose();
+      }
     } catch (err) {
-      toast.error(err.response?.data?.message || err.message || "Failed to create offline order");
+      toast.error(
+        err.response?.data?.message ||
+          err.message ||
+          "Failed to save offline order",
+      );
     } finally {
       setLoading(false);
     }
@@ -211,10 +291,14 @@ export default function OfflineOrderModal({ isOpen, onClose, onSuccess }) {
             </span>
             <div>
               <h2 className="text-sm sm:text-base font-bold text-slate-800">
-                Create Offline Order
+                {isEdit
+                  ? `Edit Offline Order #${orderToEdit.id}`
+                  : "Create Offline Order"}
               </h2>
               <p className="text-[11px] text-slate-400">
-                Manual carrier entry (Mark Express, Tirupati, DTDC, etc.)
+                {isEdit
+                  ? "Update consignment, carrier or customer specs"
+                  : "Manual carrier entry (Mark Express, Tirupati, DTDC, etc.)"}
               </p>
             </div>
           </div>
@@ -222,14 +306,17 @@ export default function OfflineOrderModal({ isOpen, onClose, onSuccess }) {
           <button
             type="button"
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition cursor-pointer"
           >
             ✕
           </button>
         </div>
 
         {/* MODAL BODY */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+        <form
+          onSubmit={handleSubmit}
+          className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4"
+        >
           {/* SECTION 1: PARTY & CARRIER */}
           <div className="rounded-xl border border-slate-200/80 bg-slate-50/50 p-3.5 space-y-3">
             <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-600">
@@ -267,8 +354,18 @@ export default function OfflineOrderModal({ isOpen, onClose, onSuccess }) {
                     ))}
                   </select>
                   <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-slate-400">
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                    <svg
+                      className="h-4 w-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M19 9l-7 7-7-7"
+                      />
                     </svg>
                   </div>
                 </div>
@@ -292,8 +389,18 @@ export default function OfflineOrderModal({ isOpen, onClose, onSuccess }) {
                     ))}
                   </select>
                   <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-slate-400">
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                    <svg
+                      className="h-4 w-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M19 9l-7 7-7-7"
+                      />
                     </svg>
                   </div>
                 </div>
@@ -310,7 +417,9 @@ export default function OfflineOrderModal({ isOpen, onClose, onSuccess }) {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className={labelClass}>Customer / Consignee Name *</label>
+                <label className={labelClass}>
+                  Customer / Consignee Name *
+                </label>
                 <input
                   type="text"
                   name="consignee_name"
@@ -439,8 +548,18 @@ export default function OfflineOrderModal({ isOpen, onClose, onSuccess }) {
                     ))}
                   </select>
                   <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-slate-400">
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                    <svg
+                      className="h-4 w-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M19 9l-7 7-7-7"
+                      />
                     </svg>
                   </div>
                 </div>
@@ -463,8 +582,18 @@ export default function OfflineOrderModal({ isOpen, onClose, onSuccess }) {
                     ))}
                   </select>
                   <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-slate-400">
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                    <svg
+                      className="h-4 w-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M19 9l-7 7-7-7"
+                      />
                     </svg>
                   </div>
                 </div>
@@ -482,28 +611,11 @@ export default function OfflineOrderModal({ isOpen, onClose, onSuccess }) {
                 />
               </div>
 
-              <div>
-                <label className={labelClass}>Amount (Including GST) *</label>
-                <div className="relative">
-                  <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-xs font-bold text-slate-400">
-                    ₹
-                  </span>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    name="amount"
-                    value={formData.amount}
-                    onChange={handleChange}
-                    placeholder="0.00"
-                    className={`${inputClass} pl-7`}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className={labelClass}>Shipping Charge *</label>
+              {/* SINGLE UNIFIED CHARGE FIELD (AMOUNT INCLUDING GST) */}
+              <div className="sm:col-span-2">
+                <label className={labelClass}>
+                  Shipping Charge (Including GST) *
+                </label>
                 <div className="relative">
                   <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-xs font-bold text-slate-400">
                     ₹
@@ -525,12 +637,16 @@ export default function OfflineOrderModal({ isOpen, onClose, onSuccess }) {
 
             {/* PAYMENT MODE TOGGLE */}
             <div className="pt-2 flex items-center gap-3 border-t border-slate-100">
-              <span className="text-xs font-bold text-slate-600">Payment Mode:</span>
+              <span className="text-xs font-bold text-slate-600">
+                Payment Mode:
+              </span>
               <div className="inline-flex rounded-xl border border-slate-200 bg-slate-50 p-1">
                 <button
                   type="button"
-                  onClick={() => setFormData((p) => ({ ...p, payment_mode: "Prepaid" }))}
-                  className={`rounded-lg px-3.5 py-1 text-xs font-bold transition ${
+                  onClick={() =>
+                    setFormData((p) => ({ ...p, payment_mode: "Prepaid" }))
+                  }
+                  className={`rounded-lg px-3.5 py-1 text-xs font-bold transition cursor-pointer ${
                     formData.payment_mode === "Prepaid"
                       ? "bg-white text-slate-900 shadow-xs"
                       : "text-slate-500 hover:text-slate-700"
@@ -540,8 +656,10 @@ export default function OfflineOrderModal({ isOpen, onClose, onSuccess }) {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setFormData((p) => ({ ...p, payment_mode: "COD" }))}
-                  className={`rounded-lg px-3.5 py-1 text-xs font-bold transition ${
+                  onClick={() =>
+                    setFormData((p) => ({ ...p, payment_mode: "COD" }))
+                  }
+                  className={`rounded-lg px-3.5 py-1 text-xs font-bold transition cursor-pointer ${
                     formData.payment_mode === "COD"
                       ? "bg-white text-amber-700 shadow-xs"
                       : "text-slate-500 hover:text-slate-700"
@@ -625,16 +743,22 @@ export default function OfflineOrderModal({ isOpen, onClose, onSuccess }) {
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition"
+              className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="rounded-xl bg-[#008dd2] px-6 py-2 text-xs font-bold text-white shadow-sm shadow-[#008dd2]/20 hover:bg-[#007ab6] active:scale-95 disabled:opacity-60 transition"
+              className="rounded-xl bg-[#008dd2] px-6 py-2 text-xs font-bold text-white shadow-sm shadow-[#008dd2]/20 hover:bg-[#007ab6] active:scale-95 disabled:opacity-60 transition cursor-pointer"
             >
-              {loading ? "Saving..." : "Save Offline Order"}
+              {loading
+                ? isEdit
+                  ? "Updating..."
+                  : "Saving..."
+                : isEdit
+                ? "Update Offline Order"
+                : "Save Offline Order"}
             </button>
           </div>
         </form>
