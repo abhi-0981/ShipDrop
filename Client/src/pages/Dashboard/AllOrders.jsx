@@ -200,11 +200,12 @@ const getOrderId = (order) => {
 
 const getShipmentName = (order) => {
   return (
-    order?.shipment ||
     order?.product_name ||
-    order?.service_name ||
     order?.product ||
-    "Shipment"
+    (Array.isArray(order?.products) && (order.products[0]?.product_name || order.products[0]?.product)) ||
+    order?.shipment ||
+    order?.service_name ||
+    "—"
   );
 };
 
@@ -1393,28 +1394,37 @@ useEffect(() => {
 
                     {/* AWB / CONSIGNMENT ACTION BAR */}
                     {isManual ? (
-                      <div className="flex items-center justify-between font-mono text-[11px] text-slate-600 bg-slate-50/70 px-2 py-1.5 rounded-lg border border-slate-100">
-                        <span className="truncate font-semibold select-none">
-                          Consignment: {order.consignment_no || "—"}
-                        </span>
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between font-mono text-[11px] text-slate-600 bg-slate-50/70 px-2 py-1.5 rounded-lg border border-slate-100">
+                          <span className="truncate font-semibold select-none">
+                            Consignment: {order.consignment_no || "—"}
+                          </span>
 
-                        {order.consignment_no && (
-                          <button
-                            type="button"
-                            onClick={async () => {
-                              try {
-                                await navigator.clipboard.writeText(String(order.consignment_no));
-                                toast.success("Consignment No copied");
-                              } catch {
-                                toast.error("Unable to copy Consignment No");
-                              }
-                            }}
-                            className="text-slate-400 hover:text-slate-700 flex items-center p-0.5"
-                            title="Copy Consignment No"
-                          >
-                            <Icon name="copy" size={12} />
-                          </button>
-                        )}
+                          {order.consignment_no && (
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                try {
+                                  await navigator.clipboard.writeText(String(order.consignment_no));
+                                  toast.success("Consignment No copied");
+                                } catch {
+                                  toast.error("Unable to copy Consignment No");
+                                }
+                              }}
+                              className="text-slate-400 hover:text-slate-700 flex items-center p-0.5"
+                              title="Copy Consignment No"
+                            >
+                              <Icon name="copy" size={12} />
+                            </button>
+                          )}
+                        </div>
+
+                        <div className="flex items-center justify-between text-[11px] text-slate-500 px-1">
+                          <span className="font-semibold text-slate-700">{order.carrier}</span>
+                          <span className="text-slate-600 truncate max-w-[160px]" title={getShipmentName(order)}>
+                            {getShipmentName(order)}
+                          </span>
+                        </div>
                       </div>
                     ) : (
                       <div className="flex items-center justify-between font-mono text-[11px] text-slate-600 bg-slate-50/70 px-2 py-1.5 rounded-lg border border-slate-100">
@@ -1719,10 +1729,18 @@ useEffect(() => {
                                 </div>
 
                                 <p className="mt-0.5 text-[11px] text-slate-500">
-                                  
                                   <span className="font-semibold text-slate-700">
                                     {manualCarrier}
                                   </span>
+                                </p>
+
+                                <p className="mt-0.5 text-[11px] text-slate-500 truncate" title={getShipmentName(order)}>
+                                  {getShipmentName(order)}
+                                  {(order?.shipping_mode || order?.service_type) ? (
+                                    <span className="ml-1 font-semibold text-slate-700">
+                                      • {order?.shipping_mode || order?.service_type}
+                                    </span>
+                                  ) : null}
                                 </p>
 
                              

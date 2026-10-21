@@ -158,7 +158,6 @@ function CreateOrder() {
   const [consignmentNo, setConsignmentNo] = useState("");
   const [packageType, setPackageType] = useState("");
   const [manualAmount, setManualAmount] = useState("");
-  const [manualPaymentType, setManualPaymentType] = useState("Prepaid");
   const [manualShippingMode, setManualShippingMode] = useState("Surface");
 
   const inputClass =
@@ -366,7 +365,7 @@ dangerous_good: order.dangerous_good === true ||
         toast.error("Please enter a valid non-negative Amount (Including GST)");
         return false;
       }
-      if (!String(manualPaymentType || "").trim()) {
+      if (!String(formData.payment_type || "").trim()) {
         toast.error("Please select Payment Type (Prepaid / COD)");
         return false;
       }
@@ -1443,7 +1442,6 @@ dangerous_good: order.dangerous_good === true ||
     setConsignmentNo("");
     setPackageType("");
     setManualAmount("");
-    setManualPaymentType("Prepaid");
     setManualShippingMode("Surface");
 
     setProducts([{ ...initialProduct }]);
@@ -1774,7 +1772,7 @@ const handleRequiredFieldEnter = (e) => {
         package_type: carrier !== "Delivery" ? String(packageType).trim() : null,
         manual_amount_including_gst: carrier !== "Delivery" ? Number(manualAmount) : null,
         shipping_mode: carrier !== "Delivery" ? manualShippingMode : null,
-        payment_type: carrier !== "Delivery" ? manualPaymentType : formData.payment_type,
+        payment_type: formData.payment_type,
         orderData,
         products: productData,
         packages: packageData,
@@ -2121,7 +2119,7 @@ const handleRequiredFieldEnter = (e) => {
 
                 <p className="mt-2 text-[10px] sm:text-[11px] text-slate-400 truncate">
                   {carrier === "Delivery"
-                    ? "Standard automated courier booking"
+                    ? "Standard courier booking"
                     : `Manual carrier dispatch via ${carrier}`}
                 </p>
               </div>
@@ -2142,7 +2140,7 @@ const handleRequiredFieldEnter = (e) => {
                   </span>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                   {/* CONSIGNMENT NO */}
                   <div>
                     <label className={labelClass}>Consignment No *</label>
@@ -2204,31 +2202,6 @@ const handleRequiredFieldEnter = (e) => {
                         className={`${inputClass} pl-7`}
                         required
                       />
-                    </div>
-                  </div>
-
-                  {/* PAYMENT TYPE (PREPAID / COD) */}
-                  <div>
-                    <label className={labelClass}>Payment Type *</label>
-                    <div className="relative">
-                      <select
-                        name="manual_payment_type"
-                        value={manualPaymentType}
-                        onChange={(e) => {
-                          setManualPaymentType(e.target.value);
-                          setFormData((p) => ({ ...p, payment_type: e.target.value }));
-                        }}
-                        className={`${inputClass} appearance-none pr-8 cursor-pointer text-xs font-medium`}
-                        required
-                      >
-                        <option value="Prepaid">Prepaid</option>
-                        <option value="COD">COD</option>
-                      </select>
-                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-slate-400">
-                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </div>
                     </div>
                   </div>
 
