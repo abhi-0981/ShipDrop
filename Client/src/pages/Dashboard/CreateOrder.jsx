@@ -90,6 +90,7 @@ function CreateOrder() {
 
   const [loading, setLoading] = useState(false);
   const [pincodeLoading, setPincodeLoading] = useState(false);
+  const [serviceabilityStatus, setServiceabilityStatus] = useState(null);
 
   // Previous customer autocomplete
   // Previous customer autocomplete
@@ -376,6 +377,13 @@ dangerous_good: order.dangerous_good === true ||
 
     if (!/^\d{6}$/.test(String(formData.pincode || "").trim())) {
       toast.error("Delivery pincode must be exactly 6 digits");
+      return false;
+    }
+
+    if (serviceabilityStatus && serviceabilityStatus.serviceable === false) {
+      toast.error(
+        serviceabilityStatus.message || "Delivery service is not available for this pincode"
+      );
       return false;
     }
 
@@ -1245,10 +1253,33 @@ dangerous_good: order.dangerous_good === true ||
     setPreviousCustomers([]);
     setShowPreviousCustomers(false);
     resetShippingRate();
+
+    if (customer.pincode && /^\d{6}$/.test(String(customer.pincode).trim())) {
+      api.get(`/serviceability/pincode/${customer.pincode.trim()}`)
+        .then((res) => {
+          if (res?.data?.success && res?.data?.serviceable && res?.data?.status === "SERVICEABLE") {
+            setServiceabilityStatus({
+              serviceable: true,
+              status: "SERVICEABLE",
+              message: "Delivery is available at this pincode",
+            });
+          } else {
+            setServiceabilityStatus({
+              serviceable: false,
+              status: res?.data?.status || "NOT_SERVICEABLE",
+              message: res?.data?.message || "Delivery is not available at this pincode",
+            });
+          }
+        })
+        .catch(() => {});
+    } else {
+      setServiceabilityStatus(null);
+    }
   };
 
   const handlePincodeChange = async (e) => {
     const value = e.target.value.replace(/\D/g, "").slice(0, 6);
+    setServiceabilityStatus(null);
     setFormData((prev) => ({
       ...prev,
       pincode: value,
@@ -1262,24 +1293,91 @@ dangerous_good: order.dangerous_good === true ||
 
     setPincodeLoading(true);
     try {
-      const response = await fetch(
-        `https://api.postalpincode.in/pincode/${value}`,
+      // 1. Check Delhivery Pincode Serviceability
+      const serviceRes = await api.get(`/serviceability/pincode/${value}`);
+      const serviceData = serviceRes?.data;
+
+      const isServiceable = Boolean(
+        serviceData?.success &&
+        serviceData?.serviceable &&
+        serviceData?.status === "SERVICEABLE"
       );
-      if (!response.ok) throw new Error("Pincode lookup failed");
 
-      const data = await response.json();
-      if (!data?.[0]?.PostOffice?.length) throw new Error("Invalid pincode");
+      if (!isServiceable) {
+        const errorMsg =
+          serviceData?.message ||
+          (serviceData?.status === "EMBARGO"
+            ? "Delivery is temporarily unavailable at this pincode (Embargo)"
+            : "Delivery is not available at this pincode");
 
-      const postOffice = data[0].PostOffice[0];
+        setServiceabilityStatus({
+          serviceable: false,
+          status: serviceData?.status || "NOT_SERVICEABLE",
+          message: errorMsg,
+        });
+
+        toast.error(`Pincode ${value}: ${errorMsg}`, {
+          id: "pincode-service-msg",
+          duration: 4500,
+        });
+
+        setPincodeLoading(false);
+        return;
+      }
+
+      // If serviceable:
+      setServiceabilityStatus({
+        serviceable: true,
+        status: "SERVICEABLE",
+        message: "Delivery is available at this pincode",
+      });
+
+      // 2. Auto-detect City and State (from Delhivery response or Postal API fallback)
+      let detectedCity = "";
+      let detectedState = "";
+
+      const rawCodes = serviceData?.data;
+      const firstCode = Array.isArray(rawCodes) && rawCodes.length > 0
+        ? rawCodes[0]?.postal_code || rawCodes[0]
+        : null;
+
+      if (firstCode?.district || firstCode?.city) {
+        detectedCity = firstCode.district || firstCode.city || "";
+        detectedState = firstCode.state_code || "";
+      }
+
+      // Fetch official postal district/state for complete full names
+      try {
+        const postalRes = await fetch(
+          `https://api.postalpincode.in/pincode/${value}`
+        );
+        if (postalRes.ok) {
+          const postalData = await postalRes.json();
+          if (postalData?.[0]?.PostOffice?.length) {
+            const po = postalData[0].PostOffice[0];
+            detectedCity = po.District || po.Block || detectedCity;
+            detectedState = po.State || detectedState;
+          }
+        }
+      } catch (err) {
+        // Fallback to Delhivery's detected city/state
+      }
+
       setFormData((prev) => ({
         ...prev,
         pincode: value,
-        city: postOffice.District || postOffice.Block || "",
-        state: postOffice.State || "",
+        city: detectedCity,
+        state: detectedState,
         country: "India",
       }));
-    } catch {
-      toast.error("Unable to verify pincode");
+    } catch (error) {
+      console.error("Serviceability check error:", error);
+      toast.error(
+        error?.response?.data?.message ||
+          error?.message ||
+          "Unable to check pincode serviceability",
+        { id: "pincode-service-msg" }
+      );
     } finally {
       setPincodeLoading(false);
     }
@@ -1405,6 +1503,7 @@ dangerous_good: order.dangerous_good === true ||
     setProducts([{ ...initialProduct }]);
     setPackages([{ ...initialPackage }]);
     resetShippingRate();
+    setServiceabilityStatus(null);
     setIsEditMode(false);
     setEditingOrderId(null);
     setEditWarehouseId(null);
@@ -2192,14 +2291,38 @@ const handleRequiredFieldEnter = (e) => {
                     placeholder="6-digit PIN"
                     inputMode="numeric"
                     maxLength={6}
-                    className={inputClass}
+                    className={`${inputClass} ${
+                      serviceabilityStatus && !serviceabilityStatus.serviceable
+                        ? "!border-rose-400 !focus:border-rose-500 !focus:ring-rose-200 bg-rose-50/20"
+                        : serviceabilityStatus && serviceabilityStatus.serviceable
+                        ? "!border-emerald-400 !focus:border-emerald-500 !focus:ring-emerald-200"
+                        : ""
+                    }`}
                   />
                   {pincodeLoading && (
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-[#008dd2]">
-                      Checking...
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-[10px] font-bold text-[#008dd2]">
+                      <svg className="h-3.5 w-3.5 animate-spin text-[#008dd2]" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                      </svg>
+                      Checking service...
                     </span>
                   )}
                 </div>
+
+                {serviceabilityStatus && !serviceabilityStatus.serviceable && (
+                  <div className="mt-1.5 flex items-start gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs font-semibold text-rose-700 animate-fadeIn">
+                    <span className="shrink-0 text-sm">⚠️</span>
+                    <span>{serviceabilityStatus.message || "Delivery is not available at this pincode."}</span>
+                  </div>
+                )}
+
+                {serviceabilityStatus && serviceabilityStatus.serviceable && (
+                  <p className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-emerald-600">
+                    <span>✓</span>
+                    <span>Delhivery service available</span>
+                  </p>
+                )}
               </div>
 
               <div>
