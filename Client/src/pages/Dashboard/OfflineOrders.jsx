@@ -518,16 +518,16 @@ export default function OfflineOrders() {
           ================================================== */}
           <div className="hidden sm:block overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
             <div
-              className="orders-scrollbar max-h-[calc(100vh-220px)] overflow-y-auto overflow-x-hidden"
+              className="orders-scrollbar max-h-[calc(100vh-220px)] overflow-y-auto overflow-x-auto"
               style={{
                 scrollbarWidth: "thin",
                 scrollbarColor: "#cbd5e1 transparent",
               }}
             >
-              <table className="w-full table-fixed border-collapse">
+              <table className="w-full min-w-[980px] table-fixed border-collapse">
                 <thead className="sticky top-0 z-20 bg-white">
                   <tr className="border-b border-slate-200 bg-slate-50/80">
-                    <th className="sticky top-0 z-20 w-[3.5%] min-w-[36px] bg-slate-50/80 px-3 py-3.5 text-left">
+                    <th className="sticky top-0 z-20 w-[4%] min-w-[36px] bg-slate-50/80 px-3 py-3.5 text-left">
                       <button
                         type="button"
                         onClick={handleSelectAll}
@@ -550,35 +550,35 @@ export default function OfflineOrders() {
                       </button>
                     </th>
 
-                    <th className="sticky top-0 z-20 w-[8%] min-w-[70px] bg-slate-50/80 px-3 py-3.5 text-left text-[12px] font-bold text-slate-700">
+                    <th className="sticky top-0 z-20 w-[7%] min-w-[65px] bg-slate-50/80 px-3 py-3.5 text-left text-[12px] font-bold text-slate-700">
                       Party
                     </th>
 
-                    <th className="sticky top-0 z-20 w-[18%] min-w-[170px] bg-slate-50/80 px-3 py-3.5 text-left text-[12px] font-bold text-slate-700">
+                    <th className="sticky top-0 z-20 w-[16.5%] min-w-[160px] bg-slate-50/80 px-3 py-3.5 text-left text-[12px] font-bold text-slate-700">
                       Customer
                     </th>
 
-                    <th className="sticky top-0 z-20 w-[19%] min-w-[180px] bg-slate-50/80 px-3 py-3.5 text-left text-[12px] font-bold text-slate-700">
+                    <th className="sticky top-0 z-20 w-[17.5%] min-w-[170px] bg-slate-50/80 px-3 py-3.5 text-left text-[12px] font-bold text-slate-700">
                       Shipment
                     </th>
 
-                    <th className="sticky top-0 z-20 w-[15%] min-w-[130px] bg-slate-50/80 px-3 py-3.5 text-left text-[12px] font-bold text-slate-700">
+                    <th className="sticky top-0 z-20 w-[14%] min-w-[130px] bg-slate-50/80 px-3 py-3.5 text-left text-[12px] font-bold text-slate-700">
                       Route
                     </th>
 
-                    <th className="sticky top-0 z-20 w-[12%] min-w-[110px] bg-slate-50/80 px-3 py-3.5 text-left text-[12px] font-bold text-slate-700">
+                    <th className="sticky top-0 z-20 w-[11%] min-w-[105px] bg-slate-50/80 px-3 py-3.5 text-left text-[12px] font-bold text-slate-700">
                       Specs & Weight
                     </th>
 
-                    <th className="sticky top-0 z-20 w-[12%] min-w-[110px] bg-slate-50/80 px-3 py-3.5 text-left text-[12px] font-bold text-slate-700">
+                    <th className="sticky top-0 z-20 w-[11%] min-w-[105px] bg-slate-50/80 px-3 py-3.5 text-left text-[12px] font-bold text-slate-700">
                       Payment & Charge
                     </th>
 
-                    <th className="sticky top-0 z-20 w-[6.5%] min-w-[80px] bg-slate-50/80 px-3 py-3.5 text-left text-[12px] font-bold text-slate-700">
+                    <th className="sticky top-0 z-20 w-[10%] min-w-[100px] bg-slate-50/80 px-3 py-3.5 text-left text-[12px] font-bold text-slate-700">
                       Created
                     </th>
 
-                    <th className="sticky top-0 z-20 w-[8%] min-w-[95px] bg-slate-50/80 px-3 py-3.5 text-center text-[12px] font-bold text-slate-700">
+                    <th className="sticky top-0 z-20 w-[9%] min-w-[95px] bg-slate-50/80 px-3 py-3.5 text-center text-[12px] font-bold text-slate-700">
                       Actions
                     </th>
                   </tr>
