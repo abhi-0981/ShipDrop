@@ -736,7 +736,7 @@ function CreateOrder() {
         setPartyIdentities(response.data.partyIdentities || []);
       }
     } catch (error) {
-      console.log("Unable to load party identities:", error);
+      console.log("Unable to load Client identities:", error);
     } finally {
       setPartyIdentitiesLoading(false);
     }
@@ -1986,7 +1986,7 @@ function CreateOrder() {
                 1
               </span>
               <h2 className="text-xs sm:text-sm font-bold tracking-wide uppercase text-slate-700">
-                Pickup & Party Details
+                Pickup & Client Details
               </h2>
             </div>
 
@@ -2079,7 +2079,7 @@ function CreateOrder() {
               <div className="relative md:col-span-1">
                 <div className="flex items-center justify-between mb-1.5 gap-1.5">
                   <label className="block text-[11px] sm:text-xs font-bold text-slate-600 truncate">
-                    Party Identity
+                    Client Identity
                   </label>
                   <Link
                     to="/settings/party-identities"
@@ -2100,7 +2100,7 @@ function CreateOrder() {
                     disabled={partyIdentitiesLoading}
                     className={`${inputClass} appearance-none pr-8 cursor-pointer truncate text-xs`}
                   >
-                    <option value="">-- No Party --</option>
+                    <option value="">-- No Client --</option>
                     {partyIdentities.map((party) => (
                       <option key={party.id} value={party.id}>
                         {party.reference_name || party.name}
