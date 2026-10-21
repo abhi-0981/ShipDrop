@@ -2101,7 +2101,7 @@ function CreateOrder() {
                     className={`${inputClass} appearance-none pr-8 cursor-pointer truncate text-xs`}
                   >
                     <option value="">-- No Client --</option>
-                    {partyIdentities.map((party) => (
+                    {partyIdentities.map((party) => ( 
                       <option key={party.id} value={party.id}>
                         {party.reference_name || party.name}
                       </option>
