@@ -60,7 +60,8 @@ const normalizeTrackingStatus = (
   // ----------------------------------------------
 
   if (
-    rawUpper === "DELIVERED"
+    rawUpper === "DELIVERED" ||
+    statusType === "DL"
   ) {
     return "DELIVERED";
   }
@@ -71,7 +72,8 @@ const normalizeTrackingStatus = (
 
   if (
     rawUpper === "CANCELLED" ||
-    rawUpper === "CANCELED"
+    rawUpper === "CANCELED" ||
+    statusType === "CN"
   ) {
     return "CANCELLED";
   }
@@ -116,6 +118,8 @@ const normalizeTrackingStatus = (
     rawUpper.includes(
       "OUT FOR DELIVERY"
     ) ||
+    rawUpper === "OFD" ||
+    statusType === "OFD" ||
     instructions.includes(
       "out for delivery"
     )
@@ -130,6 +134,8 @@ const normalizeTrackingStatus = (
   if (
     rawUpper === "IN TRANSIT" ||
     rawUpper === "INTRANSIT" ||
+    rawUpper === "DISPATCHED" ||
+    statusType === "IT" ||
     rawUpper.includes(
       "IN TRANSIT"
     )
