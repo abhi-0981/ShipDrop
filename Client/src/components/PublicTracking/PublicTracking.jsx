@@ -300,7 +300,6 @@ const AlertIcon = ({ size = 20 }) => (
 
 function PublicTracking() {
   const [awb, setAwb] = useState("");
-  const [selectedCarrier, setSelectedCarrier] = useState("auto");
   const [tracking, setTracking] = useState(null);
   const [trackingLoading, setTrackingLoading] =
     useState(false);
@@ -331,14 +330,14 @@ function PublicTracking() {
 
     if (!normalizedAwb) {
       setTrackingError(
-        "Please enter your AWB or Consignment number."
+        "Please enter your AWB number."
       );
       return;
     }
 
-    if (!/^[A-Za-z0-9\-_]{3,50}$/.test(normalizedAwb)) {
+    if (!/^\d+$/.test(normalizedAwb)) {
       setTrackingError(
-        "Please enter a valid AWB or Consignment number."
+        "Please enter a valid AWB number."
       );
       return;
     }
@@ -346,105 +345,32 @@ function PublicTracking() {
     try {
       setTrackingLoading(true);
 
-      const carrierParam =
-        selectedCarrier !== "auto" ? `?carrier=${selectedCarrier}` : "";
-
       const response = await axios.get(
-        `${API_BASE_URL}/public/tracking/${normalizedAwb}${carrierParam}`
+        `${API_BASE_URL}/public/tracking/${normalizedAwb}`
       );
 
-      if (response.data?.success && response.data?.tracking) {
-        setTracking(response.data.tracking);
-        setAwb("");
-        setShowTrackingDetails(true);
-        return;
-      }
-
-      throw new Error(
-        response.data?.message || "Shipment not found."
-      );
-    } catch (error) {
-      // ----------------------------------------------------
-      // RESILIENT MULTI-CARRIER FALLBACK RESOLVER
-      // If backend has not yet deployed to production or
-      // external API rate-limits, provide instant tracking
-      // and official portal verification instead of failing!
-      // ----------------------------------------------------
-      const upperAwb = normalizedAwb.toUpperCase();
-
-      let carrierName = "Delhivery";
-      let portalUrl = `https://www.delhivery.com/tracking?wbn=${encodeURIComponent(
-        normalizedAwb
-      )}`;
-      let statusDesc = "In Transit";
-
-      if (
-        selectedCarrier === "tirupati" ||
-        upperAwb.startsWith("STC") ||
-        upperAwb.startsWith("TC") ||
-        upperAwb.startsWith("TRU") ||
-        (upperAwb.length >= 8 &&
-          upperAwb.length <= 11 &&
-          /^\d+$/.test(upperAwb))
-      ) {
-        carrierName = "Shree Tirupati Courier";
-        portalUrl = `http://www.shreetirupaticourier.net/Frm_DocTrack.aspx?docno=${encodeURIComponent(
-          normalizedAwb
-        )}`;
-        statusDesc = "Booked / In Transit";
-      } else if (
-        selectedCarrier === "maruti" ||
-        upperAwb.startsWith("SMC") ||
-        upperAwb.startsWith("MAR") ||
-        upperAwb.startsWith("SHREE")
-      ) {
-        carrierName = "Shree Maruti Courier";
-        portalUrl = `https://shreemaruti.com/track-shipment/?docket=${encodeURIComponent(
-          normalizedAwb
-        )}`;
-        statusDesc = "Booked / In Transit";
-      } else if (
-        selectedCarrier === "delhivery" ||
-        /^\d{12,16}$/.test(upperAwb) ||
-        upperAwb.startsWith("DEL")
-      ) {
-        carrierName = "Delhivery";
-        portalUrl = `https://www.delhivery.com/tracking?wbn=${encodeURIComponent(
-          normalizedAwb
-        )}`;
-        statusDesc = "In Transit";
-      }
-
-      if (normalizedAwb.length >= 5) {
-        setTracking({
-          awb: normalizedAwb,
-          carrier: carrierName,
-          status: statusDesc === "In Transit" ? "IN TRANSIT" : "BOOKED",
-          raw_status: statusDesc,
-          status_datetime: new Date().toISOString(),
-          location: `${carrierName} Network`,
-          instructions: `Consignment is moving within the ${carrierName} logistics network.`,
-          tracking_url: portalUrl,
-          scans: [
-            {
-              id: "live-event-1",
-              dateTime: new Date().toISOString(),
-              status: statusDesc,
-              location: `${carrierName} Network Hub`,
-              instructions: `Shipment is moving on the ${carrierName} network. Click 'Official Portal ↗' to verify complete scan checkpoints.`,
-            },
-          ],
-        });
-
-        setAwb("");
-        setShowTrackingDetails(true);
-      } else {
-        setTrackingError(
-          error?.response?.data?.message ||
-            error?.message ||
-            "Shipment not found. Please verify the AWB or Consignment number."
+      if (!response.data?.success) {
+        throw new Error(
+          response.data?.message ||
+            "Unable to fetch shipment tracking."
         );
       }
+
+      const trackingData =
+        response.data?.tracking;
+
+      setTracking(trackingData);
+
+      // Automatically clear input
+      setAwb("");
+
+      setShowTrackingDetails(true);
+    } catch (error) {
+      setTrackingError(
+        error?.response?.data?.message ||
+          error?.message ||
+          "Shipment not found."
+      );
     } finally {
       setTrackingLoading(false);
     }
@@ -677,7 +603,8 @@ function PublicTracking() {
                     </h2>
 
                     <p className="mt-1 text-xs leading-5 text-slate-400">
-                      Enter your AWB or Consignment number to track live updates.
+                      Enter your AWB number to view the
+                      latest shipment status.
                     </p>
                   </div>
 
@@ -685,39 +612,8 @@ function PublicTracking() {
 
                 <form onSubmit={handleTrack}>
 
-                  {/* CARRIER SELECTOR TABS */}
-                  <div className="mb-3.5">
-                    <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                      Select Courier Partner
-                    </label>
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      {[
-                        { id: "auto", label: "Auto Detect" },
-                        { id: "delhivery", label: "Delhivery" },
-                        { id: "tirupati", label: "Shree Tirupati" },
-                        { id: "maruti", label: "Shree Maruti" },
-                      ].map((c) => (
-                        <button
-                          key={c.id}
-                          type="button"
-                          onClick={() => {
-                            setSelectedCarrier(c.id);
-                            setTrackingError("");
-                          }}
-                          className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-all duration-150 ${
-                            selectedCarrier === c.id
-                              ? "bg-[#008dd2] text-white shadow-[0_4px_12px_rgba(0,141,210,0.25)]"
-                              : "border border-slate-200/80 bg-slate-50 text-slate-600 hover:bg-slate-100"
-                          }`}
-                        >
-                          {c.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
                   <label className="mb-2 block text-xs font-bold text-slate-700">
-                    AWB / Consignment Number
+                    AWB Number
                   </label>
 
                   <div className="relative">
@@ -728,11 +624,12 @@ function PublicTracking() {
 
                     <input
                       type="text"
+                      inputMode="numeric"
                       value={awb}
                       onChange={(e) => {
                         setAwb(
                           e.target.value.replace(
-                            /\s+/g,
+                            /\D/g,
                             ""
                           )
                         );
@@ -740,7 +637,7 @@ function PublicTracking() {
                         setTracking(null);
                         setTrackingError("");
                       }}
-                      placeholder="Enter AWB / Consignment number"
+                      placeholder="Enter AWB number"
                       className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/80 pl-11 pr-4 text-base font-medium text-slate-700 outline-none transition-all placeholder:text-slate-300 focus:border-[#008dd2] focus:bg-white focus:ring-4 focus:ring-[#008dd2]/10"
                     />
 
@@ -773,23 +670,9 @@ function PublicTracking() {
 
                 </form>
 
-                <div className="mt-4 flex flex-wrap items-center gap-2 text-[10px] font-medium text-slate-500">
-                  <span className="flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-slate-600">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                    Delhivery (All India)
-                  </span>
-                  <span className="flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-slate-600">
-                    <span className="h-1.5 w-1.5 rounded-full bg-sky-500" />
-                    Shree Tirupati
-                  </span>
-                  <span className="flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-slate-600">
-                    <span className="h-1.5 w-1.5 rounded-full bg-indigo-500" />
-                    Shree Maruti
-                  </span>
-                  <span className="flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-slate-600">
-                    <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
-                    Offline Consignments
-                  </span>
+                <div className="mt-4 flex items-center gap-2 text-[10px] font-medium text-slate-400">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                  Live tracking powered by Delhivery
                 </div>
 
               </div>
@@ -1023,7 +906,7 @@ function PublicTracking() {
                     </h2>
 
                     <p className="mt-0.5 truncate text-[10px] text-slate-400 sm:text-xs">
-                      Live shipment status and {tracking.carrier || "Courier"} tracking history
+                      Live shipment status and Delhivery scan history
                     </p>
 
                   </div>
@@ -1066,25 +949,12 @@ function PublicTracking() {
 
                     <div className="border-b border-slate-100 px-4 py-3.5 lg:border-r">
                       <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-                        Courier Partner
+                        Courier
                       </p>
 
-                      <div className="mt-1 flex items-center justify-between gap-2">
-                        <p className="truncate text-sm font-bold text-slate-800">
-                          {tracking.carrier || "Delhivery"}
-                        </p>
-                        {tracking.tracking_url && (
-                          <a
-                            href={tracking.tracking_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 rounded-md bg-sky-50 px-2 py-0.5 text-[10px] font-semibold text-[#008dd2] transition hover:bg-sky-100"
-                            title={`View on official ${tracking.carrier || "Courier"} website`}
-                          >
-                            Official Portal ↗
-                          </a>
-                        )}
-                      </div>
+                      <p className="mt-1 truncate text-sm font-bold text-slate-800">
+                        Delhivery
+                      </p>
                     </div>
 
                     <div className="border-b border-slate-100 px-4 py-3.5">
@@ -1188,7 +1058,7 @@ function PublicTracking() {
                       </h3>
 
                       <p className="mt-0.5 text-[10px] text-slate-400 sm:text-xs">
-                        Complete tracking history from {tracking.carrier || "Delhivery"}
+                        Complete tracking history from Delhivery
                       </p>
 
                     </div>
@@ -1271,7 +1141,7 @@ function PublicTracking() {
 
                     </div>
                   ) : (
-                    <div className="flex min-h-[160px] flex-col items-center justify-center rounded-xl bg-slate-50 p-6 text-center">
+                    <div className="flex min-h-[160px] items-center justify-center rounded-xl bg-slate-50 text-center">
 
                       <div>
 
@@ -1280,21 +1150,9 @@ function PublicTracking() {
                         </p>
 
                         <p className="mt-1 text-[10px] text-slate-400">
-                          {tracking.carrier || "The courier"} has not recorded scan history for this shipment yet.
+                          Delhivery has not provided scan
+                          history for this shipment.
                         </p>
-
-                        {tracking.tracking_url && (
-                          <div className="mt-3">
-                            <a
-                              href={tracking.tracking_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1.5 rounded-xl border border-sky-200 bg-white px-3.5 py-1.5 text-xs font-bold text-[#008dd2] shadow-sm transition hover:bg-sky-50"
-                            >
-                              Check on {tracking.carrier} Portal ↗
-                            </a>
-                          </div>
-                        )}
 
                       </div>
 
