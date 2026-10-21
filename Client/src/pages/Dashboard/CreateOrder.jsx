@@ -212,18 +212,18 @@ function CreateOrder() {
         state: order.state || "",
         country: order.country || "India",
 
-       payment_type: order.payment_type || "Prepaid",
-risk_type: order.risk_type || "Owner Risk",
+        payment_type: order.payment_type || "Prepaid",
+        risk_type: order.risk_type || "Owner Risk",
 
-fragile_shipment: order.fragile_shipment === true ||
-  order.fragile_shipment === 1 ||
-  order.fragile_shipment === "1" ||
-  order.fragile_shipment === "true",
+        fragile_shipment: order.fragile_shipment === true ||
+          order.fragile_shipment === 1 ||
+          order.fragile_shipment === "1" ||
+          order.fragile_shipment === "true",
 
-dangerous_good: order.dangerous_good === true ||
-  order.dangerous_good === 1 ||
-  order.dangerous_good === "1" ||
-  order.dangerous_good === "true",
+        dangerous_good: order.dangerous_good === true ||
+          order.dangerous_good === 1 ||
+          order.dangerous_good === "1" ||
+          order.dangerous_good === "true",
       });
 
       if (Array.isArray(order.products) && order.products.length) {
@@ -435,7 +435,7 @@ dangerous_good: order.dangerous_good === true ||
       }
     }
 
- 
+
     // 5. Packages
     if (!Array.isArray(packages) || packages.length === 0) {
       toast.error("At least one package is required");
@@ -829,7 +829,7 @@ dangerous_good: order.dangerous_good === true ||
 
       setWarehouseLocationSearch(
         data?.display_name ||
-          [detectedAddress, city, state, postcode].filter(Boolean).join(", "),
+        [detectedAddress, city, state, postcode].filter(Boolean).join(", "),
       );
       return true;
     } catch {
@@ -1002,7 +1002,7 @@ dangerous_good: order.dangerous_good === true ||
 
       throw new Error(
         error.response?.data?.message ||
-          "Unable to load default return address",
+        "Unable to load default return address",
       );
     }
   };
@@ -1109,8 +1109,8 @@ dangerous_good: order.dangerous_good === true ||
 
       toast.error(
         error.response?.data?.message ||
-          error.message ||
-          "Unable to save warehouse",
+        error.message ||
+        "Unable to save warehouse",
       );
     } finally {
       setWarehouseSaving(false);
@@ -1271,7 +1271,7 @@ dangerous_good: order.dangerous_good === true ||
             });
           }
         })
-        .catch(() => {});
+        .catch(() => { });
     } else {
       setServiceabilityStatus(null);
     }
@@ -1308,7 +1308,7 @@ dangerous_good: order.dangerous_good === true ||
           serviceData?.message ||
           (serviceData?.status === "EMBARGO"
             ? "Delivery is temporarily unavailable at this pincode (Embargo)"
-            : "Delivery is not available at this pincode");
+            : "Delivery is not available at this pincode.");
 
         setServiceabilityStatus({
           serviceable: false,
@@ -1374,8 +1374,8 @@ dangerous_good: order.dangerous_good === true ||
       console.error("Serviceability check error:", error);
       toast.error(
         error?.response?.data?.message ||
-          error?.message ||
-          "Unable to check pincode serviceability",
+        error?.message ||
+        "Unable to check pincode serviceability",
         { id: "pincode-service-msg" }
       );
     } finally {
@@ -1478,13 +1478,13 @@ dangerous_good: order.dangerous_good === true ||
   const resetForm = (preservePickup = false, preserveParty = preservePickup) => {
     const preservedPickup = preservePickup
       ? {
-          pickup_address: formData.pickup_address,
-          pickup_pincode: formData.pickup_pincode,
-          pickup_city: formData.pickup_city,
-        }
+        pickup_address: formData.pickup_address,
+        pickup_pincode: formData.pickup_pincode,
+        pickup_city: formData.pickup_city,
+      }
       : {};
 
-   
+
     setFormData({ ...initialFormData, ...preservedPickup });
 
     if (!preservePickup) {
@@ -1571,14 +1571,14 @@ dangerous_good: order.dangerous_good === true ||
       city: formData.city,
       state: formData.state,
       country: formData.country || "India",
-   
-payment_type: formData.payment_type,
-risk_type: formData.risk_type,
 
-// Shipment flags
-fragile_shipment: Boolean(formData.fragile_shipment),
-dangerous_good: Boolean(formData.dangerous_good),
-};
+      payment_type: formData.payment_type,
+      risk_type: formData.risk_type,
+
+      // Shipment flags
+      fragile_shipment: Boolean(formData.fragile_shipment),
+      dangerous_good: Boolean(formData.dangerous_good),
+    };
 
 
     return { productData, packageData, orderData };
@@ -1631,8 +1631,8 @@ dangerous_good: Boolean(formData.dangerous_good),
       console.log("Update order error:", error);
       toast.error(
         error.response?.data?.message ||
-          error.message ||
-          "Unable to update order",
+        error.message ||
+        "Unable to update order",
       );
     } finally {
       setLoading(false);
@@ -1735,7 +1735,7 @@ dangerous_good: Boolean(formData.dangerous_good),
       return Number.isInteger(number) && number >= 1;
     }
 
- 
+
     // Package weight: greater than zero
     if (field.dataset.enterType === "weight") {
       const number = Number(value);
@@ -1753,44 +1753,44 @@ dangerous_good: Boolean(formData.dangerous_good),
 
   };
 
- 
-const handleRequiredFieldEnter = (e) => {
-  if (e.key !== "Enter") return;
 
-  // Textarea mein Enter se new line aane do
-  if (
-    e.target.tagName === "TEXTAREA" ||
-    e.target.tagName === "BUTTON"
-  ) {
-    return;
-  }
+  const handleRequiredFieldEnter = (e) => {
+    if (e.key !== "Enter") return;
 
-  e.preventDefault();
+    // Textarea mein Enter se new line aane do
+    if (
+      e.target.tagName === "TEXTAREA" ||
+      e.target.tagName === "BUTTON"
+    ) {
+      return;
+    }
 
-  const fields = Array.from(
-    e.currentTarget.querySelectorAll(
-      "[data-enter-required='true']"
-    )
-  ).filter(
-    (field) => !field.disabled && !field.readOnly
-  );
+    e.preventDefault();
 
-  const firstIncompleteField = fields.find(
-    (field) => !isEnterFieldComplete(field)
-  );
+    const fields = Array.from(
+      e.currentTarget.querySelectorAll(
+        "[data-enter-required='true']"
+      )
+    ).filter(
+      (field) => !field.disabled && !field.readOnly
+    );
 
-  // Koi required field incomplete hai
-  if (firstIncompleteField) {
-    firstIncompleteField.focus();
-    firstIncompleteField.select?.();
-    return;
-  }
+    const firstIncompleteField = fields.find(
+      (field) => !isEnterFieldComplete(field)
+    );
 
-  // Sab required fields complete hain toh save karo
-  if (!loading) {
-    handleSubmit(e);
-  }
-};
+    // Koi required field incomplete hai
+    if (firstIncompleteField) {
+      firstIncompleteField.focus();
+      firstIncompleteField.select?.();
+      return;
+    }
+
+    // Sab required fields complete hain toh save karo
+    if (!loading) {
+      handleSubmit(e);
+    }
+  };
 
 
   const handleSubmit = async (e) => {
@@ -2291,13 +2291,12 @@ const handleRequiredFieldEnter = (e) => {
                     placeholder="6-digit PIN"
                     inputMode="numeric"
                     maxLength={6}
-                    className={`${inputClass} ${
-                      serviceabilityStatus && !serviceabilityStatus.serviceable
+                    className={`${inputClass} ${serviceabilityStatus && !serviceabilityStatus.serviceable
                         ? "!border-rose-400 !focus:border-rose-500 !focus:ring-rose-200 bg-rose-50/20"
                         : serviceabilityStatus && serviceabilityStatus.serviceable
-                        ? "!border-emerald-400 !focus:border-emerald-500 !focus:ring-emerald-200"
-                        : ""
-                    }`}
+                          ? "!border-emerald-400 !focus:border-emerald-500 !focus:ring-emerald-200"
+                          : ""
+                      }`}
                   />
                   {pincodeLoading && (
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-[10px] font-bold text-[#008dd2]">
@@ -2473,52 +2472,52 @@ const handleRequiredFieldEnter = (e) => {
                 );
               })}
             </div>
-<div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-  {/* LEFT SIDE: New Toggles */}
-  <div className="flex flex-wrap items-center gap-4">
-    <label className="flex items-center gap-2 cursor-pointer">
-      <input
-        type="checkbox"
-        checked={!!formData.fragile_shipment}
-        onChange={(e) =>
-          setFormData((prev) => ({
-            ...prev,
-            fragile_shipment: e.target.checked,
-          }))
-        }
-        className="h-4 w-4 accent-[#008dd2]"
-      />
-      <span className="text-xs font-medium text-slate-700">
-        Fragile Shipment
-      </span>
-    </label>
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+              {/* LEFT SIDE: New Toggles */}
+              <div className="flex flex-wrap items-center gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={!!formData.fragile_shipment}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        fragile_shipment: e.target.checked,
+                      }))
+                    }
+                    className="h-4 w-4 accent-[#008dd2]"
+                  />
+                  <span className="text-xs font-medium text-slate-700">
+                    Fragile Shipment
+                  </span>
+                </label>
 
-    <label className="flex items-center gap-2 cursor-pointer">
-      <input
-        type="checkbox"
-        checked={!!formData.dangerous_good}
-        onChange={(e) =>
-          setFormData((prev) => ({
-            ...prev,
-            dangerous_good: e.target.checked,
-          }))
-        }
-        className="h-4 w-4 accent-[#008dd2]"
-      />
-      <span className="text-xs font-medium text-slate-700">
-        Dangerous Goods
-      </span>
-    </label>
-  </div>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={!!formData.dangerous_good}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        dangerous_good: e.target.checked,
+                      }))
+                    }
+                    className="h-4 w-4 accent-[#008dd2]"
+                  />
+                  <span className="text-xs font-medium text-slate-700">
+                    Dangerous Goods
+                  </span>
+                </label>
+              </div>
 
-  {/* RIGHT SIDE: Existing Invoice Total */}
-  <span className="text-xs font-medium text-slate-500">
-    Invoice Total:{" "}
-    <b className="font-bold text-slate-900 text-sm">
-      ₹{totalInvoiceValue.toFixed(2)}
-    </b>
-  </span>
-</div>
+              {/* RIGHT SIDE: Existing Invoice Total */}
+              <span className="text-xs font-medium text-slate-500">
+                Invoice Total:{" "}
+                <b className="font-bold text-slate-900 text-sm">
+                  ₹{totalInvoiceValue.toFixed(2)}
+                </b>
+              </span>
+            </div>
           </div>
 
           {/* 4. PACKAGES & WEIGHT */}
@@ -2564,8 +2563,8 @@ const handleRequiredFieldEnter = (e) => {
                         type="number"
                         min="0"
                         data-enter-required="true"
-data-enter-type="dimension"
-required
+                        data-enter-type="dimension"
+                        required
                         value={item.length}
                         onChange={(e) =>
                           handlePackageChange(index, "length", e.target.value)
@@ -2581,8 +2580,8 @@ required
                         type="number"
                         min="0"
                         data-enter-required="true"
-data-enter-type="dimension"
-required
+                        data-enter-type="dimension"
+                        required
                         value={item.width}
                         onChange={(e) =>
                           handlePackageChange(index, "width", e.target.value)
@@ -2598,8 +2597,8 @@ required
                         type="number"
                         min="0"
                         data-enter-required="true"
-data-enter-type="dimension"
-required
+                        data-enter-type="dimension"
+                        required
                         value={item.height}
                         onChange={(e) =>
                           handlePackageChange(index, "height", e.target.value)
@@ -2669,11 +2668,10 @@ required
                     onClick={() =>
                       setFormData((p) => ({ ...p, payment_type: "Prepaid" }))
                     }
-                    className={`rounded-lg px-3.5 py-1 text-xs font-bold transition ${
-                      formData.payment_type === "Prepaid"
+                    className={`rounded-lg px-3.5 py-1 text-xs font-bold transition ${formData.payment_type === "Prepaid"
                         ? "bg-white text-slate-900 shadow-xs"
                         : "text-slate-500"
-                    }`}
+                      }`}
                   >
                     Prepaid
                   </button>
@@ -2682,11 +2680,10 @@ required
                     onClick={() =>
                       setFormData((p) => ({ ...p, payment_type: "COD" }))
                     }
-                    className={`rounded-lg px-3.5 py-1 text-xs font-bold transition ${
-                      formData.payment_type === "COD"
+                    className={`rounded-lg px-3.5 py-1 text-xs font-bold transition ${formData.payment_type === "COD"
                         ? "bg-white text-slate-900 shadow-xs"
                         : "text-slate-500"
-                    }`}
+                      }`}
                   >
                     COD
                   </button>
@@ -2885,11 +2882,10 @@ required
                 <button
                   type="button"
                   onClick={() => selectShippingType("ROAD")}
-                  className={`w-full rounded-2xl border p-3.5 text-left transition ${
-                    selectedShippingType === "ROAD"
+                  className={`w-full rounded-2xl border p-3.5 text-left transition ${selectedShippingType === "ROAD"
                       ? "border-[#008dd2] bg-[#008dd2]/5 ring-2 ring-[#008dd2]/10"
                       : "border-slate-200 bg-white"
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center justify-between">
                     <div>
@@ -2913,11 +2909,10 @@ required
                 <button
                   type="button"
                   onClick={() => selectShippingType("AIR")}
-                  className={`w-full rounded-2xl border p-3.5 text-left transition ${
-                    selectedShippingType === "AIR"
+                  className={`w-full rounded-2xl border p-3.5 text-left transition ${selectedShippingType === "AIR"
                       ? "border-[#7451ff] bg-[#7451ff]/5 ring-2 ring-[#7451ff]/10"
                       : "border-slate-200 bg-white"
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center justify-between">
                     <div>
