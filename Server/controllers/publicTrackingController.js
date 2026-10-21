@@ -35,7 +35,8 @@ const publicTrackingController = async (req, res) => {
     // UNIVERSAL MULTI-CARRIER TRACKING LOOKUP
     // --------------------------------------------------
 
-    const tracking = await trackShipmentUniversal(awb);
+    const preferredCarrier = req.query?.carrier || null;
+    const tracking = await trackShipmentUniversal(awb, preferredCarrier);
 
     // --------------------------------------------------
     // SHIPMENT NOT FOUND
