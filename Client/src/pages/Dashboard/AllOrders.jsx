@@ -1911,7 +1911,7 @@ useEffect(() => {
                               <>
                                 <p className="text-[12px] font-semibold text-slate-700">
                                   {order?.package_type || "Box"}
-                                  {order?.shipping_mode ? `${order.shipping_mode}` : ""}
+                                  {/* {order?.shipping_mode ? `${order.shipping_mode}` : ""} */}
                                 </p>
                                 <p className="mt-0.5 text-[10px] text-slate-400">
                                   Wt: {weight > 0 ? `${weight.toFixed(2)} kg` : "—"}
