@@ -330,14 +330,14 @@ function PublicTracking() {
 
     if (!normalizedAwb) {
       setTrackingError(
-        "Please enter your AWB number."
+        "Please enter your AWB or Consignment number."
       );
       return;
     }
 
-    if (!/^\d+$/.test(normalizedAwb)) {
+    if (!/^[A-Za-z0-9\-_]{3,50}$/.test(normalizedAwb)) {
       setTrackingError(
-        "Please enter a valid AWB number."
+        "Please enter a valid AWB or Consignment number."
       );
       return;
     }
@@ -603,8 +603,7 @@ function PublicTracking() {
                     </h2>
 
                     <p className="mt-1 text-xs leading-5 text-slate-400">
-                      Enter your AWB number to view the
-                      latest shipment status.
+                      Enter your AWB or Consignment number to track live updates.
                     </p>
                   </div>
 
@@ -613,7 +612,7 @@ function PublicTracking() {
                 <form onSubmit={handleTrack}>
 
                   <label className="mb-2 block text-xs font-bold text-slate-700">
-                    AWB Number
+                    AWB / Consignment Number
                   </label>
 
                   <div className="relative">
@@ -624,12 +623,11 @@ function PublicTracking() {
 
                     <input
                       type="text"
-                      inputMode="numeric"
                       value={awb}
                       onChange={(e) => {
                         setAwb(
                           e.target.value.replace(
-                            /\D/g,
+                            /\s+/g,
                             ""
                           )
                         );
@@ -637,7 +635,7 @@ function PublicTracking() {
                         setTracking(null);
                         setTrackingError("");
                       }}
-                      placeholder="Enter AWB number"
+                      placeholder="Enter AWB / Consignment number"
                       className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/80 pl-11 pr-4 text-base font-medium text-slate-700 outline-none transition-all placeholder:text-slate-300 focus:border-[#008dd2] focus:bg-white focus:ring-4 focus:ring-[#008dd2]/10"
                     />
 
@@ -670,9 +668,23 @@ function PublicTracking() {
 
                 </form>
 
-                <div className="mt-4 flex items-center gap-2 text-[10px] font-medium text-slate-400">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                  Live tracking powered by Delhivery
+                <div className="mt-4 flex flex-wrap items-center gap-2 text-[10px] font-medium text-slate-500">
+                  <span className="flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-slate-600">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                    Delhivery (All India)
+                  </span>
+                  <span className="flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-slate-600">
+                    <span className="h-1.5 w-1.5 rounded-full bg-sky-500" />
+                    Shree Tirupati
+                  </span>
+                  <span className="flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-slate-600">
+                    <span className="h-1.5 w-1.5 rounded-full bg-indigo-500" />
+                    Shree Maruti
+                  </span>
+                  <span className="flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-slate-600">
+                    <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                    Offline Consignments
+                  </span>
                 </div>
 
               </div>
@@ -906,7 +918,7 @@ function PublicTracking() {
                     </h2>
 
                     <p className="mt-0.5 truncate text-[10px] text-slate-400 sm:text-xs">
-                      Live shipment status and Delhivery scan history
+                      Live shipment status and {tracking.carrier || "Courier"} tracking history
                     </p>
 
                   </div>
@@ -949,12 +961,25 @@ function PublicTracking() {
 
                     <div className="border-b border-slate-100 px-4 py-3.5 lg:border-r">
                       <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-                        Courier
+                        Courier Partner
                       </p>
 
-                      <p className="mt-1 truncate text-sm font-bold text-slate-800">
-                        Delhivery
-                      </p>
+                      <div className="mt-1 flex items-center justify-between gap-2">
+                        <p className="truncate text-sm font-bold text-slate-800">
+                          {tracking.carrier || "Delhivery"}
+                        </p>
+                        {tracking.tracking_url && (
+                          <a
+                            href={tracking.tracking_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 rounded-md bg-sky-50 px-2 py-0.5 text-[10px] font-semibold text-[#008dd2] transition hover:bg-sky-100"
+                            title={`View on official ${tracking.carrier || "Courier"} website`}
+                          >
+                            Official Portal ↗
+                          </a>
+                        )}
+                      </div>
                     </div>
 
                     <div className="border-b border-slate-100 px-4 py-3.5">
@@ -1058,7 +1083,7 @@ function PublicTracking() {
                       </h3>
 
                       <p className="mt-0.5 text-[10px] text-slate-400 sm:text-xs">
-                        Complete tracking history from Delhivery
+                        Complete tracking history from {tracking.carrier || "Delhivery"}
                       </p>
 
                     </div>
@@ -1141,7 +1166,7 @@ function PublicTracking() {
 
                     </div>
                   ) : (
-                    <div className="flex min-h-[160px] items-center justify-center rounded-xl bg-slate-50 text-center">
+                    <div className="flex min-h-[160px] flex-col items-center justify-center rounded-xl bg-slate-50 p-6 text-center">
 
                       <div>
 
@@ -1150,9 +1175,21 @@ function PublicTracking() {
                         </p>
 
                         <p className="mt-1 text-[10px] text-slate-400">
-                          Delhivery has not provided scan
-                          history for this shipment.
+                          {tracking.carrier || "The courier"} has not recorded scan history for this shipment yet.
                         </p>
+
+                        {tracking.tracking_url && (
+                          <div className="mt-3">
+                            <a
+                              href={tracking.tracking_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 rounded-xl border border-sky-200 bg-white px-3.5 py-1.5 text-xs font-bold text-[#008dd2] shadow-sm transition hover:bg-sky-50"
+                            >
+                              Check on {tracking.carrier} Portal ↗
+                            </a>
+                          </div>
+                        )}
 
                       </div>
 
