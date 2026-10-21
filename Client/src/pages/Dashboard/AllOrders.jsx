@@ -1229,7 +1229,7 @@ useEffect(() => {
                 className="h-10 w-full sm:min-w-[130px] max-w-[180px] rounded-xl border border-slate-200 bg-white px-2.5 text-xs text-slate-600 outline-none focus:border-[#008dd2] truncate"
                 title="Filter by Party Reference Name"
               >
-                <option value="ALL">All Reference</option>
+                <option value="ALL">All Party</option>
                 {partyOptions.map((party) => (
                   <option key={party.id} value={party.id}>
                     {party.reference_name || party.name}
