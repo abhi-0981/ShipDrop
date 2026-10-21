@@ -152,7 +152,41 @@ async function ensureTables() {
       }
     }
 
-    console.log("Core tables and manual carrier columns verified successfully.");
+    // 4. Ensure offline_orders table exists
+    await promiseDb.query(`
+      CREATE TABLE IF NOT EXISTS offline_orders (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        party_identity_id INT NULL,
+        carrier VARCHAR(100) NOT NULL,
+        consignment_no VARCHAR(100) NOT NULL,
+        consignee_name VARCHAR(255) NOT NULL,
+        mobile VARCHAR(20) NOT NULL,
+        address TEXT NULL,
+        pincode VARCHAR(10) NOT NULL,
+        city VARCHAR(100) NOT NULL,
+        state VARCHAR(100) NOT NULL,
+        package_type VARCHAR(100) NOT NULL,
+        amount DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+        shipping_mode VARCHAR(50) NOT NULL DEFAULT 'Surface',
+        product_name VARCHAR(255) NULL,
+        shipping_charge DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+        payment_mode VARCHAR(50) NOT NULL DEFAULT 'Prepaid',
+        length DECIMAL(10, 2) NULL DEFAULT 0,
+        width DECIMAL(10, 2) NULL DEFAULT 0,
+        height DECIMAL(10, 2) NULL DEFAULT 0,
+        weight DECIMAL(10, 2) NOT NULL DEFAULT 0,
+        status VARCHAR(50) NOT NULL DEFAULT 'Booked',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_offline_user_id (user_id),
+        INDEX idx_offline_consignment (consignment_no),
+        INDEX idx_offline_status (status),
+        INDEX idx_offline_party (party_identity_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
+    console.log("Core tables, offline_orders table and indexes verified successfully.");
   } catch (error) {
     console.warn("ensureTables notice:", error.message);
   }

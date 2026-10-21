@@ -179,22 +179,11 @@ const getMobile = (order) => {
   );
 };
 
-const isManualCarrierOrder = (order) => {
-  const carrier = order?.carrier;
-  return Boolean(carrier && carrier !== "Delivery");
-};
-
 const getAWB = (order) => {
-  if (isManualCarrierOrder(order)) {
-    return order?.consignment_no || "—";
-  }
   return order?.awb || order?.waybill || order?.awb_number || "—";
 };
 
 const getOrderId = (order) => {
-  if (isManualCarrierOrder(order)) {
-    return order?.order_id || "—";
-  }
   return order?.order_id || order?.id || "—";
 };
 
@@ -270,10 +259,6 @@ const getPaymentType = (order) => {
 };
 
 const getAmount = (order) => {
-  if (order?.carrier && order.carrier !== "Delivery") {
-    const manualAmt = Number(order?.manual_amount_including_gst);
-    return Number.isFinite(manualAmt) ? manualAmt : 0;
-  }
   const amount = Number(
     order?.shipping_charge ??
       order?.shipping_charges ??
@@ -399,13 +384,6 @@ const formatTime = (value) => {
 };
 
 const getStatus = (order) => {
-  if (order?.carrier && order.carrier !== "Delivery") {
-    return safeString(order?.status || "BOOKED")
-      .trim()
-      .toUpperCase()
-      .replace(/[-_]+/g, " ")
-      .replace(/\s+/g, " ");
-  }
   return safeString(
     order?.tracking_status ||
       order?.status ||
@@ -1392,82 +1370,47 @@ useEffect(() => {
                       </div>
                     )}
 
-                    {/* AWB / CONSIGNMENT ACTION BAR */}
-                    {isManual ? (
-                      <div className="space-y-1">
-                        <div className="flex items-center justify-between font-mono text-[11px] text-slate-600 bg-slate-50/70 px-2 py-1.5 rounded-lg border border-slate-100">
-                          <span className="truncate font-semibold select-none">
-                            Consignment: {order.consignment_no || "—"}
-                          </span>
+                    {/* AWB ACTION BAR */}
+                    <div className="flex items-center justify-between font-mono text-[11px] text-slate-600 bg-slate-50/70 px-2 py-1.5 rounded-lg border border-slate-100">
+                      <span
+                        onTouchEnd={() => handleTouchTracking(awb)}
+                        onClick={() => triggerTracking(awb)}
+                        className="truncate font-semibold select-none cursor-pointer"
+                        title="Double-tap or click Track to track order"
+                      >
+                        AWB: {awb}
+                      </span>
 
-                          {order.consignment_no && (
-                            <button
-                              type="button"
-                              onClick={async () => {
-                                try {
-                                  await navigator.clipboard.writeText(String(order.consignment_no));
-                                  toast.success("Consignment No copied");
-                                } catch {
-                                  toast.error("Unable to copy Consignment No");
-                                }
-                              }}
-                              className="text-slate-400 hover:text-slate-700 flex items-center p-0.5"
-                              title="Copy Consignment No"
-                            >
-                              <Icon name="copy" size={12} />
-                            </button>
-                          )}
+                      {awb && awb !== "—" && (
+                        <div className="flex items-center gap-2 shrink-0">
+                          {/* 1-TAP TRACK BUTTON FOR MOBILE TOUCH */}
+                          <button
+                            type="button"
+                            onClick={() => triggerTracking(awb)}
+                            className="flex items-center gap-1 rounded-md bg-[#008dd2]/10 px-2 py-0.5 text-[10px] font-bold text-[#008dd2] active:scale-95 transition"
+                          >
+                            <Icon name="truck" size={11} />
+                            Track
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              try {
+                                await navigator.clipboard.writeText(String(awb));
+                                toast.success("AWB copied");
+                              } catch {
+                                toast.error("Unable to copy AWB");
+                              }
+                            }}
+                            className="text-slate-400 hover:text-slate-700 flex items-center p-0.5"
+                            title="Copy AWB"
+                          >
+                            <Icon name="copy" size={12} />
+                          </button>
                         </div>
-
-                        <div className="flex items-center justify-between text-[11px] text-slate-500 px-1">
-                          <span className="font-semibold text-slate-700">{order.carrier}</span>
-                          <span className="text-slate-600 truncate max-w-[160px]" title={getShipmentName(order)}>
-                            {getShipmentName(order)}
-                          </span>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-between font-mono text-[11px] text-slate-600 bg-slate-50/70 px-2 py-1.5 rounded-lg border border-slate-100">
-                        <span
-                          onTouchEnd={() => handleTouchTracking(awb)}
-                          onClick={() => triggerTracking(awb)}
-                          className="truncate font-semibold select-none cursor-pointer"
-                          title="Double-tap or click Track to track order"
-                        >
-                          AWB: {awb}
-                        </span>
-
-                        {awb && awb !== "—" && (
-                          <div className="flex items-center gap-2 shrink-0">
-                            {/* 1-TAP TRACK BUTTON FOR MOBILE TOUCH */}
-                            <button
-                              type="button"
-                              onClick={() => triggerTracking(awb)}
-                              className="flex items-center gap-1 rounded-md bg-[#008dd2]/10 px-2 py-0.5 text-[10px] font-bold text-[#008dd2] active:scale-95 transition"
-                            >
-                              <Icon name="truck" size={11} />
-                              Track
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={async () => {
-                                try {
-                                  await navigator.clipboard.writeText(String(awb));
-                                  toast.success("AWB copied");
-                                } catch {
-                                  toast.error("Unable to copy AWB");
-                                }
-                              }}
-                              className="text-slate-400 hover:text-slate-700 flex items-center p-0.5"
-                              title="Copy AWB"
-                            >
-                              <Icon name="copy" size={12} />
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    )}
+                      )}
+                    </div>
 
                     {/* ROUTE */}
                     <div className="flex items-center justify-between text-[11px] text-slate-500 pt-0.5">
@@ -1483,9 +1426,7 @@ useEffect(() => {
                     {/* SPECS */}
                     <div className="flex items-center justify-between text-[11px] text-slate-400 border-t border-slate-50 pt-1.5">
                       <span>
-                        {isManual
-                          ? `${order.package_type || "Package"}${order.shipping_mode ? ` • ${order.shipping_mode}` : ""} • ${payment === "COD" ? "COD" : "PREPAID"} • ₹${getAmount(order).toFixed(2)}`
-                          : `${service === "AIR" ? "By Air" : "By Road"} • ${weight.toFixed(2)} Kg`}
+                        {service === "AIR" ? "By Air" : "By Road"} • {weight.toFixed(2)} Kg
                       </span>
                       <span className="font-semibold text-slate-600">
                         {formatDate(getCreatedAt(order))}
@@ -1513,28 +1454,24 @@ useEffect(() => {
                       Duplicate
                     </button>
 
-                    {!isManual && (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => handlePrintSingleLabel(order)}
-                          title="Print Shipping Label"
-                          className="flex h-8 items-center gap-1 rounded-lg bg-[#008dd2] px-3 text-xs font-bold text-white shadow-xs active:scale-95"
-                        >
-                          <Icon name="printer" size={13} />
-                          Print
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDownloadSingleLabel(order)}
-                          title="Download Shipping Label"
-                          className="flex h-8 items-center gap-1 rounded-lg border border-[#b9dff0] bg-white px-3 text-xs font-bold text-[#008dd2] active:scale-95"
-                        >
-                          <Icon name="download" size={13} />
-                          Download
-                        </button>
-                      </>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => handlePrintSingleLabel(order)}
+                      title="Print Shipping Label"
+                      className="flex h-8 items-center gap-1 rounded-lg bg-[#008dd2] px-3 text-xs font-bold text-white shadow-xs active:scale-95"
+                    >
+                      <Icon name="printer" size={13} />
+                      Print
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDownloadSingleLabel(order)}
+                      title="Download Shipping Label"
+                      className="flex h-8 items-center gap-1 rounded-lg border border-[#b9dff0] bg-white px-3 text-xs font-bold text-[#008dd2] active:scale-95"
+                    >
+                      <Icon name="download" size={13} />
+                      Download
+                    </button>
                   </div>
                 </div>
               );
@@ -1636,8 +1573,6 @@ useEffect(() => {
                     const weight = getWeight(order);
                     const status = getStatus(order);
                     const awb = getAWB(order);
-                    const isManual = isManualCarrierOrder(order);
-                    const manualCarrier = order?.carrier || "Manual";
 
                     return (
                       <tr
@@ -1695,33 +1630,33 @@ useEffect(() => {
 
                         <td className="px-2 py-2.5 break-words">
                           <div className="min-w-0">
-                            {isManual ? (
+                            {status !== "PROCESSING" && (
                               <>
-                                {/* Consignment No in place of AWB */}
                                 <div className="flex items-center gap-1.5 min-w-0">
                                   <p
-                                    className="truncate text-[13px] font-semibold text-slate-800 select-none"
-                                    title={`Consignment No: ${order?.consignment_no || awb || "—"}`}
+                                    onClick={() => triggerTracking(awb)}
+                                    title="click to track"
+                                    className="truncate text-[13px] font-semibold text-slate-800 cursor-pointer select-none hover:text-[#008dd2]"
                                   >
-                                    {order?.consignment_no || awb || "—"}
+                                    {awb}
                                   </p>
 
-                                  {(order?.consignment_no || (awb && awb !== "—")) && (
+                                  {awb && awb !== "—" && (
                                     <button
                                       type="button"
                                       onClick={async (event) => {
                                         event.stopPropagation();
                                         try {
                                           await navigator.clipboard.writeText(
-                                            String(order?.consignment_no || awb),
+                                            String(awb),
                                           );
-                                          toast.success("Consignment No copied");
+                                          toast.success("AWB copied");
                                         } catch {
-                                          toast.error("Unable to copy Consignment No");
+                                          toast.error("Unable to copy AWB");
                                         }
                                       }}
-                                      title="Copy Consignment No"
-                                      className="shrink-0 p-0.5 text-slate-400 hover:text-slate-700 transition cursor-pointer"
+                                      title="Copy AWB"
+                                      className="shrink-0 p-0.5 text-slate-400 hover:text-slate-700 transition"
                                     >
                                       <Icon name="copy" size={14} />
                                     </button>
@@ -1729,70 +1664,16 @@ useEffect(() => {
                                 </div>
 
                                 <p className="mt-0.5 text-[11px] text-slate-500">
-                                  <span className="font-semibold text-slate-700">
-                                    {manualCarrier}
-                                  </span>
-                                </p>
-
-                                <p className="mt-0.5 text-[11px] text-slate-500 truncate" title={getShipmentName(order)}>
-                                  {getShipmentName(order)}
-                                  {(order?.shipping_mode || order?.service_type) ? (
-                                    <span className="ml-1 font-semibold text-slate-700">
-                                      • {order?.shipping_mode || order?.service_type}
-                                    </span>
-                                  ) : null}
-                                </p>
-
-                             
-                              </>
-                            ) : (
-                              <>
-                                {status !== "PROCESSING" && (
-                                  <>
-                                    <div className="flex items-center gap-1.5 min-w-0">
-                                      <p
-                                        onClick={() => triggerTracking(awb)}
-                                        title="click to track"
-                                        className="truncate text-[13px] font-semibold text-slate-800 cursor-pointer select-none hover:text-[#008dd2]"
-                                      >
-                                        {awb}
-                                      </p>
-
-                                      {awb && awb !== "—" && (
-                                        <button
-                                          type="button"
-                                          onClick={async (event) => {
-                                            event.stopPropagation();
-                                            try {
-                                              await navigator.clipboard.writeText(
-                                                String(awb),
-                                              );
-                                              toast.success("AWB copied");
-                                            } catch {
-                                              toast.error("Unable to copy AWB");
-                                            }
-                                          }}
-                                          title="Copy AWB"
-                                          className="shrink-0 p-0.5 text-slate-400 hover:text-slate-700 transition"
-                                        >
-                                          <Icon name="copy" size={14} />
-                                        </button>
-                                      )}
-                                    </div>
-
-                                    <p className="mt-0.5 text-[11px] text-slate-500">
-                                      Pickup ID:{" "}
-                                      {order?.pickup_id || order?.pickupId || order?.pickup_request_id || "—"}
-                                    </p>
-                                  </>
-                                )}
-
-                                <p className="mt-0.5 text-[11px] text-slate-500">
-                                  {getShipmentName(order)} -{" "}
-                                  {service === "AIR" ? "Air" : "Surface"}
+                                  Pickup ID:{" "}
+                                  {order?.pickup_id || order?.pickupId || order?.pickup_request_id || "—"}
                                 </p>
                               </>
                             )}
+
+                            <p className="mt-0.5 text-[11px] text-slate-500">
+                              {getShipmentName(order)} -{" "}
+                              {service === "AIR" ? "Air" : "Surface"}
+                            </p>
                           </div>
                         </td>
 
@@ -1862,82 +1743,48 @@ useEffect(() => {
 
                         <td className="px-2 py-2.5 break-words">
                           <div>
-                            {isManual ? (
-                              <>
-                                <p
-                                  className={`text-[12px] font-semibold ${
-                                    payment === "COD"
-                                      ? "text-amber-600"
-                                      : "text-[#008dd2]"
-                                  }`}
-                                >
-                                  {payment === "COD" ? "COD" : "Prepaid"}
-                                </p>
-                                <p className="mt-0.5 text-[12px] font-bold text-emerald-600">
-                                  ₹{getAmount(order).toFixed(2)}
-                                </p>
-                               
-                              </>
-                            ) : (
-                              <>
-                                <p
-                                  className={`text-[12px] font-semibold ${
-                                    payment === "COD"
-                                      ? "text-amber-600"
-                                      : "text-[#008dd2]"
-                                  }`}
-                                >
-                                  {payment}
-                                </p>
+                            <p
+                              className={`text-[12px] font-semibold ${
+                                payment === "COD"
+                                  ? "text-amber-600"
+                                  : "text-[#008dd2]"
+                              }`}
+                            >
+                              {payment}
+                            </p>
 
-                                <p className="mt-0.5 text-[10px] text-slate-400">
-                                  {payment === "COD"
-                                    ? "Cash on Delivery"
-                                    : "Prepaid"}
-                                </p>
+                            <p className="mt-0.5 text-[10px] text-slate-400">
+                              {payment === "COD"
+                                ? "Cash on Delivery"
+                                : "Prepaid"}
+                            </p>
 
-                                <p className="text-[10px] text-slate-400">
-                                  Charge: ₹
-                                  {Number(order?.shipping_charge || 0).toFixed(2)}
-                                </p>
-                              </>
-                            )}
+                            <p className="text-[10px] text-slate-400">
+                              Charge: ₹
+                              {Number(order?.shipping_charge || 0).toFixed(2)}
+                            </p>
                           </div>
                         </td>
 
                         <td className="px-2 py-2.5 break-words">
                           <div>
-                            {isManual ? (
-                              <>
-                                <p className="text-[12px] font-semibold text-slate-700">
-                                  {order?.package_type || "Box"}
-                                  {/* {order?.shipping_mode ? `${order.shipping_mode}` : ""} */}
-                                </p>
-                                <p className="mt-0.5 text-[10px] text-slate-400">
-                                  Wt: {weight > 0 ? `${weight.toFixed(2)} kg` : "—"}
-                                </p>
-                              </>
-                            ) : (
-                              <>
-                                <p className="text-[12px] font-semibold text-slate-700">
-                                  Box: {getPackageCount(order)}
-                                </p>
+                            <p className="text-[12px] font-semibold text-slate-700">
+                              Box: {getPackageCount(order)}
+                            </p>
 
-                                <p className="mt-0.5 text-[10px] text-slate-400">
-                                  Wt: {weight.toFixed(2)} kg
-                                </p>
+                            <p className="mt-0.5 text-[10px] text-slate-400">
+                              Wt: {weight.toFixed(2)} kg
+                            </p>
 
-                                <p className="text-[10px] text-slate-400">
-                                  Vol: {getVolumetricWeight(order).toFixed(2)} kg
-                                </p>
-                              </>
-                            )}
+                            <p className="text-[10px] text-slate-400">
+                              Vol: {getVolumetricWeight(order).toFixed(2)} kg
+                            </p>
                           </div>
                         </td>
 
                         <td className="px-2 py-2.5 break-words">
                           <p className="text-[12px] font-medium text-slate-700">
-                            {isManual ? "—" : `#${getOrderId(order)}`}
+                            #{getOrderId(order)}
                           </p>
 
                           <p className="mt-0.5 text-[10px] text-slate-400">
@@ -1953,14 +1800,9 @@ useEffect(() => {
                             {/* Print */}
                             <button
                               type="button"
-                              disabled={isManual}
-                              onClick={() => !isManual && handlePrintSingleLabel(order)}
-                              title={isManual ? "Label not available for manual carrier orders" : "Print Shipping Label"}
-                              className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md border transition ${
-                                isManual
-                                  ? "border-slate-200 bg-slate-100 text-slate-300 cursor-not-allowed"
-                                  : "border-[#008dd2] bg-[#008dd2] text-white hover:bg-[#007dbb]"
-                              }`}
+                              onClick={() => handlePrintSingleLabel(order)}
+                              title="Print Shipping Label"
+                              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[#008dd2] bg-[#008dd2] text-white transition hover:bg-[#007dbb]"
                             >
                               <Icon name="printer" size={15} />
                             </button>
@@ -1968,14 +1810,9 @@ useEffect(() => {
                             {/* Download */}
                             <button
                               type="button"
-                              disabled={isManual}
-                              onClick={() => !isManual && handleDownloadSingleLabel(order)}
-                              title={isManual ? "Label not available for manual carrier orders" : "Download Shipping Label"}
-                              className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md border transition ${
-                                isManual
-                                  ? "border-slate-200 bg-slate-100 text-slate-300 cursor-not-allowed"
-                                  : "border-[#008dd2] bg-[#008dd2] text-white hover:bg-[#007dbb]"
-                              }`}
+                              onClick={() => handleDownloadSingleLabel(order)}
+                              title="Download Shipping Label"
+                              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[#008dd2] bg-[#008dd2] text-white transition hover:bg-[#007dbb]"
                             >
                               <Icon name="download" size={13} />
                             </button>

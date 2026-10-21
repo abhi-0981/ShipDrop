@@ -110,6 +110,7 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
     { name: "Create Order", path: "/create-order" },
     { name: "Processing Orders", path: "/processing-orders" },
     { name: "All Orders", path: "/all-orders" },
+    { name: "Offline Orders", path: "/offline-orders" },
     { name: "Manifested", path: "/manifested" },
     { name: "Not Picked", path: "/not-picked" },
     { name: "In Transit", path: "/in-transit" },
@@ -508,6 +509,10 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
                     name: "All Orders",
                     path: "/all-orders",
                     count: statusCounts.ALL,
+                  },
+                  {
+                    name: "Offline Orders",
+                    path: "/offline-orders",
                   },
                   {
                     name: "Manifested",

@@ -108,6 +108,9 @@ const publicTrackingRoutes =
 const partyIdentityRoutes =
   require("./routes/partyIdentityRoutes");
 
+const offlineOrderRoutes =
+  require("./routes/offlineOrderRoutes");
+
 
 // ======================================================
 // MIDDLEWARE
@@ -381,6 +384,17 @@ app.use(
 app.use(
   "/party-identities",
   partyIdentityRoutes
+);
+
+// OFFLINE ORDERS
+app.use(
+  "/api/offline-orders",
+  offlineOrderRoutes
+);
+
+app.use(
+  "/offline-orders",
+  offlineOrderRoutes
 );
 
 

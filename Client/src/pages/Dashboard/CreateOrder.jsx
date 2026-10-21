@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import api from "../../services/api";
 import { notifyOrderChange } from "../../services/orderEvents";
+import OfflineOrderModal from "../../components/Common/OfflineOrderModal";
 import L from "leaflet";
 import { MapContainer, Marker, TileLayer, useMapEvents } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
@@ -153,12 +154,8 @@ function CreateOrder() {
   const [partyIdentitiesLoading, setPartyIdentitiesLoading] = useState(false);
   const [selectedPartyIdentityId, setSelectedPartyIdentityId] = useState(null);
 
-  // Manual Carrier Orders
-  const [carrier, setCarrier] = useState("Delivery");
-  const [consignmentNo, setConsignmentNo] = useState("");
-  const [packageType, setPackageType] = useState("");
-  const [manualAmount, setManualAmount] = useState("");
-  const [manualShippingMode, setManualShippingMode] = useState("Surface");
+  // Offline Orders Modal
+  const [showOfflineModal, setShowOfflineModal] = useState(false);
 
   const inputClass =
     "h-10.5 sm:h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-[13px] sm:text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-[#008dd2] focus:ring-2 focus:ring-[#008dd2]/10";
@@ -342,37 +339,6 @@ dangerous_good: order.dangerous_good === true ||
     if (!/^\d{6}$/.test(pickupPincode)) {
       toast.error("Please enter a valid 6-digit pickup pincode");
       return false;
-    }
-
-    // Carrier specific validation
-    if (carrier !== "Delivery") {
-      if (!String(consignmentNo || "").trim()) {
-        toast.error("Consignment No is required for manual carrier orders");
-        return false;
-      }
-      if (!String(packageType || "").trim()) {
-        toast.error("Package Type is required for manual carrier orders");
-        return false;
-      }
-      const parsedAmt = Number(manualAmount);
-      if (
-        manualAmount === "" ||
-        manualAmount === null ||
-        manualAmount === undefined ||
-        !Number.isFinite(parsedAmt) ||
-        parsedAmt < 0
-      ) {
-        toast.error("Please enter a valid non-negative Amount (Including GST)");
-        return false;
-      }
-      if (!String(formData.payment_type || "").trim()) {
-        toast.error("Please select Payment Type (Prepaid / COD)");
-        return false;
-      }
-      if (!String(manualShippingMode || "").trim()) {
-        toast.error("Please select Shipping Mode (Surface / Air / Fast Track)");
-        return false;
-      }
     }
 
     // 2. Customer details
@@ -1436,14 +1402,6 @@ dangerous_good: order.dangerous_good === true ||
       setSelectedPartyIdentityId(null);
     }
 
-    if (!preservePickup) {
-      setCarrier("Delivery");
-    }
-    setConsignmentNo("");
-    setPackageType("");
-    setManualAmount("");
-    setManualShippingMode("Surface");
-
     setProducts([{ ...initialProduct }]);
     setPackages([{ ...initialPackage }]);
     resetShippingRate();
@@ -1767,11 +1725,6 @@ const handleRequiredFieldEnter = (e) => {
         pickup_city: formData.pickup_city,
         warehouse_id: selectedWarehouse?.id || null,
         party_identity_id: selectedPartyIdentityId ? Number(selectedPartyIdentityId) : null,
-        carrier: carrier,
-        consignment_no: carrier !== "Delivery" ? String(consignmentNo).trim() : null,
-        package_type: carrier !== "Delivery" ? String(packageType).trim() : null,
-        manual_amount_including_gst: carrier !== "Delivery" ? Number(manualAmount) : null,
-        shipping_mode: carrier !== "Delivery" ? manualShippingMode : null,
         payment_type: formData.payment_type,
         orderData,
         products: productData,
@@ -1783,13 +1736,8 @@ const handleRequiredFieldEnter = (e) => {
         throw new Error(response.data?.message || "Order creation failed");
       }
 
-      if (carrier === "Delivery") {
-        toast.success(`Order #${response.data.order_id} created successfully!`);
-        notifyOrderChange({ type: "created", orderId: response.data?.order_id });
-      } else {
-        toast.success("Manual carrier order saved successfully!");
-        notifyOrderChange({ type: "created", orderId: response.data?.id, carrier });
-      }
+      toast.success(`Order #${response.data.order_id} created successfully!`);
+      notifyOrderChange({ type: "created", orderId: response.data?.order_id });
       resetForm(true);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (error) {
@@ -1907,13 +1855,23 @@ const handleRequiredFieldEnter = (e) => {
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={isEditMode ? cancelEdit : () => resetForm()}
-            className="rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 active:scale-95 shadow-xs"
-          >
-            {isEditMode ? "Cancel Edit" : "Reset Form"}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setShowOfflineModal(true)}
+              className="flex items-center gap-1.5 rounded-xl border border-sky-200 bg-sky-50 px-3.5 py-2 text-xs font-bold text-[#008dd2] transition hover:bg-sky-100 active:scale-95 shadow-xs cursor-pointer"
+            >
+              <span>Offline Orders</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={isEditMode ? cancelEdit : () => resetForm()}
+              className="rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 active:scale-95 shadow-xs cursor-pointer"
+            >
+              {isEditMode ? "Cancel Edit" : "Reset Form"}
+            </button>
+          </div>
         </div>
 
         {/* MAIN FORM CARD */}
@@ -1933,96 +1891,96 @@ const handleRequiredFieldEnter = (e) => {
               </h2>
             </div>
 
-            {/* ROW 1: PICKUP WAREHOUSE (FULL ROW) */}
-            <div className="relative w-full">
-              <label className={labelClass}>Pickup Warehouse *</label>
-              <div className="flex items-center gap-2">
-                <div ref={warehouseDropdownRef} className="relative flex-1">
-                  <input
-                    name="pickup_address"
-                    data-enter-required="true"
-                    value={
-                      selectedWarehouse
-                        ? getWarehouseDisplayAddress(selectedWarehouse)
-                        : warehouseSearch
-                    }
-                    onChange={(e) => {
-                      setSelectedWarehouse(null);
-                      setWarehouseSearch(e.target.value);
+            {/* SINGLE ROW: PICKUP WAREHOUSE (75%) & PARTY IDENTITY (25%) */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3 sm:gap-4 items-start">
+              {/* PICKUP WAREHOUSE (75% -> md:col-span-3) */}
+              <div className="relative md:col-span-3">
+                <label className={labelClass}>Pickup Warehouse *</label>
+                <div className="flex items-center gap-2">
+                  <div ref={warehouseDropdownRef} className="relative flex-1">
+                    <input
+                      name="pickup_address"
+                      data-enter-required="true"
+                      value={
+                        selectedWarehouse
+                          ? getWarehouseDisplayAddress(selectedWarehouse)
+                          : warehouseSearch
+                      }
+                      onChange={(e) => {
+                        setSelectedWarehouse(null);
+                        setWarehouseSearch(e.target.value);
 
-                      setFormData((prev) => ({
-                        ...prev,
-                        pickup_address: "",
-                        pickup_pincode: "",
-                        pickup_city: "",
-                      }));
+                        setFormData((prev) => ({
+                          ...prev,
+                          pickup_address: "",
+                          pickup_pincode: "",
+                          pickup_city: "",
+                        }));
 
-                      setShowWarehouseDropdown(true);
-                      resetShippingRate();
-                    }}
-                    onFocus={() => {
-                      setWarehouseSearch("");
-                      setShowWarehouseDropdown(true);
-                    }}
-                    placeholder="Search saved warehouse address..."
-                    className={`${inputClass} pr-10`}
-                    autoComplete="off"
-                  />
+                        setShowWarehouseDropdown(true);
+                        resetShippingRate();
+                      }}
+                      onFocus={() => {
+                        setWarehouseSearch("");
+                        setShowWarehouseDropdown(true);
+                      }}
+                      placeholder="Search saved warehouse address..."
+                      className={`${inputClass} pr-10`}
+                      autoComplete="off"
+                    />
 
-                  {showWarehouseDropdown && (
-                    <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-40 max-h-60 overflow-y-auto rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl">
-                      {filteredWarehouses.length > 0 ? (
-                        filteredWarehouses.map((w) => (
-                          <button
-                            key={w.id}
-                            type="button"
-                            onClick={() => applyWarehouseToPickup(w)}
-                            className="flex w-full flex-col rounded-lg p-2.5 text-left hover:bg-sky-50/60 transition cursor-pointer"
-                          >
-                            <span className="text-xs font-bold text-slate-800">
-                              {w.warehouse_name}
-                            </span>
-                            <span className="mt-0.5 text-[11px] text-slate-500 truncate">
-                              {getWarehouseDisplayAddress(w)}
-                            </span>
-                          </button>
-                        ))
-                      ) : (
-                        <p className="p-3 text-center text-xs text-slate-400">
-                          No warehouse found
-                        </p>
-                      )}
-                    </div>
-                  )}
+                    {showWarehouseDropdown && (
+                      <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-40 max-h-60 overflow-y-auto rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl">
+                        {filteredWarehouses.length > 0 ? (
+                          filteredWarehouses.map((w) => (
+                            <button
+                              key={w.id}
+                              type="button"
+                              onClick={() => applyWarehouseToPickup(w)}
+                              className="flex w-full flex-col rounded-lg p-2.5 text-left hover:bg-sky-50/60 transition cursor-pointer"
+                            >
+                              <span className="text-xs font-bold text-slate-800">
+                                {w.warehouse_name}
+                              </span>
+                              <span className="mt-0.5 text-[11px] text-slate-500 truncate">
+                                {getWarehouseDisplayAddress(w)}
+                              </span>
+                            </button>
+                          ))
+                        ) : (
+                          <p className="p-3 text-center text-xs text-slate-400">
+                            No warehouse found
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={openWarehouseModal}
+                    className="flex h-10.5 sm:h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#008dd2] text-white shadow-xs transition hover:bg-[#007ab6] active:scale-90 cursor-pointer"
+                    title="Add New Warehouse"
+                  >
+                    <span className="text-xl font-bold">+</span>
+                  </button>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={openWarehouseModal}
-                  className="flex h-10.5 sm:h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#008dd2] text-white shadow-xs transition hover:bg-[#007ab6] active:scale-90 cursor-pointer"
-                  title="Add New Warehouse"
-                >
-                  <span className="text-xl font-bold">+</span>
-                </button>
+                {selectedWarehouse && (
+                  <div className="mt-2 flex items-center gap-2 text-[11px] font-medium text-slate-500">
+                    <span className="rounded-md bg-emerald-50 px-2 py-0.5 font-bold text-emerald-600">
+                      {selectedWarehouse.warehouse_name}
+                    </span>
+                    <span>PIN: {selectedWarehouse.pincode}</span>
+                  </div>
+                )}
               </div>
 
-              {selectedWarehouse && (
-                <div className="mt-2 flex items-center gap-2 text-[11px] font-medium text-slate-500">
-                  <span className="rounded-md bg-emerald-50 px-2 py-0.5 font-bold text-emerald-600">
-                    {selectedWarehouse.warehouse_name}
-                  </span>
-                  <span>PIN: {selectedWarehouse.pincode}</span>
-                </div>
-              )}
-            </div>
-
-            {/* ROW 2: PARTY IDENTITY & CARRIER */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 items-start pt-1">
-              {/* PARTY IDENTITY */}
-              <div className="relative">
+              {/* PARTY IDENTITY (25% -> md:col-span-1) */}
+              <div className="relative md:col-span-1">
                 <div className="flex items-center justify-between mb-1.5 gap-1.5">
                   <label className="block text-[11px] sm:text-xs font-bold text-slate-600 truncate">
-                    Party Identity 
+                    Party Identity
                   </label>
                   <Link
                     to="/settings/party-identities"
@@ -2043,7 +2001,7 @@ const handleRequiredFieldEnter = (e) => {
                     disabled={partyIdentitiesLoading}
                     className={`${inputClass} appearance-none pr-8 cursor-pointer truncate text-xs`}
                   >
-                    <option value="">-- No Party Selected --</option>
+                    <option value="">-- No Party --</option>
                     {partyIdentities.map((party) => (
                       <option key={party.id} value={party.id}>
                         {party.reference_name || party.name}
@@ -2061,17 +2019,17 @@ const handleRequiredFieldEnter = (e) => {
                   (() => {
                     const party = partyIdentities.find((p) => Number(p.id) === Number(selectedPartyIdentityId));
                     return (
-                      <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px] font-medium text-slate-500">
+                      <div className="mt-2 flex items-center justify-between gap-1 text-[11px] font-medium text-slate-500">
                         <span
                           className="rounded-md bg-sky-50 px-2 py-0.5 font-bold text-[#008dd2] border border-sky-100 truncate"
                           title={party?.name}
                         >
-                          {party?.name || "Selected"}
+                          {party?.reference_name || party?.name || "Selected"}
                         </span>
                         <button
                           type="button"
                           onClick={() => setSelectedPartyIdentityId(null)}
-                          className="text-slate-400 hover:text-slate-600 text-[10px] underline shrink-0 cursor-pointer ml-auto"
+                          className="text-slate-400 hover:text-slate-600 text-[10px] underline shrink-0 cursor-pointer"
                         >
                           Clear
                         </button>
@@ -2080,156 +2038,11 @@ const handleRequiredFieldEnter = (e) => {
                   })()
                 ) : (
                   <p className="mt-2 text-[10px] sm:text-[11px] text-slate-400 truncate">
-                    Select party
+                    Optional reference
                   </p>
                 )}
               </div>
-
-              {/* CARRIER DROPDOWN */}
-              <div className="relative">
-                <div className="flex items-center justify-between mb-1.5 gap-1.5">
-                  <label className="block text-[11px] sm:text-xs font-bold text-slate-600 truncate">
-                    Carrier *
-                  </label>
-                </div>
-
-                <div className="relative">
-                  <select
-                    name="carrier"
-                    value={carrier}
-                    onChange={(e) => {
-                      setCarrier(e.target.value);
-                      resetShippingRate();
-                    }}
-                    className={`${inputClass} appearance-none pr-8 cursor-pointer truncate text-xs`}
-                  >
-                    <option value="Delivery">Delivery</option>
-                    <option value="MARK EXPRESS">MARK EXPRESS</option>
-                    <option value="TIRUPATI COURIER">TIRUPATI COURIER</option>
-                    <option value="DTDC">DTDC</option>
-                    <option value="TRACKON COURIER">TRACKON COURIER</option>
-                    <option value="SELF">SELF</option>
-                  </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-slate-400">
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
-                </div>
-
-                <p className="mt-2 text-[10px] sm:text-[11px] text-slate-400 truncate">
-                  {carrier === "Delivery"
-                    ? "Standard courier booking"
-                    : `Manual carrier dispatch via ${carrier}`}
-                </p>
-              </div>
             </div>
-
-            {/* CONDITIONAL MANUAL CARRIER FIELDS (WHEN CARRIER !== 'Delivery') */}
-            {carrier !== "Delivery" && (
-              <div className="pt-3.5 border-t border-slate-100 rounded-xl bg-slate-50/80 p-3.5 sm:p-4.5 border border-slate-200/80 space-y-3 animate-in fade-in duration-200">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="h-2 w-2 rounded-full bg-[#008dd2]" />
-                    <h3 className="text-xs font-bold uppercase tracking-wide text-slate-700">
-                      Manual Carrier Details
-                    </h3>
-                  </div>
-                  <span className="rounded-md bg-[#008dd2]/10 border border-[#008dd2]/20 px-2 py-0.5 text-[11px] font-bold text-[#008dd2]">
-                    {carrier}
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                  {/* CONSIGNMENT NO */}
-                  <div>
-                    <label className={labelClass}>Consignment No *</label>
-                    <input
-                      type="text"
-                      name="consignment_no"
-                      value={consignmentNo}
-                      onChange={(e) => setConsignmentNo(e.target.value)}
-                      placeholder="e.g. ME123456789"
-                      className={inputClass}
-                      autoComplete="off"
-                      required
-                    />
-                  </div>
-
-                  {/* PACKAGE TYPE */}
-                  <div>
-                    <label className={labelClass}>Package Type *</label>
-                    <div className="relative">
-                      <select
-                        name="package_type"
-                        value={packageType}
-                        onChange={(e) => setPackageType(e.target.value)}
-                        className={`${inputClass} appearance-none pr-8 cursor-pointer text-xs`}
-                        required
-                      >
-                        <option value="">-- Select Package Type --</option>
-                        <option value="Box">Box</option>
-                        <option value="Flyer">Flyer</option>
-                        <option value="Document">Document</option>
-                        <option value="Packet">Packet</option>
-                        <option value="Carton">Carton</option>
-                        <option value="Wooden Box">Wooden Box</option>
-                        <option value="Other">Other</option>
-                      </select>
-                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-slate-400">
-                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* AMOUNT (INCLUDING GST) */}
-                  <div>
-                    <label className={labelClass}>Amount (Including GST) *</label>
-                    <div className="relative">
-                      <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-xs font-bold text-slate-400">
-                        ₹
-                      </span>
-                      <input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        name="manual_amount_including_gst"
-                        value={manualAmount}
-                        onChange={(e) => setManualAmount(e.target.value)}
-                        placeholder="0.00"
-                        className={`${inputClass} pl-7`}
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  {/* SHIPPING MODE (SURFACE / AIR / FAST TRACK) */}
-                  <div>
-                    <label className={labelClass}>Shipping Mode *</label>
-                    <div className="relative">
-                      <select
-                        name="manual_shipping_mode"
-                        value={manualShippingMode}
-                        onChange={(e) => setManualShippingMode(e.target.value)}
-                        className={`${inputClass} appearance-none pr-8 cursor-pointer text-xs font-medium`}
-                        required
-                      >
-                        <option value="Surface">Surface</option>
-                        <option value="Air">Air</option>
-                        <option value="Fast Track">Fast Track</option>
-                      </select>
-                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-slate-400">
-                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
 
           {/* 2. CONSIGNEE / DELIVERY DETAILS */}
@@ -2758,42 +2571,30 @@ required
               </div>
 
               {/* ACTION BUTTONS */}
-              {carrier === "Delivery" ? (
-                <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:gap-2.5 pt-2 sm:pt-0">
-                  <button
-                    type="button"
-                    onClick={handleShip}
-                    disabled={rateLoading}
-                    className="flex h-11 items-center justify-center rounded-xl bg-[#008dd2] px-5 text-xs font-bold text-white shadow-sm shadow-[#008dd2]/20 transition hover:bg-[#007ab6] active:scale-95 disabled:opacity-60 cursor-pointer"
-                  >
-                    {rateLoading ? "Shipping..." : "Ship Now"}
-                  </button>
+              <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:gap-2.5 pt-2 sm:pt-0">
+                <button
+                  type="button"
+                  onClick={handleShip}
+                  disabled={rateLoading}
+                  className="flex h-11 items-center justify-center rounded-xl bg-[#008dd2] px-5 text-xs font-bold text-white shadow-sm shadow-[#008dd2]/20 transition hover:bg-[#007ab6] active:scale-95 disabled:opacity-60 cursor-pointer"
+                >
+                  {rateLoading ? "Shipping..." : "Ship Now"}
+                </button>
 
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="flex h-11 items-center justify-center rounded-xl border border-slate-300 bg-white px-5 text-xs font-bold text-slate-700 shadow-xs transition hover:bg-slate-50 active:scale-95 disabled:opacity-60 cursor-pointer"
-                  >
-                    {loading
-                      ? isEditMode
-                        ? "Updating..."
-                        : "Saving..."
-                      : isEditMode
-                        ? "Update Order"
-                        : "Save & Next"}
-                  </button>
-                </div>
-              ) : (
-                <div className="flex items-center justify-end pt-2 sm:pt-0">
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="flex h-11 min-w-[130px] items-center justify-center rounded-xl bg-[#008dd2] px-6 text-xs font-bold text-white shadow-sm shadow-[#008dd2]/20 transition hover:bg-[#007ab6] active:scale-95 disabled:opacity-60 cursor-pointer"
-                  >
-                    {loading ? "Saving..." : "Save"}
-                  </button>
-                </div>
-              )}
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="flex h-11 items-center justify-center rounded-xl border border-slate-300 bg-white px-5 text-xs font-bold text-slate-700 shadow-xs transition hover:bg-slate-50 active:scale-95 disabled:opacity-60 cursor-pointer"
+                >
+                  {loading
+                    ? isEditMode
+                      ? "Updating..."
+                      : "Saving..."
+                    : isEditMode
+                      ? "Update Order"
+                      : "Save & Next"}
+                </button>
+              </div>
             </div>
           </div>
         </form>
@@ -3032,6 +2833,12 @@ required
           </div>
         </div>
       )}
+
+      {/* OFFLINE ORDER CREATION MODAL */}
+      <OfflineOrderModal
+        isOpen={showOfflineModal}
+        onClose={() => setShowOfflineModal(false)}
+      />
     </div>
   );
 }

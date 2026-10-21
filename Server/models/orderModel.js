@@ -692,6 +692,7 @@ const getAllOrders = (user_id, page = 1, limit = 50, search = "", status = "", c
 
     WHERE
       o.user_id = ?
+      AND (o.carrier IS NULL OR o.carrier = 'Delivery')
       ${statusCondition}
       AND (
         ? = ''
@@ -701,8 +702,6 @@ const getAllOrders = (user_id, page = 1, limit = 50, search = "", status = "", c
         OR TRIM(COALESCE(o.mobile, '')) LIKE ?
         OR UPPER(TRIM(COALESCE(pi.name, ''))) LIKE UPPER(?)
         OR UPPER(TRIM(COALESCE(pi.reference_name, ''))) LIKE UPPER(?)
-        OR UPPER(TRIM(COALESCE(o.consignment_no, ''))) LIKE UPPER(?)
-        OR UPPER(TRIM(COALESCE(o.carrier, ''))) LIKE UPPER(?)
       )
 
     ORDER BY o.id DESC
@@ -717,6 +716,7 @@ const getAllOrders = (user_id, page = 1, limit = 50, search = "", status = "", c
       AND pi.user_id = o.user_id
     WHERE
       o.user_id = ?
+      AND (o.carrier IS NULL OR o.carrier = 'Delivery')
       ${statusCondition}
       AND (
         ? = ''
@@ -726,8 +726,6 @@ const getAllOrders = (user_id, page = 1, limit = 50, search = "", status = "", c
         OR TRIM(COALESCE(o.mobile, '')) LIKE ?
         OR UPPER(TRIM(COALESCE(pi.name, ''))) LIKE UPPER(?)
         OR UPPER(TRIM(COALESCE(pi.reference_name, ''))) LIKE UPPER(?)
-        OR UPPER(TRIM(COALESCE(o.consignment_no, ''))) LIKE UPPER(?)
-        OR UPPER(TRIM(COALESCE(o.carrier, ''))) LIKE UPPER(?)
       )
   `;
 
@@ -735,8 +733,6 @@ const getAllOrders = (user_id, page = 1, limit = 50, search = "", status = "", c
     user_id,
     ...statusParams,
     searchTerm,
-    searchValue,
-    searchValue,
     searchValue,
     searchValue,
     searchValue,
@@ -751,8 +747,6 @@ const getAllOrders = (user_id, page = 1, limit = 50, search = "", status = "", c
     user_id,
     ...countStatusParams,
     searchTerm,
-    searchValue,
-    searchValue,
     searchValue,
     searchValue,
     searchValue,

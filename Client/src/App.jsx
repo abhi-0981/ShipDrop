@@ -38,6 +38,7 @@ const Cancelled = lazy(() => import("./pages/Dashboard/Cancelled"));
 const Returned = lazy(() => import("./pages/Dashboard/Returned"));
 const Pending = lazy(() => import("./pages/Dashboard/Pending"));
 const CODRemittance = lazy(() => import("./pages/Dashboard/CODRemittance"));
+const OfflineOrders = lazy(() => import("./pages/Dashboard/OfflineOrders"));
 
 // Elegant, ultra-lightweight transition fallback
 const RouteLoader = () => (
@@ -127,6 +128,16 @@ function App() {
               element={
                 <Suspense fallback={<RouteLoader />}>
                   <AllOrders />
+                </Suspense>
+              }
+            />
+
+            {/* Offline Orders */}
+            <Route
+              path="/offline-orders"
+              element={
+                <Suspense fallback={<RouteLoader />}>
+                  <OfflineOrders />
                 </Suspense>
               }
             />
