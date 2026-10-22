@@ -2063,7 +2063,7 @@ function CreateOrder() {
               <div className="relative md:col-span-1">
                 <div className="flex items-center justify-between mb-1.5 gap-1.5">
                   <label className="block text-[11px] sm:text-xs font-bold text-slate-600 truncate">
-                    Client Identity
+                    Client / Party Identity
                   </label>
                   <Link
                     to="/settings/party-identities"
@@ -2084,10 +2084,11 @@ function CreateOrder() {
                     disabled={partyIdentitiesLoading}
                     className={`${inputClass} appearance-none pr-8 cursor-pointer truncate text-xs`}
                   >
-                    <option value="">--  No Client --</option>
-                    {partyIdentities.map((party) => ( 
+                    <option value="">-- No Client (Cash Order) --</option>
+                    {partyIdentities.map((party) => (
                       <option key={party.id} value={party.id}>
-                        {party.reference_name || party.name}
+                        {party.reference_name || party.name}{" "}
+                        {party.name ? `— ${party.name}` : ""}
                       </option>
                     ))}
                   </select>
@@ -2107,7 +2108,8 @@ function CreateOrder() {
                           className="rounded-md bg-sky-50 px-2 py-0.5 font-bold text-[#008dd2] border border-sky-100 truncate"
                           title={party?.name}
                         >
-                          {party?.reference_name || party?.name || "Selected"}
+                          {party?.reference_name || party?.name}
+                          {party?.name && party?.reference_name ? ` — ${party.name}` : ""}
                         </span>
                         <button
                           type="button"
