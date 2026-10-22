@@ -60,6 +60,7 @@ export default function CreateOfflineOrder() {
     height: "",
     weight: "",
     payment_mode: "Prepaid",
+    remark: "",
   };
 
   const [formData, setFormData] = useState({ ...initialForm });
@@ -152,6 +153,7 @@ export default function CreateOfflineOrder() {
       height: order.height !== null && order.height !== undefined ? String(order.height) : "",
       weight: order.weight !== null && order.weight !== undefined ? String(order.weight) : "",
       payment_mode: order.payment_mode || "Prepaid",
+      remark: order.remark || "",
     });
 
     if (!isKnownCarrier && order.carrier) {
@@ -283,6 +285,7 @@ export default function CreateOfflineOrder() {
         height: Number(formData.height) || 0,
         weight: Number(formData.weight),
         payment_mode: formData.payment_mode,
+        remark: formData.remark.trim() || null,
       };
 
       if (isEditMode) {
@@ -291,17 +294,23 @@ export default function CreateOfflineOrder() {
           throw new Error(response.data?.message || "Failed to update offline order");
         }
         toast.success("Offline Order updated successfully!");
+        notifyOrderChange();
+        window.dispatchEvent(new Event("offlineOrdersUpdated"));
+        navigate("/offline-orders");
       } else {
         const response = await api.post("/offline-orders/create", payload);
         if (!response.data?.success) {
           throw new Error(response.data?.message || "Failed to create offline order");
         }
         toast.success("Offline Order created successfully!");
-      }
+        notifyOrderChange();
+        window.dispatchEvent(new Event("offlineOrdersUpdated"));
 
-      notifyOrderChange();
-      window.dispatchEvent(new Event("offlineOrdersUpdated"));
-      navigate("/offline-orders");
+        // Reset form & stay on page, smoothly scroll to top
+        setFormData({ ...initialForm });
+        setCustomCarrier("");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
     } catch (err) {
       toast.error(
         err.response?.data?.message || err.message || "Failed to save offline order"
@@ -821,6 +830,19 @@ export default function CreateOfflineOrder() {
                   required
                 />
               </div>
+            </div>
+
+            {/* REMARK / SPECIAL INSTRUCTIONS */}
+            <div className="col-span-full">
+              <label className={labelClass}>Remark / Notes (Optional)</label>
+              <input
+                type="text"
+                name="remark"
+                value={formData.remark}
+                onChange={handleChange}
+                placeholder="e.g. Handle with care, Urgent shipment, Call before delivery, etc."
+                className={inputClass}
+              />
             </div>
           </div>
 

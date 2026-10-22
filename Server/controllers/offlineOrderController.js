@@ -39,6 +39,7 @@ const createOfflineOrderController = async (req, res) => {
       width,
       height,
       weight,
+      remark,
     } = req.body;
 
     // Validation
@@ -142,6 +143,7 @@ const createOfflineOrderController = async (req, res) => {
       width: Number(width) || 0,
       height: Number(height) || 0,
       weight: parsedWeight,
+      remark: remark ? String(remark).trim() : null,
     };
 
     createOfflineOrder(orderData, (error, created) => {
@@ -203,6 +205,7 @@ const updateOfflineOrderController = async (req, res) => {
       width,
       height,
       weight,
+      remark,
     } = req.body;
 
     const cleanCarrier = String(carrier || "").trim();
@@ -303,6 +306,7 @@ const updateOfflineOrderController = async (req, res) => {
       width: Number(width) || 0,
       height: Number(height) || 0,
       weight: parsedWeight,
+      remark: remark ? String(remark).trim() : null,
     };
 
     updateOfflineOrder(orderId, userId, orderData, (error, updated) => {

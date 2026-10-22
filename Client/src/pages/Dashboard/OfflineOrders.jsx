@@ -185,6 +185,7 @@ export default function OfflineOrders() {
       "Shipping Charge (Incl. GST)",
       "Payment Mode",
       "Weight (Kg)",
+      "Remark",
       "Status",
       "Created At",
     ];
@@ -214,6 +215,7 @@ export default function OfflineOrders() {
         Number(charge).toFixed(2),
         `"${o.payment_mode || ""}"`,
         Number(o.weight || 0).toFixed(2),
+        `"${(o.remark || "").replace(/"/g, '""')}"`,
         `"${o.status || "Booked"}"`,
         `"${new Date(o.created_at).toLocaleString()}"`,
       ];
@@ -777,6 +779,16 @@ export default function OfflineOrders() {
                               {o.product_name ? `${o.product_name} - ` : ""}
                               {o.shipping_mode || "Surface"}
                             </p>
+
+                            {o.remark && (
+                              <div
+                                className="mt-1 flex items-center gap-1 rounded bg-amber-50/90 border border-amber-200/60 px-1.5 py-0.5 text-[10px] text-amber-800"
+                                title={`Remark: ${o.remark}`}
+                              >
+                                <span className="font-bold text-amber-700 shrink-0">Note:</span>
+                                <span className="truncate">{o.remark}</span>
+                              </div>
+                            )}
                           </div>
                         </td>
 
@@ -1110,6 +1122,16 @@ export default function OfflineOrders() {
                         Charge: ₹{charge.toFixed(2)}
                       </span>
                     </div>
+
+                    {o.remark && (
+                      <div
+                        className="flex items-center gap-1 rounded-lg bg-amber-50/90 border border-amber-200/60 px-2 py-1 text-[11px] text-amber-800"
+                        title={`Remark: ${o.remark}`}
+                      >
+                        <span className="font-bold text-amber-700 shrink-0">Note:</span>
+                        <span className="truncate">{o.remark}</span>
+                      </div>
+                    )}
                   </div>
 
                   {/* CARD ACTIONS */}
