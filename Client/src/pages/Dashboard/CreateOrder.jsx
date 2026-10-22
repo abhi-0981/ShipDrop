@@ -2141,8 +2141,8 @@ function CreateOrder() {
             </div>
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {/* ROW 1: Customer Name & Mobile Number (2 cols each on lg) */}
-              <div ref={previousCustomerDropdownRef} className="relative sm:col-span-1 lg:col-span-2">
+              {/* ROW 1: Customer Name (25%), Mobile Number (25%), Delivery Address (50%) */}
+              <div ref={previousCustomerDropdownRef} className="relative sm:col-span-1 lg:col-span-1">
                 <label className={labelClass}>Customer Name *</label>
                 <div className="relative">
                   <input
@@ -2202,7 +2202,7 @@ function CreateOrder() {
                 )}
               </div>
 
-              <div className="sm:col-span-1 lg:col-span-2">
+              <div className="sm:col-span-1 lg:col-span-1">
                 <label className={labelClass}>Mobile Number *</label>
                 <input
                   name="mobile"
@@ -2217,8 +2217,8 @@ function CreateOrder() {
                 />
               </div>
 
-              {/* ROW 2: Delivery Address (Full Row Width) */}
-              <div className="col-span-full">
+              {/* Delivery Address (50% of the row) */}
+              <div className="sm:col-span-2 lg:col-span-2">
                 <label className={labelClass}>Delivery Address *</label>
                 <input
                   name="address_line1"
