@@ -2543,7 +2543,7 @@ function CreateOrder() {
                           handlePackageChange(index, "width", e.target.value)
                         }
                         placeholder="W"
-                        className={inputClass}
+                        className={inputClass} 
                       />
                     </div>
 
