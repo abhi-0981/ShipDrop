@@ -544,8 +544,8 @@ export default function CreateOfflineOrder() {
               </select>
             </div>
 
-            {/* CUSTOMER NAME */}
-            <div className="sm:col-span-1 lg:col-span-2">
+            {/* CUSTOMER NAME (25%) */}
+            <div className="lg:col-span-1">
               <label className={labelClass}>
                 Customer Name <span className="text-rose-500">*</span>
               </label>
@@ -560,8 +560,8 @@ export default function CreateOfflineOrder() {
               />
             </div>
 
-            {/* MOBILE NUMBER */}
-            <div className="sm:col-span-1 lg:col-span-2">
+            {/* MOBILE NUMBER (25%) */}
+            <div className="lg:col-span-1">
               <label className={labelClass}>
                 Mobile Number <span className="text-rose-500">*</span>
               </label>
@@ -580,23 +580,20 @@ export default function CreateOfflineOrder() {
               />
             </div>
 
-            {/* COMPLETE DELIVERY ADDRESS: RIGHT AFTER NUMBER */}
-            <div className="col-span-full sm:col-span-2 lg:col-span-4">
+            {/* COMPLETE DELIVERY ADDRESS (50%) */}
+            <div className="sm:col-span-2 lg:col-span-2">
               <label className={labelClass}>
                 Complete Delivery Address <span className="text-rose-500">*</span>
               </label>
-              <textarea
-                rows={2}
+              <input
+                type="text"
                 name="address"
                 value={formData.address}
                 onChange={handleChange}
-                placeholder="House / Flat No, Building / Apartment, Street, Colony, Landmark"
-                className="w-full rounded-xl border border-slate-200 bg-white p-3 sm:p-3.5 text-[13px] sm:text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-[#008dd2] focus:ring-2 focus:ring-[#008dd2]/10 resize-none shadow-xs"
+                placeholder="House / Flat No, Street, Landmark"
+                className={inputClass}
                 required
               />
-              <p className="mt-1 text-[11px] text-slate-400">
-                Provide detailed doorstep delivery address with flat/house no, street, and nearby landmark.
-              </p>
             </div>
 
             {/* ROW BELOW ADDRESS: PINCODE, CITY, STATE */}
