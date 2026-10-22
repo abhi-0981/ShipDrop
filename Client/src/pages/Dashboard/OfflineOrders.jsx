@@ -899,12 +899,12 @@ export default function OfflineOrders() {
                         {/* REMARK (DEDICATED COLUMN) */}
                         <td className="px-2 py-2.5 break-words">
                           {o.remark ? (
-                            <span
-                              className="inline-block max-w-full truncate rounded bg-amber-50/90 border border-amber-200/80 px-2 py-0.5 text-[11px] font-medium text-amber-900"
+                            <p
+                              className="text-[12px] font-normal text-slate-800 break-words whitespace-normal leading-snug"
                               title={o.remark}
                             >
                               {o.remark}
-                            </span>
+                            </p>
                           ) : (
                             <span className="text-[12px] text-slate-300 font-normal">
                               —
@@ -1138,11 +1138,11 @@ export default function OfflineOrders() {
 
                     {/* REMARK IN MOBILE CARD */}
                     {o.remark && (
-                      <div className="flex items-start gap-1 rounded-lg bg-amber-50/80 border border-amber-200/70 p-2 text-[11px] text-amber-800">
-                        <span className="font-bold text-amber-900 shrink-0">
+                      <div className="flex items-start gap-1.5 rounded-lg bg-slate-50 border border-slate-200/80 p-2 text-[11px] text-slate-800">
+                        <span className="font-semibold text-slate-600 shrink-0">
                           Remark:
                         </span>
-                        <span className="break-words">{o.remark}</span>
+                        <span className="break-words whitespace-normal text-slate-800">{o.remark}</span>
                       </div>
                     )}
                   </div>
