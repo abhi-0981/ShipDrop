@@ -368,11 +368,11 @@ export default function CreateOfflineOrder() {
                   {isEditMode ? `Edit Offline Order #${editId}` : "Create Offline Order"}
                 </h1>
                 <span className="rounded-md bg-sky-50 px-2 py-0.5 text-[10px] font-bold text-[#008dd2] border border-sky-200/60 uppercase">
-                  Manual Carrier
+                  Offline Carrier
                 </span>
               </div>
               <p className="mt-0.5 text-xs text-slate-400">
-                Record manual shipments (Mark Express, Tirupati, DTDC, Trackon, Self, etc.)
+                Record Offline shipments (Mark Express, Tirupati, DTDC, Trackon, Self, etc.)
               </p>
             </div>
           </div>
@@ -430,7 +430,7 @@ export default function CreateOfflineOrder() {
                   Shipment & Delivery Details
                 </h2>
                 <p className="text-[11px] text-slate-400">
-                  Manual courier partner, consignment tracking number, and customer delivery address.
+                  Offline courier partner, consignment tracking number, and customer delivery address.
                 </p>
               </div>
             </div>
@@ -484,14 +484,14 @@ export default function CreateOfflineOrder() {
             {/* CONSIGNMENT NUMBER */}
             <div>
               <label className={labelClass}>
-                Consignment / AWB No <span className="text-rose-500">*</span>
+                AWB No <span className="text-rose-500">*</span>
               </label>
               <input
                 type="text"
                 name="consignment_no"
                 value={formData.consignment_no}
                 onChange={handleChange}
-                placeholder="e.g. 787878787878"
+                placeholder="AWB"
                 className={`${inputClass} font-mono`}
                 required
               />
@@ -525,7 +525,7 @@ export default function CreateOfflineOrder() {
 
             {/* PARTY IDENTITY */}
             <div>
-              <label className={labelClass}>Party / Client (Optional)</label>
+              <label className={labelClass}>Client</label>
               <select
                 name="party_identity_id"
                 value={formData.party_identity_id}
@@ -533,7 +533,7 @@ export default function CreateOfflineOrder() {
                 disabled={partiesLoading}
                 className={inputClass}
               >
-                <option value="">No Party (Direct)</option>
+                <option value="">No Party</option>
                 {partyIdentities.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.reference_name
@@ -554,7 +554,7 @@ export default function CreateOfflineOrder() {
                 name="consignee_name"
                 value={formData.consignee_name}
                 onChange={handleChange}
-                placeholder="e.g. Sunil Kumar"
+                placeholder="Abhishek Singh"
                 className={inputClass}
                 required
               />
@@ -601,7 +601,7 @@ export default function CreateOfflineOrder() {
               {/* PINCODE */}
               <div>
                 <label className={labelClass}>
-                  Destination Pincode <span className="text-rose-500">*</span>
+                   Pincode <span className="text-rose-500">*</span>
                 </label>
                 <div className="relative">
                   <input
@@ -693,13 +693,13 @@ export default function CreateOfflineOrder() {
 
             {/* PRODUCT NAME */}
             <div>
-              <label className={labelClass}>Product / Item Name</label>
+              <label className={labelClass}>Product Name</label>
               <input
                 type="text"
                 name="product_name"
                 value={formData.product_name}
                 onChange={handleChange}
-                placeholder="e.g. Saree, Apparel, Electronics"
+                placeholder="prodcut name"
                 className={inputClass}
               />
             </div>
