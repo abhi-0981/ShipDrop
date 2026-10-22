@@ -12,10 +12,13 @@ import {
   HiOutlineOfficeBuilding,
   HiOutlinePhone,
   HiOutlineLocationMarker,
+  HiOutlineDocumentText,
   HiOutlineBookmark,
 } from "react-icons/hi";
 import api from "../../services/api";
 import { TableSkeleton } from "../../components/Common/TableSkeleton";
+
+const PRIMARY = "#008dd2";
 
 function formatDate(dateString) {
   if (!dateString) return "—";
@@ -89,11 +92,6 @@ export default function PartyIdentities() {
     fetchIdentities();
   }, []);
 
-  // Total linked orders across all identities
-  const totalLinkedOrders = useMemo(() => {
-    return identities.reduce((sum, item) => sum + (Number(item.linked_orders_count) || 0), 0);
-  }, [identities]);
-
   // Filtered identities based on search across name, reference, company, gst, phone, address
   const filteredIdentities = useMemo(() => {
     const query = searchTerm.trim().toLowerCase();
@@ -107,6 +105,11 @@ export default function PartyIdentities() {
       item.address?.toLowerCase().includes(query)
     );
   }, [identities, searchTerm]);
+
+  // Total linked orders across all identities
+  const totalLinkedOrders = useMemo(() => {
+    return identities.reduce((sum, item) => sum + (Number(item.linked_orders_count) || 0), 0);
+  }, [identities]);
 
   // Open Create Modal
   const handleOpenCreate = () => {
@@ -259,25 +262,20 @@ export default function PartyIdentities() {
     <div className="min-h-screen bg-[#f5f8fc] px-3 sm:px-4 py-4 sm:py-5 pb-24 lg:pb-8">
       <div className="mx-auto max-w-[1450px]">
         {/* ==================================================
-            1. TOP HEADER (MATCHES ALLORDERS & DASHBOARD)
+            TOP HEADER
         ================================================== */}
-        <div className="mb-4 rounded-2xl border border-slate-200/90 bg-white p-4 sm:p-5 shadow-[0_1px_3px_rgba(15,23,42,0.03)]">
+        <div className="mb-3 rounded-2xl border border-slate-200 bg-white px-4 sm:px-5 py-3.5 sm:py-4 shadow-[0_1px_2px_rgba(15,23,42,0.02)]">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-sky-50 text-[#008dd2] ring-1 ring-sky-100 shadow-2xs">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-50 text-[#008dd2]">
                 <HiOutlineIdentification size={22} />
               </div>
               <div>
-                <div className="flex items-center gap-2">
-                  <h1 className="text-base sm:text-lg font-bold tracking-tight text-slate-900">
-                    Party Identities
-                  </h1>
-                  <span className="rounded-full bg-sky-50 px-2 py-0.5 text-[10px] font-bold text-[#008dd2] border border-sky-100">
-                    Client Profiles
-                  </span>
-                </div>
-                <p className="mt-0.5 text-xs text-slate-400">
-                  Create and manage client or party profiles (company, GST, phone, address) to tag orders.
+                <h1 className="text-lg sm:text-xl font-bold tracking-tight text-slate-800">
+                  Party Identities
+                </h1>
+                <p className="text-xs text-slate-400">
+                  Create and manage client or party profiles (company, GST, phone, address) to tag orders
                 </p>
               </div>
             </div>
@@ -285,7 +283,7 @@ export default function PartyIdentities() {
             <button
               type="button"
               onClick={handleOpenCreate}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#008dd2] px-4 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-sm shadow-[#008dd2]/20 transition hover:bg-[#007ab6] active:scale-95 cursor-pointer"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#008dd2] px-4 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-xs transition hover:bg-[#007ab6] active:scale-95"
             >
               <HiOutlinePlus size={16} />
               <span>Add Party Identity</span>
@@ -294,69 +292,56 @@ export default function PartyIdentities() {
         </div>
 
         {/* ==================================================
-            2. STAT METRIC CARDS & SEARCH ROW (SHIPDROP THEME)
+            STAT CARDS
         ================================================== */}
-        <div className="mb-4 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-          {/* TOTAL PARTIES */}
-          <div className="flex items-center justify-between rounded-2xl border border-slate-200/90 bg-white p-4 shadow-[0_1px_3px_rgba(15,23,42,0.02)]">
-            <div>
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                Total Parties
+        <div className="mb-3.5 grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3">
+          <div className="rounded-2xl border border-slate-200 bg-white p-3.5 sm:p-4 shadow-[0_1px_2px_rgba(15,23,42,0.02)]">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              Total Parties
+            </span>
+            <div className="mt-1 flex items-baseline gap-2">
+              <span className="text-xl sm:text-2xl font-bold text-slate-800">
+                {identities.length}
               </span>
-              <div className="mt-1 flex items-baseline gap-2">
-                <span className="text-2xl sm:text-3xl font-black font-mono text-slate-900">
-                  {identities.length}
-                </span>
-                <span className="text-xs font-medium text-slate-400">registered</span>
-              </div>
-            </div>
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-sky-50 text-[#008dd2] shadow-2xs">
-              <HiOutlineIdentification size={22} />
+              <span className="text-xs text-slate-400">registered</span>
             </div>
           </div>
 
-          {/* TOTAL LINKED ORDERS */}
-          <div className="flex items-center justify-between rounded-2xl border border-slate-200/90 bg-white p-4 shadow-[0_1px_3px_rgba(15,23,42,0.02)]">
-            <div>
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                Total Linked Orders
+          <div className="rounded-2xl border border-slate-200 bg-white p-3.5 sm:p-4 shadow-[0_1px_2px_rgba(15,23,42,0.02)]">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              Total Linked Orders
+            </span>
+            <div className="mt-1 flex items-baseline gap-2">
+              <span className="text-xl sm:text-2xl font-bold text-emerald-600">
+                {totalLinkedOrders}
               </span>
-              <div className="mt-1 flex items-baseline gap-2">
-                <span className="text-2xl sm:text-3xl font-black font-mono text-emerald-600">
-                  {totalLinkedOrders}
-                </span>
-                <span className="text-xs font-medium text-slate-400">orders</span>
-              </div>
-            </div>
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 shadow-2xs">
-              <HiOutlineCube size={22} />
+              <span className="text-xs text-slate-400">orders</span>
             </div>
           </div>
 
-          {/* SEARCH & FILTER */}
-          <div className="flex flex-col justify-between rounded-2xl border border-slate-200/90 bg-white p-4 shadow-[0_1px_3px_rgba(15,23,42,0.02)]">
+          <div className="col-span-2 sm:col-span-1 rounded-2xl border border-slate-200 bg-white p-3.5 sm:p-4 shadow-[0_1px_2px_rgba(15,23,42,0.02)]">
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
               Search & Filter
             </span>
             <div className="relative mt-1">
-              <HiOutlineSearch
-                size={16}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-              />
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search by name, company, GST, phone..."
-                className="h-9.5 w-full rounded-xl border border-slate-200/90 bg-slate-50/70 pl-9 pr-8 text-xs font-medium text-slate-800 placeholder:text-slate-400 outline-none transition focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
+                className="h-8.5 w-full rounded-xl border border-slate-200 bg-slate-50 pl-8 pr-3 text-xs text-slate-700 placeholder-slate-400 outline-none transition focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
+              />
+              <HiOutlineSearch
+                size={14}
+                className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400"
               />
               {searchTerm && (
                 <button
                   type="button"
                   onClick={() => setSearchTerm("")}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs font-bold"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs"
                 >
-                  ✕
+                  <HiOutlineX size={14} />
                 </button>
               )}
             </div>
@@ -364,7 +349,7 @@ export default function PartyIdentities() {
         </div>
 
         {/* ==================================================
-            3. IDENTITIES TABLE (AUTHENTIC SHIPDROP DESIGN)
+            IDENTITIES LIST / TABLE
         ================================================== */}
         {loading ? (
           <TableSkeleton rows={5} cols={6} />
@@ -395,137 +380,125 @@ export default function PartyIdentities() {
         ) : (
           <>
             {/* DESKTOP TABLE */}
-            <div className="hidden sm:block overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.02)]">
+            <div className="hidden sm:block overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
               <table className="w-full table-fixed border-collapse">
                 <thead>
-                  <tr className="border-b border-slate-100 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                    <th className="w-[8%] px-4 py-3.5 text-left">
+                  <tr className="border-b border-slate-200 bg-slate-50/70">
+                    <th className="w-[6%] px-3.5 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-500">
                       Tag
                     </th>
-                    <th className="w-[26%] px-4 py-3.5 text-left">
+                    <th className="w-[24%] px-3.5 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-500">
                       Party & Reference
                     </th>
-                    <th className="w-[26%] px-4 py-3.5 text-left">
+                    <th className="w-[24%] px-3.5 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-500">
                       Company & GST
                     </th>
-                    <th className="w-[24%] px-4 py-3.5 text-left">
+                    <th className="w-[24%] px-3.5 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-500">
                       Contact & Address
                     </th>
-                    <th className="w-[8%] px-4 py-3.5 text-left">
+                    <th className="w-[11%] px-3.5 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-500">
                       Orders
                     </th>
-                    <th className="w-[8%] px-4 py-3.5 text-right">
+                    <th className="w-[11%] px-3.5 py-3 text-right text-[11px] font-bold uppercase tracking-wider text-slate-500">
                       Actions
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 text-xs">
+                <tbody className="divide-y divide-slate-100">
                   {filteredIdentities.map((identity) => (
                     <tr
                       key={identity.id}
-                      className="group transition-all duration-150 hover:bg-sky-50/30"
+                      className="hover:bg-slate-50/80 transition"
                     >
-                      {/* TAG AVATAR */}
-                      <td className="px-4 py-3.5 align-middle">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-50 font-mono text-xs font-bold text-[#008dd2] border border-sky-100/80 shadow-2xs group-hover:bg-[#008dd2] group-hover:text-white transition-colors duration-200">
+                      {/* TAG / INITIALS */}
+                      <td className="px-3.5 py-3 align-top">
+                        <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-sky-100/80 font-mono text-xs font-bold text-[#008dd2]">
                           {getInitials(identity.name)}
-                        </div>
+                        </span>
                       </td>
 
-                      {/* PARTY & REFERENCE */}
-                      <td className="px-4 py-3.5 align-middle">
-                        <div className="min-w-0">
-                          <div className="font-bold text-slate-900 text-sm group-hover:text-[#008dd2] transition-colors truncate">
-                            {identity.name}
-                          </div>
-                          {identity.reference_name ? (
-                            <div className="mt-0.5 inline-flex items-center gap-1 text-[11px] font-semibold text-slate-500">
-                              <HiOutlineBookmark size={12} className="text-slate-400 shrink-0" />
-                              <span className="font-mono text-slate-600">
-                                Ref: {identity.reference_name}
-                              </span>
-                            </div>
-                          ) : (
-                            <div className="text-[11px] text-slate-400">Created {formatDate(identity.created_at)}</div>
-                          )}
+                      {/* NAME & REFERENCE */}
+                      <td className="px-3.5 py-3 align-top">
+                        <div className="font-semibold text-slate-800 text-sm">
+                          {identity.name}
                         </div>
+                        {identity.reference_name ? (
+                          <div className="mt-0.5 inline-flex items-center gap-1 text-[11px] text-slate-500 font-medium">
+                            <HiOutlineBookmark size={12} className="text-[#008dd2]" />
+                            <span>Ref: {identity.reference_name}</span>
+                          </div>
+                        ) : (
+                          <div className="text-[11px] text-slate-400">Created {formatDate(identity.created_at)}</div>
+                        )}
                       </td>
 
                       {/* COMPANY & GST */}
-                      <td className="px-4 py-3.5 align-middle">
+                      <td className="px-3.5 py-3 align-top">
                         {identity.company_name ? (
-                          <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800">
-                            <HiOutlineOfficeBuilding size={14} className="text-slate-400 shrink-0" />
+                          <div className="flex items-center gap-1 text-xs font-semibold text-slate-700">
+                            <HiOutlineOfficeBuilding size={13} className="text-slate-400 shrink-0" />
                             <span className="truncate">{identity.company_name}</span>
                           </div>
                         ) : (
-                          <span className="text-slate-300 text-xs font-mono">—</span>
+                          <span className="text-slate-300 text-xs">—</span>
                         )}
 
                         {identity.gst_no && (
-                          <div className="mt-1 inline-flex items-center gap-1.5 rounded-md bg-slate-100 px-2 py-0.5 font-mono text-[11px] font-bold text-slate-700 border border-slate-200/80">
-                            <span className="text-[9.5px] font-bold text-[#008dd2] uppercase">GST</span>
+                          <div className="mt-1 inline-flex items-center gap-1 rounded bg-amber-50 px-1.5 py-0.5 font-mono text-[10.5px] font-bold text-amber-700 border border-amber-100">
+                            <HiOutlineDocumentText size={11} />
                             <span>{identity.gst_no}</span>
                           </div>
                         )}
                       </td>
 
                       {/* CONTACT & ADDRESS */}
-                      <td className="px-4 py-3.5 align-middle">
-                        <div className="space-y-1">
-                          {identity.phone_no && (
-                            <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 font-mono">
-                              <HiOutlinePhone size={13} className="text-emerald-600 shrink-0" />
-                              <span>{identity.phone_no}</span>
-                            </div>
-                          )}
+                      <td className="px-3.5 py-3 align-top">
+                        {identity.phone_no && (
+                          <div className="flex items-center gap-1 text-xs font-medium text-slate-700">
+                            <HiOutlinePhone size={13} className="text-emerald-500 shrink-0" />
+                            <span>{identity.phone_no}</span>
+                          </div>
+                        )}
 
-                          {identity.address ? (
-                            <div
-                              className="flex items-start gap-1 text-[11px] text-slate-500 line-clamp-1"
-                              title={identity.address}
-                            >
-                              <HiOutlineLocationMarker size={13} className="text-slate-400 shrink-0 mt-0.5" />
-                              <span className="truncate">{identity.address}</span>
-                            </div>
-                          ) : !identity.phone_no ? (
-                            <span className="text-slate-300 text-xs">—</span>
-                          ) : null}
-                        </div>
+                        {identity.address ? (
+                          <div
+                            className="mt-0.5 flex items-start gap-1 text-[11px] text-slate-500 line-clamp-2"
+                            title={identity.address}
+                          >
+                            <HiOutlineLocationMarker size={13} className="text-slate-400 shrink-0 mt-0.5" />
+                            <span>{identity.address}</span>
+                          </div>
+                        ) : !identity.phone_no ? (
+                          <span className="text-slate-300 text-xs">—</span>
+                        ) : null}
                       </td>
 
                       {/* ORDERS */}
-                      <td className="px-4 py-3.5 align-middle">
-                        {Number(identity.linked_orders_count) > 0 ? (
-                          <span className="inline-flex items-center gap-1.5 rounded-full bg-sky-50 text-[#008dd2] border border-sky-200/70 px-2.5 py-0.5 text-xs font-bold font-mono">
-                            <HiOutlineCube size={13} className="text-[#008dd2]" />
-                            <span>{identity.linked_orders_count}</span>
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-slate-100/70 text-slate-400 border border-slate-200/50 px-2 py-0.5 text-[11px] font-medium font-mono">
-                            0
-                          </span>
-                        )}
+                      <td className="px-3.5 py-3 align-top">
+                        <span className="inline-flex items-center gap-1.5 rounded-md bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+                          <HiOutlineCube size={13} className="text-slate-500" />
+                          {Number(identity.linked_orders_count) || 0}
+                        </span>
                       </td>
 
                       {/* ACTIONS */}
-                      <td className="px-4 py-3.5 align-middle text-right">
+                      <td className="px-3.5 py-3 align-top text-right">
                         <div className="inline-flex items-center gap-1.5">
                           <button
                             type="button"
                             onClick={() => handleOpenEdit(identity)}
-                            className="flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200/90 bg-white text-slate-500 hover:text-[#008dd2] hover:border-[#008dd2]/40 hover:bg-sky-50/50 transition-all shadow-2xs active:scale-95 cursor-pointer"
+                            className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-[#008dd2] transition"
                             title="Edit Identity"
                           >
-                            <HiOutlinePencil size={14} />
+                            <HiOutlinePencil size={15} />
                           </button>
                           <button
                             type="button"
                             onClick={() => handleOpenDelete(identity)}
-                            className="flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200/90 bg-white text-slate-500 hover:text-rose-600 hover:border-rose-300 hover:bg-rose-50/50 transition-all shadow-2xs active:scale-95 cursor-pointer"
+                            className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition"
                             title="Delete Identity"
                           >
-                            <HiOutlineTrash size={14} />
+                            <HiOutlineTrash size={15} />
                           </button>
                         </div>
                       </td>
@@ -536,65 +509,65 @@ export default function PartyIdentities() {
             </div>
 
             {/* MOBILE CARDS */}
-            <div className="space-y-3 sm:hidden">
+            <div className="space-y-2.5 sm:hidden">
               {filteredIdentities.map((identity) => (
                 <div
                   key={identity.id}
-                  className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs"
+                  className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-xs"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-3">
-                      <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-sky-50 font-mono text-xs font-bold text-[#008dd2] border border-sky-100/80 shadow-2xs">
+                      <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-100/80 font-mono text-sm font-bold text-[#008dd2]">
                         {getInitials(identity.name)}
                       </span>
                       <div>
-                        <h4 className="font-bold text-slate-900 text-sm">
+                        <h4 className="font-bold text-slate-800 text-sm">
                           {identity.name}
                         </h4>
                         {identity.reference_name && (
-                          <span className="mt-0.5 inline-block rounded bg-slate-100 px-1.5 py-0.2 text-[10px] font-mono text-slate-600 font-semibold border border-slate-200/60">
+                          <p className="text-[11px] text-slate-500 font-medium">
                             Ref: {identity.reference_name}
-                          </span>
+                          </p>
                         )}
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1">
                       <button
                         type="button"
                         onClick={() => handleOpenEdit(identity)}
-                        className="flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200/90 bg-white text-slate-500 hover:text-[#008dd2] hover:bg-sky-50/50 shadow-2xs active:scale-95 transition"
+                        className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50"
                         title="Edit"
                       >
-                        <HiOutlinePencil size={14} />
+                        <HiOutlinePencil size={15} />
                       </button>
                       <button
                         type="button"
                         onClick={() => handleOpenDelete(identity)}
-                        className="flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200/90 bg-white text-slate-500 hover:text-rose-600 hover:bg-rose-50/50 shadow-2xs active:scale-95 transition"
+                        className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-red-500 hover:bg-red-50 hover:border-red-200"
                         title="Delete"
                       >
-                        <HiOutlineTrash size={14} />
+                        <HiOutlineTrash size={15} />
                       </button>
                     </div>
                   </div>
 
                   {/* DETAILS */}
-                  <div className="mt-3 space-y-1.5 border-t border-slate-100 pt-2.5 text-xs">
+                  <div className="mt-3 space-y-1 border-t border-slate-100 pt-2 text-xs">
                     {identity.company_name && (
-                      <div className="flex items-center gap-1.5 text-slate-800 font-bold">
-                        <HiOutlineOfficeBuilding size={14} className="text-slate-400 shrink-0" />
-                        <span>{identity.company_name}</span>
+                      <div className="flex items-center gap-1.5 text-slate-700">
+                        <HiOutlineOfficeBuilding size={13} className="text-slate-400 shrink-0" />
+                        <span className="font-semibold">{identity.company_name}</span>
                       </div>
                     )}
                     {identity.gst_no && (
-                      <div className="inline-flex items-center gap-1.5 rounded-md bg-slate-100 px-2 py-0.5 font-mono text-[10.5px] font-bold text-slate-700 border border-slate-200/80 shadow-2xs">
-                        <span className="text-[9px] font-bold text-[#008dd2] uppercase">GST</span>
-                        <span>{identity.gst_no}</span>
+                      <div className="flex items-center gap-1.5 font-mono text-[11px] text-amber-700 font-bold">
+                        <HiOutlineDocumentText size={13} className="text-amber-500 shrink-0" />
+                        <span>GST: {identity.gst_no}</span>
                       </div>
                     )}
                     {identity.phone_no && (
-                      <div className="flex items-center gap-1.5 text-slate-700 font-semibold font-mono">
+                      <div className="flex items-center gap-1.5 text-slate-600">
                         <HiOutlinePhone size={13} className="text-emerald-500 shrink-0" />
                         <span>{identity.phone_no}</span>
                       </div>
@@ -607,17 +580,11 @@ export default function PartyIdentities() {
                     )}
                   </div>
 
-                  <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-2.5 text-xs">
-                    <span className="text-slate-400 font-medium">Linked Shipments:</span>
-                    {Number(identity.linked_orders_count) > 0 ? (
-                      <span className="font-bold text-[#008dd2] bg-sky-50 border border-sky-200/60 px-2 py-0.5 rounded-full font-mono text-xs shadow-2xs">
-                        {identity.linked_orders_count} orders
-                      </span>
-                    ) : (
-                      <span className="text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full font-mono text-xs">
-                        0 orders
-                      </span>
-                    )}
+                  <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-2 text-xs">
+                    <span className="text-slate-400">Linked Orders:</span>
+                    <span className="font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded">
+                      {Number(identity.linked_orders_count) || 0} orders
+                    </span>
                   </div>
                 </div>
               ))}
@@ -626,7 +593,7 @@ export default function PartyIdentities() {
         )}
 
         {/* ==================================================
-            4. CREATE / EDIT MODAL
+            CREATE / EDIT MODAL
         ================================================== */}
         {showModal && (
           <div
@@ -802,7 +769,7 @@ export default function PartyIdentities() {
         )}
 
         {/* ==================================================
-            5. DELETE CONFIRMATION MODAL
+            DELETE CONFIRMATION MODAL
         ================================================== */}
         {showDeleteModal && deletingIdentity && (
           <div
