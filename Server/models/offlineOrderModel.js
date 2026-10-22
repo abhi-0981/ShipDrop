@@ -26,8 +26,9 @@ const createOfflineOrder = (orderData, callback) => {
       width,
       height,
       weight,
+      remark,
       status
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
   const values = [
@@ -51,6 +52,7 @@ const createOfflineOrder = (orderData, callback) => {
     Number(orderData.width) || 0,
     Number(orderData.height) || 0,
     Number(orderData.weight) || 0,
+    orderData.remark ? String(orderData.remark).trim() : null,
     "Booked",
   ];
 
@@ -201,7 +203,8 @@ const updateOfflineOrder = (id, userId, orderData, callback) => {
       length = ?,
       width = ?,
       height = ?,
-      weight = ?
+      weight = ?,
+      remark = ?
     WHERE id = ? AND user_id = ?
   `;
 
@@ -225,6 +228,7 @@ const updateOfflineOrder = (id, userId, orderData, callback) => {
     Number(orderData.width) || 0,
     Number(orderData.height) || 0,
     Number(orderData.weight) || 0,
+    orderData.remark !== undefined ? (orderData.remark ? String(orderData.remark).trim() : null) : null,
     Number(id),
     Number(userId),
   ];

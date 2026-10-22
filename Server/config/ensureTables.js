@@ -177,6 +177,7 @@ async function ensureTables() {
         height DECIMAL(10, 2) NULL DEFAULT 0,
         weight DECIMAL(10, 2) NOT NULL DEFAULT 0,
         status VARCHAR(50) NOT NULL DEFAULT 'Booked',
+        remark TEXT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         INDEX idx_offline_user_id (user_id),
@@ -185,6 +186,21 @@ async function ensureTables() {
         INDEX idx_offline_party (party_identity_id)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
+
+    // Ensure remark column exists in offline_orders
+    try {
+      const [existingRemark] = await promiseDb.query(
+        `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'offline_orders' AND COLUMN_NAME = 'remark'`
+      );
+      if (!existingRemark || existingRemark.length === 0) {
+        await promiseDb.query(
+          `ALTER TABLE offline_orders ADD COLUMN remark TEXT NULL`
+        );
+        console.log("Added column remark to offline_orders.");
+      }
+    } catch (remarkErr) {
+      console.warn("Column check/add notice for offline_orders.remark:", remarkErr.message);
+    }
 
     console.log("Core tables, offline_orders table and indexes verified successfully.");
   } catch (error) {

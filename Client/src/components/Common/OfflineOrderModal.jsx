@@ -57,6 +57,7 @@ export default function OfflineOrderModal({
     height: "",
     weight: "",
     payment_mode: "Prepaid",
+    remark: "",
   };
 
   const [formData, setFormData] = useState({ ...initialForm });
@@ -107,6 +108,7 @@ export default function OfflineOrderModal({
             ? String(orderToEdit.weight)
             : "",
         payment_mode: orderToEdit.payment_mode || "Prepaid",
+        remark: orderToEdit.remark || "",
       });
     } else {
       setFormData({ ...initialForm });
@@ -741,6 +743,22 @@ export default function OfflineOrderModal({
                 />
               </div>
             </div>
+          </div>
+
+          {/* SECTION 5: REMARK / NOTES */}
+          <div className="rounded-xl border border-slate-200/80 bg-white p-3.5 space-y-2">
+            <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-600">
+              <span className="h-2 w-2 rounded-full bg-indigo-500" />
+              Remark / Notes (Optional)
+            </div>
+            <textarea
+              name="remark"
+              value={formData.remark}
+              onChange={handleChange}
+              rows={2}
+              placeholder="e.g. Handle with care, urgent delivery, customer note, etc."
+              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 placeholder-slate-400 outline-none transition focus:border-[#008dd2] focus:ring-2 focus:ring-[#008dd2]/10 resize-none"
+            />
           </div>
 
           {/* FOOTER ACTIONS */}

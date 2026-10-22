@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo, useRef } from "react";
+import { Link } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import api from "../../services/api";
 import OfflineOrderModal from "../../components/Common/OfflineOrderModal";
@@ -187,6 +188,7 @@ export default function OfflineOrders() {
       "Shipping Charge (Incl. GST)",
       "Payment Mode",
       "Weight (Kg)",
+      "Remark",
       "Status",
       "Created At",
     ];
@@ -216,6 +218,7 @@ export default function OfflineOrders() {
         Number(charge).toFixed(2),
         `"${o.payment_mode || ""}"`,
         Number(o.weight || 0).toFixed(2),
+        `"${(o.remark || "").replace(/"/g, '""')}"`,
         `"${o.status || "Booked"}"`,
         `"${new Date(o.created_at).toLocaleString()}"`,
       ];
@@ -330,17 +333,13 @@ export default function OfflineOrders() {
 
           {/* ACTION BUTTONS */}
           <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                setEditingOrder(null);
-                setShowCreateModal(true);
-              }}
+            <Link
+              to="/create-offline-order"
               className="inline-flex h-9 flex-1 sm:flex-initial items-center justify-center gap-1.5 whitespace-nowrap rounded-xl bg-[#008dd2] px-3.5 text-xs font-semibold text-white transition hover:bg-[#007dbb] active:scale-95 shadow-xs"
             >
               <span className="text-sm font-bold leading-none">+</span>
               <span>Create Offline Order</span>
-            </button>
+            </Link>
 
             <button
               type="button"
@@ -555,16 +554,12 @@ export default function OfflineOrders() {
               ? "Try adjusting your search or filters."
               : "Record manual courier shipments (Mark Express, Tirupati, DTDC, etc.) to keep track of them here."}
           </p>
-          <button
-            type="button"
-            onClick={() => {
-              setEditingOrder(null);
-              setShowCreateModal(true);
-            }}
-            className="mt-4 rounded-xl bg-[#008dd2] px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-[#007ab6] transition"
+          <Link
+            to="/create-offline-order"
+            className="mt-4 inline-flex items-center rounded-xl bg-[#008dd2] px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-[#007ab6] transition"
           >
             + Create First Offline Order
-          </button>
+          </Link>
         </div>
       ) : (
         <>
@@ -787,6 +782,19 @@ export default function OfflineOrders() {
                               {o.product_name ? `${o.product_name} - ` : ""}
                               {o.shipping_mode || "Surface"}
                             </p>
+
+                            {/* REMARK IN SHIPMENT COLUMN */}
+                            {o.remark && (
+                              <div
+                                className="mt-1 flex items-center gap-1 rounded bg-amber-50/80 border border-amber-200/70 px-1.5 py-0.5 text-[10.5px] text-amber-800 font-medium max-w-full truncate"
+                                title={`Remark: ${o.remark}`}
+                              >
+                                <span className="font-semibold text-amber-900 shrink-0">
+                                  Remark:
+                                </span>
+                                <span className="truncate">{o.remark}</span>
+                              </div>
+                            )}
                           </div>
                         </td>
 
@@ -1120,6 +1128,16 @@ export default function OfflineOrders() {
                         Charge: ₹{charge.toFixed(2)}
                       </span>
                     </div>
+
+                    {/* REMARK IN MOBILE CARD */}
+                    {o.remark && (
+                      <div className="flex items-start gap-1 rounded-lg bg-amber-50/80 border border-amber-200/70 p-2 text-[11px] text-amber-800">
+                        <span className="font-bold text-amber-900 shrink-0">
+                          Remark:
+                        </span>
+                        <span className="break-words">{o.remark}</span>
+                      </div>
+                    )}
                   </div>
 
                   {/* CARD ACTIONS */}
