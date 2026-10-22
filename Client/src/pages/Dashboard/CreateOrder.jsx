@@ -2592,7 +2592,7 @@ function CreateOrder() {
 
                   <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-5 sm:gap-3">
                     <div>
-                      <label className={labelClass}>Length (cm)</label>
+                      <label className={labelClass}>Length (cm)*</label>
                       <input
                         type="number"
                         min="0"
@@ -2603,13 +2603,13 @@ function CreateOrder() {
                         onChange={(e) =>
                           handlePackageChange(index, "length", e.target.value)
                         }
-                        placeholder="L"
+                        placeholder="Length"
                         className={inputClass}
                       />
                     </div>
 
                     <div>
-                      <label className={labelClass}>Width (cm)</label>
+                      <label className={labelClass}>Width (cm)*</label>
                       <input
                         type="number"
                         min="0"
@@ -2620,13 +2620,13 @@ function CreateOrder() {
                         onChange={(e) =>
                           handlePackageChange(index, "width", e.target.value)
                         }
-                        placeholder="W"
+                        placeholder="Width"
                         className={inputClass}
                       />
                     </div>
 
                     <div>
-                      <label className={labelClass}>Height (cm)</label>
+                      <label className={labelClass}>Height (cm)*</label>
                       <input
                         type="number"
                         min="0"
@@ -2637,7 +2637,7 @@ function CreateOrder() {
                         onChange={(e) =>
                           handlePackageChange(index, "height", e.target.value)
                         }
-                        placeholder="H"
+                        placeholder="Height"
                         className={inputClass}
                       />
                     </div>
