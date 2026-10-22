@@ -11,11 +11,8 @@ const CARRIER_OPTIONS = [
   "TIRUPATI COURIER",
   "DTDC",
   "TRACKON COURIER",
-  "DELHIVERY (OFFLINE)",
   "BLUE DART",
-  "PROFESSIONAL COURIERS",
-  "SELF",
-  "OTHER",
+  "SELF"
 ];
 
 const PACKAGE_TYPES = ["Box", "Flyer", "Carton", "Wooden Box", "Other"];
@@ -227,7 +224,7 @@ export default function CreateOfflineOrder() {
                 Create Offline Order
               </h1>
               <p className="mt-0.5 text-xs text-slate-400">
-                Record manual courier shipments (Mark Express, Tirupati, DTDC, etc.)
+                Record Offline courier shipments (Mark Express, Tirupati, DTDC, etc.)
               </p>
             </div>
           </div>
@@ -306,7 +303,7 @@ export default function CreateOfflineOrder() {
                 name="consignment_no"
                 value={formData.consignment_no}
                 onChange={handleChange}
-                placeholder="e.g. 9999999999"
+                placeholder="1234567890"
                 className={`${inputClass} font-mono font-medium`}
                 required
               />
@@ -332,7 +329,7 @@ export default function CreateOfflineOrder() {
                 className={inputClass}
                 disabled={partiesLoading}
               >
-                <option value="">-- No Client (Direct) --</option>
+                <option value="">-- No Client (Cash Order) --</option>
                 {partyIdentities.map((party) => (
                   <option key={party.id} value={party.id}>
                     {party.reference_name || party.name}{" "}
@@ -438,7 +435,7 @@ export default function CreateOfflineOrder() {
             {/* DELIVERY ADDRESS - WIDE (AT LEAST 50% - 66.7% ROW SPAN) */}
             <div className="col-span-1 sm:col-span-2 lg:col-span-8">
               <label className={labelClass}>
-                Complete Delivery Address *
+                Full Delivery Address *
               </label>
               <input
                 type="text"
@@ -453,13 +450,13 @@ export default function CreateOfflineOrder() {
 
             {/* PRODUCT NAME */}
             <div className="col-span-1 sm:col-span-2 lg:col-span-4">
-              <label className={labelClass}>Product / Item Name (Optional)</label>
+              <label className={labelClass}>Product / Item Name</label>
               <input
                 type="text"
                 name="product_name"
                 value={formData.product_name}
                 onChange={handleChange}
-                placeholder="e.g. Sarees, Electronics, Documents"
+                placeholder="Product Name"
                 className={inputClass}
               />
             </div>
@@ -523,7 +520,7 @@ export default function CreateOfflineOrder() {
             </div>
 
             <div>
-              <label className={labelClass}>L (cm)</label>
+              <label className={labelClass}>Length (cm)</label>
               <input
                 type="number"
                 step="0.1"
@@ -537,7 +534,7 @@ export default function CreateOfflineOrder() {
             </div>
 
             <div>
-              <label className={labelClass}>W (cm)</label>
+              <label className={labelClass}>Width (cm)</label>
               <input
                 type="number"
                 step="0.1"
@@ -551,7 +548,7 @@ export default function CreateOfflineOrder() {
             </div>
 
             <div>
-              <label className={labelClass}>H (cm)</label>
+              <label className={labelClass}>Height (cm)</label>
               <input
                 type="number"
                 step="0.1"
@@ -629,14 +626,14 @@ export default function CreateOfflineOrder() {
             {/* REMARK / NOTES - CLEANLY INTEGRATED (50% WIDTH ON DESKTOP) */}
             <div className="sm:col-span-2 lg:col-span-6">
               <label className={labelClass}>
-                Remark / Instructions (Optional)
+                Remark
               </label>
               <input
                 type="text"
                 name="remark"
                 value={formData.remark}
                 onChange={handleChange}
-                placeholder="e.g. Urgent parcel, Fragile item, Call before delivery"
+                placeholder="Remark"
                 className={inputClass}
               />
             </div>

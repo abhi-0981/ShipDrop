@@ -2144,7 +2144,8 @@ function CreateOrder() {
             </div>
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <div ref={previousCustomerDropdownRef} className="relative">
+              {/* ROW 1: Customer Name & Mobile Number (2 cols each on lg) */}
+              <div ref={previousCustomerDropdownRef} className="relative sm:col-span-1 lg:col-span-2">
                 <label className={labelClass}>Customer Name *</label>
                 <div className="relative">
                   <input
@@ -2204,7 +2205,7 @@ function CreateOrder() {
                 )}
               </div>
 
-              <div>
+              <div className="sm:col-span-1 lg:col-span-2">
                 <label className={labelClass}>Mobile Number *</label>
                 <input
                   name="mobile"
@@ -2219,19 +2220,20 @@ function CreateOrder() {
                 />
               </div>
 
-              <div>
-                <label className={labelClass}>Alternate Phone</label>
+              {/* ROW 2: Delivery Address (Full Row Width) */}
+              <div className="col-span-full">
+                <label className={labelClass}>Delivery Address *</label>
                 <input
-                  name="alternate_mobile"
-                  value={formData.alternate_mobile}
+                  name="address_line1"
+                  data-enter-required="true"
+                  value={formData.address_line1}
                   onChange={handleChange}
-                  placeholder="Optional phone"
-                  inputMode="numeric"
-                  maxLength={10}
+                  placeholder="Flat/House No, Building, Road, Area"
                   className={inputClass}
                 />
               </div>
 
+              {/* ROW 3: Email, Pincode, City, State (1 col each) */}
               <div>
                 <label className={labelClass}>Email Address</label>
                 <input
@@ -2240,29 +2242,6 @@ function CreateOrder() {
                   value={formData.email}
                   onChange={handleChange}
                   placeholder="Optional email"
-                  className={inputClass}
-                />
-              </div>
-
-              <div className="sm:col-span-2">
-                <label className={labelClass}>Delivery Address *</label>
-                <input
-                  name="address_line1"
-                  data-enter-required="true"
-                  value={formData.address_line1}
-                  onChange={handleChange}
-                  placeholder="Flat/House No, Building, Road"
-                  className={inputClass}
-                />
-              </div>
-
-              <div className="sm:col-span-2">
-                <label className={labelClass}>Address Line 2</label>
-                <input
-                  name="address_line2"
-                  value={formData.address_line2}
-                  onChange={handleChange}
-                  placeholder="Area / Sector / Colony"
                   className={inputClass}
                 />
               </div>
@@ -2331,17 +2310,6 @@ function CreateOrder() {
                   readOnly
                   placeholder="Auto-detected"
                   className={readonlyClass}
-                />
-              </div>
-
-              <div>
-                <label className={labelClass}>Landmark</label>
-                <input
-                  name="landmark"
-                  value={formData.landmark}
-                  onChange={handleChange}
-                  placeholder="Near landmark"
-                  className={inputClass}
                 />
               </div>
             </div>

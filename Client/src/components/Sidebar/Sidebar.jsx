@@ -515,7 +515,7 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
             )}`}
           >
             <HiOutlineDocumentAdd size={20} />
-            <span className="ml-3 truncate">Offline Create Order</span>
+            <span className="ml-3 truncate">Create Offline Order</span>
           </Link>
 
           {/* PROCESSING ORDERS */}
