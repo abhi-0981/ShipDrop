@@ -415,30 +415,39 @@ export default function CreateOfflineOrder() {
       </div>
 
       {/* ==================================================
-          MAIN FORM
+          MAIN FORM (CONSOLIDATED INTO 2 STREAMLINED SECTIONS)
       ================================================== */}
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* CARD 1: CARRIER & CONSIGNMENT DETAILS */}
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-6 shadow-[0_1px_4px_rgba(15,23,42,0.03)] space-y-4">
-          <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-            <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#008dd2]/10 text-xs font-bold text-[#008dd2]">
-              1
-            </span>
-            <div>
-              <h2 className="text-sm font-bold text-slate-800">
-                Carrier & Consignment Details
-              </h2>
-              <p className="text-[11px] text-slate-400">
-                Select your manual courier partner and enter the tracking / consignment number.
-              </p>
+        {/* CARD 1: SHIPMENT & RECIPIENT DETAILS */}
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-6 md:p-7 shadow-[0_1px_4px_rgba(15,23,42,0.03)] space-y-5">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div className="flex items-center gap-2.5">
+              <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#008dd2]/10 text-xs font-bold text-[#008dd2]">
+                1
+              </span>
+              <div>
+                <h2 className="text-sm font-bold text-slate-800">
+                  Shipment & Delivery Details
+                </h2>
+                <p className="text-[11px] text-slate-400">
+                  Manual courier partner, consignment tracking number, and customer delivery address.
+                </p>
+              </div>
             </div>
+
+            <Link
+              to="/settings/party-identities"
+              className="hidden sm:inline-block text-[11px] font-bold text-[#008dd2] hover:underline"
+            >
+              + Manage Parties
+            </Link>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4">
-            {/* CARRIER SELECTION */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
+            {/* COURIER / CARRIER */}
             <div>
               <label className={labelClass}>
-                Courier / Carrier <span className="text-rose-500">*</span>
+                Courier Partner <span className="text-rose-500">*</span>
               </label>
               <select
                 name="carrier"
@@ -456,7 +465,7 @@ export default function CreateOfflineOrder() {
             </div>
 
             {/* CUSTOM CARRIER INPUT (IF OTHER) */}
-            {formData.carrier === "OTHER" && (
+            {formData.carrier === "OTHER" ? (
               <div>
                 <label className={labelClass}>
                   Carrier Name <span className="text-rose-500">*</span>
@@ -465,17 +474,17 @@ export default function CreateOfflineOrder() {
                   type="text"
                   value={customCarrier}
                   onChange={(e) => setCustomCarrier(e.target.value)}
-                  placeholder="e.g. Maruti Courier, Speed Post"
+                  placeholder="e.g. Maruti, Speed Post"
                   className={inputClass}
                   required
                 />
               </div>
-            )}
+            ) : null}
 
             {/* CONSIGNMENT NUMBER */}
             <div>
               <label className={labelClass}>
-                Consignment / AWB / LR No <span className="text-rose-500">*</span>
+                Consignment / AWB No <span className="text-rose-500">*</span>
               </label>
               <input
                 type="text"
@@ -491,7 +500,7 @@ export default function CreateOfflineOrder() {
             {/* SHIPPING MODE */}
             <div>
               <label className={labelClass}>Shipping Mode</label>
-              <div className="grid grid-cols-3 gap-1.5 h-10.5 sm:h-11 p-1 rounded-xl bg-slate-100/80 border border-slate-200/60">
+              <div className="grid grid-cols-3 gap-1 h-10.5 sm:h-11 p-1 rounded-xl bg-slate-100/80 border border-slate-200/60">
                 {SHIPPING_MODES.map((mode) => {
                   const isSelected = formData.shipping_mode === mode;
                   return (
@@ -501,7 +510,7 @@ export default function CreateOfflineOrder() {
                       onClick={() =>
                         setFormData((prev) => ({ ...prev, shipping_mode: mode }))
                       }
-                      className={`rounded-lg text-xs font-bold transition flex items-center justify-center cursor-pointer ${
+                      className={`rounded-lg text-[11px] font-bold transition flex items-center justify-center cursor-pointer ${
                         isSelected
                           ? "bg-white text-[#008dd2] shadow-xs"
                           : "text-slate-600 hover:text-slate-900"
@@ -513,76 +522,32 @@ export default function CreateOfflineOrder() {
                 })}
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* CARD 2: PARTY IDENTITY & SENDER */}
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-6 shadow-[0_1px_4px_rgba(15,23,42,0.03)] space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <div className="flex items-center gap-2">
-              <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#008dd2]/10 text-xs font-bold text-[#008dd2]">
-                2
-              </span>
-              <div>
-                <h2 className="text-sm font-bold text-slate-800">
-                  Party Identity / Client (Optional)
-                </h2>
-                <p className="text-[11px] text-slate-400">
-                  Tag this shipment to a registered party identity for client segregation.
-                </p>
-              </div>
-            </div>
-
-            <Link
-              to="/settings/party-identities"
-              className="text-[11px] font-bold text-[#008dd2] hover:underline"
-            >
-              + Manage Parties
-            </Link>
-          </div>
-
-          <div className="max-w-md">
-            <label className={labelClass}>Select Party Identity</label>
-            <select
-              name="party_identity_id"
-              value={formData.party_identity_id}
-              onChange={handleChange}
-              disabled={partiesLoading}
-              className={inputClass}
-            >
-              <option value="">No Party (Default Direct)</option>
-              {partyIdentities.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.reference_name
-                    ? `${p.reference_name} — ${p.name || p.company_name}`
-                    : p.name || p.company_name}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* CARD 3: CUSTOMER & DELIVERY ADDRESS */}
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-6 shadow-[0_1px_4px_rgba(15,23,42,0.03)] space-y-4">
-          <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-            <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#008dd2]/10 text-xs font-bold text-[#008dd2]">
-              3
-            </span>
+            {/* PARTY IDENTITY */}
             <div>
-              <h2 className="text-sm font-bold text-slate-800">
-                Customer & Destination Details
-              </h2>
-              <p className="text-[11px] text-slate-400">
-                Destination address where the carrier will deliver the parcel.
-              </p>
+              <label className={labelClass}>Party / Client (Optional)</label>
+              <select
+                name="party_identity_id"
+                value={formData.party_identity_id}
+                onChange={handleChange}
+                disabled={partiesLoading}
+                className={inputClass}
+              >
+                <option value="">No Party (Direct)</option>
+                {partyIdentities.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.reference_name
+                      ? `${p.reference_name} — ${p.name || p.company_name}`
+                      : p.name || p.company_name}
+                  </option>
+                ))}
+              </select>
             </div>
-          </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4">
             {/* CUSTOMER NAME */}
             <div>
               <label className={labelClass}>
-                Customer / Consignee Name <span className="text-rose-500">*</span>
+                Customer Name <span className="text-rose-500">*</span>
               </label>
               <input
                 type="text"
@@ -598,7 +563,7 @@ export default function CreateOfflineOrder() {
             {/* MOBILE NUMBER */}
             <div>
               <label className={labelClass}>
-                Customer Mobile Number <span className="text-rose-500">*</span>
+                Mobile Number <span className="text-rose-500">*</span>
               </label>
               <input
                 type="tel"
@@ -608,14 +573,14 @@ export default function CreateOfflineOrder() {
                   const val = e.target.value.replace(/\D/g, "").slice(0, 10);
                   setFormData((prev) => ({ ...prev, mobile: val }));
                 }}
-                placeholder="10-digit mobile number"
+                placeholder="10-digit mobile"
                 className={`${inputClass} font-mono`}
                 maxLength={10}
                 required
               />
             </div>
 
-            {/* DESTINATION PINCODE */}
+            {/* PINCODE */}
             <div>
               <label className={labelClass}>
                 Destination Pincode <span className="text-rose-500">*</span>
@@ -649,7 +614,7 @@ export default function CreateOfflineOrder() {
                 name="city"
                 value={formData.city}
                 onChange={handleChange}
-                placeholder="e.g. Jaipur"
+                placeholder="City"
                 className={inputClass}
                 required
               />
@@ -665,44 +630,50 @@ export default function CreateOfflineOrder() {
                 name="state"
                 value={formData.state}
                 onChange={handleChange}
-                placeholder="e.g. Rajasthan"
+                placeholder="State"
                 className={inputClass}
                 required
               />
             </div>
 
-            {/* COMPLETE ADDRESS */}
-            <div className="sm:col-span-2 lg:col-span-1">
-              <label className={labelClass}>Complete Delivery Address</label>
-              <input
-                type="text"
+            {/* COMPLETE DELIVERY ADDRESS: FULL WIDTH SPANNING ALL COLUMNS */}
+            <div className="col-span-full sm:col-span-2 lg:col-span-4">
+              <label className={labelClass}>
+                Complete Delivery Address <span className="text-rose-500">*</span>
+              </label>
+              <textarea
+                rows={2}
                 name="address"
                 value={formData.address}
                 onChange={handleChange}
-                placeholder="House / Street / Landmark"
-                className={inputClass}
+                placeholder="House / Flat No, Building / Apartment, Street, Colony, Landmark"
+                className="w-full rounded-xl border border-slate-200 bg-white p-3 sm:p-3.5 text-[13px] sm:text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-[#008dd2] focus:ring-2 focus:ring-[#008dd2]/10 resize-none shadow-xs"
+                required
               />
+              <p className="mt-1 text-[11px] text-slate-400">
+                Provide detailed doorstep delivery address with flat/house no, street, and nearby landmark.
+              </p>
             </div>
           </div>
         </div>
 
-        {/* CARD 4: PACKAGE SPECS, WEIGHT & DIMENSIONS */}
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-6 shadow-[0_1px_4px_rgba(15,23,42,0.03)] space-y-4">
-          <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
+        {/* CARD 2: PACKAGE SPECS, DIMENSIONS & PAYMENT */}
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-6 md:p-7 shadow-[0_1px_4px_rgba(15,23,42,0.03)] space-y-5">
+          <div className="flex items-center gap-2.5 border-b border-slate-100 pb-3">
             <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#008dd2]/10 text-xs font-bold text-[#008dd2]">
-              4
+              2
             </span>
             <div>
               <h2 className="text-sm font-bold text-slate-800">
-                Package Specs & Weight
+                Package Specs & Payment
               </h2>
               <p className="text-[11px] text-slate-400">
-                Enter shipment weight, package type, and optional dimensions.
+                Shipment weight, package type, dimensions, payment mode, and carrier fee.
               </p>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
             {/* PACKAGE TYPE */}
             <div>
               <label className={labelClass}>Package Type</label>
@@ -722,13 +693,13 @@ export default function CreateOfflineOrder() {
 
             {/* PRODUCT NAME */}
             <div>
-              <label className={labelClass}>Product / Commodity Name</label>
+              <label className={labelClass}>Product / Item Name</label>
               <input
                 type="text"
                 name="product_name"
                 value={formData.product_name}
                 onChange={handleChange}
-                placeholder="e.g. Saree, Garments, Electronics"
+                placeholder="e.g. Saree, Apparel, Electronics"
                 className={inputClass}
               />
             </div>
@@ -756,6 +727,34 @@ export default function CreateOfflineOrder() {
               </div>
             </div>
 
+            {/* PAYMENT MODE */}
+            <div>
+              <label className={labelClass}>Payment Mode</label>
+              <div className="grid grid-cols-2 gap-1.5 h-10.5 sm:h-11 p-1 rounded-xl bg-slate-100/80 border border-slate-200/60">
+                {["Prepaid", "COD"].map((mode) => {
+                  const isSelected = formData.payment_mode === mode;
+                  return (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() =>
+                        setFormData((prev) => ({ ...prev, payment_mode: mode }))
+                      }
+                      className={`rounded-lg text-xs font-bold transition flex items-center justify-center cursor-pointer ${
+                        isSelected
+                          ? mode === "COD"
+                            ? "bg-amber-500 text-white shadow-xs"
+                            : "bg-[#008dd2] text-white shadow-xs"
+                          : "text-slate-600 hover:text-slate-900"
+                      }`}
+                    >
+                      {mode}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* DIMENSIONS: LENGTH */}
             <div>
               <label className={labelClass}>Length (cm)</label>
@@ -766,7 +765,7 @@ export default function CreateOfflineOrder() {
                 name="length"
                 value={formData.length}
                 onChange={handleChange}
-                placeholder="e.g. 15"
+                placeholder="L (cm)"
                 className={`${inputClass} font-mono`}
               />
             </div>
@@ -781,7 +780,7 @@ export default function CreateOfflineOrder() {
                 name="width"
                 value={formData.width}
                 onChange={handleChange}
-                placeholder="e.g. 10"
+                placeholder="W (cm)"
                 className={`${inputClass} font-mono`}
               />
             </div>
@@ -796,9 +795,32 @@ export default function CreateOfflineOrder() {
                 name="height"
                 value={formData.height}
                 onChange={handleChange}
-                placeholder="e.g. 5"
+                placeholder="H (cm)"
                 className={`${inputClass} font-mono`}
               />
+            </div>
+
+            {/* SHIPPING CHARGE */}
+            <div>
+              <label className={labelClass}>
+                Shipping Charge (₹, Incl. GST) <span className="text-rose-500">*</span>
+              </label>
+              <div className="relative">
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-bold text-slate-400 text-sm">
+                  ₹
+                </span>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  name="shipping_charge"
+                  value={formData.shipping_charge}
+                  onChange={handleChange}
+                  placeholder="25.00"
+                  className={`${inputClass} pl-8 font-mono`}
+                  required
+                />
+              </div>
             </div>
           </div>
 
@@ -831,79 +853,6 @@ export default function CreateOfflineOrder() {
               </span>
             </div>
           )}
-        </div>
-
-        {/* CARD 5: PAYMENT & CHARGE */}
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-6 shadow-[0_1px_4px_rgba(15,23,42,0.03)] space-y-4">
-          <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-            <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#008dd2]/10 text-xs font-bold text-[#008dd2]">
-              5
-            </span>
-            <div>
-              <h2 className="text-sm font-bold text-slate-800">
-                Payment Mode & Shipping Charge
-              </h2>
-              <p className="text-[11px] text-slate-400">
-                Record payment type and the courier fee you agreed with manual carrier.
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4 max-w-2xl">
-            {/* PAYMENT MODE */}
-            <div>
-              <label className={labelClass}>Payment Mode</label>
-              <div className="grid grid-cols-2 gap-2 h-10.5 sm:h-11 p-1 rounded-xl bg-slate-100/80 border border-slate-200/60">
-                {["Prepaid", "COD"].map((mode) => {
-                  const isSelected = formData.payment_mode === mode;
-                  return (
-                    <button
-                      key={mode}
-                      type="button"
-                      onClick={() =>
-                        setFormData((prev) => ({ ...prev, payment_mode: mode }))
-                      }
-                      className={`rounded-lg text-xs font-bold transition flex items-center justify-center cursor-pointer ${
-                        isSelected
-                          ? mode === "COD"
-                            ? "bg-amber-500 text-white shadow-xs"
-                            : "bg-[#008dd2] text-white shadow-xs"
-                          : "text-slate-600 hover:text-slate-900"
-                      }`}
-                    >
-                      {mode === "COD" ? "Cash On Delivery (COD)" : "Prepaid"}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* SHIPPING CHARGE */}
-            <div>
-              <label className={labelClass}>
-                Shipping Charge (₹, Incl. GST) <span className="text-rose-500">*</span>
-              </label>
-              <div className="relative">
-                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-bold text-slate-400 text-sm">
-                  ₹
-                </span>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  name="shipping_charge"
-                  value={formData.shipping_charge}
-                  onChange={handleChange}
-                  placeholder="e.g. 25.00"
-                  className={`${inputClass} pl-8 font-mono`}
-                  required
-                />
-              </div>
-              <p className="mt-1 text-[11px] text-slate-400">
-                Agreed carrier charge for tracking & remittance records.
-              </p>
-            </div>
-          </div>
         </div>
 
         {/* BOTTOM ACTION BAR */}
