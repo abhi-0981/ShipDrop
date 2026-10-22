@@ -1077,25 +1077,7 @@ useEffect(() => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#f5f8fc] px-3.5 sm:px-4 py-4 sm:py-5">
-        <div className="mx-auto max-w-[1450px]">
-          <div className="mb-3 h-[92px] animate-pulse rounded-2xl border border-slate-200 bg-white" />
-          <div className="mb-3 h-[62px] animate-pulse rounded-2xl border border-slate-200 bg-white" />
-          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-            <div className="h-12 animate-pulse bg-slate-50" />
-            {[1, 2, 3, 4].map((item) => (
-              <div
-                key={item}
-                className="h-[86px] animate-pulse border-t border-slate-100"
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
+
 
   return (
     <div className="min-h-screen bg-[#f5f8fc] px-3 sm:px-4 py-4 sm:py-5 pb-24 lg:pb-8">

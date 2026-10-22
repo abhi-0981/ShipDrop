@@ -1206,24 +1206,7 @@ const manifestedCount = useMemo(() => {
      LOADING STATE
   ========================================================== */
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#f7f8fb] p-3 sm:p-5">
-        <div className="mx-auto max-w-[1450px]">
-          <div className="mb-3 h-20 animate-pulse rounded-2xl border border-slate-200 bg-white" />
-          <div className="mb-3 h-14 animate-pulse rounded-2xl border border-slate-200 bg-white" />
-          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 space-y-3">
-            {[1, 2, 3, 4, 5].map((n) => (
-              <div
-                key={n}
-                className="h-28 animate-pulse rounded-xl bg-slate-100"
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
+
 
   /* ==========================================================
      MAIN UI

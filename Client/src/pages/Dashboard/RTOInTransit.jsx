@@ -849,24 +849,7 @@ function RTOInTransit() {
   // LOADING STATE
   // ====================================================
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#f5f8fc] px-3.5 py-4 sm:px-5 sm:py-5">
-        <div className="mx-auto max-w-[1450px]">
-          <div className="mb-3 h-20 animate-pulse rounded-2xl border border-slate-200 bg-white" />
-          <div className="mb-3 h-14 animate-pulse rounded-2xl border border-slate-200 bg-white" />
-          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 space-y-3">
-            {[1, 2, 3, 4].map((item) => (
-              <div
-                key={item}
-                className="h-28 animate-pulse rounded-xl bg-slate-100"
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
+
 
   // ====================================================
   // MAIN RENDER
