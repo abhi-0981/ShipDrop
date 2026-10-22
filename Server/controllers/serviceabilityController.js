@@ -111,7 +111,7 @@ const checkPincodeServiceability = async (req, res) => {
           "NOT_SERVICEABLE",
 
         message:
-          "Delivery is not available at this pincode",
+          "Non-serviceable",
 
         data: [],
       });
@@ -150,7 +150,7 @@ const checkPincodeServiceability = async (req, res) => {
           "EMBARGO",
 
         message:
-          "Delivery is temporarily unavailable at this pincode",
+          "Non-serviceable",
 
         data:
           data.delivery_codes,

@@ -1257,13 +1257,13 @@ function CreateOrder() {
             setServiceabilityStatus({
               serviceable: true,
               status: "SERVICEABLE",
-              message: "Delivery is available at this pincode",
+              message: "Serviceable",
             });
           } else {
             setServiceabilityStatus({
               serviceable: false,
               status: res?.data?.status || "NOT_SERVICEABLE",
-              message: res?.data?.message || "Delivery is not available at this pincode",
+              message: "Non-serviceable",
             });
           }
         })
@@ -1300,11 +1300,7 @@ function CreateOrder() {
       );
 
       if (!isServiceable) {
-        const errorMsg =
-          serviceData?.message ||
-          (serviceData?.status === "EMBARGO"
-            ? "Delivery is temporarily unavailable at this pincode (Embargo)"
-            : "Delivery is not available at this pincode");
+        const errorMsg = "Non-serviceable";
 
         setServiceabilityStatus({
           serviceable: false,
@@ -1325,7 +1321,7 @@ function CreateOrder() {
       setServiceabilityStatus({
         serviceable: true,
         status: "SERVICEABLE",
-        message: "Delivery is available at this pincode",
+        message: "Serviceable",
       });
 
       // 2. Auto-detect City and State (from Delhivery response or Postal API fallback)
