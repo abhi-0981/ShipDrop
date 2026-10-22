@@ -26,9 +26,8 @@ const createOfflineOrder = (orderData, callback) => {
       width,
       height,
       weight,
-      remark,
       status
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
   const values = [
@@ -52,7 +51,6 @@ const createOfflineOrder = (orderData, callback) => {
     Number(orderData.width) || 0,
     Number(orderData.height) || 0,
     Number(orderData.weight) || 0,
-    orderData.remark ? String(orderData.remark).trim() : null,
     "Booked",
   ];
 
@@ -203,8 +201,7 @@ const updateOfflineOrder = (id, userId, orderData, callback) => {
       length = ?,
       width = ?,
       height = ?,
-      weight = ?,
-      remark = ?
+      weight = ?
     WHERE id = ? AND user_id = ?
   `;
 
@@ -228,7 +225,6 @@ const updateOfflineOrder = (id, userId, orderData, callback) => {
     Number(orderData.width) || 0,
     Number(orderData.height) || 0,
     Number(orderData.weight) || 0,
-    orderData.remark ? String(orderData.remark).trim() : null,
     Number(id),
     Number(userId),
   ];
@@ -244,34 +240,9 @@ const updateOfflineOrder = (id, userId, orderData, callback) => {
   });
 };
 
-// ======================================================
-// GET OFFLINE ORDER BY ID
-// ======================================================
-const getOfflineOrderById = (id, userId, callback) => {
-  const query = `
-    SELECT
-      oo.*,
-      pi.name AS party_name,
-      pi.reference_name AS party_reference_name,
-      pi.company_name AS party_company_name
-    FROM offline_orders oo
-    LEFT JOIN party_identities pi
-      ON pi.id = oo.party_identity_id
-      AND pi.user_id = oo.user_id
-    WHERE oo.id = ? AND oo.user_id = ?
-    LIMIT 1
-  `;
-  db.query(query, [Number(id), Number(userId)], (err, rows) => {
-    if (err) return callback(err, null);
-    if (!rows || rows.length === 0) return callback(null, null);
-    return callback(null, rows[0]);
-  });
-};
-
 module.exports = {
   createOfflineOrder,
   getOfflineOrders,
-  getOfflineOrderById,
   updateOfflineOrder,
   deleteOfflineOrder,
 };

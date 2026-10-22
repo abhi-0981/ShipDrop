@@ -4,7 +4,6 @@ import toast from "react-hot-toast";
 import {
   HiOutlineViewGrid,
   HiOutlinePlusCircle,
-  HiOutlineDocumentAdd,
   HiOutlineClock,
   HiOutlineCube,
   HiOutlineCalculator,
@@ -109,7 +108,6 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
   const sidebarSearchItems = [
     { name: "Dashboard", path: "/dashboard" },
     { name: "Create Order", path: "/create-order" },
-    { name: "Create Offline Order", path: "/create-offline-order" },
     { name: "Processing Orders", path: "/processing-orders" },
     { name: "All Orders", path: "/all-orders" },
     { name: "Offline Orders", path: "/offline-orders" },
@@ -504,18 +502,6 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
           >
             <HiOutlinePlusCircle size={20} />
             <span className="ml-3 truncate">Create Order</span>
-          </Link>
-
-          {/* CREATE OFFLINE ORDER */}
-          <Link
-            to="/create-offline-order"
-            onClick={handleNavClick}
-            className={`flex items-center rounded-xl px-3 py-2.5 text-[14px] transition duration-150 ${activeClass(
-              "/create-offline-order",
-            )}`}
-          >
-            <HiOutlineDocumentAdd size={20} />
-            <span className="ml-3 truncate">Create Offline Order</span>
           </Link>
 
           {/* PROCESSING ORDERS */}

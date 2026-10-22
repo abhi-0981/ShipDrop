@@ -39,7 +39,6 @@ const Returned = lazy(() => import("./pages/Dashboard/Returned"));
 const Pending = lazy(() => import("./pages/Dashboard/Pending"));
 const CODRemittance = lazy(() => import("./pages/Dashboard/CODRemittance"));
 const OfflineOrders = lazy(() => import("./pages/Dashboard/OfflineOrders"));
-const CreateOfflineOrder = lazy(() => import("./pages/Dashboard/CreateOfflineOrder"));
 
 // Elegant, ultra-lightweight transition fallback
 const RouteLoader = () => (
@@ -56,7 +55,6 @@ if (typeof window !== "undefined") {
     import("./pages/Dashboard/AllOrders");
     import("./pages/Dashboard/ProcessingOrders");
     import("./pages/Dashboard/CreateOrder");
-    import("./pages/Dashboard/CreateOfflineOrder");
   };
   if ("requestIdleCallback" in window) {
     window.requestIdleCallback(preloadCoreRoutes, { timeout: 2500 });
@@ -98,16 +96,6 @@ function App() {
               element={
                 <Suspense fallback={<RouteLoader />}>
                   <CreateOrder />
-                </Suspense>
-              }
-            />
-
-            {/* Create Offline Order */}
-            <Route
-              path="/create-offline-order"
-              element={
-                <Suspense fallback={<RouteLoader />}>
-                  <CreateOfflineOrder />
                 </Suspense>
               }
             />

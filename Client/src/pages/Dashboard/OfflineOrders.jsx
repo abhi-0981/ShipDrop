@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo, useRef } from "react";
-import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import api from "../../services/api";
+import OfflineOrderModal from "../../components/Common/OfflineOrderModal";
 import { notifyOrderChange } from "../../services/orderEvents";
 
 const PRIMARY = "#008dd2";
@@ -16,7 +16,6 @@ const CARRIER_LIST = [
 ];
 
 export default function OfflineOrders() {
-  const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isFetching, setIsFetching] = useState(false);
@@ -31,6 +30,8 @@ export default function OfflineOrders() {
   const [partyFilter, setPartyFilter] = useState("ALL");
 
   const [partyIdentities, setPartyIdentities] = useState([]);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingOrder, setEditingOrder] = useState(null);
   const [selectedIds, setSelectedIds] = useState([]);
 
   // Debounce search
@@ -142,7 +143,8 @@ export default function OfflineOrders() {
   };
 
   const handleEdit = (order) => {
-    navigate(`/create-offline-order?id=${order.id}`, { state: { order } });
+    setEditingOrder(order);
+    setShowCreateModal(true);
   };
 
   const handleDelete = async (id) => {
@@ -185,7 +187,6 @@ export default function OfflineOrders() {
       "Shipping Charge (Incl. GST)",
       "Payment Mode",
       "Weight (Kg)",
-      "Remark",
       "Status",
       "Created At",
     ];
@@ -215,7 +216,6 @@ export default function OfflineOrders() {
         Number(charge).toFixed(2),
         `"${o.payment_mode || ""}"`,
         Number(o.weight || 0).toFixed(2),
-        `"${(o.remark || "").replace(/"/g, '""')}"`,
         `"${o.status || "Booked"}"`,
         `"${new Date(o.created_at).toLocaleString()}"`,
       ];
@@ -330,13 +330,17 @@ export default function OfflineOrders() {
 
           {/* ACTION BUTTONS */}
           <div className="flex flex-wrap items-center gap-2">
-            <Link
-              to="/create-offline-order"
+            <button
+              type="button"
+              onClick={() => {
+                setEditingOrder(null);
+                setShowCreateModal(true);
+              }}
               className="inline-flex h-9 flex-1 sm:flex-initial items-center justify-center gap-1.5 whitespace-nowrap rounded-xl bg-[#008dd2] px-3.5 text-xs font-semibold text-white transition hover:bg-[#007dbb] active:scale-95 shadow-xs"
             >
               <span className="text-sm font-bold leading-none">+</span>
               <span>Create Offline Order</span>
-            </Link>
+            </button>
 
             <button
               type="button"
@@ -551,12 +555,16 @@ export default function OfflineOrders() {
               ? "Try adjusting your search or filters."
               : "Record manual courier shipments (Mark Express, Tirupati, DTDC, etc.) to keep track of them here."}
           </p>
-          <Link
-            to="/create-offline-order"
+          <button
+            type="button"
+            onClick={() => {
+              setEditingOrder(null);
+              setShowCreateModal(true);
+            }}
             className="mt-4 rounded-xl bg-[#008dd2] px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-[#007ab6] transition"
           >
             + Create First Offline Order
-          </Link>
+          </button>
         </div>
       ) : (
         <>
@@ -779,16 +787,6 @@ export default function OfflineOrders() {
                               {o.product_name ? `${o.product_name} - ` : ""}
                               {o.shipping_mode || "Surface"}
                             </p>
-
-                            {o.remark && (
-                              <div
-                                className="mt-1 flex items-center gap-1 rounded bg-amber-50/90 border border-amber-200/60 px-1.5 py-0.5 text-[10px] text-amber-800"
-                                title={`Remark: ${o.remark}`}
-                              >
-                                <span className="font-bold text-amber-700 shrink-0">Note:</span>
-                                <span className="truncate">{o.remark}</span>
-                              </div>
-                            )}
                           </div>
                         </td>
 
@@ -1122,16 +1120,6 @@ export default function OfflineOrders() {
                         Charge: ₹{charge.toFixed(2)}
                       </span>
                     </div>
-
-                    {o.remark && (
-                      <div
-                        className="flex items-center gap-1 rounded-lg bg-amber-50/90 border border-amber-200/60 px-2 py-1 text-[11px] text-amber-800"
-                        title={`Remark: ${o.remark}`}
-                      >
-                        <span className="font-bold text-amber-700 shrink-0">Note:</span>
-                        <span className="truncate">{o.remark}</span>
-                      </div>
-                    )}
                   </div>
 
                   {/* CARD ACTIONS */}
@@ -1222,6 +1210,20 @@ export default function OfflineOrders() {
           )}
         </>
       )}
+
+      {/* CREATE / EDIT OFFLINE ORDER MODAL */}
+      <OfflineOrderModal
+        isOpen={showCreateModal}
+        orderToEdit={editingOrder}
+        onClose={() => {
+          setShowCreateModal(false);
+          setEditingOrder(null);
+        }}
+        onSuccess={() => {
+          fetchOrders();
+          setEditingOrder(null);
+        }}
+      />
     </div>
   );
 }

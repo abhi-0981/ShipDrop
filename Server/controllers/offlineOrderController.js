@@ -1,7 +1,6 @@
 const {
   createOfflineOrder,
   getOfflineOrders,
-  getOfflineOrderById,
   updateOfflineOrder,
   deleteOfflineOrder,
 } = require("../models/offlineOrderModel");
@@ -39,7 +38,6 @@ const createOfflineOrderController = async (req, res) => {
       width,
       height,
       weight,
-      remark,
     } = req.body;
 
     // Validation
@@ -143,7 +141,6 @@ const createOfflineOrderController = async (req, res) => {
       width: Number(width) || 0,
       height: Number(height) || 0,
       weight: parsedWeight,
-      remark: remark ? String(remark).trim() : null,
     };
 
     createOfflineOrder(orderData, (error, created) => {
@@ -205,7 +202,6 @@ const updateOfflineOrderController = async (req, res) => {
       width,
       height,
       weight,
-      remark,
     } = req.body;
 
     const cleanCarrier = String(carrier || "").trim();
@@ -306,7 +302,6 @@ const updateOfflineOrderController = async (req, res) => {
       width: Number(width) || 0,
       height: Number(height) || 0,
       weight: parsedWeight,
-      remark: remark ? String(remark).trim() : null,
     };
 
     updateOfflineOrder(orderId, userId, orderData, (error, updated) => {
@@ -432,44 +427,7 @@ const deleteOfflineOrderController = async (req, res) => {
         message: "Offline order deleted successfully",
       });
     });
-// ======================================================
-// GET SINGLE OFFLINE ORDER BY ID
-// ======================================================
-const getOfflineOrderByIdController = async (req, res) => {
-  try {
-    const userId = Number(req.user?.id || req.query?.user_id);
-    const orderId = Number(req.params.id);
-
-    if (!userId || !orderId) {
-      return res.status(400).json({
-        success: false,
-        message: "Valid Order ID and User are required",
-      });
-    }
-
-    getOfflineOrderById(orderId, userId, (error, order) => {
-      if (error) {
-        console.error("getOfflineOrderById error:", error);
-        return res.status(500).json({
-          success: false,
-          message: error.message || "Failed to fetch offline order",
-        });
-      }
-
-      if (!order) {
-        return res.status(404).json({
-          success: false,
-          message: "Offline order not found",
-        });
-      }
-
-      return res.status(200).json({
-        success: true,
-        order,
-      });
-    });
   } catch (err) {
-    console.error("getOfflineOrderByIdController unexpected error:", err);
     return res.status(500).json({
       success: false,
       message: err.message || "Internal server error",
@@ -480,7 +438,6 @@ const getOfflineOrderByIdController = async (req, res) => {
 module.exports = {
   createOfflineOrderController,
   getOfflineOrdersController,
-  getOfflineOrderByIdController,
   updateOfflineOrderController,
   deleteOfflineOrderController,
 };

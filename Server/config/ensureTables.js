@@ -176,7 +176,6 @@ async function ensureTables() {
         width DECIMAL(10, 2) NULL DEFAULT 0,
         height DECIMAL(10, 2) NULL DEFAULT 0,
         weight DECIMAL(10, 2) NOT NULL DEFAULT 0,
-        remark TEXT NULL,
         status VARCHAR(50) NOT NULL DEFAULT 'Booked',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -186,28 +185,6 @@ async function ensureTables() {
         INDEX idx_offline_party (party_identity_id)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
-
-    // 5. Ensure offline_orders columns exist
-    const offlineOrderColumns = [
-      { name: "remark", type: "TEXT NULL DEFAULT NULL" },
-    ];
-
-    for (const col of offlineOrderColumns) {
-      try {
-        const [existing] = await promiseDb.query(
-          `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'offline_orders' AND COLUMN_NAME = ?`,
-          [col.name]
-        );
-        if (!existing || existing.length === 0) {
-          await promiseDb.query(
-            `ALTER TABLE offline_orders ADD COLUMN ${col.name} ${col.type}`
-          );
-          console.log(`Added column ${col.name} to offline_orders.`);
-        }
-      } catch (colErr) {
-        console.warn(`Column check/add notice for offline_orders.${col.name}:`, colErr.message);
-      }
-    }
 
     console.log("Core tables, offline_orders table and indexes verified successfully.");
   } catch (error) {

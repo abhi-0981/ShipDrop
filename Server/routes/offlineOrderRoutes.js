@@ -4,7 +4,6 @@ const router = express.Router();
 const {
   createOfflineOrderController,
   getOfflineOrdersController,
-  getOfflineOrderByIdController,
   updateOfflineOrderController,
   deleteOfflineOrderController,
 } = require("../controllers/offlineOrderController");
@@ -16,9 +15,6 @@ router.use(authenticateUser);
 
 // GET /api/offline-orders
 router.get("/", getOfflineOrdersController);
-
-// GET /api/offline-orders/:id
-router.get("/:id", getOfflineOrderByIdController);
 
 // POST /api/offline-orders
 router.post("/", createOfflineOrderController);

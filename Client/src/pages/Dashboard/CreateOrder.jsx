@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import api from "../../services/api";
 import { notifyOrderChange } from "../../services/orderEvents";
+import OfflineOrderModal from "../../components/Common/OfflineOrderModal";
 import L from "leaflet";
 import { MapContainer, Marker, TileLayer, useMapEvents } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
@@ -153,6 +154,9 @@ function CreateOrder() {
   const [partyIdentities, setPartyIdentities] = useState([]);
   const [partyIdentitiesLoading, setPartyIdentitiesLoading] = useState(false);
   const [selectedPartyIdentityId, setSelectedPartyIdentityId] = useState(null);
+
+  // Offline Orders Modal
+  const [showOfflineModal, setShowOfflineModal] = useState(false);
 
   const inputClass =
     "h-10.5 sm:h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-[13px] sm:text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-[#008dd2] focus:ring-2 focus:ring-[#008dd2]/10";
@@ -1953,6 +1957,14 @@ function CreateOrder() {
           <div className="flex items-center gap-2">
             <button
               type="button"
+              onClick={() => setShowOfflineModal(true)}
+              className="flex items-center gap-1.5 rounded-xl border border-sky-200 bg-sky-50 px-3.5 py-2 text-xs font-bold text-[#008dd2] transition hover:bg-sky-100 active:scale-95 shadow-xs cursor-pointer"
+            >
+              <span>Offline Orders</span>
+            </button>
+
+            <button
+              type="button"
               onClick={isEditMode ? cancelEdit : () => resetForm()}
               className="rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 active:scale-95 shadow-xs cursor-pointer"
             >
@@ -2939,6 +2951,12 @@ function CreateOrder() {
           </div>
         </div>
       )}
+
+      {/* OFFLINE ORDER CREATION MODAL */}
+      <OfflineOrderModal
+        isOpen={showOfflineModal}
+        onClose={() => setShowOfflineModal(false)}
+      />
     </div>
   );
 }
