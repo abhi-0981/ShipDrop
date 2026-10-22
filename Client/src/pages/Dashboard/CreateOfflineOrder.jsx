@@ -166,7 +166,9 @@ export default function CreateOfflineOrder() {
         toast.success("Offline order created successfully!");
         notifyOrderChange();
         window.dispatchEvent(new Event("offlineOrdersUpdated"));
-        navigate("/offline-orders");
+        // Stay on page, reset form and scroll smoothly to top
+        setFormData({ ...initialForm });
+        window.scrollTo({ top: 0, behavior: "smooth" });
       } else {
         toast.error(res?.data?.message || "Failed to create offline order");
       }
@@ -501,6 +503,7 @@ export default function CreateOfflineOrder() {
               >
                 <option value="Surface">Surface</option>
                 <option value="Air">Air</option>
+                <option value="Fast Track">Fast Track</option>
               </select>
             </div>
 

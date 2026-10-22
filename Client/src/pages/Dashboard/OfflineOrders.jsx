@@ -577,7 +577,7 @@ export default function OfflineOrders() {
               <table className="w-full table-fixed border-collapse">
                 <thead className="sticky top-0 z-20 bg-white">
                   <tr className="border-b border-slate-200 bg-white">
-                    <th className="sticky top-0 z-20 w-[4%] bg-white px-2 py-3 text-left">
+                    <th className="sticky top-0 z-20 w-[3%] bg-white px-2 py-3 text-left">
                       <button
                         type="button"
                         onClick={handleSelectAll}
@@ -604,19 +604,19 @@ export default function OfflineOrders() {
                       Party
                     </th>
 
-                    <th className="sticky top-0 z-20 w-[18%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                    <th className="sticky top-0 z-20 w-[16%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                       Customer
                     </th>
 
-                    <th className="sticky top-0 z-20 w-[16%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                    <th className="sticky top-0 z-20 w-[15%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                       Shipment
                     </th>
 
-                    <th className="sticky top-0 z-20 w-[16%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                    <th className="sticky top-0 z-20 w-[15%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                       Route
                     </th>
 
-                    <th className="sticky top-0 z-20 w-[10%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                    <th className="sticky top-0 z-20 w-[9%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                       Payment
                     </th>
 
@@ -624,11 +624,15 @@ export default function OfflineOrders() {
                       Weight
                     </th>
 
-                    <th className="sticky top-0 z-20 w-[11%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                    <th className="sticky top-0 z-20 w-[10%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                      Remark
+                    </th>
+
+                    <th className="sticky top-0 z-20 w-[9%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                       Created
                     </th>
 
-                    <th className="sticky top-0 z-20 w-[10%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                    <th className="sticky top-0 z-20 w-[8%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                       Actions
                     </th>
                   </tr>
@@ -782,19 +786,6 @@ export default function OfflineOrders() {
                               {o.product_name ? `${o.product_name} - ` : ""}
                               {o.shipping_mode || "Surface"}
                             </p>
-
-                            {/* REMARK IN SHIPMENT COLUMN */}
-                            {o.remark && (
-                              <div
-                                className="mt-1 flex items-center gap-1 rounded bg-amber-50/80 border border-amber-200/70 px-1.5 py-0.5 text-[10.5px] text-amber-800 font-medium max-w-full truncate"
-                                title={`Remark: ${o.remark}`}
-                              >
-                                <span className="font-semibold text-amber-900 shrink-0">
-                                  Remark:
-                                </span>
-                                <span className="truncate">{o.remark}</span>
-                              </div>
-                            )}
                           </div>
                         </td>
 
@@ -903,6 +894,22 @@ export default function OfflineOrders() {
                               Vol: {volWeight.toFixed(2)} kg
                             </p>
                           </div>
+                        </td>
+
+                        {/* REMARK (DEDICATED COLUMN) */}
+                        <td className="px-2 py-2.5 break-words">
+                          {o.remark ? (
+                            <span
+                              className="inline-block max-w-full truncate rounded bg-amber-50/90 border border-amber-200/80 px-2 py-0.5 text-[11px] font-medium text-amber-900"
+                              title={o.remark}
+                            >
+                              {o.remark}
+                            </span>
+                          ) : (
+                            <span className="text-[12px] text-slate-300 font-normal">
+                              —
+                            </span>
+                          )}
                         </td>
 
                         {/* CREATED */}
