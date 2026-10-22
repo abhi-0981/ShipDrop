@@ -1257,13 +1257,13 @@ function CreateOrder() {
             setServiceabilityStatus({
               serviceable: true,
               status: "SERVICEABLE",
-              message: "Delivery is available at this pincode",
+              message: "Non-Serviceable",
             });
           } else {
             setServiceabilityStatus({
               serviceable: false,
               status: res?.data?.status || "NOT_SERVICEABLE",
-              message: res?.data?.message || "Delivery is not available at this pincode",
+              message: res?.data?.message || "Non-Serviceable",
             });
           }
         })
@@ -1304,7 +1304,7 @@ function CreateOrder() {
           serviceData?.message ||
           (serviceData?.status === "EMBARGO"
             ? "Delivery is temporarily unavailable at this pincode (Embargo)"
-            : "Delivery is not available at this pincode");
+            : "Non-Serviceable");
 
         setServiceabilityStatus({
           serviceable: false,
@@ -2279,14 +2279,14 @@ function CreateOrder() {
                 {serviceabilityStatus && !serviceabilityStatus.serviceable && (
                   <div className="mt-1.5 flex items-start gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs font-semibold text-rose-700 animate-fadeIn">
                     {/* <span className="shrink-0 text-sm">⚠️</span> */}
-                    <span>{serviceabilityStatus.message || "Delivery is not available at this pincode."}</span>
+                    <span>{serviceabilityStatus.message || "Non-serviceable"}</span>
                   </div>
                 )}
 
                 {serviceabilityStatus && serviceabilityStatus.serviceable && (
                   <p className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-emerald-600">
                     <span>✓</span>
-                    <span>Delhivery service available</span>
+                    <span>Serviceable</span>
                   </p>
                 )}
               </div>
@@ -2514,7 +2514,7 @@ function CreateOrder() {
 
                   <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-5 sm:gap-3">
                     <div>
-                      <label className={labelClass}>Length (cm)</label>
+                      <label className={labelClass}>Length (cm) *</label>
                       <input
                         type="number"
                         min="0"
@@ -2531,7 +2531,7 @@ function CreateOrder() {
                     </div>
 
                     <div>
-                      <label className={labelClass}>Width (cm)</label>
+                      <label className={labelClass}>Width (cm) *</label>
                       <input
                         type="number"
                         min="0"
@@ -2548,7 +2548,7 @@ function CreateOrder() {
                     </div>
 
                     <div>
-                      <label className={labelClass}>Height (cm)</label>
+                      <label className={labelClass}>Height (cm) *</label>
                       <input
                         type="number"
                         min="0"
