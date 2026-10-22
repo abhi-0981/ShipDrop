@@ -109,7 +109,7 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
   const sidebarSearchItems = [
     { name: "Dashboard", path: "/dashboard" },
     { name: "Create Order", path: "/create-order" },
-    { name: "Offline Create Order", path: "/create-offline-order" },
+    { name: "Create Offline Order", path: "/create-offline-order" },
     { name: "Processing Orders", path: "/processing-orders" },
     { name: "All Orders", path: "/all-orders" },
     { name: "Offline Orders", path: "/offline-orders" },
