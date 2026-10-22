@@ -16,6 +16,7 @@ import {
   HiOutlineBookmark,
 } from "react-icons/hi";
 import api from "../../services/api";
+import { TableSkeleton } from "../../components/Common/TableSkeleton";
 
 const PRIMARY = "#008dd2";
 
@@ -351,15 +352,7 @@ export default function PartyIdentities() {
             IDENTITIES LIST / TABLE
         ================================================== */}
         {loading ? (
-          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_1px_2px_rgba(15,23,42,0.02)]">
-            <div className="h-12 animate-pulse bg-slate-50" />
-            {[1, 2, 3].map((item) => (
-              <div
-                key={item}
-                className="h-16 animate-pulse border-t border-slate-100"
-              />
-            ))}
-          </div>
+          <TableSkeleton rows={5} cols={6} />
         ) : filteredIdentities.length === 0 ? (
           <div className="flex min-h-[300px] flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-[0_1px_2px_rgba(15,23,42,0.02)]">
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-sky-50 text-[#008dd2]">

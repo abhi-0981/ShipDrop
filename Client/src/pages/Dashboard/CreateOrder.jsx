@@ -2020,7 +2020,12 @@ function CreateOrder() {
 
                     {showWarehouseDropdown && (
                       <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-40 max-h-60 overflow-y-auto rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl">
-                        {filteredWarehouses.length > 0 ? (
+                        {warehousesLoading ? (
+                          <div className="space-y-2 p-2.5">
+                            <div className="h-4 w-36 rounded bg-slate-200 skeleton-shimmer" />
+                            <div className="h-3 w-48 rounded bg-slate-100 skeleton-shimmer" />
+                          </div>
+                        ) : filteredWarehouses.length > 0 ? (
                           filteredWarehouses.map((w) => (
                             <button
                               key={w.id}

@@ -884,21 +884,32 @@ function ReturnAddresses() {
           {/* LOADING */}
 
           {loading ? (
-
-            <div className="flex min-h-[220px] items-center justify-center">
-
-              <div className="text-center">
-
-                <div className="mx-auto h-7 w-7 animate-spin rounded-full border-2 border-slate-200 border-t-[#008dd2]" />
-
-                <p className="mt-3 text-xs text-slate-500">
-                  Loading return addresses...
-                </p>
-
-              </div>
-
+            <div className="divide-y divide-slate-100 p-2">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="flex items-center justify-between p-3.5 gap-4"
+                  style={{ opacity: 1 - i * 0.2 }}
+                >
+                  <div className="space-y-1.5 w-1/4">
+                    <div className="h-4 w-32 rounded bg-slate-200 skeleton-shimmer" />
+                    <div className="h-3 w-20 rounded bg-slate-100 skeleton-shimmer" />
+                  </div>
+                  <div className="space-y-1.5 w-1/4">
+                    <div className="h-3.5 w-28 rounded bg-slate-200 skeleton-shimmer" />
+                    <div className="h-2.5 w-24 rounded bg-slate-100 skeleton-shimmer" />
+                  </div>
+                  <div className="space-y-1.5 w-1/3">
+                    <div className="h-3.5 w-full rounded bg-slate-200 skeleton-shimmer" />
+                    <div className="h-2.5 w-4/5 rounded bg-slate-100 skeleton-shimmer" />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="h-7 w-7 rounded-lg bg-slate-200 skeleton-shimmer" />
+                    <div className="h-7 w-7 rounded-lg bg-slate-200 skeleton-shimmer" />
+                  </div>
+                </div>
+              ))}
             </div>
-
           )
 
 

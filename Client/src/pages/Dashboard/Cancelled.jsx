@@ -9,6 +9,7 @@ import api from "../../services/api";
 import { notifyOrderChange, subscribeToOrderUpdates } from "../../services/orderEvents";
 import OrderDetailsModal from "../../components/Common/OrderDetailsModal";
 import { printShippingLabels, downloadShippingLabels } from "../../services/shippingLabelService";
+import { TableRowSkeleton } from "../../components/Common/TableSkeleton";
 
 // ======================================================
 // COLORS
@@ -1710,8 +1711,9 @@ function Cancelled() {
               {/* TABLE BODY */}
 
               <tbody>
-
-                {filteredOrders.length === 0 ? (
+                {loading ? (
+                  <TableRowSkeleton rows={6} cols={8} />
+                ) : filteredOrders.length === 0 ? (
 
                   <tr>
 

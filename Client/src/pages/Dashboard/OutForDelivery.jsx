@@ -8,6 +8,7 @@ import api from "../../services/api";
 import OrderDetailsModal from "../../components/Common/OrderDetailsModal";
 import { notifyOrderChange, subscribeToOrderUpdates } from "../../services/orderEvents";
 import { printShippingLabels, downloadShippingLabels } from "../../services/shippingLabelService";
+import { TableRowSkeleton } from "../../components/Common/TableSkeleton";
 
 // ======================================================
 // COLORS
@@ -1644,8 +1645,9 @@ function OutForDelivery() {
               {/* TABLE BODY */}
 
               <tbody>
-
-                {filteredOrders.length === 0 ? (
+                {loading ? (
+                  <TableRowSkeleton rows={6} cols={8} />
+                ) : filteredOrders.length === 0 ? (
 
                   <tr>
 

@@ -14,6 +14,7 @@ import {
   printShippingLabels,
   downloadShippingLabels,
 } from "../../services/shippingLabelService";
+import { TableRowSkeleton } from "../../components/Common/TableSkeleton";
 
 // ======================================================
 // COLORS
@@ -1263,7 +1264,9 @@ function RTOInTransit() {
               </thead>
 
               <tbody>
-                {filteredOrders.length === 0 ? (
+                {loading ? (
+                  <TableRowSkeleton rows={6} cols={8} />
+                ) : filteredOrders.length === 0 ? (
                   <tr>
                     <td colSpan="8" className="h-[300px] px-6 text-center">
                       <div className="flex flex-col items-center justify-center">

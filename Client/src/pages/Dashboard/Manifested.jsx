@@ -10,6 +10,7 @@ import {
   printShippingLabels,
   downloadShippingLabels,
 } from "../../services/shippingLabelService";
+import { CardSkeleton, TableRowSkeleton } from "../../components/Common/TableSkeleton";
 
 const PRIMARY = "#0788ca";
 const PRIMARY_DARK = "#0579b1";
@@ -1406,7 +1407,9 @@ const manifestedCount = useMemo(() => {
             1. MOBILE VIEW: APPLIKE SHIPMENT CARDS
         ===================================================== */}
         <div className="space-y-2.5 sm:hidden">
-          {!filteredOrders.length ? (
+          {loading ? (
+            <CardSkeleton count={4} />
+          ) : !filteredOrders.length ? (
             <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-slate-400">
               <div className="mx-auto mb-2 flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
                 <Icon name="box" size={20} />
@@ -1699,7 +1702,9 @@ const manifestedCount = useMemo(() => {
               </thead>
 
               <tbody>
-                {!filteredOrders.length ? (
+                {loading ? (
+                  <TableRowSkeleton rows={6} cols={9} />
+                ) : !filteredOrders.length ? (
                   <tr>
                     <td colSpan="9" className="px-6 py-16 text-center">
                       <div className="mx-auto flex max-w-sm flex-col items-center">

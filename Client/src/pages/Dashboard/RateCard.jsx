@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
-
 import api from "../../services/api";
+import { RateCardSkeleton } from "../../components/Common/TableSkeleton";
 
 // ======================================================
 // CONSTANTS
@@ -1196,58 +1196,7 @@ function RateCard() {
   // ====================================================
 
   if (loading) {
-    return (
-      <div
-        className="
-          min-h-screen
-          bg-[#F5F8FC]
-          p-6
-        "
-      >
-        <div
-          className="
-            mx-auto
-            max-w-7xl
-          "
-        >
-          <div
-            className="
-              rounded-2xl
-              border
-              border-slate-200
-              bg-white
-              p-10
-              text-center
-              shadow-sm
-            "
-          >
-            <div
-              className="
-                mx-auto
-                h-8
-                w-8
-                animate-spin
-                rounded-full
-                border-4
-                border-slate-200
-                border-t-[#008dd2]
-              "
-            />
-
-            <p
-              className="
-                mt-3
-                text-sm
-                font-semibold
-                text-slate-500
-              "
-            >
-              Loading shipping rates...
-            </p>
-          </div>
-        </div>
-      </div>
-    );
+    return <RateCardSkeleton />;
   }
 
   // ====================================================

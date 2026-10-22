@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { toast } from "react-hot-toast";
 import api from "../../services/api";
 import { subscribeToOrderUpdates } from "../../services/orderEvents";
+import { CardSkeleton, TableRowSkeleton } from "../../components/Common/TableSkeleton";
 
 // ======================================================
 // COLORS
@@ -1106,7 +1107,9 @@ function NotPicked() {
             1. MOBILE VIEW: TOUCH-FRIENDLY APP CARDS
         ================================================== */}
         <div className="space-y-2.5 sm:hidden">
-          {filteredOrders.length === 0 ? (
+          {loading ? (
+            <CardSkeleton count={4} />
+          ) : filteredOrders.length === 0 ? (
             <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-slate-400">
               <div className="mx-auto mb-2 flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-50 text-slate-300">
                 <Icon name="box" size={20} />
@@ -1347,7 +1350,9 @@ function NotPicked() {
               </thead>
 
               <tbody>
-                {filteredOrders.length === 0 ? (
+                {loading ? (
+                  <TableRowSkeleton rows={6} cols={8} />
+                ) : filteredOrders.length === 0 ? (
                   <tr>
                     <td colSpan="8" className="h-[300px] px-6 text-center">
                       <div className="flex flex-col items-center justify-center">

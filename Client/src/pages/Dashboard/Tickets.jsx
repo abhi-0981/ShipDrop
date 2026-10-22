@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "react-hot-toast";
 import { API_BASE_URL } from "../../services/api";
+import { CardSkeleton, TableRowSkeleton } from "../../components/Common/TableSkeleton";
 
 /* =========================================================
    OPTIONS
@@ -786,8 +787,16 @@ function Tickets() {
               {/* MESSAGES SCROLL VIEW: TIGHTER SPACING FOR MORE VISIBLE MESSAGES */}
               <div className="flex-1 min-h-0 overflow-y-auto p-2.5 sm:p-4 space-y-2.5 [scrollbar-width:thin]">
                 {detailLoading ? (
-                  <div className="flex h-full items-center justify-center text-xs font-medium text-slate-400">
-                    Loading conversation...
+                  <div className="space-y-3 py-2">
+                    <div className="flex justify-start">
+                      <div className="h-10 w-48 rounded-2xl rounded-bl-sm bg-slate-100 skeleton-shimmer" />
+                    </div>
+                    <div className="flex justify-end">
+                      <div className="h-12 w-56 rounded-2xl rounded-br-sm bg-slate-200 skeleton-shimmer" />
+                    </div>
+                    <div className="flex justify-start">
+                      <div className="h-8 w-40 rounded-2xl rounded-bl-sm bg-slate-100 skeleton-shimmer" />
+                    </div>
                   </div>
                 ) : messages.length === 0 ? (
                   <div className="flex h-full flex-col items-center justify-center text-center p-6 text-slate-400">
@@ -1102,9 +1111,7 @@ function Tickets() {
         {/* MOBILE TICKET CARDS */}
         <div className="space-y-2.5 sm:hidden">
           {loading ? (
-            <div className="py-12 text-center text-xs text-slate-400">
-              Loading tickets...
-            </div>
+            <CardSkeleton count={4} />
           ) : tickets.length === 0 ? (
             <div className="flex min-h-[180px] flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white p-6 text-center text-slate-400">
               <Icon name="ticket" size={24} />
@@ -1169,11 +1176,7 @@ function Tickets() {
 
             <tbody className="divide-y divide-slate-100 text-xs">
               {loading ? (
-                <tr>
-                  <td colSpan="7" className="py-12 text-center text-slate-400">
-                    Loading tickets...
-                  </td>
-                </tr>
+                <TableRowSkeleton rows={5} cols={7} />
               ) : tickets.length === 0 ? (
                 <tr>
                   <td colSpan="7" className="py-12 text-center text-slate-400">

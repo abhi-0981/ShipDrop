@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
 import { notifyOrderChange, subscribeToOrderUpdates } from "../../services/orderEvents";
+import { RouteSkeleton } from "../../components/Common/TableSkeleton";
 
 const Icon = ({ name, size = 16 }) => {
   const common = {
@@ -835,18 +836,7 @@ function ProcessingOrders() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-full bg-[#f6f8fb] p-4 sm:p-6">
-        <div className="flex min-h-[60vh] items-center justify-center rounded-2xl border border-slate-200/80 bg-white">
-          <div className="text-center">
-            <div className="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-3 border-slate-200 border-t-[#008dd2]" />
-            <p className="text-xs font-semibold text-slate-500">
-              Loading processing orders...
-            </p>
-          </div>
-        </div>
-      </div>
-    );
+    return <RouteSkeleton />;
   }
 
   const selectedOrderObjects = getSelectedOrderObjects();
@@ -1432,11 +1422,20 @@ function ProcessingOrders() {
               </div>
 
               {previewLoading ? (
-                <div className="py-12 text-center">
-                  <div className="mx-auto mb-2.5 h-7 w-7 animate-spin rounded-full border-3 border-slate-200 border-t-[#008dd2]" />
-                  <p className="text-xs font-medium text-slate-500">
-                    Calculating shipping rates...
-                  </p>
+                <div className="space-y-2 py-3">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="rounded-xl border border-slate-200/80 bg-slate-50/50 p-3 space-y-2"
+                      style={{ opacity: 1 - i * 0.2 }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="h-3.5 w-36 rounded bg-slate-200 skeleton-shimmer" />
+                        <div className="h-4 w-16 rounded bg-slate-200 skeleton-shimmer" />
+                      </div>
+                      <div className="h-2.5 w-48 rounded bg-slate-100 skeleton-shimmer" />
+                    </div>
+                  ))}
                 </div>
               ) : (
                 <div className="space-y-2">

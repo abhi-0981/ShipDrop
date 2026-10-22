@@ -55,11 +55,13 @@ body {
   background: linear-gradient(
     90deg,
     #f1f5f9 0%,
-    #e2e8f0 50%,
+    #e2e8f0 25%,
+    #ffffff 50%,
+    #e2e8f0 75%,
     #f1f5f9 100%
   );
   background-size: 200% 100%;
-  animation: shimmerWave 1.6s ease-in-out infinite;
+  animation: shimmerWave 1.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
 @keyframes fadeIn {

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import api from "../../services/api";
 import { subscribeToOrderUpdates } from "../../services/orderEvents";
 import { useNavigate } from "react-router-dom";
+import { DashboardSkeleton } from "../../components/Common/TableSkeleton";
 
 // ======================================================
 // ICONS
@@ -620,128 +621,9 @@ function Dashboard() {
     navigate("/create-order");
   };
 
-if (pageLoading && !orders.length) {
-  return (
-    <div className="min-h-full bg-[#f6f8fb] p-4 sm:p-6">
-      <div className="flex min-h-[65vh] items-center justify-center">
-        <div className="flex w-full max-w-[360px] flex-col items-center">
-
-          {/* ================= TRUCK LOADER ================= */}
-          <div className="relative h-[100px] w-full overflow-hidden">
-
-            {/* Road */}
-            <div className="absolute bottom-4 left-0 right-0 h-[2px] bg-slate-200" />
-
-            {/* Moving Road Lines */}
-            <div className="absolute bottom-[11px] left-0 flex w-[200%] animate-[roadMove_1s_linear_infinite] gap-7">
-              {Array.from({ length: 14 }).map((_, index) => (
-                <span
-                  key={index}
-                  className="h-[3px] w-8 rounded-full bg-slate-300"
-                />
-              ))}
-            </div>
-
-            {/* Truck Track */}
-            <div className="absolute inset-x-4 bottom-4 h-[58px]">
-
-              {/* Moving Truck */}
-              <div className="absolute bottom-0 left-0 animate-[truckDrive_2.2s_ease-in-out_infinite]">
-
-                <div className="relative h-[42px] w-[82px]">
-
-                  {/* Cargo Body */}
-                  <div className="absolute left-0 top-0 h-[34px] w-[55px] rounded-[4px] border border-sky-600 bg-[#008dd2] shadow-sm">
-
-                    {/* Cargo Details */}
-                    <div className="absolute left-2 top-2 h-[2px] w-9 rounded bg-white/40" />
-
-                    <div className="absolute left-2 top-5 h-[2px] w-11 rounded bg-white/25" />
-
-                    {/* Door Line */}
-                    <div className="absolute right-2 top-0 h-full w-[1px] bg-sky-700/30" />
-
-                  </div>
-
-                  {/* Cabin */}
-                  <div className="absolute bottom-[8px] right-0 h-[27px] w-[30px] rounded-r-[5px] rounded-t-[6px] border border-sky-600 bg-[#008dd2]">
-
-                    {/* Window */}
-                    <div className="absolute left-[5px] top-[5px] h-[10px] w-[18px] rounded-[2px] bg-sky-100/90" />
-
-                    {/* Window Divider */}
-                    <div className="absolute left-[13px] top-[5px] h-[10px] w-[1px] bg-sky-300" />
-
-                    {/* Headlight */}
-                    <div className="absolute -right-[2px] bottom-[5px] h-[4px] w-[3px] rounded-full bg-white" />
-
-                  </div>
-
-                  {/* Front Bumper */}
-                  <div className="absolute -right-[3px] bottom-[8px] h-[5px] w-[4px] rounded-r bg-slate-500" />
-
-                  {/* Back Wheel */}
-                  <div className="absolute bottom-0 left-[9px] h-[14px] w-[14px] rounded-full border-[2px] border-slate-700 bg-white">
-
-                    <div className="absolute left-1/2 top-1/2 h-[4px] w-[4px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-slate-600" />
-
-                  </div>
-
-                  {/* Front Wheel */}
-                  <div className="absolute bottom-0 right-[5px] h-[14px] w-[14px] rounded-full border-[2px] border-slate-700 bg-white">
-
-                    <div className="absolute left-1/2 top-1/2 h-[4px] w-[4px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-slate-600" />
-
-                  </div>
-
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Loading Text */}
-          <div className="mt-1 text-center">
-            <p className="text-[14px] font-bold text-slate-700">
-              Loading dashboard...
-            </p>
-
-            <p className="mt-1 text-[11px] text-slate-400">
-              Getting your shipments ready
-            </p>
-          </div>
-
-        </div>
-      </div>
-
-      {/* ================= ANIMATIONS ================= */}
-      <style>{`
-        @keyframes truckDrive {
-          0% {
-            transform: translateX(0);
-          }
-
-          50% {
-            transform: translateX(calc(100% - 82px));
-          }
-
-          100% {
-            transform: translateX(0);
-          }
-        }
-
-        @keyframes roadMove {
-          from {
-            transform: translateX(0);
-          }
-
-          to {
-            transform: translateX(-72px);
-          }
-        }
-      `}</style>
-    </div>
-  );
-}
+  if (pageLoading && !orders.length) {
+    return <DashboardSkeleton />;
+  }
 
   return (
     <div className="min-h-full w-full overflow-x-hidden bg-[#f6f8fb] p-3.5 sm:p-5 md:p-6 pb-24 lg:pb-8">

@@ -23,6 +23,7 @@ import {
   printShippingLabels,
   downloadShippingLabels,
 } from "../../services/shippingLabelService";
+import { TableRowSkeleton } from "../../components/Common/TableSkeleton";
 
 /* =========================================================
    USER ID
@@ -995,14 +996,7 @@ const triggerTracking = (awb) => {
             </thead>
             <tbody>
               {loading ? (
-                <tr>
-                  <td colSpan={9} className="px-6 py-16 text-center">
-                    <div className="mx-auto h-7 w-7 animate-spin rounded-full border-2 border-slate-200 border-t-[#008dd2]" />
-                    <div className="mt-3 text-[12px] font-medium text-slate-500">
-                      Loading undelivered orders...
-                    </div>
-                  </td>
-                </tr>
+                <TableRowSkeleton rows={6} cols={9} />
               ) : filteredOrders.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="px-6 py-16 text-center">
