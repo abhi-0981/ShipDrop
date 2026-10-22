@@ -190,7 +190,7 @@ export default function CreateOfflineOrder() {
         ...prev,
         pincode: value,
         city: postOffice.District || postOffice.Block || "",
-        state: postOffice.State || "",
+        state: postOffice.State || "", 
       }));
     } catch {
       toast.error("Unable to auto-verify pincode, please enter city and state manually.");
