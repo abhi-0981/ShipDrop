@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo, useRef } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import api from "../../services/api";
-import OfflineOrderModal from "../../components/Common/OfflineOrderModal";
 import { notifyOrderChange } from "../../services/orderEvents";
 
 const PRIMARY = "#008dd2";
@@ -16,6 +16,7 @@ const CARRIER_LIST = [
 ];
 
 export default function OfflineOrders() {
+  const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isFetching, setIsFetching] = useState(false);
@@ -30,8 +31,6 @@ export default function OfflineOrders() {
   const [partyFilter, setPartyFilter] = useState("ALL");
 
   const [partyIdentities, setPartyIdentities] = useState([]);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [editingOrder, setEditingOrder] = useState(null);
   const [selectedIds, setSelectedIds] = useState([]);
 
   // Debounce search
@@ -143,8 +142,7 @@ export default function OfflineOrders() {
   };
 
   const handleEdit = (order) => {
-    setEditingOrder(order);
-    setShowCreateModal(true);
+    navigate(`/create-offline-order?id=${order.id}`, { state: { order } });
   };
 
   const handleDelete = async (id) => {
@@ -330,17 +328,13 @@ export default function OfflineOrders() {
 
           {/* ACTION BUTTONS */}
           <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                setEditingOrder(null);
-                setShowCreateModal(true);
-              }}
+            <Link
+              to="/create-offline-order"
               className="inline-flex h-9 flex-1 sm:flex-initial items-center justify-center gap-1.5 whitespace-nowrap rounded-xl bg-[#008dd2] px-3.5 text-xs font-semibold text-white transition hover:bg-[#007dbb] active:scale-95 shadow-xs"
             >
               <span className="text-sm font-bold leading-none">+</span>
               <span>Create Offline Order</span>
-            </button>
+            </Link>
 
             <button
               type="button"
@@ -555,16 +549,12 @@ export default function OfflineOrders() {
               ? "Try adjusting your search or filters."
               : "Record manual courier shipments (Mark Express, Tirupati, DTDC, etc.) to keep track of them here."}
           </p>
-          <button
-            type="button"
-            onClick={() => {
-              setEditingOrder(null);
-              setShowCreateModal(true);
-            }}
+          <Link
+            to="/create-offline-order"
             className="mt-4 rounded-xl bg-[#008dd2] px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-[#007ab6] transition"
           >
             + Create First Offline Order
-          </button>
+          </Link>
         </div>
       ) : (
         <>
@@ -1210,20 +1200,6 @@ export default function OfflineOrders() {
           )}
         </>
       )}
-
-      {/* CREATE / EDIT OFFLINE ORDER MODAL */}
-      <OfflineOrderModal
-        isOpen={showCreateModal}
-        orderToEdit={editingOrder}
-        onClose={() => {
-          setShowCreateModal(false);
-          setEditingOrder(null);
-        }}
-        onSuccess={() => {
-          fetchOrders();
-          setEditingOrder(null);
-        }}
-      />
     </div>
   );
 }
