@@ -1257,13 +1257,13 @@ function CreateOrder() {
             setServiceabilityStatus({
               serviceable: true,
               status: "SERVICEABLE",
-              message: "Non-Serviceable",
+              message: "Delivery is available at this pincode",
             });
           } else {
             setServiceabilityStatus({
               serviceable: false,
               status: res?.data?.status || "NOT_SERVICEABLE",
-              message: res?.data?.message || "Non-Serviceable",
+              message: res?.data?.message || "Delivery is not available at this pincode",
             });
           }
         })
@@ -1304,7 +1304,7 @@ function CreateOrder() {
           serviceData?.message ||
           (serviceData?.status === "EMBARGO"
             ? "Delivery is temporarily unavailable at this pincode (Embargo)"
-            : "Non-Serviceable");
+            : "Delivery is not available at this pincode");
 
         setServiceabilityStatus({
           serviceable: false,
@@ -2125,7 +2125,6 @@ function CreateOrder() {
                   })()
                 ) : (
                   <p className="mt-2 text-[10px] sm:text-[11px] text-slate-400 truncate">
-                    Optional reference
                   </p>
                 )}
               </div>
@@ -2144,8 +2143,8 @@ function CreateOrder() {
             </div>
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {/* ROW 1: Customer Name (25%), Mobile Number (25%), Delivery Address (50%) */}
-              <div ref={previousCustomerDropdownRef} className="relative sm:col-span-1 lg:col-span-1">
+              {/* ROW 1: Customer Name & Mobile Number (2 cols each on lg) */}
+              <div ref={previousCustomerDropdownRef} className="relative sm:col-span-1 lg:col-span-2">
                 <label className={labelClass}>Customer Name *</label>
                 <div className="relative">
                   <input
@@ -2205,7 +2204,7 @@ function CreateOrder() {
                 )}
               </div>
 
-              <div className="sm:col-span-1 lg:col-span-1">
+              <div className="sm:col-span-1 lg:col-span-2">
                 <label className={labelClass}>Mobile Number *</label>
                 <input
                   name="mobile"
@@ -2220,8 +2219,8 @@ function CreateOrder() {
                 />
               </div>
 
-              {/* Delivery Address (50% of the row) */}
-              <div className="sm:col-span-2 lg:col-span-2">
+              {/* ROW 2: Delivery Address (Full Row Width) */}
+              <div className="col-span-full">
                 <label className={labelClass}>Delivery Address *</label>
                 <input
                   name="address_line1"
@@ -2241,7 +2240,7 @@ function CreateOrder() {
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  placeholder="Optional email"
+                  placeholder="email"
                   className={inputClass}
                 />
               </div>
@@ -2514,7 +2513,7 @@ function CreateOrder() {
 
                   <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-5 sm:gap-3">
                     <div>
-                      <label className={labelClass}>Length (cm) *</label>
+                      <label className={labelClass}>Length (cm)</label>
                       <input
                         type="number"
                         min="0"
@@ -2531,7 +2530,7 @@ function CreateOrder() {
                     </div>
 
                     <div>
-                      <label className={labelClass}>Width (cm) *</label>
+                      <label className={labelClass}>Width (cm)</label>
                       <input
                         type="number"
                         min="0"
@@ -2543,12 +2542,12 @@ function CreateOrder() {
                           handlePackageChange(index, "width", e.target.value)
                         }
                         placeholder="W"
-                        className={inputClass} 
+                        className={inputClass}
                       />
                     </div>
 
                     <div>
-                      <label className={labelClass}>Height (cm) *</label>
+                      <label className={labelClass}>Height (cm)</label>
                       <input
                         type="number"
                         min="0"
