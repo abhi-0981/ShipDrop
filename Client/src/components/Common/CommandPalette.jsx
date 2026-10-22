@@ -236,6 +236,12 @@ export default function CommandPalette() {
   // Combined list for keyboard navigation
   const allSelectableItems = useMemo(() => {
     const list = [];
+    const cleanQ = query.trim();
+
+    // If query has at least 3 characters, offer live tracking directly at top
+    if (cleanQ.length >= 3 && (activeTab === "ALL" || activeTab === "ORDERS")) {
+      list.push({ type: "TRACK", data: { search: cleanQ } });
+    }
 
     // If on ALL or ORDERS tab and we have orders
     if (activeTab === "ALL" || activeTab === "ORDERS") {
@@ -252,7 +258,7 @@ export default function CommandPalette() {
     }
 
     return list;
-  }, [activeTab, orderResults, filteredNavItems]);
+  }, [query, activeTab, orderResults, filteredNavItems]);
 
   // Reset selected index when selectable items change
   useEffect(() => {
@@ -287,7 +293,11 @@ export default function CommandPalette() {
   const handleSelectItem = (item) => {
     setIsOpen(false);
 
-    if (item.type === "NAV") {
+    if (item.type === "TRACK") {
+      window.dispatchEvent(
+        new CustomEvent("shipdrop:openTracking", { detail: String(item.data.search).trim() })
+      );
+    } else if (item.type === "NAV") {
       navigate(item.data.path);
     } else if (item.type === "ORDER") {
       const order = item.data;
@@ -375,8 +385,43 @@ export default function CommandPalette() {
         {/* RESULTS SCROLL VIEW */}
         <div
           ref={listRef}
-          className="overflow-y-auto p-2 space-y-4 max-h-[60vh] [scrollbar-width:thin]"
+          className="overflow-y-auto p-2 space-y-3 max-h-[60vh] [scrollbar-width:thin]"
         >
+          {/* DIRECT TRACK ACTION (If user typed >= 3 characters) */}
+          {query.trim().length >= 3 && (activeTab === "ALL" || activeTab === "ORDERS") && (
+            <div
+              data-command-index={0}
+              onClick={() => handleSelectItem({ type: "TRACK", data: { search: query.trim() } })}
+              className={`group flex items-center justify-between rounded-xl p-2.5 transition cursor-pointer text-xs ${
+                selectedIndex === 0
+                  ? "bg-[#008dd2]/10 text-slate-900 ring-1 ring-[#008dd2]/30"
+                  : "bg-sky-50/40 hover:bg-sky-50 text-slate-700 border border-sky-100/60"
+              }`}
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#008dd2] text-white shadow-xs">
+                  <Icon name="truck" className="h-4 w-4" />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5 text-slate-900">
+                    <span className="font-semibold text-slate-600">Track Shipment:</span>
+                    <span className="font-mono font-bold text-[#008dd2] truncate">"{query.trim()}"</span>
+                  </div>
+                  <div className="text-[10.5px] text-slate-400 truncate">
+                    Press Enter to open live tracking drawer for this AWB or Order ID
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="rounded-full bg-[#008dd2]/10 px-2 py-0.5 text-[9.5px] font-bold text-[#008dd2] uppercase">
+                  Track Live
+                </span>
+                <span className="text-slate-300 group-hover:text-slate-600 transition">↵</span>
+              </div>
+            </div>
+          )}
+
           {/* 1. ORDERS SECTION (IF ANY) */}
           {(activeTab === "ALL" || activeTab === "ORDERS") && (
             <div>
@@ -406,7 +451,9 @@ export default function CommandPalette() {
                     Orders & Shipments ({orderResults.length})
                   </div>
                   {orderResults.map((order, idx) => {
-                    const isSelected = selectedIndex === idx;
+                    const hasDirectTrack = query.trim().length >= 3 && (activeTab === "ALL" || activeTab === "ORDERS");
+                    const orderGlobalIndex = (hasDirectTrack ? 1 : 0) + idx;
+                    const isSelected = selectedIndex === orderGlobalIndex;
                     const id = order.order_id || order.id;
                     const awb = order.awb_number || order.awb || order.tracking_number;
                     const customer = order.consignee_name || order.customer_name || "Customer";
@@ -417,7 +464,7 @@ export default function CommandPalette() {
                     return (
                       <div
                         key={id}
-                        data-command-index={idx}
+                        data-command-index={orderGlobalIndex}
                         onClick={() => handleSelectItem({ type: "ORDER", data: order })}
                         className={`group flex items-center justify-between rounded-xl p-2.5 transition cursor-pointer text-xs ${
                           isSelected
@@ -472,8 +519,9 @@ export default function CommandPalette() {
               )}
 
               {filteredNavItems.map((item, idx) => {
+                const hasDirectTrack = query.trim().length >= 3 && (activeTab === "ALL" || activeTab === "ORDERS");
                 const itemGlobalIndex =
-                  (activeTab === "ALL" ? orderResults.length : 0) + idx;
+                  (hasDirectTrack ? 1 : 0) + (activeTab === "ALL" ? orderResults.length : 0) + idx;
                 const isSelected = selectedIndex === itemGlobalIndex;
 
                 return (
