@@ -52,7 +52,7 @@ export default function CreateOfflineOrder() {
 
   const [formData, setFormData] = useState({ ...initialForm });
 
-  // Load user party identities on mount
+  // Load parties on mount
   useEffect(() => {
     let isMounted = true;
     const loadParties = async () => {
@@ -79,7 +79,7 @@ export default function CreateOfflineOrder() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Auto pincode city/state lookup
+  // Pincode auto-lookup
   const handlePincodeChange = async (e) => {
     const pin = e.target.value.replace(/\D/g, "").slice(0, 6);
     setFormData((prev) => ({ ...prev, pincode: pin }));
@@ -106,7 +106,7 @@ export default function CreateOfflineOrder() {
     }
   };
 
-  // Live volumetric weight calculation
+  // Live volumetric weight
   const volWeight =
     formData.length && formData.width && formData.height
       ? (
@@ -120,7 +120,6 @@ export default function CreateOfflineOrder() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validations
     if (!formData.carrier.trim()) {
       return toast.error("Please select a courier carrier");
     }
@@ -128,13 +127,13 @@ export default function CreateOfflineOrder() {
       return toast.error("Consignment / Tracking Number is required");
     }
     if (!formData.consignee_name.trim()) {
-      return toast.error("Customer / Consignee Name is required");
+      return toast.error("Customer Name is required");
     }
     if (!/^\d{10}$/.test(formData.mobile.trim())) {
       return toast.error("Valid 10-digit mobile number is required");
     }
     if (!/^\d{6}$/.test(formData.pincode.trim())) {
-      return toast.error("Valid 6-digit destination pincode is required");
+      return toast.error("Valid 6-digit pincode is required");
     }
     if (!formData.city.trim() || !formData.state.trim()) {
       return toast.error("City and State are required");
@@ -194,20 +193,20 @@ export default function CreateOfflineOrder() {
 
   return (
     <div className="min-h-screen bg-[#f8fafc] p-3 sm:p-5 lg:p-6 space-y-4">
-      {/* PAGE HEADER */}
-      <div className="rounded-2xl border border-slate-200 bg-white px-4 sm:px-6 py-4 shadow-[0_1px_2px_rgba(15,23,42,0.02)]">
+      {/* HEADER */}
+      <div className="rounded-2xl border border-slate-200 bg-white px-4 sm:px-6 py-3.5 sm:py-4 shadow-[0_1px_2px_rgba(15,23,42,0.02)]">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
             <div
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl shadow-xs"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
               style={{
                 background: "#edf8ff",
                 color: PRIMARY,
               }}
             >
               <svg
-                width="22"
-                height="22"
+                width="20"
+                height="20"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
@@ -222,11 +221,11 @@ export default function CreateOfflineOrder() {
             </div>
 
             <div>
-              <h1 className="text-base sm:text-lg font-bold tracking-[-0.2px] text-slate-900">
+              <h1 className="text-base sm:text-lg font-bold tracking-tight text-slate-900">
                 Create Offline Order
               </h1>
               <p className="mt-0.5 text-xs text-slate-400">
-                Record manual shipments (Mark Express, Tirupati, DTDC, etc.) with custom rates and remarks
+                Record manual courier shipments (Mark Express, Tirupati, DTDC, etc.)
               </p>
             </div>
           </div>
@@ -263,72 +262,25 @@ export default function CreateOfflineOrder() {
         </div>
       </div>
 
-      {/* MAIN FORM */}
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {/* SECTION 1: CARRIER & PARTY IDENTITY */}
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-6 shadow-[0_1px_3px_rgba(15,23,42,0.03)] space-y-4">
-          <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-sky-50 text-[#008dd2]">
-              <svg
-                width="15"
-                height="15"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <rect width="16" height="16" x="4" y="4" rx="2" />
-                <path d="M9 9h6" />
-                <path d="M9 13h6" />
-                <path d="M9 17h4" />
-              </svg>
-            </div>
-            <div>
-              <h2 className="text-sm font-bold text-slate-800">
-                1. Courier Partner & Party
-              </h2>
-              <p className="text-[11px] text-slate-400">
-                Specify manual courier carrier and optional party identity
-              </p>
-            </div>
+      {/* UNIFIED CLEAN FORM CARD */}
+      <form
+        onSubmit={handleSubmit}
+        className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-6 md:p-8 shadow-[0_1px_4px_rgba(15,23,42,0.03)] space-y-6"
+      >
+        {/* 1. ORDER & DELIVERY DETAILS */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-[#008dd2]" />
+            <h2 className="text-xs sm:text-sm font-bold tracking-wide uppercase text-slate-700">
+              Order & Delivery Details
+            </h2>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-            {/* PARTY IDENTITY */}
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-xs font-semibold text-slate-700">
-                  Party Identity
-                </label>
-                <Link
-                  to="/settings/party-identities"
-                  className="text-[11px] font-bold text-[#008dd2] hover:underline"
-                >
-                  + Add Party
-                </Link>
-              </div>
-              <select
-                name="party_identity_id"
-                value={formData.party_identity_id}
-                onChange={handleChange}
-                className={inputClass}
-                disabled={partiesLoading}
-              >
-                <option value="">None (Direct Order)</option>
-                {partyIdentities.map((party) => (
-                  <option key={party.id} value={party.id}>
-                    {party.reference_name || party.name}{" "}
-                    {party.name ? `— ${party.name}` : ""}
-                  </option>
-                ))}
-              </select>
-            </div>
-
+          {/* COURIER & CLIENT */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4">
             {/* CARRIER */}
             <div>
-              <label className={labelClass}>Manual Courier Carrier *</label>
+              <label className={labelClass}>Courier Carrier *</label>
               <select
                 name="carrier"
                 value={formData.carrier}
@@ -344,70 +296,70 @@ export default function CreateOfflineOrder() {
               </select>
             </div>
 
-            {/* CONSIGNMENT NUMBER */}
+            {/* CONSIGNMENT NO */}
             <div>
-              <label className={labelClass}>
-                Consignment / Tracking Number *
-              </label>
+              <label className={labelClass}>Consignment / AWB No *</label>
               <input
                 type="text"
                 name="consignment_no"
                 value={formData.consignment_no}
                 onChange={handleChange}
-                placeholder="e.g. 9999999999 or ME123456"
+                placeholder="e.g. 9999999999"
                 className={`${inputClass} font-mono font-medium`}
                 required
               />
             </div>
-          </div>
-        </div>
 
-        {/* SECTION 2: CUSTOMER / DESTINATION DETAILS */}
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-6 shadow-[0_1px_3px_rgba(15,23,42,0.03)] space-y-4">
-          <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
-              <svg
-                width="15"
-                height="15"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+            {/* PARTY IDENTITY */}
+            <div className="sm:col-span-2 lg:col-span-1">
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-semibold text-slate-700">
+                  Client / Party Identity
+                </label>
+                <Link
+                  to="/settings/party-identities"
+                  className="text-[11px] font-semibold text-[#008dd2] hover:underline"
+                >
+                  + Manage
+                </Link>
+              </div>
+              <select
+                name="party_identity_id"
+                value={formData.party_identity_id}
+                onChange={handleChange}
+                className={inputClass}
+                disabled={partiesLoading}
               >
-                <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" />
-                <circle cx="12" cy="10" r="2.5" />
-              </svg>
-            </div>
-            <div>
-              <h2 className="text-sm font-bold text-slate-800">
-                2. Customer & Destination Details
-              </h2>
-              <p className="text-[11px] text-slate-400">
-                Recipient contact information and delivery address
-              </p>
+                <option value="">-- No Client (Direct) --</option>
+                {partyIdentities.map((party) => (
+                  <option key={party.id} value={party.id}>
+                    {party.reference_name || party.name}{" "}
+                    {party.name ? `— ${party.name}` : ""}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+          {/* CUSTOMER CONTACT & LOCATION */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3.5 sm:gap-4 pt-1">
             {/* CUSTOMER NAME */}
-            <div>
-              <label className={labelClass}>Customer / Consignee Name *</label>
+            <div className="lg:col-span-3">
+              <label className={labelClass}>Customer Name *</label>
               <input
                 type="text"
                 name="consignee_name"
                 value={formData.consignee_name}
                 onChange={handleChange}
-                placeholder="Full Name"
+                placeholder="Customer Full Name"
                 className={inputClass}
                 required
               />
             </div>
 
-            {/* MOBILE */}
-            <div>
-              <label className={labelClass}>Mobile Number (10 digits) *</label>
+            {/* MOBILE NUMBER */}
+            <div className="lg:col-span-3">
+              <label className={labelClass}>Mobile Number *</label>
               <div className="relative">
                 <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-xs font-semibold text-slate-400">
                   +91
@@ -430,14 +382,14 @@ export default function CreateOfflineOrder() {
             </div>
 
             {/* PINCODE */}
-            <div>
+            <div className="lg:col-span-2">
               <div className="flex items-center justify-between mb-1.5">
                 <label className="text-xs font-semibold text-slate-700">
-                  Destination Pincode *
+                  Pincode *
                 </label>
                 {pincodeLoading && (
                   <span className="text-[10px] font-bold text-[#008dd2] animate-pulse">
-                    Verifying...
+                    Checking...
                   </span>
                 )}
               </div>
@@ -454,7 +406,7 @@ export default function CreateOfflineOrder() {
             </div>
 
             {/* CITY */}
-            <div>
+            <div className="lg:col-span-2">
               <label className={labelClass}>City *</label>
               <input
                 type="text"
@@ -468,7 +420,7 @@ export default function CreateOfflineOrder() {
             </div>
 
             {/* STATE */}
-            <div>
+            <div className="lg:col-span-2">
               <label className={labelClass}>State *</label>
               <input
                 type="text"
@@ -481,285 +433,234 @@ export default function CreateOfflineOrder() {
               />
             </div>
 
-            {/* ADDRESS */}
-            <div className="sm:col-span-2 lg:col-span-1">
-              <label className={labelClass}>Complete Delivery Address</label>
+            {/* DELIVERY ADDRESS - WIDE (AT LEAST 50% - 66.7% ROW SPAN) */}
+            <div className="col-span-1 sm:col-span-2 lg:col-span-8">
+              <label className={labelClass}>
+                Complete Delivery Address *
+              </label>
               <input
                 type="text"
                 name="address"
                 value={formData.address}
                 onChange={handleChange}
-                placeholder="House / Flat No, Street, Landmark"
+                placeholder="House / Flat No, Building, Street, Landmark, Area"
+                className={inputClass}
+                required
+              />
+            </div>
+
+            {/* PRODUCT NAME */}
+            <div className="col-span-1 sm:col-span-2 lg:col-span-4">
+              <label className={labelClass}>Product / Item Name (Optional)</label>
+              <input
+                type="text"
+                name="product_name"
+                value={formData.product_name}
+                onChange={handleChange}
+                placeholder="e.g. Sarees, Electronics, Documents"
                 className={inputClass}
               />
             </div>
           </div>
         </div>
 
-        {/* SECTION 3: PACKAGE SPECS, DIMENSIONS & RATE */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* PACKAGE & ITEMS */}
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-6 shadow-[0_1px_3px_rgba(15,23,42,0.03)] space-y-4">
-            <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
-                <svg
-                  width="15"
-                  height="15"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-                </svg>
-              </div>
-              <div>
-                <h2 className="text-sm font-bold text-slate-800">
-                  3. Package Specs & Dimensions
-                </h2>
-                <p className="text-[11px] text-slate-400">
-                  Packaging type, weight and physical dimensions
-                </p>
-              </div>
+        {/* 2. PACKAGE, RATE & REMARK */}
+        <div className="space-y-4 pt-4 border-t border-slate-100">
+          <div className="flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-emerald-500" />
+            <h2 className="text-xs sm:text-sm font-bold tracking-wide uppercase text-slate-700">
+              Package Specs & Rate
+            </h2>
+          </div>
+
+          {/* PACKAGE SPECS & DIMS */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
+            <div>
+              <label className={labelClass}>Package Type</label>
+              <select
+                name="package_type"
+                value={formData.package_type}
+                onChange={handleChange}
+                className={inputClass}
+              >
+                {PACKAGE_TYPES.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </select>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-              <div>
-                <label className={labelClass}>Package Type</label>
-                <select
-                  name="package_type"
-                  value={formData.package_type}
-                  onChange={handleChange}
-                  className={inputClass}
-                >
-                  {PACKAGE_TYPES.map((t) => (
-                    <option key={t} value={t}>
-                      {t}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className={labelClass}>Shipping Mode</label>
-                <select
-                  name="shipping_mode"
-                  value={formData.shipping_mode}
-                  onChange={handleChange}
-                  className={inputClass}
-                >
-                  <option value="Surface">Surface</option>
-                  <option value="Air">Air</option>
-                </select>
-              </div>
-
-              <div>
-                <label className={labelClass}>Product / Item Name</label>
-                <input
-                  type="text"
-                  name="product_name"
-                  value={formData.product_name}
-                  onChange={handleChange}
-                  placeholder="e.g. Sarees, Electronics"
-                  className={inputClass}
-                />
-              </div>
+            <div>
+              <label className={labelClass}>Mode</label>
+              <select
+                name="shipping_mode"
+                value={formData.shipping_mode}
+                onChange={handleChange}
+                className={inputClass}
+              >
+                <option value="Surface">Surface</option>
+                <option value="Air">Air</option>
+              </select>
             </div>
 
-            {/* WEIGHT & DIMENSIONS */}
-            <div className="pt-2 border-t border-slate-100">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div>
-                  <label className={labelClass}>Weight (Kg) *</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0.01"
-                    name="weight"
-                    value={formData.weight}
-                    onChange={handleChange}
-                    placeholder="0.5"
-                    className={`${inputClass} font-mono`}
-                    required
-                  />
-                </div>
+            <div>
+              <label className={labelClass}>Dead Wt (Kg) *</label>
+              <input
+                type="number"
+                step="0.01"
+                min="0.01"
+                name="weight"
+                value={formData.weight}
+                onChange={handleChange}
+                placeholder="0.50"
+                className={`${inputClass} font-mono`}
+                required
+              />
+            </div>
 
-                <div>
-                  <label className={labelClass}>Length (cm)</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    name="length"
-                    value={formData.length}
-                    onChange={handleChange}
-                    placeholder="10"
-                    className={`${inputClass} font-mono`}
-                  />
-                </div>
+            <div>
+              <label className={labelClass}>L (cm)</label>
+              <input
+                type="number"
+                step="0.1"
+                min="0"
+                name="length"
+                value={formData.length}
+                onChange={handleChange}
+                placeholder="10"
+                className={`${inputClass} font-mono`}
+              />
+            </div>
 
-                <div>
-                  <label className={labelClass}>Width (cm)</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    name="width"
-                    value={formData.width}
-                    onChange={handleChange}
-                    placeholder="10"
-                    className={`${inputClass} font-mono`}
-                  />
-                </div>
+            <div>
+              <label className={labelClass}>W (cm)</label>
+              <input
+                type="number"
+                step="0.1"
+                min="0"
+                name="width"
+                value={formData.width}
+                onChange={handleChange}
+                placeholder="10"
+                className={`${inputClass} font-mono`}
+              />
+            </div>
 
-                <div>
-                  <label className={labelClass}>Height (cm)</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    name="height"
-                    value={formData.height}
-                    onChange={handleChange}
-                    placeholder="10"
-                    className={`${inputClass} font-mono`}
-                  />
-                </div>
-              </div>
-
-              {volWeight && (
-                <div className="mt-2.5 flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-500 border border-slate-200/60">
-                  <span>Volumetric Weight (L×W×H / 5000):</span>
-                  <span className="font-mono font-bold text-slate-800">
-                    {volWeight} kg
-                  </span>
-                </div>
-              )}
+            <div>
+              <label className={labelClass}>H (cm)</label>
+              <input
+                type="number"
+                step="0.1"
+                min="0"
+                name="height"
+                value={formData.height}
+                onChange={handleChange}
+                placeholder="10"
+                className={`${inputClass} font-mono`}
+              />
             </div>
           </div>
 
-          {/* PAYMENT & RATE + REMARK */}
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-6 shadow-[0_1px_3px_rgba(15,23,42,0.03)] space-y-4 flex flex-col justify-between">
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
-                  <svg
-                    width="15"
-                    height="15"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M12 2v20" />
-                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-                  </svg>
-                </div>
-                <div>
-                  <h2 className="text-sm font-bold text-slate-800">
-                    4. Payment, Rate & Remark
-                  </h2>
-                  <p className="text-[11px] text-slate-400">
-                    Payment type, shipping charge and custom remarks
-                  </p>
-                </div>
+          {/* PAYMENT MODE, SHIPPING CHARGE & REMARK */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3.5 pt-1">
+            {/* PAYMENT MODE */}
+            <div className="lg:col-span-3">
+              <label className={labelClass}>Payment Mode</label>
+              <div className="flex items-center rounded-xl border border-slate-200 bg-slate-50 p-1">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      payment_mode: "Prepaid",
+                    }))
+                  }
+                  className={`flex-1 rounded-lg py-2 text-xs font-bold transition cursor-pointer ${
+                    formData.payment_mode === "Prepaid"
+                      ? "bg-white text-[#008dd2] shadow-xs"
+                      : "text-slate-500 hover:text-slate-700"
+                  }`}
+                >
+                  Prepaid
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFormData((prev) => ({ ...prev, payment_mode: "COD" }))
+                  }
+                  className={`flex-1 rounded-lg py-2 text-xs font-bold transition cursor-pointer ${
+                    formData.payment_mode === "COD"
+                      ? "bg-white text-amber-600 shadow-xs"
+                      : "text-slate-500 hover:text-slate-700"
+                  }`}
+                >
+                  Cash on Delivery
+                </button>
               </div>
+            </div>
 
-              {/* PAYMENT MODE & CHARGE */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                <div>
-                  <label className={labelClass}>Payment Mode</label>
-                  <div className="flex items-center rounded-xl border border-slate-200 bg-slate-50 p-1">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          payment_mode: "Prepaid",
-                        }))
-                      }
-                      className={`flex-1 rounded-lg py-2 text-xs font-bold transition cursor-pointer ${
-                        formData.payment_mode === "Prepaid"
-                          ? "bg-white text-[#008dd2] shadow-xs"
-                          : "text-slate-500 hover:text-slate-700"
-                      }`}
-                    >
-                      Prepaid
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setFormData((prev) => ({ ...prev, payment_mode: "COD" }))
-                      }
-                      className={`flex-1 rounded-lg py-2 text-xs font-bold transition cursor-pointer ${
-                        formData.payment_mode === "COD"
-                          ? "bg-white text-amber-600 shadow-xs"
-                          : "text-slate-500 hover:text-slate-700"
-                      }`}
-                    >
-                      Cash on Delivery
-                    </button>
-                  </div>
-                </div>
-
-                <div>
-                  <label className={labelClass}>
-                    Shipping Charge (Incl. GST) *
-                  </label>
-                  <div className="relative">
-                    <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-xs font-bold text-slate-400">
-                      ₹
-                    </span>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      name="shipping_charge"
-                      value={formData.shipping_charge}
-                      onChange={handleChange}
-                      placeholder="0.00"
-                      className={`${inputClass} pl-8 font-mono font-bold text-emerald-600`}
-                      required
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* REMARK / SPECIAL NOTES (USER REQUIREMENT) */}
-              <div>
-                <label className={labelClass}>
-                  Remark / Special Notes (Optional)
-                </label>
-                <textarea
-                  name="remark"
-                  value={formData.remark}
+            {/* SHIPPING CHARGE */}
+            <div className="lg:col-span-3">
+              <label className={labelClass}>
+                Shipping Charge (₹) *
+              </label>
+              <div className="relative">
+                <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-xs font-bold text-slate-400">
+                  ₹
+                </span>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  name="shipping_charge"
+                  value={formData.shipping_charge}
                   onChange={handleChange}
-                  rows={3}
-                  placeholder="Enter remarks or special instructions (e.g. Urgent parcel, Fragile item, Hand over to security, Customer note, etc.)"
-                  className="w-full rounded-xl border border-slate-200 bg-white p-3 text-xs sm:text-[13px] text-slate-800 placeholder-slate-400 outline-none transition focus:border-[#008dd2] focus:ring-2 focus:ring-[#008dd2]/10 resize-none"
+                  placeholder="0.00"
+                  className={`${inputClass} pl-8 font-mono font-bold text-emerald-600 text-sm`}
+                  required
                 />
               </div>
+            </div>
+
+            {/* REMARK / NOTES - CLEANLY INTEGRATED (50% WIDTH ON DESKTOP) */}
+            <div className="sm:col-span-2 lg:col-span-6">
+              <label className={labelClass}>
+                Remark / Instructions (Optional)
+              </label>
+              <input
+                type="text"
+                name="remark"
+                value={formData.remark}
+                onChange={handleChange}
+                placeholder="e.g. Urgent parcel, Fragile item, Call before delivery"
+                className={inputClass}
+              />
             </div>
           </div>
         </div>
 
-        {/* SUBMISSION BAR */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_1px_3px_rgba(15,23,42,0.03)] flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="flex items-center gap-3 text-xs text-slate-600">
-            <span className="inline-flex items-center gap-1.5 rounded-lg bg-sky-50 px-2.5 py-1 font-bold text-[#008dd2]">
-              Carrier: {formData.carrier}
+        {/* BOTTOM ACTION BAR */}
+        <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-100">
+          <div className="flex items-center gap-2 text-xs text-slate-500">
+            <span className="font-semibold text-slate-700">
+              {formData.carrier}
             </span>
-            <span className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1 font-semibold text-slate-700">
-              Mode: {formData.payment_mode}
-            </span>
+            <span>•</span>
+            <span>{formData.payment_mode}</span>
             {formData.shipping_charge && (
-              <span className="font-bold text-emerald-600">
-                ₹{Number(formData.shipping_charge || 0).toFixed(2)}
-              </span>
+              <>
+                <span>•</span>
+                <span className="font-bold text-emerald-600">
+                  ₹{Number(formData.shipping_charge || 0).toFixed(2)}
+                </span>
+              </>
+            )}
+            {volWeight && (
+              <>
+                <span>•</span>
+                <span className="text-slate-400">Vol: {volWeight} kg</span>
+              </>
             )}
           </div>
 
@@ -775,7 +676,7 @@ export default function CreateOfflineOrder() {
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 sm:flex-none rounded-xl bg-[#008dd2] px-7 py-2.5 text-xs font-bold text-white shadow-sm shadow-[#008dd2]/20 hover:bg-[#007ab6] active:scale-95 disabled:opacity-60 transition cursor-pointer"
+              className="flex-1 sm:flex-none rounded-xl bg-[#008dd2] px-7 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[#007ab6] active:scale-95 disabled:opacity-60 transition cursor-pointer"
             >
               {loading ? "Recording Order..." : "Create Offline Order →"}
             </button>
