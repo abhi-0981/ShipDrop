@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import {
   HiOutlineIdentification,
@@ -14,6 +15,11 @@ import {
   HiOutlineLocationMarker,
   HiOutlineDocumentText,
   HiOutlineBookmark,
+  HiOutlineClipboardCopy,
+  HiOutlineShieldCheck,
+  HiOutlineViewGrid,
+  HiOutlineViewList,
+  HiOutlineExternalLink,
 } from "react-icons/hi";
 import api from "../../services/api";
 import { TableSkeleton } from "../../components/Common/TableSkeleton";
@@ -52,19 +58,10 @@ const initialFormData = {
 export default function PartyIdentities() {
   const [identities, setIdentities] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-
-  // Modal states
-  const [showModal, setShowModal] = useState(false);
-  const [modalMode, setModalMode] = useState("create"); // "create" | "edit"
-  const [editingIdentity, setEditingIdentity] = useState(null);
-  const [formData, setFormData] = useState(initialFormData);
-  const [saving, setSaving] = useState(false);
-
-  // Delete confirmation modal states
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [deletingIdentity, setDeletingIdentity] = useState(null);
-  const [deleting, setDeleting] = useState(false);
+  const [activeFilter, setActiveFilter] = useState("all"); // "all" | "with_orders" | "with_gst"
+  const [viewMode, setViewMode] = useState("table"); // "table" | "grid"
+  const [copiedKey, setCopiedKey] = useState(null);
+  const navigate = useNavigate();
 
   // Load identities from backend API
   const fetchIdentities = async () => {
@@ -92,24 +89,63 @@ export default function PartyIdentities() {
     fetchIdentities();
   }, []);
 
-  // Filtered identities based on search across name, reference, company, gst, phone, address
-  const filteredIdentities = useMemo(() => {
-    const query = searchTerm.trim().toLowerCase();
-    if (!query) return identities;
-    return identities.filter((item) =>
-      item.name?.toLowerCase().includes(query) ||
-      item.reference_name?.toLowerCase().includes(query) ||
-      item.company_name?.toLowerCase().includes(query) ||
-      item.gst_no?.toLowerCase().includes(query) ||
-      item.phone_no?.toLowerCase().includes(query) ||
-      item.address?.toLowerCase().includes(query)
-    );
-  }, [identities, searchTerm]);
-
   // Total linked orders across all identities
   const totalLinkedOrders = useMemo(() => {
     return identities.reduce((sum, item) => sum + (Number(item.linked_orders_count) || 0), 0);
   }, [identities]);
+
+  // GST count
+  const gstCount = useMemo(() => {
+    return identities.filter((item) => Boolean(item.gst_no && item.gst_no.trim())).length;
+  }, [identities]);
+
+  // With orders count
+  const withOrdersCount = useMemo(() => {
+    return identities.filter((item) => Number(item.linked_orders_count) > 0).length;
+  }, [identities]);
+
+  // Filtered identities based on search and active tab filter
+  const filteredIdentities = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase();
+    return identities.filter((item) => {
+      // Tab filter
+      if (activeFilter === "with_orders" && Number(item.linked_orders_count) <= 0) {
+        return false;
+      }
+      if (activeFilter === "with_gst" && (!item.gst_no || !item.gst_no.trim())) {
+        return false;
+      }
+      // Search query filter
+      if (!query) return true;
+      return (
+        item.name?.toLowerCase().includes(query) ||
+        item.reference_name?.toLowerCase().includes(query) ||
+        item.company_name?.toLowerCase().includes(query) ||
+        item.gst_no?.toLowerCase().includes(query) ||
+        item.phone_no?.toLowerCase().includes(query) ||
+        item.address?.toLowerCase().includes(query)
+      );
+    });
+  }, [identities, searchTerm, activeFilter]);
+
+  // Copy to clipboard helper
+  const handleCopy = async (text, label, key) => {
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedKey(key);
+      toast.success(`${label} copied!`);
+      setTimeout(() => setCopiedKey(null), 1800);
+    } catch {
+      toast.error(`Unable to copy ${label.toLowerCase()}`);
+    }
+  };
+
+  // View linked orders in AllOrders
+  const handleViewOrders = (identity) => {
+    if (!identity?.name) return;
+    navigate(`/dashboard/all-orders?search=${encodeURIComponent(identity.name)}`);
+  };
 
   // Open Create Modal
   const handleOpenCreate = () => {
@@ -262,20 +298,25 @@ export default function PartyIdentities() {
     <div className="min-h-screen bg-[#f5f8fc] px-3 sm:px-4 py-4 sm:py-5 pb-24 lg:pb-8">
       <div className="mx-auto max-w-[1450px]">
         {/* ==================================================
-            TOP HEADER
+            TOP HEADER (MATCHES ALLORDERS & DASHBOARD)
         ================================================== */}
-        <div className="mb-3 rounded-2xl border border-slate-200 bg-white px-4 sm:px-5 py-3.5 sm:py-4 shadow-[0_1px_2px_rgba(15,23,42,0.02)]">
+        <div className="mb-4 rounded-2xl border border-slate-200/90 bg-white p-4 sm:p-5 shadow-[0_1px_3px_rgba(15,23,42,0.03)]">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-50 text-[#008dd2]">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-50 to-sky-100/80 text-[#008dd2] ring-1 ring-sky-200/60 shadow-2xs">
                 <HiOutlineIdentification size={22} />
               </div>
               <div>
-                <h1 className="text-lg sm:text-xl font-bold tracking-tight text-slate-800">
-                  Party Identities
-                </h1>
-                <p className="text-xs text-slate-400">
-                  Create and manage client or party profiles (company, GST, phone, address) to tag orders
+                <div className="flex items-center gap-2">
+                  <h1 className="text-base sm:text-lg font-bold tracking-tight text-slate-900">
+                    Party Identities
+                  </h1>
+                  <span className="rounded-full bg-sky-50 px-2 py-0.5 text-[10px] font-bold text-[#008dd2] border border-sky-100">
+                    Client Profiles
+                  </span>
+                </div>
+                <p className="mt-0.5 text-xs text-slate-400">
+                  Create and manage client or party profiles (company, GST, phone, address) to tag orders.
                 </p>
               </div>
             </div>
@@ -283,7 +324,7 @@ export default function PartyIdentities() {
             <button
               type="button"
               onClick={handleOpenCreate}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#008dd2] px-4 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-xs transition hover:bg-[#007ab6] active:scale-95"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#008dd2] to-[#007ab6] px-4 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-sm shadow-[#008dd2]/25 transition hover:brightness-105 active:scale-95 cursor-pointer"
             >
               <HiOutlinePlus size={16} />
               <span>Add Party Identity</span>
@@ -292,81 +333,217 @@ export default function PartyIdentities() {
         </div>
 
         {/* ==================================================
-            STAT CARDS
+            STAT METRIC CARDS (3 BALANCED CARDS)
         ================================================== */}
-        <div className="mb-3.5 grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3">
-          <div className="rounded-2xl border border-slate-200 bg-white p-3.5 sm:p-4 shadow-[0_1px_2px_rgba(15,23,42,0.02)]">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-              Total Parties
-            </span>
-            <div className="mt-1 flex items-baseline gap-2">
-              <span className="text-xl sm:text-2xl font-bold text-slate-800">
-                {identities.length}
+        <div className="mb-4 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+          {/* TOTAL PARTIES */}
+          <div
+            onClick={() => setActiveFilter("all")}
+            className={`group cursor-pointer flex items-center justify-between rounded-2xl border bg-white p-4 transition-all duration-150 ${
+              activeFilter === "all"
+                ? "border-[#008dd2] ring-2 ring-[#008dd2]/10 shadow-sm"
+                : "border-slate-200/90 shadow-[0_1px_3px_rgba(15,23,42,0.02)] hover:border-slate-300"
+            }`}
+          >
+            <div>
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                Total Parties
               </span>
-              <span className="text-xs text-slate-400">registered</span>
+              <div className="mt-1 flex items-baseline gap-2">
+                <span className="text-2xl sm:text-3xl font-black font-mono text-slate-900 group-hover:text-[#008dd2] transition-colors">
+                  {identities.length}
+                </span>
+                <span className="text-xs font-medium text-slate-400">registered</span>
+              </div>
+            </div>
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-sky-50 text-[#008dd2] group-hover:scale-105 transition-transform shadow-2xs">
+              <HiOutlineIdentification size={22} />
             </div>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-3.5 sm:p-4 shadow-[0_1px_2px_rgba(15,23,42,0.02)]">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-              Total Linked Orders
-            </span>
-            <div className="mt-1 flex items-baseline gap-2">
-              <span className="text-xl sm:text-2xl font-bold text-emerald-600">
-                {totalLinkedOrders}
+          {/* TOTAL LINKED ORDERS */}
+          <div
+            onClick={() => setActiveFilter("with_orders")}
+            className={`group cursor-pointer flex items-center justify-between rounded-2xl border bg-white p-4 transition-all duration-150 ${
+              activeFilter === "with_orders"
+                ? "border-emerald-500 ring-2 ring-emerald-500/10 shadow-sm"
+                : "border-slate-200/90 shadow-[0_1px_3px_rgba(15,23,42,0.02)] hover:border-slate-300"
+            }`}
+          >
+            <div>
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                Linked Orders
               </span>
-              <span className="text-xs text-slate-400">orders</span>
+              <div className="mt-1 flex items-baseline gap-2">
+                <span className="text-2xl sm:text-3xl font-black font-mono text-emerald-600 group-hover:text-emerald-700 transition-colors">
+                  {totalLinkedOrders}
+                </span>
+                <span className="text-xs font-medium text-slate-400">
+                  tagged ({withOrdersCount} parties)
+                </span>
+              </div>
+            </div>
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 group-hover:scale-105 transition-transform shadow-2xs">
+              <HiOutlineCube size={22} />
             </div>
           </div>
 
-          <div className="col-span-2 sm:col-span-1 rounded-2xl border border-slate-200 bg-white p-3.5 sm:p-4 shadow-[0_1px_2px_rgba(15,23,42,0.02)]">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-              Search & Filter
-            </span>
-            <div className="relative mt-1">
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search by name, company, GST, phone..."
-                className="h-8.5 w-full rounded-xl border border-slate-200 bg-slate-50 pl-8 pr-3 text-xs text-slate-700 placeholder-slate-400 outline-none transition focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
-              />
-              <HiOutlineSearch
-                size={14}
-                className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400"
-              />
-              {searchTerm && (
-                <button
-                  type="button"
-                  onClick={() => setSearchTerm("")}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs"
-                >
-                  <HiOutlineX size={14} />
-                </button>
-              )}
+          {/* GST REGISTERED */}
+          <div
+            onClick={() => setActiveFilter("with_gst")}
+            className={`group cursor-pointer flex items-center justify-between rounded-2xl border bg-white p-4 transition-all duration-150 ${
+              activeFilter === "with_gst"
+                ? "border-indigo-500 ring-2 ring-indigo-500/10 shadow-sm"
+                : "border-slate-200/90 shadow-[0_1px_3px_rgba(15,23,42,0.02)] hover:border-slate-300"
+            }`}
+          >
+            <div>
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                GST Registered
+              </span>
+              <div className="mt-1 flex items-baseline gap-2">
+                <span className="text-2xl sm:text-3xl font-black font-mono text-indigo-600 group-hover:text-indigo-700 transition-colors">
+                  {gstCount}
+                </span>
+                <span className="text-xs font-medium text-slate-400">
+                  of {identities.length} verified
+                </span>
+              </div>
+            </div>
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 group-hover:scale-105 transition-transform shadow-2xs">
+              <HiOutlineShieldCheck size={22} />
             </div>
           </div>
         </div>
 
         {/* ==================================================
-            IDENTITIES LIST / TABLE
+            TOOLBAR (SEARCH + FILTER TABS + VIEW TOGGLE)
+        ================================================== */}
+        <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between rounded-2xl border border-slate-200/90 bg-white p-3 sm:p-3.5 shadow-[0_1px_3px_rgba(15,23,42,0.02)]">
+          {/* SEARCH INPUT */}
+          <div className="relative flex-1">
+            <HiOutlineSearch
+              size={17}
+              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+            />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search by party name, reference, company, GST, phone..."
+              className="h-10.5 w-full rounded-xl border border-slate-200/90 bg-slate-50/70 pl-10.5 pr-9 text-xs font-medium text-slate-800 placeholder:text-slate-400 outline-none transition focus:border-[#008dd2] focus:bg-white focus:ring-4 focus:ring-[#008dd2]/10"
+            />
+            {searchTerm && (
+              <button
+                type="button"
+                onClick={() => setSearchTerm("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 flex h-5 w-5 items-center justify-center rounded-full bg-slate-200 text-slate-600 hover:bg-slate-300 text-xs font-bold transition"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between sm:justify-end gap-2 shrink-0">
+            {/* FILTER PILLS */}
+            <div className="inline-flex rounded-xl bg-slate-100 p-1 text-xs font-semibold">
+              <button
+                type="button"
+                onClick={() => setActiveFilter("all")}
+                className={`rounded-lg px-3 py-1.5 transition cursor-pointer ${
+                  activeFilter === "all"
+                    ? "bg-white text-slate-900 shadow-2xs font-bold"
+                    : "text-slate-500 hover:text-slate-800"
+                }`}
+              >
+                All ({identities.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveFilter("with_orders")}
+                className={`rounded-lg px-3 py-1.5 transition cursor-pointer ${
+                  activeFilter === "with_orders"
+                    ? "bg-white text-emerald-700 shadow-2xs font-bold"
+                    : "text-slate-500 hover:text-slate-800"
+                }`}
+              >
+                With Orders ({withOrdersCount})
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveFilter("with_gst")}
+                className={`rounded-lg px-3 py-1.5 transition cursor-pointer ${
+                  activeFilter === "with_gst"
+                    ? "bg-white text-indigo-700 shadow-2xs font-bold"
+                    : "text-slate-500 hover:text-slate-800"
+                }`}
+              >
+                With GST ({gstCount})
+              </button>
+            </div>
+
+            {/* VIEW MODE TOGGLE (DESKTOP) */}
+            <div className="hidden sm:inline-flex rounded-xl bg-slate-100 p-1 text-slate-600">
+              <button
+                type="button"
+                onClick={() => setViewMode("table")}
+                className={`flex h-8 w-8 items-center justify-center rounded-lg transition cursor-pointer ${
+                  viewMode === "table"
+                    ? "bg-white text-[#008dd2] shadow-2xs"
+                    : "text-slate-400 hover:text-slate-700"
+                }`}
+                title="Table View"
+              >
+                <HiOutlineViewList size={18} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("grid")}
+                className={`flex h-8 w-8 items-center justify-center rounded-lg transition cursor-pointer ${
+                  viewMode === "grid"
+                    ? "bg-white text-[#008dd2] shadow-2xs"
+                    : "text-slate-400 hover:text-slate-700"
+                }`}
+                title="Card Grid View"
+              >
+                <HiOutlineViewGrid size={18} />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* ==================================================
+            IDENTITIES LIST / TABLE CONTENT
         ================================================== */}
         {loading ? (
-          <TableSkeleton rows={5} cols={6} />
+          <TableSkeleton rows={5} cols={5} />
         ) : filteredIdentities.length === 0 ? (
-          <div className="flex min-h-[300px] flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-[0_1px_2px_rgba(15,23,42,0.02)]">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-sky-50 text-[#008dd2]">
+          <div className="flex min-h-[320px] flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-[0_1px_3px_rgba(15,23,42,0.02)]">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-sky-50 text-[#008dd2] ring-1 ring-sky-100">
               <HiOutlineIdentification size={28} />
             </div>
-            <h3 className="mt-3 text-sm sm:text-base font-bold text-slate-800">
-              {searchTerm ? "No matching party identities found" : "No party identities yet"}
+            <h3 className="mt-3.5 text-base font-bold text-slate-800">
+              {searchTerm || activeFilter !== "all"
+                ? "No matching party identities"
+                : "No party identities created yet"}
             </h3>
             <p className="mt-1 max-w-md text-xs sm:text-[13px] text-slate-400">
-              {searchTerm
-                ? "Try searching with a different name, company, or phone."
+              {searchTerm || activeFilter !== "all"
+                ? "Try adjusting your search keywords or resetting the filter tabs."
                 : "Create party profiles with Name, Reference, Company, GST, Phone and Address to tag your orders easily."}
             </p>
-            {!searchTerm && (
+            {searchTerm || activeFilter !== "all" ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchTerm("");
+                  setActiveFilter("all");
+                }}
+                className="mt-4 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
+              >
+                Reset Filters
+              </button>
+            ) : (
               <button
                 type="button"
                 onClick={handleOpenCreate}
@@ -377,128 +554,293 @@ export default function PartyIdentities() {
               </button>
             )}
           </div>
+        ) : viewMode === "grid" ? (
+          /* ==================================================
+              CARD GRID VIEW (HIGH POLISH)
+          ================================================== */
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredIdentities.map((identity) => (
+              <div
+                key={identity.id}
+                className="group flex flex-col justify-between rounded-2xl border border-slate-200/90 bg-white p-4.5 shadow-[0_1px_3px_rgba(15,23,42,0.03)] hover:shadow-md hover:border-[#008dd2]/40 transition-all duration-200"
+              >
+                <div>
+                  {/* CARD HEADER */}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-sky-50 via-sky-100/70 to-sky-100 font-mono text-sm font-black text-[#008dd2] ring-1 ring-sky-200/60 shadow-2xs group-hover:scale-105 group-hover:bg-[#008dd2] group-hover:text-white transition-all">
+                        {getInitials(identity.name)}
+                      </div>
+                      <div className="min-w-0">
+                        <h4 className="font-bold text-slate-900 text-sm group-hover:text-[#008dd2] transition-colors truncate">
+                          {identity.name}
+                        </h4>
+                        {identity.reference_name ? (
+                          <span className="mt-0.5 inline-block rounded-md bg-sky-50 px-2 py-0.2 text-[10.5px] font-mono font-bold text-[#008dd2] border border-sky-100">
+                            Ref: {identity.reference_name}
+                          </span>
+                        ) : (
+                          <span className="text-[11px] text-slate-400">
+                            Added {formatDate(identity.created_at)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEdit(identity)}
+                        className="flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 hover:text-[#008dd2] hover:border-[#008dd2]/40 hover:bg-sky-50 transition shadow-2xs active:scale-95 cursor-pointer"
+                        title="Edit"
+                      >
+                        <HiOutlinePencil size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenDelete(identity)}
+                        className="flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 hover:text-rose-600 hover:border-rose-300 hover:bg-rose-50 transition shadow-2xs active:scale-95 cursor-pointer"
+                        title="Delete"
+                      >
+                        <HiOutlineTrash size={14} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* DETAILS */}
+                  <div className="mt-3.5 space-y-2 border-t border-slate-100 pt-3 text-xs">
+                    {/* COMPANY */}
+                    <div className="flex items-center gap-1.5 text-slate-800 font-bold">
+                      <HiOutlineOfficeBuilding size={14} className="text-slate-400 shrink-0" />
+                      <span className="truncate">
+                        {identity.company_name || <span className="font-normal text-slate-400 italic">Individual Account</span>}
+                      </span>
+                    </div>
+
+                    {/* GST */}
+                    {identity.gst_no ? (
+                      <div
+                        onClick={() => handleCopy(identity.gst_no, "GST Number", `gst-${identity.id}`)}
+                        className="group/gst inline-flex items-center gap-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200/90 px-2.5 py-1 text-[11px] font-mono font-bold transition shadow-2xs cursor-pointer"
+                        title="Click to copy GST"
+                      >
+                        <span className="rounded bg-[#008dd2]/10 px-1 py-0.2 text-[9px] font-black text-[#008dd2] uppercase tracking-wider">
+                          GSTIN
+                        </span>
+                        <span>{identity.gst_no}</span>
+                        <HiOutlineClipboardCopy size={13} className="text-slate-400 group-hover/gst:text-slate-700 transition" />
+                      </div>
+                    ) : (
+                      <div className="text-[11px] text-slate-300 font-mono">No GST registered</div>
+                    )}
+
+                    {/* PHONE */}
+                    {identity.phone_no && (
+                      <div
+                        onClick={() => handleCopy(identity.phone_no, "Phone number", `phone-${identity.id}`)}
+                        className="flex items-center gap-1.5 text-slate-700 font-semibold font-mono hover:text-[#008dd2] transition cursor-pointer"
+                        title="Click to copy phone"
+                      >
+                        <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+                          <HiOutlinePhone size={11} />
+                        </div>
+                        <span>{identity.phone_no}</span>
+                        <HiOutlineClipboardCopy size={11} className="text-slate-300 hover:text-slate-500" />
+                      </div>
+                    )}
+
+                    {/* ADDRESS */}
+                    {identity.address && (
+                      <div
+                        className="flex items-start gap-1.5 text-[11px] text-slate-500 line-clamp-2"
+                        title={identity.address}
+                      >
+                        <HiOutlineLocationMarker size={13} className="text-slate-400 shrink-0 mt-0.5" />
+                        <span>{identity.address}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* BOTTOM FOOTER */}
+                <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-xs">
+                  {Number(identity.linked_orders_count) > 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => handleViewOrders(identity)}
+                      className="inline-flex items-center gap-1.5 rounded-full bg-sky-50 hover:bg-[#008dd2] text-[#008dd2] hover:text-white border border-sky-200/80 px-2.5 py-1 font-bold font-mono text-[11.5px] transition-all shadow-2xs cursor-pointer"
+                      title="View all tagged orders"
+                    >
+                      <HiOutlineCube size={13} />
+                      <span>{identity.linked_orders_count} orders linked</span>
+                      <HiOutlineExternalLink size={11} className="opacity-70" />
+                    </button>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-400 font-mono">
+                      <HiOutlineCube size={13} /> 0 orders linked
+                    </span>
+                  )}
+
+                  <span className="text-[10.5px] text-slate-400 font-medium">
+                    ID #{identity.id}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
         ) : (
+          /* ==================================================
+              HIGH-END TABLE VIEW (DESKTOP & TABLET)
+          ================================================== */
           <>
-            {/* DESKTOP TABLE */}
-            <div className="hidden sm:block overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
+            <div className="hidden sm:block overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-[0_2px_8px_rgba(15,23,42,0.03)]">
               <table className="w-full table-fixed border-collapse">
                 <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50/70">
-                    <th className="w-[6%] px-3.5 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                      Tag
+                  <tr className="border-b border-slate-200/80 bg-[#f8fafc] text-[12px] font-semibold text-slate-600">
+                    <th className="w-[30%] px-5 py-3.5 text-left">
+                      Party Profile
                     </th>
-                    <th className="w-[24%] px-3.5 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                      Party & Reference
+                    <th className="w-[26%] px-5 py-3.5 text-left">
+                      Company & GSTIN
                     </th>
-                    <th className="w-[24%] px-3.5 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                      Company & GST
-                    </th>
-                    <th className="w-[24%] px-3.5 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                    <th className="w-[26%] px-5 py-3.5 text-left">
                       Contact & Address
                     </th>
-                    <th className="w-[11%] px-3.5 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                      Orders
+                    <th className="w-[11%] px-5 py-3.5 text-left">
+                      Tagged Orders
                     </th>
-                    <th className="w-[11%] px-3.5 py-3 text-right text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                    <th className="w-[7%] px-5 py-3.5 text-right">
                       Actions
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100 text-xs">
                   {filteredIdentities.map((identity) => (
                     <tr
                       key={identity.id}
-                      className="hover:bg-slate-50/80 transition"
+                      className="group transition-all duration-150 hover:bg-[#f8fbff]"
                     >
-                      {/* TAG / INITIALS */}
-                      <td className="px-3.5 py-3 align-top">
-                        <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-sky-100/80 font-mono text-xs font-bold text-[#008dd2]">
-                          {getInitials(identity.name)}
-                        </span>
-                      </td>
-
-                      {/* NAME & REFERENCE */}
-                      <td className="px-3.5 py-3 align-top">
-                        <div className="font-semibold text-slate-800 text-sm">
-                          {identity.name}
-                        </div>
-                        {identity.reference_name ? (
-                          <div className="mt-0.5 inline-flex items-center gap-1 text-[11px] text-slate-500 font-medium">
-                            <HiOutlineBookmark size={12} className="text-[#008dd2]" />
-                            <span>Ref: {identity.reference_name}</span>
+                      {/* PARTY PROFILE (AVATAR + NAME + REF) */}
+                      <td className="px-5 py-4 align-middle">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-sky-50 via-sky-100/70 to-sky-100 font-mono text-xs font-black text-[#008dd2] ring-1 ring-sky-200/70 shadow-2xs group-hover:scale-105 group-hover:bg-[#008dd2] group-hover:text-white transition-all duration-200">
+                            {getInitials(identity.name)}
                           </div>
-                        ) : (
-                          <div className="text-[11px] text-slate-400">Created {formatDate(identity.created_at)}</div>
-                        )}
+                          <div className="min-w-0">
+                            <div className="font-bold text-slate-900 text-[13.5px] group-hover:text-[#008dd2] transition-colors truncate">
+                              {identity.name}
+                            </div>
+                            <div className="mt-0.5 flex items-center gap-1.5 flex-wrap">
+                              {identity.reference_name ? (
+                                <span className="inline-flex items-center gap-1 rounded-md bg-sky-50 px-2 py-0.2 text-[10.5px] font-mono font-bold text-[#008dd2] border border-sky-100">
+                                  Ref: {identity.reference_name}
+                                </span>
+                              ) : null}
+                              <span className="text-[11px] text-slate-400">
+                                #{identity.id} • {formatDate(identity.created_at)}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
                       </td>
 
-                      {/* COMPANY & GST */}
-                      <td className="px-3.5 py-3 align-top">
+                      {/* COMPANY & GSTIN */}
+                      <td className="px-5 py-4 align-middle">
                         {identity.company_name ? (
-                          <div className="flex items-center gap-1 text-xs font-semibold text-slate-700">
-                            <HiOutlineOfficeBuilding size={13} className="text-slate-400 shrink-0" />
+                          <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800">
+                            <HiOutlineOfficeBuilding size={14} className="text-slate-400 shrink-0" />
                             <span className="truncate">{identity.company_name}</span>
                           </div>
                         ) : (
-                          <span className="text-slate-300 text-xs">—</span>
+                          <span className="text-slate-400 italic text-xs">Individual Account</span>
                         )}
 
-                        {identity.gst_no && (
-                          <div className="mt-1 inline-flex items-center gap-1 rounded bg-amber-50 px-1.5 py-0.5 font-mono text-[10.5px] font-bold text-amber-700 border border-amber-100">
-                            <HiOutlineDocumentText size={11} />
+                        {identity.gst_no ? (
+                          <div
+                            onClick={() => handleCopy(identity.gst_no, "GST Number", `gst-tbl-${identity.id}`)}
+                            className="group/gst mt-1.5 inline-flex items-center gap-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200/90 px-2.5 py-1 text-[11px] font-mono font-bold transition shadow-2xs cursor-pointer"
+                            title="Click to copy GST"
+                          >
+                            <span className="rounded bg-[#008dd2]/10 px-1 py-0.2 text-[9px] font-black text-[#008dd2] uppercase tracking-wider">
+                              GSTIN
+                            </span>
                             <span>{identity.gst_no}</span>
+                            <HiOutlineClipboardCopy size={13} className="text-slate-400 group-hover/gst:text-slate-700 transition" />
                           </div>
+                        ) : (
+                          <div className="mt-1 text-[11px] text-slate-300 font-mono">No GST</div>
                         )}
                       </td>
 
                       {/* CONTACT & ADDRESS */}
-                      <td className="px-3.5 py-3 align-top">
-                        {identity.phone_no && (
-                          <div className="flex items-center gap-1 text-xs font-medium text-slate-700">
-                            <HiOutlinePhone size={13} className="text-emerald-500 shrink-0" />
-                            <span>{identity.phone_no}</span>
-                          </div>
-                        )}
+                      <td className="px-5 py-4 align-middle">
+                        <div className="space-y-1">
+                          {identity.phone_no ? (
+                            <div
+                              onClick={() => handleCopy(identity.phone_no, "Phone number", `phone-tbl-${identity.id}`)}
+                              className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 font-mono hover:text-[#008dd2] transition cursor-pointer"
+                              title="Click to copy phone"
+                            >
+                              <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+                                <HiOutlinePhone size={11} />
+                              </div>
+                              <span>{identity.phone_no}</span>
+                              <HiOutlineClipboardCopy size={11} className="text-slate-300 hover:text-slate-600" />
+                            </div>
+                          ) : null}
 
-                        {identity.address ? (
-                          <div
-                            className="mt-0.5 flex items-start gap-1 text-[11px] text-slate-500 line-clamp-2"
-                            title={identity.address}
-                          >
-                            <HiOutlineLocationMarker size={13} className="text-slate-400 shrink-0 mt-0.5" />
-                            <span>{identity.address}</span>
-                          </div>
-                        ) : !identity.phone_no ? (
-                          <span className="text-slate-300 text-xs">—</span>
-                        ) : null}
+                          {identity.address ? (
+                            <div
+                              className="flex items-start gap-1 text-[11.5px] text-slate-500 line-clamp-1"
+                              title={identity.address}
+                            >
+                              <HiOutlineLocationMarker size={13} className="text-slate-400 shrink-0 mt-0.5" />
+                              <span className="truncate">{identity.address}</span>
+                            </div>
+                          ) : !identity.phone_no ? (
+                            <span className="text-slate-300 text-xs">—</span>
+                          ) : null}
+                        </div>
                       </td>
 
-                      {/* ORDERS */}
-                      <td className="px-3.5 py-3 align-top">
-                        <span className="inline-flex items-center gap-1.5 rounded-md bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
-                          <HiOutlineCube size={13} className="text-slate-500" />
-                          {Number(identity.linked_orders_count) || 0}
-                        </span>
+                      {/* TAGGED ORDERS */}
+                      <td className="px-5 py-4 align-middle">
+                        {Number(identity.linked_orders_count) > 0 ? (
+                          <button
+                            type="button"
+                            onClick={() => handleViewOrders(identity)}
+                            className="inline-flex items-center gap-1.5 rounded-full bg-sky-50 hover:bg-[#008dd2] text-[#008dd2] hover:text-white border border-sky-200/80 px-3 py-1 text-xs font-bold font-mono transition-all shadow-2xs cursor-pointer group/order"
+                            title="Filter orders by this party"
+                          >
+                            <HiOutlineCube size={13} />
+                            <span>{identity.linked_orders_count} orders</span>
+                            <HiOutlineExternalLink size={10} className="opacity-60 group-hover/order:opacity-100" />
+                          </button>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-slate-50 text-slate-400 border border-slate-200/60 px-2.5 py-0.5 text-[11px] font-medium font-mono">
+                            0 orders
+                          </span>
+                        )}
                       </td>
 
                       {/* ACTIONS */}
-                      <td className="px-3.5 py-3 align-top text-right">
+                      <td className="px-5 py-4 align-middle text-right">
                         <div className="inline-flex items-center gap-1.5">
                           <button
                             type="button"
                             onClick={() => handleOpenEdit(identity)}
-                            className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-[#008dd2] transition"
+                            className="flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200/90 bg-white text-slate-500 hover:text-[#008dd2] hover:border-[#008dd2]/40 hover:bg-sky-50/60 transition-all shadow-2xs active:scale-95 cursor-pointer"
                             title="Edit Identity"
                           >
-                            <HiOutlinePencil size={15} />
+                            <HiOutlinePencil size={14} />
                           </button>
                           <button
                             type="button"
                             onClick={() => handleOpenDelete(identity)}
-                            className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition"
+                            className="flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200/90 bg-white text-slate-500 hover:text-rose-600 hover:border-rose-300 hover:bg-rose-50/60 transition-all shadow-2xs active:scale-95 cursor-pointer"
                             title="Delete Identity"
                           >
-                            <HiOutlineTrash size={15} />
+                            <HiOutlineTrash size={14} />
                           </button>
                         </div>
                       </td>
@@ -508,68 +850,76 @@ export default function PartyIdentities() {
               </table>
             </div>
 
-            {/* MOBILE CARDS */}
-            <div className="space-y-2.5 sm:hidden">
+            {/* MOBILE CARDS VIEW */}
+            <div className="space-y-3 sm:hidden">
               {filteredIdentities.map((identity) => (
                 <div
                   key={identity.id}
-                  className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-xs"
+                  className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs"
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-3">
-                      <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-100/80 font-mono text-sm font-bold text-[#008dd2]">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-sky-50 to-sky-100/90 font-mono text-sm font-black text-[#008dd2] ring-1 ring-sky-200/60 shadow-2xs">
                         {getInitials(identity.name)}
                       </span>
-                      <div>
-                        <h4 className="font-bold text-slate-800 text-sm">
+                      <div className="min-w-0">
+                        <h4 className="font-bold text-slate-900 text-sm truncate">
                           {identity.name}
                         </h4>
                         {identity.reference_name && (
-                          <p className="text-[11px] text-slate-500 font-medium">
+                          <span className="mt-0.5 inline-block rounded bg-sky-50 px-1.5 py-0.2 text-[10px] font-mono text-[#008dd2] font-semibold border border-sky-100">
                             Ref: {identity.reference_name}
-                          </p>
+                          </span>
                         )}
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1.5 shrink-0">
                       <button
                         type="button"
                         onClick={() => handleOpenEdit(identity)}
-                        className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50"
+                        className="flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 hover:text-[#008dd2] hover:bg-sky-50/50 shadow-2xs active:scale-95 transition"
                         title="Edit"
                       >
-                        <HiOutlinePencil size={15} />
+                        <HiOutlinePencil size={14} />
                       </button>
                       <button
                         type="button"
                         onClick={() => handleOpenDelete(identity)}
-                        className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-red-500 hover:bg-red-50 hover:border-red-200"
+                        className="flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 hover:text-rose-600 hover:bg-rose-50/50 shadow-2xs active:scale-95 transition"
                         title="Delete"
                       >
-                        <HiOutlineTrash size={15} />
+                        <HiOutlineTrash size={14} />
                       </button>
                     </div>
                   </div>
 
                   {/* DETAILS */}
-                  <div className="mt-3 space-y-1 border-t border-slate-100 pt-2 text-xs">
+                  <div className="mt-3 space-y-1.5 border-t border-slate-100 pt-2.5 text-xs">
                     {identity.company_name && (
-                      <div className="flex items-center gap-1.5 text-slate-700">
-                        <HiOutlineOfficeBuilding size={13} className="text-slate-400 shrink-0" />
-                        <span className="font-semibold">{identity.company_name}</span>
+                      <div className="flex items-center gap-1.5 text-slate-800 font-bold">
+                        <HiOutlineOfficeBuilding size={14} className="text-slate-400 shrink-0" />
+                        <span className="truncate">{identity.company_name}</span>
                       </div>
                     )}
                     {identity.gst_no && (
-                      <div className="flex items-center gap-1.5 font-mono text-[11px] text-amber-700 font-bold">
-                        <HiOutlineDocumentText size={13} className="text-amber-500 shrink-0" />
-                        <span>GST: {identity.gst_no}</span>
+                      <div
+                        onClick={() => handleCopy(identity.gst_no, "GST Number", `gst-mob-${identity.id}`)}
+                        className="inline-flex items-center gap-1.5 rounded-md bg-slate-50 px-2 py-0.5 font-mono text-[10.5px] font-bold text-slate-700 border border-slate-200/80 shadow-2xs cursor-pointer"
+                      >
+                        <span className="text-[9px] font-bold text-[#008dd2] uppercase">GSTIN</span>
+                        <span>{identity.gst_no}</span>
+                        <HiOutlineClipboardCopy size={12} className="text-slate-400" />
                       </div>
                     )}
                     {identity.phone_no && (
-                      <div className="flex items-center gap-1.5 text-slate-600">
+                      <div
+                        onClick={() => handleCopy(identity.phone_no, "Phone number", `phone-mob-${identity.id}`)}
+                        className="flex items-center gap-1.5 text-slate-700 font-semibold font-mono cursor-pointer"
+                      >
                         <HiOutlinePhone size={13} className="text-emerald-500 shrink-0" />
                         <span>{identity.phone_no}</span>
+                        <HiOutlineClipboardCopy size={11} className="text-slate-400" />
                       </div>
                     )}
                     {identity.address && (
@@ -580,11 +930,23 @@ export default function PartyIdentities() {
                     )}
                   </div>
 
-                  <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-2 text-xs">
-                    <span className="text-slate-400">Linked Orders:</span>
-                    <span className="font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded">
-                      {Number(identity.linked_orders_count) || 0} orders
-                    </span>
+                  <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-2.5 text-xs">
+                    <span className="text-slate-400 font-medium">Linked Shipments:</span>
+                    {Number(identity.linked_orders_count) > 0 ? (
+                      <button
+                        type="button"
+                        onClick={() => handleViewOrders(identity)}
+                        className="font-bold text-[#008dd2] bg-sky-50 border border-sky-200/60 px-2.5 py-0.5 rounded-full font-mono text-xs shadow-2xs flex items-center gap-1"
+                      >
+                        <HiOutlineCube size={12} />
+                        <span>{identity.linked_orders_count} orders</span>
+                        <HiOutlineExternalLink size={10} />
+                      </button>
+                    ) : (
+                      <span className="text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full font-mono text-xs">
+                        0 orders
+                      </span>
+                    )}
                   </div>
                 </div>
               ))}
