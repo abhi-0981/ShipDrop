@@ -58,10 +58,23 @@ const initialFormData = {
 export default function PartyIdentities() {
   const [identities, setIdentities] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
   const [activeFilter, setActiveFilter] = useState("all"); // "all" | "with_orders" | "with_gst"
   const [viewMode, setViewMode] = useState("table"); // "table" | "grid"
   const [copiedKey, setCopiedKey] = useState(null);
   const navigate = useNavigate();
+
+  // Modal states
+  const [showModal, setShowModal] = useState(false);
+  const [modalMode, setModalMode] = useState("create"); // "create" | "edit"
+  const [editingIdentity, setEditingIdentity] = useState(null);
+  const [formData, setFormData] = useState(initialFormData);
+  const [saving, setSaving] = useState(false);
+
+  // Delete confirmation modal states
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletingIdentity, setDeletingIdentity] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   // Load identities from backend API
   const fetchIdentities = async () => {
