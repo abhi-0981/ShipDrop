@@ -1131,27 +1131,34 @@
           {/* RIGHT SECTION: WALLET PILL + ACTIONS + PROFILE */}
           {/* ======================================================== */}
           <div className="flex items-center gap-1 sm:gap-2.5 shrink-0">
-            {/* TRACKING SEARCH */}
-            <form
-              onSubmit={handleTrackingSearch}
-              className="hidden md:flex relative w-[250px] lg:w-[310px] xl:w-[370px]"
+            {/* GLOBAL SEARCH / COMMAND BAR (Ctrl + K) */}
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new CustomEvent("shipdrop:openCommandPalette"))}
+              className="hidden md:flex items-center justify-between h-9 sm:h-10 w-[240px] lg:w-[300px] xl:w-[350px] rounded-xl border border-slate-200 bg-slate-50/80 hover:bg-white hover:border-[#008dd2]/50 hover:shadow-xs px-3.5 text-xs text-slate-400 transition-all duration-200 cursor-pointer group"
+              title="Global Search & Quick Actions (Ctrl + K)"
             >
-              <FiSearch
-                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
-                size={17}
-              />
+              <div className="flex items-center gap-2.5 truncate">
+                <FiSearch className="text-slate-400 group-hover:text-[#008dd2] transition-colors shrink-0" size={16} />
+                <span className="truncate text-slate-400 group-hover:text-slate-600 font-medium">Search orders, AWBs, pages...</span>
+              </div>
+              <div className="flex items-center gap-1 shrink-0 ml-2">
+                <kbd className="rounded border border-slate-200 bg-white group-hover:border-slate-300 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-500 shadow-2xs">
+                  Ctrl K
+                </kbd>
+              </div>
+            </button>
 
-              <input
-                type="text"
-                value={trackingSearch}
-                onChange={(event) => setTrackingSearch(event.target.value)}
-                placeholder="Enter Tracking ID or Order ID..."
-                disabled={trackingSearchLoading}
-                className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/70 pl-10 pr-4 text-xs font-medium text-slate-700 placeholder:text-slate-400 outline-none transition-all duration-200 focus:border-[#008dd2] focus:bg-white focus:ring-4 focus:ring-[#008dd2]/10 disabled:cursor-not-allowed disabled:opacity-70"
-              />
-
-            
-            </form>
+            {/* MOBILE SEARCH ICON BUTTON */}
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new CustomEvent("shipdrop:openCommandPalette"))}
+              className="flex md:hidden h-8 w-8 items-center justify-center rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 active:scale-95 transition"
+              title="Search (Ctrl + K)"
+              aria-label="Search"
+            >
+              <FiSearch size={16} />
+            </button>
 
             {/* IMPORT ORDER */}
             <button

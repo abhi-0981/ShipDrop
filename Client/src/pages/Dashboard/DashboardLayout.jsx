@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Sidebar from "../../components/Sidebar/Sidebar";
 import TopNavbar from "../../components/Navbar/TopNavbar";
 import ImpersonationBanner from "../../components/Common/ImpersonationBanner";
+import CommandPalette from "../../components/Common/CommandPalette";
 import { setupOrderCrossTabSync } from "../../services/orderEvents";
 
 function DashboardLayout() {
@@ -33,6 +34,9 @@ function DashboardLayout() {
 
   return (
     <div className="relative min-h-screen bg-[#f6f8fb]">
+      {/* GLOBAL COMMAND PALETTE (CTRL + K) */}
+      <CommandPalette />
+
       {/* FIXED TOP NAVBAR */}
       <TopNavbar collapsed={collapsed} setCollapsed={setCollapsed} />
 

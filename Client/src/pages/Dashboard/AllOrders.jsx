@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import api from "../../services/api";
 import OrderDetailsModal from "../../components/Common/OrderDetailsModal";
@@ -503,14 +504,25 @@ function AllOrders() {
     }
   });
 
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [searchParams] = useSearchParams();
+  const urlSearch = searchParams.get("search") || "";
+
+  const [search, setSearch] = useState(urlSearch);
+  const [debouncedSearch, setDebouncedSearch] = useState(urlSearch);
   const [isFetching, setIsFetching] = useState(false);
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [partyFilter, setPartyFilter] = useState("ALL");
   const [serviceFilter, setServiceFilter] = useState("ALL");
   const [paymentFilter, setPaymentFilter] = useState("ALL");
   const [partyIdentities, setPartyIdentities] = useState([]);
+
+  // Sync search state if URL query param changes
+  useEffect(() => {
+    if (urlSearch && urlSearch !== search) {
+      setSearch(urlSearch);
+      setDebouncedSearch(urlSearch);
+    }
+  }, [urlSearch]);
 
   useEffect(() => {
     let isMounted = true;
