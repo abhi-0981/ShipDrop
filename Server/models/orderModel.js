@@ -1734,8 +1734,6 @@ const getDashboardSummary = async (userId) => {
          o.user_id,
          o.awb,
          o.consignee_name,
-         o.city,
-         o.state,
          o.payment_type,
          o.status,
          CASE
