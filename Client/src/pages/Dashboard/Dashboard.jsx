@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import api from "../../services/api";
 import { subscribeToOrderUpdates } from "../../services/orderEvents";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-hot-toast";
+import OrderDetailsModal from "../../components/Common/OrderDetailsModal";
 
 // ======================================================
 // ICONS
@@ -123,6 +125,51 @@ const Icon = ({ name, size = 18 }) => {
       <svg {...common}>
         <circle cx="12" cy="12" r="9" />
         <path d="m9 9 6 6M15 9l-6 6" />
+      </svg>
+    );
+  }
+
+  if (name === "copy") {
+    return (
+      <svg {...common}>
+        <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+        <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+      </svg>
+    );
+  }
+
+  if (name === "check") {
+    return (
+      <svg {...common}>
+        <polyline points="20 6 9 17 4 12" />
+      </svg>
+    );
+  }
+
+  if (name === "alert") {
+    return (
+      <svg {...common}>
+        <circle cx="12" cy="12" r="10" />
+        <line x1="12" y1="8" x2="12" y2="12" />
+        <line x1="12" y1="16" x2="12.01" y2="16" />
+      </svg>
+    );
+  }
+
+  if (name === "rotate") {
+    return (
+      <svg {...common}>
+        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+        <path d="M3 3v5h5" />
+      </svg>
+    );
+  }
+
+  if (name === "eye") {
+    return (
+      <svg {...common}>
+        <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+        <circle cx="12" cy="12" r="3" />
       </svg>
     );
   }
@@ -299,6 +346,17 @@ function Dashboard() {
 
   const [refreshing, setRefreshing] = useState(false);
   const [dashboardError, setDashboardError] = useState("");
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [copiedAwb, setCopiedAwb] = useState(null);
+
+  const handleCopyAwb = (e, awb) => {
+    e?.stopPropagation?.();
+    if (!awb || awb === "—") return;
+    navigator.clipboard.writeText(String(awb).trim());
+    setCopiedAwb(awb);
+    toast.success("AWB copied to clipboard!");
+    setTimeout(() => setCopiedAwb(null), 2000);
+  };
 
   // Rate calculator state
   const [pickupPincode, setPickupPincode] = useState("");
@@ -466,6 +524,19 @@ function Dashboard() {
     };
   }, [orders, statusCounts]);
 
+  const pipelineCounts = useMemo(() => {
+    return {
+      readyToShip: statusCounts?.PROCESSING ?? 0,
+      manifested: statusCounts?.MANIFESTED ?? 0,
+      inTransit: statusCounts?.["IN TRANSIT"] ?? 0,
+      outForDelivery: statusCounts?.["OUT FOR DELIVERY"] ?? 0,
+      delivered: statusCounts?.DELIVERED ?? 0,
+      pending: statusCounts?.PENDING ?? 0,
+      rto: (statusCounts?.["RTO IN TRANSIT"] ?? 0) + (statusCounts?.["RTO DELIVERED"] ?? 0),
+      offline: statusCounts?.OFFLINE ?? 0,
+    };
+  }, [statusCounts]);
+
   const recentOrders = useMemo(() => {
     return [...orders]
       .sort((a, b) => Number(b?.id || 0) - Number(a?.id || 0))
@@ -590,17 +661,25 @@ function Dashboard() {
   const getStatusClass = (status) => {
     switch (String(status).toUpperCase()) {
       case "PROCESSING":
-        return "border-amber-100 bg-amber-50 text-amber-600";
+        return "border-amber-200/80 bg-amber-50 text-amber-700";
+      case "BOOKED":
+        return "border-sky-200/80 bg-sky-50 text-sky-700";
       case "MANIFESTED":
+      case "NOT PICKED":
+        return "border-indigo-200/80 bg-indigo-50 text-indigo-700";
       case "SHIPPED":
+      case "IN TRANSIT":
       case "IN_TRANSIT":
+      case "OUT FOR DELIVERY":
+      case "OUT_FOR_DELIVERY":
+        return "border-blue-200/80 bg-blue-50 text-blue-700";
       case "DELIVERED":
-        return "border-emerald-100 bg-emerald-50 text-emerald-600";
+        return "border-emerald-200/80 bg-emerald-50 text-emerald-700";
       case "CANCELLED":
       case "CANCELED":
-        return "border-rose-100 bg-rose-50 text-rose-600";
+        return "border-rose-200/80 bg-rose-50 text-rose-700";
       default:
-        return "border-slate-200 bg-slate-50 text-slate-500";
+        return "border-slate-200 bg-slate-50 text-slate-600";
     }
   };
 
@@ -843,6 +922,196 @@ if (pageLoading && !orders.length) {
       </div>
 
       {/* ==================================================
+          LIVE SHIPMENT PIPELINE (Order Fulfillment Funnel)
+      ================================================== */}
+      <div className="mb-4 rounded-2xl border border-slate-200/80 bg-white p-3.5 sm:p-4 shadow-[0_1px_4px_rgba(15,23,42,0.03)]">
+        <div className="mb-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="flex h-2 w-2 relative">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <h2 className="text-[12px] sm:text-[13px] font-bold uppercase tracking-wider text-slate-700">
+              Live Shipment Pipeline
+            </h2>
+          </div>
+          <span className="text-[11px] font-medium text-slate-400 hidden sm:inline">
+            Click any stage to view shipments
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7 sm:gap-2.5">
+          {/* Stage 1: Ready to Ship */}
+          <button
+            type="button"
+            onClick={() => navigate("/processing-orders")}
+            className="group flex flex-col justify-between rounded-xl border border-slate-100 bg-slate-50/70 p-2.5 text-left transition hover:border-amber-300 hover:bg-amber-50/50 hover:shadow-xs cursor-pointer"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight group-hover:text-amber-800">
+                Ready to Ship
+              </span>
+              <span className="flex h-5 w-5 items-center justify-center rounded-md bg-amber-100/70 text-amber-700">
+                <Icon name="clock" size={12} />
+              </span>
+            </div>
+            <div className="mt-2 flex items-baseline justify-between">
+              <span className="text-lg font-extrabold text-slate-800 group-hover:text-amber-700">
+                {pipelineCounts.readyToShip}
+              </span>
+              <span className="text-[10px] font-semibold text-slate-400 group-hover:text-amber-600">
+                Booked →
+              </span>
+            </div>
+          </button>
+
+          {/* Stage 2: Manifested */}
+          <button
+            type="button"
+            onClick={() => navigate("/manifested")}
+            className="group flex flex-col justify-between rounded-xl border border-slate-100 bg-slate-50/70 p-2.5 text-left transition hover:border-sky-300 hover:bg-sky-50/50 hover:shadow-xs cursor-pointer"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight group-hover:text-sky-800">
+                Manifested
+              </span>
+              <span className="flex h-5 w-5 items-center justify-center rounded-md bg-sky-100/70 text-sky-700">
+                <Icon name="package" size={12} />
+              </span>
+            </div>
+            <div className="mt-2 flex items-baseline justify-between">
+              <span className="text-lg font-extrabold text-slate-800 group-hover:text-sky-700">
+                {pipelineCounts.manifested}
+              </span>
+              <span className="text-[10px] font-semibold text-slate-400 group-hover:text-sky-600">
+                Handover →
+              </span>
+            </div>
+          </button>
+
+          {/* Stage 3: In Transit */}
+          <button
+            type="button"
+            onClick={() => navigate("/in-transit")}
+            className="group flex flex-col justify-between rounded-xl border border-slate-100 bg-slate-50/70 p-2.5 text-left transition hover:border-blue-300 hover:bg-blue-50/50 hover:shadow-xs cursor-pointer"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight group-hover:text-blue-800">
+                In Transit
+              </span>
+              <span className="flex h-5 w-5 items-center justify-center rounded-md bg-blue-100/70 text-blue-700">
+                <Icon name="truck" size={12} />
+              </span>
+            </div>
+            <div className="mt-2 flex items-baseline justify-between">
+              <span className="text-lg font-extrabold text-slate-800 group-hover:text-blue-700">
+                {pipelineCounts.inTransit}
+              </span>
+              <span className="text-[10px] font-semibold text-slate-400 group-hover:text-blue-600">
+                Moving →
+              </span>
+            </div>
+          </button>
+
+          {/* Stage 4: Out For Delivery */}
+          <button
+            type="button"
+            onClick={() => navigate("/out-for-delivery")}
+            className="group flex flex-col justify-between rounded-xl border border-slate-100 bg-slate-50/70 p-2.5 text-left transition hover:border-purple-300 hover:bg-purple-50/50 hover:shadow-xs cursor-pointer"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight group-hover:text-purple-800">
+                Out For Delivery
+              </span>
+              <span className="flex h-5 w-5 items-center justify-center rounded-md bg-purple-100/70 text-purple-700">
+                <Icon name="location" size={12} />
+              </span>
+            </div>
+            <div className="mt-2 flex items-baseline justify-between">
+              <span className="text-lg font-extrabold text-slate-800 group-hover:text-purple-700">
+                {pipelineCounts.outForDelivery}
+              </span>
+              <span className="text-[10px] font-semibold text-slate-400 group-hover:text-purple-600">
+                Today →
+              </span>
+            </div>
+          </button>
+
+          {/* Stage 5: Delivered */}
+          <button
+            type="button"
+            onClick={() => navigate("/delivered")}
+            className="group flex flex-col justify-between rounded-xl border border-slate-100 bg-slate-50/70 p-2.5 text-left transition hover:border-emerald-300 hover:bg-emerald-50/50 hover:shadow-xs cursor-pointer"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight group-hover:text-emerald-800">
+                Delivered
+              </span>
+              <span className="flex h-5 w-5 items-center justify-center rounded-md bg-emerald-100/70 text-emerald-700">
+                <Icon name="check" size={12} />
+              </span>
+            </div>
+            <div className="mt-2 flex items-baseline justify-between">
+              <span className="text-lg font-extrabold text-slate-800 group-hover:text-emerald-700">
+                {pipelineCounts.delivered}
+              </span>
+              <span className="text-[10px] font-semibold text-slate-400 group-hover:text-emerald-600">
+                Success ✓
+              </span>
+            </div>
+          </button>
+
+          {/* Stage 6: NDR / Pending */}
+          <button
+            type="button"
+            onClick={() => navigate("/pending")}
+            className="group flex flex-col justify-between rounded-xl border border-slate-100 bg-slate-50/70 p-2.5 text-left transition hover:border-amber-300 hover:bg-amber-50/50 hover:shadow-xs cursor-pointer"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight group-hover:text-amber-800">
+                NDR / Pending
+              </span>
+              <span className="flex h-5 w-5 items-center justify-center rounded-md bg-amber-100/70 text-amber-700">
+                <Icon name="alert" size={12} />
+              </span>
+            </div>
+            <div className="mt-2 flex items-baseline justify-between">
+              <span className="text-lg font-extrabold text-slate-800 group-hover:text-amber-700">
+                {pipelineCounts.pending}
+              </span>
+              <span className="text-[10px] font-semibold text-slate-400 group-hover:text-amber-600">
+                Action Req →
+              </span>
+            </div>
+          </button>
+
+          {/* Stage 7: RTO Return */}
+          <button
+            type="button"
+            onClick={() => navigate("/rto-in-transit")}
+            className="group flex flex-col justify-between rounded-xl border border-slate-100 bg-slate-50/70 p-2.5 text-left transition hover:border-rose-300 hover:bg-rose-50/50 hover:shadow-xs cursor-pointer"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight group-hover:text-rose-800">
+                RTO Return
+              </span>
+              <span className="flex h-5 w-5 items-center justify-center rounded-md bg-rose-100/70 text-rose-700">
+                <Icon name="rotate" size={12} />
+              </span>
+            </div>
+            <div className="mt-2 flex items-baseline justify-between">
+              <span className="text-lg font-extrabold text-slate-800 group-hover:text-rose-700">
+                {pipelineCounts.rto}
+              </span>
+              <span className="text-[10px] font-semibold text-slate-400 group-hover:text-rose-600">
+                Return →
+              </span>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      {/* ==================================================
           MAIN CONTENT: Split on Desktop, Stack on Mobile
       ================================================== */}
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
@@ -860,14 +1129,25 @@ if (pageLoading && !orders.length) {
                 </p>
               </div>
 
-              <button
-                type="button"
-                onClick={handleCreateOrder}
-                className="flex h-9 items-center justify-center gap-1.5 rounded-xl bg-[#111827] px-3 text-[12px] font-semibold text-white shadow-sm transition hover:bg-[#1f2937] active:scale-95"
-              >
-                <Icon name="plus" size={14} />
-                <span>Create Order</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => navigate("/create-offline-order")}
+                  className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-[12px] font-semibold text-slate-700 shadow-xs transition hover:bg-slate-50 active:scale-95 cursor-pointer"
+                >
+                  <Icon name="truck" size={14} />
+                  <span>+ Offline Order</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleCreateOrder}
+                  className="flex h-9 items-center justify-center gap-1.5 rounded-xl bg-[#111827] px-3.5 text-[12px] font-semibold text-white shadow-sm transition hover:bg-[#1f2937] active:scale-95 cursor-pointer"
+                >
+                  <Icon name="plus" size={14} />
+                  <span>Create Order</span>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -918,13 +1198,15 @@ if (pageLoading && !orders.length) {
                 <div className="divide-y divide-slate-100 md:hidden">
                   {recentOrders.map((order) => {
                     const status = getStatus(order);
+                    const awb = getAWB(order);
                     return (
                       <div
                         key={order?.id ?? order?.order_id}
-                        className="p-3.5 space-y-2 hover:bg-slate-50/50 transition-colors"
+                        onClick={() => setSelectedOrder(order)}
+                        className="p-3.5 space-y-2 hover:bg-slate-50/70 transition-colors cursor-pointer"
                       >
                         <div className="flex items-center justify-between">
-                          <span className="text-[13px] font-bold text-slate-800">
+                          <span className="text-[13px] font-bold text-[#008dd2]">
                             #{getOrderId(order)}
                           </span>
                           <span
@@ -937,11 +1219,18 @@ if (pageLoading && !orders.length) {
                         </div>
 
                         <div className="flex items-center justify-between text-[12px] text-slate-600">
-                          <span className="font-medium truncate max-w-[180px]">
-                            {getCustomer(order)}
-                          </span>
+                          <div className="min-w-0 pr-2">
+                            <span className="font-semibold text-slate-800 truncate block">
+                              {getCustomer(order)}
+                            </span>
+                            {(order?.city || order?.state) && (
+                              <span className="text-[10px] text-slate-400 truncate block">
+                                {order.city || ""}{order.city && order.state ? ", " : ""}{order.state || ""}
+                              </span>
+                            )}
+                          </div>
                           <span
-                            className={`rounded px-1.5 py-0.5 text-[10px] font-semibold border ${getPayment(order) === "COD"
+                            className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold border ${getPayment(order) === "COD"
                               ? "border-violet-100 bg-violet-50 text-violet-600"
                               : "border-slate-200 bg-slate-50 text-slate-500"
                               }`}
@@ -951,9 +1240,23 @@ if (pageLoading && !orders.length) {
                         </div>
 
                         <div className="flex items-center justify-between text-[11px] text-slate-400 border-t border-slate-50 pt-1.5">
-                          <span className="font-mono">
-                            AWB: {getAWB(order) || "—"}
-                          </span>
+                          <div className="flex items-center gap-1.5 font-mono">
+                            <span>AWB: {awb || "—"}</span>
+                            {awb && awb !== "—" && (
+                              <button
+                                type="button"
+                                title="Copy AWB"
+                                onClick={(e) => handleCopyAwb(e, awb)}
+                                className="p-0.5 text-slate-400 hover:text-[#008dd2]"
+                              >
+                                {copiedAwb === awb ? (
+                                  <span className="text-[10px] font-bold text-emerald-600">✓</span>
+                                ) : (
+                                  <Icon name="copy" size={11} />
+                                )}
+                              </button>
+                            )}
+                          </div>
                           <span>{formatDate(order?.created_at)}</span>
                         </div>
                       </div>
@@ -984,24 +1287,65 @@ if (pageLoading && !orders.length) {
                         <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wide text-slate-400">
                           Date
                         </th>
+                        <th className="px-4 py-3 text-right text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                          Action
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 text-[12px]">
                       {recentOrders.map((order) => {
                         const status = getStatus(order);
+                        const awb = getAWB(order);
                         return (
                           <tr
                             key={order?.id ?? order?.order_id}
-                            className="transition-colors hover:bg-slate-50/60"
+                            onClick={() => setSelectedOrder(order)}
+                            className="transition-colors hover:bg-sky-50/30 cursor-pointer"
                           >
                             <td className="px-4 py-3 font-semibold text-slate-800">
                               #{getOrderId(order)}
                             </td>
-                            <td className="max-w-[140px] px-4 py-3 truncate font-medium text-slate-700">
-                              {getCustomer(order)}
+                            <td className="max-w-[170px] px-4 py-3">
+                              <div className="font-semibold text-slate-800 truncate" title={getCustomer(order)}>
+                                {getCustomer(order)}
+                              </div>
+                              {(order?.city || order?.state) && (
+                                <div className="text-[11px] text-slate-400 truncate mt-0.5">
+                                  {order.city || ""}{order.city && order.state ? ", " : ""}{order.state || ""}
+                                </div>
+                              )}
                             </td>
                             <td className="px-4 py-3 text-slate-500 font-mono text-[11px]">
-                              {getAWB(order) || "—"}
+                              {awb && awb !== "—" ? (
+                                <div className="inline-flex items-center gap-1.5">
+                                  <span className="font-medium text-slate-700">{awb}</span>
+                                  <button
+                                    type="button"
+                                    title="Copy AWB"
+                                    onClick={(e) => handleCopyAwb(e, awb)}
+                                    className="p-1 rounded text-slate-400 hover:text-[#008dd2] hover:bg-sky-50 transition"
+                                  >
+                                    {copiedAwb === awb ? (
+                                      <span className="text-[10px] font-bold text-emerald-600">✓</span>
+                                    ) : (
+                                      <Icon name="copy" size={12} />
+                                    )}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    title="Track Shipment"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      navigate(`/track?awb=${awb}`);
+                                    }}
+                                    className="p-1 rounded text-slate-400 hover:text-[#008dd2] hover:bg-sky-50 transition"
+                                  >
+                                    <Icon name="truck" size={12} />
+                                  </button>
+                                </div>
+                              ) : (
+                                <span className="text-slate-300 font-sans">—</span>
+                              )}
                             </td>
                             <td className="px-4 py-3">
                               <span
@@ -1024,6 +1368,19 @@ if (pageLoading && !orders.length) {
                             </td>
                             <td className="px-4 py-3 text-[11px] text-slate-400">
                               {formatDate(order?.created_at)}
+                            </td>
+                            <td className="px-4 py-3 text-right">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedOrder(order);
+                                }}
+                                className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600 hover:border-[#008dd2] hover:text-[#008dd2] hover:bg-sky-50 transition shadow-2xs"
+                              >
+                                <Icon name="eye" size={12} />
+                                <span>View</span>
+                              </button>
                             </td>
                           </tr>
                         );
@@ -1323,6 +1680,16 @@ if (pageLoading && !orders.length) {
           </form>
         </div>
       </div>
+
+      {/* ==================================================
+          ORDER DETAILS MODAL
+      ================================================== */}
+      {selectedOrder && (
+        <OrderDetailsModal
+          order={selectedOrder}
+          onClose={() => setSelectedOrder(null)}
+        />
+      )}
 
     </div>
   );
