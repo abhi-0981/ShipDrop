@@ -23,6 +23,71 @@ import { FiMenu } from "react-icons/fi";
 import api from "../../services/api";
 import { fetchOrderStatusCounts } from "../../services/orderEvents";
 
+// Dynamic route prefetcher for instant 0ms tab switching
+const prefetchRoute = (path) => {
+  try {
+    switch (path) {
+      case "/dashboard":
+        import("../../pages/Dashboard/Dashboard");
+        break;
+      case "/create-order":
+        import("../../pages/Dashboard/CreateOrder");
+        break;
+      case "/create-offline-order":
+        import("../../pages/Dashboard/CreateOfflineOrder");
+        break;
+      case "/all-orders":
+        import("../../pages/Dashboard/AllOrders");
+        break;
+      case "/offline-orders":
+        import("../../pages/Dashboard/OfflineOrders");
+        break;
+      case "/processing-orders":
+      case "/orders/processing":
+        import("../../pages/Dashboard/ProcessingOrders");
+        break;
+      case "/manifested":
+        import("../../pages/Dashboard/Manifested");
+        break;
+      case "/not-picked":
+        import("../../pages/Dashboard/NotPicked");
+        break;
+      case "/in-transit":
+        import("../../pages/Dashboard/InTransit");
+        break;
+      case "/out-for-delivery":
+        import("../../pages/Dashboard/OutForDelivery");
+        break;
+      case "/delivered":
+        import("../../pages/Dashboard/Delivered");
+        break;
+      case "/rto-in-transit":
+        import("../../pages/Dashboard/RTOInTransit");
+        break;
+      case "/rto-delivered":
+        import("../../pages/Dashboard/RTODelivered");
+        break;
+      case "/rate-calculator":
+        import("../../pages/Dashboard/RateCalculator");
+        break;
+      case "/serviceability":
+        import("../../pages/Dashboard/Serviceability");
+        break;
+      case "/settings/party-identities":
+        import("../../pages/Dashboard/PartyIdentities");
+        break;
+      case "/settings/pickup-address":
+        import("../../pages/Dashboard/PickupAddress");
+        break;
+      case "/settings/return-addresses":
+        import("../../pages/Dashboard/ReturnAddresses");
+        break;
+      default:
+        break;
+    }
+  } catch (err) {}
+};
+
 function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -481,6 +546,7 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
           {/* DASHBOARD */}
           <Link
             to="/dashboard"
+            onMouseEnter={() => prefetchRoute("/dashboard")}
             onClick={handleNavClick}
             className={`flex items-center rounded-xl px-3 py-2.5 text-[14px] transition duration-150 ${activeClass(
               "/dashboard",
@@ -493,6 +559,7 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
           {/* CREATE ORDER */}
           <Link
             to="/create-order"
+            onMouseEnter={() => prefetchRoute("/create-order")}
             onClick={() => {
               sessionStorage.removeItem("editingProcessingOrder");
               window.dispatchEvent(new Event("shipdrop:resetCreateOrder"));
@@ -509,6 +576,7 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
           {/* OFFLINE CREATE ORDER */}
           <Link
             to="/create-offline-order"
+            onMouseEnter={() => prefetchRoute("/create-offline-order")}
             onClick={handleNavClick}
             className={`flex items-center rounded-xl px-3 py-2.5 text-[14px] transition duration-150 ${activeClass(
               "/create-offline-order",
@@ -521,6 +589,7 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
           {/* PROCESSING ORDERS */}
           <Link
             to="/processing-orders"
+            onMouseEnter={() => prefetchRoute("/processing-orders")}
             onClick={handleNavClick}
             className={`flex items-center rounded-xl px-3 py-2.5 text-[14px] transition duration-150 ${activeClass(
               "/processing-orders",
@@ -615,6 +684,7 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
                   <Link
                     key={item.path}
                     to={item.path}
+                    onMouseEnter={() => prefetchRoute(item.path)}
                     onClick={handleNavClick}
                     className={`flex items-center justify-between rounded-lg px-2.5 py-1.5 text-[13px] transition ${subActiveClass(
                       item.path,

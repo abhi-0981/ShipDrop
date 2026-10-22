@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import api from "../../services/api";
@@ -1113,15 +1113,15 @@ function CreateOrder() {
     }
   };
 
-  const filteredWarehouses = warehouses.filter((w) => {
+  const filteredWarehouses = useMemo(() => {
     const search = warehouseSearch.trim().toLowerCase();
-    if (!search) return true;
-    return (
+    if (!search) return warehouses;
+    return warehouses.filter((w) =>
       w.warehouse_name?.toLowerCase().includes(search) ||
       w.city?.toLowerCase().includes(search) ||
       w.pincode?.includes(search)
     );
-  });
+  }, [warehouses, warehouseSearch]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -1431,10 +1431,12 @@ function CreateOrder() {
     return { taxableValue, taxAmount, total };
   };
 
-  const totalInvoiceValue = products.reduce(
-    (sum, product) => sum + getProductValues(product).total,
-    0,
-  );
+  const totalInvoiceValue = useMemo(() => {
+    return products.reduce(
+      (sum, product) => sum + getProductValues(product).total,
+      0
+    );
+  }, [products]);
 
   const getVolumetricWeight = (item) => {
     const l = Number(item.length) || 0;
@@ -1444,7 +1446,7 @@ function CreateOrder() {
     return ((l * w * h) / 5000).toFixed(2);
   };
 
-  const getTotalVolumetricWeight = () => {
+  const totalVolumetricWeight = useMemo(() => {
     return packages.reduce((sum, item) => {
       const l = Number(item.length) || 0;
       const w = Number(item.width) || 0;
@@ -1453,19 +1455,23 @@ function CreateOrder() {
       if (!l || !w || !h) return sum;
       return sum + ((l * w * h) / 5000) * count;
     }, 0);
-  };
+  }, [packages]);
 
-  const getTotalWeight = () => {
+  const totalDeadWeight = useMemo(() => {
     return packages.reduce((sum, item) => {
       const weight = Number(item.weight) || 0;
       const count = Number(item.count) || 1;
       return sum + weight * count;
     }, 0);
-  };
+  }, [packages]);
 
-  const getChargeableWeight = () => {
-    return Math.max(getTotalWeight(), getTotalVolumetricWeight());
-  };
+  const chargeableWeight = useMemo(() => {
+    return Math.max(totalDeadWeight, totalVolumetricWeight);
+  }, [totalDeadWeight, totalVolumetricWeight]);
+
+  const getTotalVolumetricWeight = () => totalVolumetricWeight;
+  const getTotalWeight = () => totalDeadWeight;
+  const getChargeableWeight = () => chargeableWeight;
 
   const resetForm = (preservePickup = false, preserveParty = preservePickup) => {
     const preservedPickup = preservePickup

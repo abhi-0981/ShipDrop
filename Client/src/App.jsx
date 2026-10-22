@@ -41,21 +41,21 @@ const CODRemittance = lazy(() => import("./pages/Dashboard/CODRemittance"));
 const OfflineOrders = lazy(() => import("./pages/Dashboard/OfflineOrders"));
 const CreateOfflineOrder = lazy(() => import("./pages/Dashboard/CreateOfflineOrder"));
 
-// Elegant, ultra-lightweight transition fallback
-const RouteLoader = () => (
-  <div className="flex min-h-[60vh] w-full flex-col items-center justify-center p-6">
-    <div className="h-8 w-8 animate-spin rounded-full border-[2.5px] border-slate-200 border-t-[#008dd2]" />
-    <span className="mt-3 text-[12px] font-medium text-slate-400">Loading page...</span>
-  </div>
-);
+import { RouteSkeleton } from "./components/Common/TableSkeleton";
+
+// Elegant, shimmering transition fallback (instant perceived performance)
+const RouteLoader = () => <RouteSkeleton />;
 
 // Preload high-frequency routes during browser idle time for zero-delay tab switching
 if (typeof window !== "undefined") {
   const preloadCoreRoutes = () => {
     import("./pages/Dashboard/Dashboard");
     import("./pages/Dashboard/AllOrders");
+    import("./pages/Dashboard/InTransit");
     import("./pages/Dashboard/ProcessingOrders");
     import("./pages/Dashboard/CreateOrder");
+    import("./pages/Dashboard/OfflineOrders");
+    import("./pages/Dashboard/CreateOfflineOrder");
   };
   if ("requestIdleCallback" in window) {
     window.requestIdleCallback(preloadCoreRoutes, { timeout: 2500 });

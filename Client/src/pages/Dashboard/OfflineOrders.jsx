@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import api from "../../services/api";
 import OfflineOrderModal from "../../components/Common/OfflineOrderModal";
+import { TableSkeleton, CardSkeleton } from "../../components/Common/TableSkeleton";
 import { notifyOrderChange } from "../../services/orderEvents";
 
 const PRIMARY = "#008dd2";
@@ -522,12 +523,12 @@ export default function OfflineOrders() {
           TABLE / LIST VIEW
       ================================================== */}
       {loading ? (
-        <div className="flex h-64 items-center justify-center rounded-2xl border border-slate-200 bg-white">
-          <div className="flex flex-col items-center gap-2">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-200 border-t-[#008dd2]" />
-            <p className="text-xs text-slate-400">Loading offline orders...</p>
+        <>
+          <CardSkeleton count={3} />
+          <div className="hidden sm:block">
+            <TableSkeleton rows={6} />
           </div>
-        </div>
+        </>
       ) : orders.length === 0 ? (
         <div className="flex min-h-[300px] flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white p-8 text-center">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-50 text-[#008dd2] mb-3">

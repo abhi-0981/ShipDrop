@@ -1749,8 +1749,34 @@ function InTransit() {
               {/* TABLE BODY */}
 
               <tbody>
-
-                {filteredOrders.length === 0 ? (
+                {loading ? (
+                  Array.from({ length: 6 }).map((_, i) => (
+                    <tr key={i} className="border-b border-slate-100" style={{ opacity: 1 - i * 0.12 }}>
+                      <td className="px-2 py-3.5"><div className="h-4 w-4 rounded bg-slate-200 skeleton-shimmer" /></td>
+                      <td className="px-2 py-3.5 space-y-1.5">
+                        <div className="h-3.5 w-28 rounded bg-slate-200 skeleton-shimmer" />
+                        <div className="h-2.5 w-20 rounded bg-slate-100 skeleton-shimmer" />
+                      </td>
+                      <td className="px-2 py-3.5 space-y-1.5">
+                        <div className="h-3.5 w-24 rounded bg-slate-200 skeleton-shimmer" />
+                        <div className="h-2.5 w-16 rounded bg-slate-100 skeleton-shimmer" />
+                      </td>
+                      <td className="px-2 py-3.5 space-y-1.5">
+                        <div className="h-3.5 w-28 rounded bg-slate-200 skeleton-shimmer" />
+                        <div className="h-2.5 w-20 rounded bg-slate-100 skeleton-shimmer" />
+                      </td>
+                      <td className="px-2 py-3.5"><div className="h-5 w-16 rounded-full bg-slate-200 skeleton-shimmer" /></td>
+                      <td className="px-2 py-3.5"><div className="h-4 w-12 rounded bg-slate-200 skeleton-shimmer" /></td>
+                      <td className="px-2 py-3.5"><div className="h-4 w-16 rounded bg-slate-200 skeleton-shimmer" /></td>
+                      <td className="px-2 py-3.5">
+                        <div className="flex items-center gap-1.5">
+                          <div className="h-7 w-7 rounded-lg bg-slate-200 skeleton-shimmer" />
+                          <div className="h-7 w-7 rounded-lg bg-slate-200 skeleton-shimmer" />
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                ) : filteredOrders.length === 0 ? (
 
                   <tr>
 

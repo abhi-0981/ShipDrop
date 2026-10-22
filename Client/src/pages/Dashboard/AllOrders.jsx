@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef, useMemo } from "react";
 import { toast } from "react-hot-toast";
 import api from "../../services/api";
 import OrderDetailsModal from "../../components/Common/OrderDetailsModal";
+import { CardSkeleton } from "../../components/Common/TableSkeleton";
 import { notifyOrderChange, subscribeToOrderUpdates } from "../../services/orderEvents";
 import {
   printShippingLabels,
@@ -1286,7 +1287,9 @@ useEffect(() => {
             1. MOBILE VIEW: APP-STYLE CARD TILES (FIXED TRACKING)
         ================================================== */}
         <div className="space-y-3 sm:hidden">
-          {filteredOrders.length === 0 ? (
+          {loading ? (
+            <CardSkeleton count={4} />
+          ) : filteredOrders.length === 0 ? (
             <div className="flex min-h-[200px] flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white p-6 text-center text-slate-400">
               <Icon name="box" size={24} />
               <p className="mt-2 text-xs font-bold text-slate-700">
@@ -1547,7 +1550,35 @@ useEffect(() => {
               </thead>
 
               <tbody>
-                {filteredOrders.length === 0 ? (
+                {loading ? (
+                  Array.from({ length: 6 }).map((_, i) => (
+                    <tr key={i} className="border-b border-slate-100" style={{ opacity: 1 - i * 0.12 }}>
+                      <td className="px-2 py-3.5"><div className="h-4 w-4 rounded bg-slate-200 skeleton-shimmer" /></td>
+                      <td className="px-1.5 py-3.5"><div className="h-5 w-14 rounded-md bg-slate-200 skeleton-shimmer" /></td>
+                      <td className="px-2 py-3.5 space-y-1.5">
+                        <div className="h-3.5 w-28 rounded bg-slate-200 skeleton-shimmer" />
+                        <div className="h-2.5 w-20 rounded bg-slate-100 skeleton-shimmer" />
+                      </td>
+                      <td className="px-2 py-3.5 space-y-1.5">
+                        <div className="h-3.5 w-24 rounded bg-slate-200 skeleton-shimmer" />
+                        <div className="h-2.5 w-16 rounded bg-slate-100 skeleton-shimmer" />
+                      </td>
+                      <td className="px-2 py-3.5 space-y-1.5">
+                        <div className="h-3.5 w-28 rounded bg-slate-200 skeleton-shimmer" />
+                        <div className="h-2.5 w-20 rounded bg-slate-100 skeleton-shimmer" />
+                      </td>
+                      <td className="px-2 py-3.5"><div className="h-5 w-16 rounded-full bg-slate-200 skeleton-shimmer" /></td>
+                      <td className="px-2 py-3.5"><div className="h-4 w-12 rounded bg-slate-200 skeleton-shimmer" /></td>
+                      <td className="px-2 py-3.5"><div className="h-4 w-16 rounded bg-slate-200 skeleton-shimmer" /></td>
+                      <td className="px-2 py-3.5">
+                        <div className="flex items-center gap-1.5">
+                          <div className="h-7 w-7 rounded-lg bg-slate-200 skeleton-shimmer" />
+                          <div className="h-7 w-7 rounded-lg bg-slate-200 skeleton-shimmer" />
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                ) : filteredOrders.length === 0 ? (
                   <tr>
                     <td colSpan="9" className="h-[300px] px-6 text-center">
                       <div className="flex flex-col items-center justify-center">

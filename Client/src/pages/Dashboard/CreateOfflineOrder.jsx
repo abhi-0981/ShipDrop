@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import api from "../../services/api";
@@ -103,16 +103,15 @@ export default function CreateOfflineOrder() {
     }
   };
 
-  // Live volumetric weight
-  const volWeight =
-    formData.length && formData.width && formData.height
-      ? (
-          (Number(formData.length) *
-            Number(formData.width) *
-            Number(formData.height)) /
-          5000
-        ).toFixed(2)
-      : null;
+  // Live volumetric weight (memoized for performance)
+  const volWeight = useMemo(() => {
+    if (!formData.length || !formData.width || !formData.height) return null;
+    const l = Number(formData.length);
+    const w = Number(formData.width);
+    const h = Number(formData.height);
+    if (!l || !w || !h) return null;
+    return ((l * w * h) / 5000).toFixed(2);
+  }, [formData.length, formData.width, formData.height]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
