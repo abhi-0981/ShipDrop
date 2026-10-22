@@ -545,7 +545,7 @@ export default function CreateOfflineOrder() {
             </div>
 
             {/* CUSTOMER NAME */}
-            <div>
+            <div className="sm:col-span-1 lg:col-span-2">
               <label className={labelClass}>
                 Customer Name <span className="text-rose-500">*</span>
               </label>
@@ -561,7 +561,7 @@ export default function CreateOfflineOrder() {
             </div>
 
             {/* MOBILE NUMBER */}
-            <div>
+            <div className="sm:col-span-1 lg:col-span-2">
               <label className={labelClass}>
                 Mobile Number <span className="text-rose-500">*</span>
               </label>
@@ -580,63 +580,7 @@ export default function CreateOfflineOrder() {
               />
             </div>
 
-            {/* PINCODE */}
-            <div>
-              <label className={labelClass}>
-                Destination Pincode <span className="text-rose-500">*</span>
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  name="pincode"
-                  value={formData.pincode}
-                  onChange={handlePincodeChange}
-                  placeholder="6-digit pincode"
-                  className={`${inputClass} font-mono ${pincodeLoading ? "pr-9" : ""}`}
-                  maxLength={6}
-                  required
-                />
-                {pincodeLoading && (
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-[#008dd2]" />
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* CITY */}
-            <div>
-              <label className={labelClass}>
-                City <span className="text-rose-500">*</span>
-              </label>
-              <input
-                type="text"
-                name="city"
-                value={formData.city}
-                onChange={handleChange}
-                placeholder="City"
-                className={inputClass}
-                required
-              />
-            </div>
-
-            {/* STATE */}
-            <div>
-              <label className={labelClass}>
-                State <span className="text-rose-500">*</span>
-              </label>
-              <input
-                type="text"
-                name="state"
-                value={formData.state}
-                onChange={handleChange}
-                placeholder="State"
-                className={inputClass}
-                required
-              />
-            </div>
-
-            {/* COMPLETE DELIVERY ADDRESS: FULL WIDTH SPANNING ALL COLUMNS */}
+            {/* COMPLETE DELIVERY ADDRESS: RIGHT AFTER NUMBER */}
             <div className="col-span-full sm:col-span-2 lg:col-span-4">
               <label className={labelClass}>
                 Complete Delivery Address <span className="text-rose-500">*</span>
@@ -653,6 +597,65 @@ export default function CreateOfflineOrder() {
               <p className="mt-1 text-[11px] text-slate-400">
                 Provide detailed doorstep delivery address with flat/house no, street, and nearby landmark.
               </p>
+            </div>
+
+            {/* ROW BELOW ADDRESS: PINCODE, CITY, STATE */}
+            <div className="col-span-full sm:col-span-2 lg:col-span-4 grid grid-cols-1 sm:grid-cols-3 gap-3.5 sm:gap-4">
+              {/* PINCODE */}
+              <div>
+                <label className={labelClass}>
+                  Destination Pincode <span className="text-rose-500">*</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    name="pincode"
+                    value={formData.pincode}
+                    onChange={handlePincodeChange}
+                    placeholder="6-digit pincode"
+                    className={`${inputClass} font-mono ${pincodeLoading ? "pr-9" : ""}`}
+                    maxLength={6}
+                    required
+                  />
+                  {pincodeLoading && (
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-[#008dd2]" />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* CITY */}
+              <div>
+                <label className={labelClass}>
+                  City <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="city"
+                  value={formData.city}
+                  onChange={handleChange}
+                  placeholder="City"
+                  className={inputClass}
+                  required
+                />
+              </div>
+
+              {/* STATE */}
+              <div>
+                <label className={labelClass}>
+                  State <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="state"
+                  value={formData.state}
+                  onChange={handleChange}
+                  placeholder="State"
+                  className={inputClass}
+                  required
+                />
+              </div>
             </div>
           </div>
         </div>
