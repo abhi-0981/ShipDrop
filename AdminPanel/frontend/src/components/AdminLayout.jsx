@@ -1,20 +1,21 @@
-import { useEffect, useMemo, useState } from "react";
-import { NavLink, useNavigate, useLocation } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
   HiOutlineViewGrid,
   HiOutlineCreditCard,
   HiOutlineLogout,
   HiOutlineUsers,
-  HiOutlineChevronDown,
+  HiChevronRight,
   HiOutlineTicket,
   HiOutlineClipboardList,
   HiOutlineScale,
-  HiOutlineX,
-  HiMenuAlt2,
   HiOutlineCurrencyRupee,
   HiOutlinePresentationChartLine,
+  HiOutlineX,
+  HiX,
 } from "react-icons/hi";
-import { FiSearch } from "react-icons/fi";
+import { FiMenu, FiSearch } from "react-icons/fi";
+import shipdropLogo from "../assets/shipdrop-logo.png";
 
 // Public tracking is served by the CLIENT backend, not the AdminPanel backend.
 const CLIENT_API_BASE_URL =
@@ -30,9 +31,21 @@ function AdminLayout({ children }) {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [collapsed, setCollapsed] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [usersOpen, setUsersOpen] = useState(() => location.pathname.startsWith("/users"));
+  // Desktop default open (false), mobile default closed (true)
+  const [collapsed, setCollapsed] = useState(() => {
+    if (typeof window !== "undefined") {
+      return window.innerWidth < 1024;
+    }
+    return false;
+  });
+  const [usersOpen, setUsersOpen] = useState(() =>
+    location.pathname.startsWith("/users")
+  );
+
+  // Sidebar search & F4 shortcut
+  const sidebarSearchRef = useRef(null);
+  const [sidebarSearch, setSidebarSearch] = useState("");
+  const [selectedSearchIndex, setSelectedSearchIndex] = useState(0);
 
   // Tracking bar + modal
   const [trackingSearch, setTrackingSearch] = useState("");
@@ -41,9 +54,13 @@ function AdminLayout({ children }) {
   const [tracking, setTracking] = useState(null);
   const [showTrackingDetails, setShowTrackingDetails] = useState(false);
 
-  useEffect(() => setMobileOpen(false), [location.pathname]);
   useEffect(() => {
-    if (location.pathname.startsWith("/users")) setUsersOpen(true);
+    if (window.innerWidth < 1024) {
+      setCollapsed(true);
+    }
+    if (location.pathname.startsWith("/users")) {
+      setUsersOpen(true);
+    }
   }, [location.pathname]);
 
   useEffect(() => {
@@ -55,6 +72,19 @@ function AdminLayout({ children }) {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [showTrackingDetails]);
 
+  // F4 shortcut to focus sidebar search
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "F4") {
+        e.preventDefault();
+        if (collapsed) setCollapsed(false);
+        setTimeout(() => sidebarSearchRef.current?.focus(), 50);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [collapsed]);
+
   const logout = () => {
     localStorage.removeItem("adminToken");
     localStorage.removeItem("admin");
@@ -63,15 +93,81 @@ function AdminLayout({ children }) {
 
   const isUsersActive = location.pathname.startsWith("/users");
 
-  const menuItems = [
-    { name: "Dashboard", path: "/dashboard", icon: HiOutlineViewGrid },
-    { name: "Business Analytics", path: "/analytics", icon: HiOutlinePresentationChartLine },
-    { name: "All Orders", path: "/orders", icon: HiOutlineClipboardList },
-    { name: "COD Remittance", path: "/cod-remittance", icon: HiOutlineCurrencyRupee },
-    { name: "Weight Checking", path: "/weight-checking", icon: HiOutlineScale },
-    { name: "Rate Card", path: "/rate-card", icon: HiOutlineCreditCard },
-    { name: "Tickets", path: "/tickets", icon: HiOutlineTicket },
-  ];
+  const menuItems = useMemo(
+    () => [
+      { name: "Dashboard", path: "/dashboard", icon: HiOutlineViewGrid },
+      {
+        name: "Business Analytics",
+        path: "/analytics",
+        icon: HiOutlinePresentationChartLine,
+      },
+      { name: "All Orders", path: "/orders", icon: HiOutlineClipboardList },
+      {
+        name: "COD Remittance",
+        path: "/cod-remittance",
+        icon: HiOutlineCurrencyRupee,
+      },
+      {
+        name: "Weight Checking",
+        path: "/weight-checking",
+        icon: HiOutlineScale,
+      },
+      { name: "Rate Card", path: "/rate-card", icon: HiOutlineCreditCard },
+      { name: "Tickets", path: "/tickets", icon: HiOutlineTicket },
+    ],
+    []
+  );
+
+  const allSearchableItems = useMemo(
+    () => [
+      ...menuItems,
+      { name: "Users", path: "/users", icon: HiOutlineUsers },
+      { name: "All Users", path: "/users", icon: HiOutlineUsers },
+    ],
+    [menuItems]
+  );
+
+  const filteredSearchItems = useMemo(() => {
+    const q = sidebarSearch.trim().toLowerCase();
+    if (!q) return [];
+    return allSearchableItems.filter((item) =>
+      item.name.toLowerCase().includes(q)
+    );
+  }, [sidebarSearch, allSearchableItems]);
+
+  const activeClass = (path) => {
+    const isMatch =
+      path === "/orders"
+        ? location.pathname === "/orders" || location.pathname.startsWith("/orders/")
+        : location.pathname === path;
+    return isMatch
+      ? "bg-[#008dd2] text-white shadow-sm font-medium"
+      : "text-slate-600 hover:bg-slate-100 active:scale-[0.98]";
+  };
+
+  const handleSidebarSearchKeyDown = (event) => {
+    if (event.key === "Escape") {
+      setSidebarSearch("");
+    } else if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setSelectedSearchIndex((prev) =>
+        prev < filteredSearchItems.length - 1 ? prev + 1 : 0
+      );
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setSelectedSearchIndex((prev) =>
+        prev > 0 ? prev - 1 : filteredSearchItems.length - 1
+      );
+    } else if (event.key === "Enter") {
+      event.preventDefault();
+      const selectedItem = filteredSearchItems[selectedSearchIndex];
+      if (selectedItem) {
+        navigate(selectedItem.path);
+        setSidebarSearch("");
+        if (window.innerWidth < 1024) setCollapsed(true);
+      }
+    }
+  };
 
   const adminInfo = useMemo(() => {
     try {
@@ -81,44 +177,6 @@ function AdminLayout({ children }) {
     }
   }, []);
   const adminName = adminInfo.username || adminInfo.name || "Admin";
-
-  const renderNavItem = (item) => {
-    const Icon = item.icon;
-    const isDesktopCollapsed = collapsed && !mobileOpen;
-    return (
-      <NavLink
-        key={item.path}
-        to={item.path}
-        title={isDesktopCollapsed ? item.name : ""}
-        className={({ isActive }) =>
-          `group relative flex items-center rounded-xl transition-all duration-200 ${
-            isDesktopCollapsed ? "h-11 justify-center px-0" : "h-11 px-3.5 gap-3"
-          } ${
-            isActive
-              ? "bg-[#008dd2]/10 text-[#008dd2] font-semibold shadow-[inset_0_1px_1px_rgba(0,141,210,0.08)]"
-              : "text-slate-600 hover:bg-slate-100/80 hover:text-slate-900 font-medium"
-          }`
-        }
-      >
-        {({ isActive }) => (
-          <>
-            {isActive && (
-              <span className="absolute left-1 top-2.5 bottom-2.5 w-1 rounded-full bg-[#008dd2]" />
-            )}
-            <Icon
-              size={20}
-              className={`shrink-0 transition-transform duration-200 group-hover:scale-105 ${
-                isActive ? "text-[#008dd2]" : "text-slate-400 group-hover:text-slate-700"
-              }`}
-            />
-            {!isDesktopCollapsed && (
-              <span className="text-[13px] tracking-tight truncate">{item.name}</span>
-            )}
-          </>
-        )}
-      </NavLink>
-    );
-  };
 
   const closeTrackingDetails = () => {
     setShowTrackingDetails(false);
@@ -323,233 +381,223 @@ function AdminLayout({ children }) {
 
   return (
     <div className="min-h-screen bg-[#f8fafc] text-slate-800 antialiased">
-      {/* MOBILE HEADER */}
-      <header className="sticky top-0 z-30 flex h-14 w-full items-center justify-between border-b border-slate-200/80 bg-white/95 px-4 backdrop-blur-md lg:hidden">
-        <div className="flex items-center gap-2.5">
-          <button
-            type="button"
-            onClick={() => setMobileOpen(true)}
-            className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-700 active:scale-95 transition"
-            aria-label="Open sidebar"
-          >
-            <HiMenuAlt2 size={20} />
-          </button>
-          <div className="flex items-center gap-2">
-            <img
-              src="/logo.png"
-              alt="ParcelDrop"
-              className="h-7 w-auto object-contain"
-              onError={(e) => {
-                e.currentTarget.style.display = "none";
-              }}
-            />
-            <span className="text-base font-black tracking-tight text-[#008dd2]">
-              ParcelDrop
-            </span>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-tr from-[#008dd2] to-sky-400 text-xs font-bold text-white shadow-xs">
-            {adminName.charAt(0).toUpperCase()}
-          </div>
-        </div>
-      </header>
-
       {/* MOBILE BACKDROP */}
-      {mobileOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-slate-950/40 backdrop-blur-xs transition-opacity lg:hidden"
-          onClick={() => setMobileOpen(false)}
-        />
-      )}
+      <div
+        onClick={() => setCollapsed(true)}
+        className={`fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-xs transition-opacity duration-300 lg:hidden ${
+          !collapsed
+            ? "pointer-events-auto opacity-100"
+            : "pointer-events-none opacity-0"
+        }`}
+      />
 
-      {/* SIDEBAR */}
+      {/* SIDEBAR ASIDE: Closes completely off-screen on toggle */}
       <aside
-        className={`fixed top-0 bottom-0 left-0 z-50 flex flex-col border-r border-slate-200/80 bg-white shadow-xl transition-all duration-300 ease-in-out lg:shadow-[2px_0_12px_rgba(15,23,42,0.03)] ${
-          mobileOpen ? "translate-x-0 w-[260px]" : "-translate-x-full lg:translate-x-0"
-        } ${collapsed ? "lg:w-[76px]" : "lg:w-[250px]"}`}
+        className={`fixed top-0 left-0 z-50 flex h-full w-[250px] flex-col border-r border-slate-200 bg-white transition-transform duration-300 ease-in-out ${
+          collapsed
+            ? "-translate-x-full"
+            : "translate-x-0 shadow-2xl lg:shadow-none"
+        }`}
       >
-        {/* SIDEBAR BRAND HEADER */}
-        <div
-          className={`flex h-16 shrink-0 items-center border-b border-slate-100 px-4 ${
-            collapsed && !mobileOpen ? "justify-center" : "justify-between"
-          }`}
-        >
-          {(!collapsed || mobileOpen) ? (
-            <div className="flex items-center gap-2.5 min-w-0">
-              <img
-                src="/logo.png"
-                alt="ParcelDrop"
-                className="h-8 w-auto object-contain shrink-0"
-                onError={(e) => {
-                  e.currentTarget.style.display = "none";
-                }}
-              />
-              <div className="flex flex-col min-w-0">
-                <span className="text-lg font-black tracking-tight text-[#008dd2] leading-none">
-                  ParcelDrop
-                </span>
-                <span className="text-[10px] font-semibold text-slate-400 tracking-wider uppercase mt-1">
-                  Admin Console
-                </span>
-              </div>
-            </div>
-          ) : (
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-[#008dd2] to-sky-400 text-white font-black text-sm shadow-sm">
-              P
-            </div>
-          )}
+        {/* HEADER: LOGO + TOGGLE / CLOSE BUTTON */}
+        <div className="flex h-[64px] shrink-0 items-center justify-between border-b border-slate-100 px-4">
+          <Link
+            to="/dashboard"
+            className="flex items-center transition hover:opacity-90 active:scale-95"
+            title="ParcelDrop"
+          >
+            <img
+              src={shipdropLogo}
+              alt="ParcelDrop"
+              className="h-[44px] sm:h-[46px] mt-1 pl-1 w-auto max-w-[170px] sm:max-w-[180px] object-contain object-left translate-y-[3px]"
+            />
+          </Link>
 
           <button
             type="button"
-            onClick={() => setCollapsed(!collapsed)}
-            className="hidden h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 lg:flex"
-            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            onClick={() => setCollapsed(true)}
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 active:scale-95"
+            title="Close Sidebar"
+            aria-label="Close Sidebar"
           >
-            <HiMenuAlt2 size={18} />
-          </button>
-          <button
-            type="button"
-            onClick={() => setMobileOpen(false)}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 lg:hidden"
-            aria-label="Close sidebar"
-          >
-            <HiOutlineX size={18} />
+            <span className="hidden lg:inline-block">
+              <FiMenu size={20} />
+            </span>
+            <span className="lg:hidden">
+              <HiX size={22} />
+            </span>
           </button>
         </div>
 
-        {/* SIDEBAR NAVIGATION */}
-        <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto px-3 py-3.5 [scrollbar-width:thin]">
-          {(!collapsed || mobileOpen) && (
-            <p className="px-3 pt-1 pb-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-              Navigation
-            </p>
-          )}
-
-          {menuItems.map(renderNavItem)}
-
-          <div className="pt-1">
-            <button
-              type="button"
-              onClick={() => {
-                if (collapsed && !mobileOpen) {
-                  setCollapsed(false);
-                  setUsersOpen(true);
-                  return;
-                }
-                setUsersOpen((prev) => !prev);
+        {/* MENU LINKS */}
+        <div className="flex-1 overflow-y-auto px-3 py-4 space-y-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pb-20 lg:pb-6">
+          {/* SIDEBAR SEARCH */}
+          <div className="relative mb-2">
+            <input
+              ref={sidebarSearchRef}
+              type="text"
+              value={sidebarSearch}
+              onChange={(e) => {
+                setSidebarSearch(e.target.value);
+                setSelectedSearchIndex(0);
               }}
-              className={`group relative flex h-11 w-full items-center rounded-xl transition-all duration-200 ${
-                collapsed && !mobileOpen ? "justify-center px-0" : "gap-3 px-3.5"
-              } ${
-                isUsersActive
-                  ? "bg-[#008dd2]/10 text-[#008dd2] font-semibold"
-                  : "text-slate-600 hover:bg-slate-100/80 hover:text-slate-900 font-medium"
-              }`}
-              title={collapsed && !mobileOpen ? "Users" : ""}
-              aria-expanded={usersOpen}
-            >
-              {isUsersActive && (
-                <span className="absolute left-1 top-2.5 bottom-2.5 w-1 rounded-full bg-[#008dd2]" />
-              )}
-              <HiOutlineUsers
-                size={20}
-                className={`shrink-0 transition-transform duration-200 group-hover:scale-105 ${
-                  isUsersActive
-                    ? "text-[#008dd2]"
-                    : "text-slate-400 group-hover:text-slate-700"
-                }`}
-              />
-              {(!collapsed || mobileOpen) && (
-                <>
-                  <span className="flex-1 text-left text-[13px] tracking-tight">
-                    Users
-                  </span>
-                  <HiOutlineChevronDown
-                    size={15}
-                    className={`text-slate-400 transition-transform duration-200 ${
-                      usersOpen ? "rotate-180" : ""
-                    }`}
-                  />
-                </>
-              )}
-            </button>
-            {(!collapsed || mobileOpen) && usersOpen && (
-              <div className="ml-5 mt-1 space-y-1 border-l-2 border-slate-100 pl-3">
-                <NavLink
-                  to="/users"
-                  className={({ isActive }) =>
-                    `flex h-9 items-center rounded-lg px-3 text-xs font-semibold transition ${
-                      isActive
-                        ? "bg-[#008dd2]/10 text-[#008dd2]"
-                        : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
-                    }`
-                  }
-                >
-                  All Users
-                </NavLink>
+              onKeyDown={handleSidebarSearchKeyDown}
+              placeholder="Press F4 to Search"
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 pr-8 text-[12px] text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
+              aria-label="Search sidebar menu"
+            />
+
+            {sidebarSearch.trim() && (
+              <div className="absolute left-0 right-0 top-full z-[60] mt-1 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl">
+                {filteredSearchItems.length > 0 ? (
+                  <div className="max-h-64 overflow-y-auto py-1">
+                    {filteredSearchItems.map((item, index) => (
+                      <Link
+                        key={`${item.path}-${index}`}
+                        to={item.path}
+                        onClick={() => {
+                          setSidebarSearch("");
+                          if (window.innerWidth < 1024) setCollapsed(true);
+                        }}
+                        className={`block px-3 py-2.5 text-[13px] transition ${
+                          index === selectedSearchIndex
+                            ? "bg-sky-50 text-[#008dd2] font-semibold"
+                            : "text-slate-600 hover:bg-slate-50"
+                        }`}
+                      >
+                        {item.name}
+                      </Link>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="px-3 py-3 text-[12px] text-slate-400">
+                    No menu found
+                  </div>
+                )}
               </div>
             )}
           </div>
-        </nav>
 
-        {/* SIDEBAR FOOTER: ADMIN PROFILE & LOGOUT */}
-        <div className="shrink-0 border-t border-slate-100 bg-slate-50/60 p-3">
-          {(!collapsed || mobileOpen) ? (
-            <div className="flex items-center justify-between gap-2.5 rounded-xl border border-slate-200/60 bg-white p-2.5 shadow-2xs">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-tr from-[#008dd2] to-sky-400 text-xs font-bold text-white shadow-2xs">
-                  {adminName.charAt(0).toUpperCase()}
-                </div>
-                <div className="min-w-0">
-                  <p className="truncate text-xs font-bold text-slate-800 leading-tight">
-                    {adminName}
-                  </p>
-                  <p className="truncate text-[10px] font-medium text-slate-400">
-                    Super Admin
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={logout}
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-rose-500 transition hover:bg-rose-50 hover:text-rose-600"
-                title="Logout"
-                aria-label="Logout"
+          {/* MENU ITEMS */}
+          {menuItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                onClick={() => {
+                  if (window.innerWidth < 1024) setCollapsed(true);
+                }}
+                className={`flex items-center rounded-xl px-3 py-2.5 text-[14px] transition duration-150 ${activeClass(
+                  item.path
+                )}`}
               >
-                <HiOutlineLogout size={17} />
-              </button>
-            </div>
-          ) : (
+                <Icon size={20} />
+                <span className="ml-3 truncate">{item.name}</span>
+              </Link>
+            );
+          })}
+
+          {/* USERS DROPDOWN ACCORDION */}
+          <div>
             <button
               type="button"
-              onClick={logout}
-              className="flex h-10 w-full items-center justify-center rounded-xl text-rose-600 transition hover:bg-rose-50"
-              title="Logout"
-              aria-label="Logout"
+              onClick={() => setUsersOpen(!usersOpen)}
+              className="flex w-full items-center rounded-xl px-3 py-2.5 text-[14px] text-slate-600 transition hover:bg-slate-100 active:scale-[0.98]"
             >
-              <HiOutlineLogout size={19} />
+              <HiOutlineUsers size={20} />
+              <span className="ml-3 flex-1 text-left truncate font-medium">
+                Users
+              </span>
+              <HiChevronRight
+                size={17}
+                className={`transition-transform duration-300 ease-in-out ${
+                  usersOpen
+                    ? "rotate-90 text-slate-800"
+                    : "rotate-0 text-slate-400"
+                }`}
+              />
             </button>
-          )}
+
+            <div className={`sidebar-accordion ${usersOpen ? "is-open" : ""}`}>
+              <div>
+                <div className="mt-1 ml-5 space-y-1 border-l-2 border-slate-100 pl-3 py-0.5">
+                  <Link
+                    to="/users"
+                    onClick={() => {
+                      if (window.innerWidth < 1024) setCollapsed(true);
+                    }}
+                    className={`flex items-center rounded-lg px-3 py-2 text-[13px] transition ${
+                      location.pathname === "/users"
+                        ? "bg-sky-50 text-[#008dd2] font-semibold"
+                        : "text-slate-600 hover:bg-slate-100 hover:text-[#008dd2]"
+                    }`}
+                  >
+                    All Users
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* LOGOUT */}
+          <button
+            type="button"
+            onClick={logout}
+            className="flex w-full items-center rounded-xl px-3 py-2.5 text-[14px] text-red-500 hover:bg-red-50 transition duration-150 active:scale-[0.98]"
+          >
+            <HiOutlineLogout size={20} />
+            <span className="ml-3 truncate font-medium">Log out</span>
+          </button>
         </div>
       </aside>
 
       {/* MAIN CONTENT + FIXED TOPBAR */}
       <main
-        className={`min-h-screen transition-all duration-300 ${
-          collapsed ? "lg:ml-[76px]" : "lg:ml-[250px]"
+        className={`min-h-screen pt-[64px] transition-all duration-300 ${
+          collapsed ? "pl-0" : "pl-0 lg:pl-[250px]"
         }`}
       >
         <header
-          className={`fixed top-0 right-0 z-30 flex h-[64px] items-center justify-between gap-4 border-b border-slate-200/80 bg-white/95 px-4 sm:px-6 backdrop-blur-md transition-all duration-300 left-0 ${
-            collapsed ? "lg:left-[76px]" : "lg:left-[250px]"
+          className={`fixed top-0 right-0 z-30 flex h-[64px] items-center justify-between border-b border-slate-200 bg-white px-3 sm:px-6 transition-all duration-300 ${
+            collapsed ? "left-0" : "left-0 lg:left-[250px]"
           }`}
         >
+          {/* LEFT SECTION: HAMBURGER + LOGO (When sidebar is collapsed on desktop, or always on mobile) */}
+          <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+            {(collapsed ||
+              (typeof window !== "undefined" && window.innerWidth < 1024)) && (
+              <button
+                type="button"
+                onClick={() => setCollapsed(false)}
+                className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-700 transition hover:bg-slate-200 active:scale-90"
+                title="Open Sidebar"
+                aria-label="Open Sidebar"
+              >
+                <FiMenu size={20} />
+              </button>
+            )}
+
+            {(collapsed ||
+              (typeof window !== "undefined" && window.innerWidth < 1024)) && (
+              <Link
+                to="/dashboard"
+                className="flex items-center transition hover:opacity-90 active:scale-95"
+                title="ParcelDrop"
+              >
+                <img
+                  src={shipdropLogo}
+                  alt="ParcelDrop"
+                  className="h-8 sm:h-[40px] mt-1 w-auto max-w-[140px] sm:max-w-[160px] object-contain translate-y-[2px]"
+                />
+              </Link>
+            )}
+          </div>
+
           {/* SEARCH BAR (CENTERED/FLEX-1) */}
           <form
             onSubmit={handleTrackingSearch}
-            className="relative flex min-w-0 w-full max-w-xl flex-1"
+            className="relative flex min-w-0 w-full max-w-xl flex-1 mx-2 sm:mx-4"
           >
             <FiSearch
               className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
@@ -583,7 +631,7 @@ function AdminLayout({ children }) {
           </form>
 
           {/* TOPBAR RIGHT: LIVE STATUS & ADMIN PILL */}
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
             {/* LIVE OPERATIONS STATUS */}
             <div className="hidden md:flex items-center gap-2 rounded-full border border-emerald-100 bg-emerald-50/60 px-3 py-1">
               <span className="relative flex h-2 w-2">
@@ -596,11 +644,11 @@ function AdminLayout({ children }) {
             </div>
 
             {/* ADMIN BADGE */}
-            <div className="hidden sm:flex items-center gap-2.5 rounded-xl border border-slate-200/80 bg-white px-3 py-1.5 shadow-2xs">
+            <div className="flex items-center gap-2 sm:gap-2.5 rounded-xl border border-slate-200/80 bg-white px-2.5 sm:px-3 py-1.5 shadow-2xs">
               <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#008dd2]/10 text-xs font-bold text-[#008dd2]">
                 {adminName.charAt(0).toUpperCase()}
               </div>
-              <div className="text-left">
+              <div className="hidden sm:block text-left">
                 <p className="text-xs font-bold text-slate-800 leading-none">
                   {adminName}
                 </p>
@@ -613,7 +661,7 @@ function AdminLayout({ children }) {
         </header>
 
         {/* PAGE CONTENT CONTAINER */}
-        <div className="pt-[64px] w-full max-w-[1600px] mx-auto">{children}</div>
+        <div className="w-full max-w-[1600px] mx-auto">{children}</div>
       </main>
 
       {/* TRACKING DETAILS MODAL */}
