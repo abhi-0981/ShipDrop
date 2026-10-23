@@ -7,6 +7,9 @@ import {
   HiOutlineChevronDown,
   HiOutlineFilter,
   HiOutlineCheck,
+  HiOutlineLocationMarker,
+  HiOutlineTruck,
+  HiOutlineX,
 } from "react-icons/hi";
 import toast from "react-hot-toast";
 import { API_BASE_URL } from "../../config/api";
@@ -23,6 +26,10 @@ const STATUS_CONFIG = {
   Processing: {
     label: "Processing",
     color: "text-blue-600",
+  },
+  Booked: {
+    label: "Booked",
+    color: "text-sky-600",
   },
   Manifested: {
     label: "Manifested",
@@ -46,7 +53,7 @@ const STATUS_CONFIG = {
   },
   "RTO In Transit": {
     label: "RTO In Transit",
-    color: "text-red-500",
+    color: "text-rose-500",
   },
   "RTO Delivered": {
     label: "RTO Delivered",
@@ -76,27 +83,49 @@ const STATUS_CONFIG = {
 
 const StatusBadge = ({ status }) => {
   const styles = {
-    Processing: "bg-blue-50 text-blue-600 border-blue-100",
-    Manifested: "bg-amber-50 text-amber-600 border-amber-200",
-    "Not Picked": "bg-orange-50 text-orange-600 border-orange-100",
-    "In Transit": "bg-indigo-50 text-indigo-600 border-indigo-100",
-    "Out For Delivery": "bg-purple-50 text-purple-600 border-purple-100",
-    Delivered: "bg-emerald-50 text-emerald-600 border-emerald-100",
-    "RTO In Transit": "bg-red-50 text-red-500 border-red-100",
-    "RTO Delivered": "bg-red-50 text-red-600 border-red-100",
-    Returned: "bg-orange-50 text-orange-600 border-orange-100",
-    Cancelled: "bg-red-50 text-red-600 border-red-100",
-    Pending: "bg-slate-50 text-slate-500 border-slate-200",
-    NDR: "bg-orange-50 text-orange-600 border-orange-100",
+    Processing: "bg-blue-50 text-blue-700 border-blue-200/80",
+    Booked: "bg-sky-50 text-sky-700 border-sky-200/80",
+    Manifested: "bg-amber-50 text-amber-700 border-amber-200/80",
+    "Not Picked": "bg-orange-50 text-orange-700 border-orange-200/80",
+    "In Transit": "bg-indigo-50 text-indigo-700 border-indigo-200/80",
+    "Out For Delivery": "bg-purple-50 text-purple-700 border-purple-200/80",
+    Delivered: "bg-emerald-50 text-emerald-700 border-emerald-200/80",
+    "RTO In Transit": "bg-rose-50 text-rose-700 border-rose-200/80",
+    "RTO Delivered": "bg-red-50 text-red-700 border-red-200/80",
+    Returned: "bg-orange-50 text-orange-700 border-orange-200/80",
+    Cancelled: "bg-red-50 text-red-700 border-red-200/80",
+    Pending: "bg-slate-100 text-slate-700 border-slate-200/80",
+    NDR: "bg-orange-50 text-orange-700 border-orange-200/80",
+  };
+
+  const dotColors = {
+    Processing: "bg-blue-500",
+    Booked: "bg-sky-500",
+    Manifested: "bg-amber-500",
+    "Not Picked": "bg-orange-500",
+    "In Transit": "bg-indigo-500",
+    "Out For Delivery": "bg-purple-500",
+    Delivered: "bg-emerald-500",
+    "RTO In Transit": "bg-rose-500",
+    "RTO Delivered": "bg-red-500",
+    Returned: "bg-orange-500",
+    Cancelled: "bg-red-500",
+    Pending: "bg-slate-400",
+    NDR: "bg-orange-500",
   };
 
   return (
     <span
-      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium ${
-        styles[status] || "bg-slate-50 text-slate-600 border-slate-200"
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold tracking-tight shadow-2xs ${
+        styles[status] || "bg-slate-50 text-slate-700 border-slate-200"
       }`}
     >
-      {status || "Unknown"}
+      <span
+        className={`h-1.5 w-1.5 rounded-full shrink-0 ${
+          dotColors[status] || "bg-slate-400"
+        }`}
+      />
+      <span>{status || "Unknown"}</span>
     </span>
   );
 };
@@ -112,13 +141,17 @@ const normalizeStatus = (status) => {
     .replace(/_/g, " ");
 
   if (value === "PROCESSING") return "Processing";
+  if (value === "BOOKED") return "Booked";
   if (value === "MANIFESTED") return "Manifested";
   if (value === "NOT PICKED" || value === "NOT_PICKED") return "Not Picked";
   if (value === "IN TRANSIT") return "In Transit";
-  if (value === "OUT FOR DELIVERY" || value === "OUT_FOR_DELIVERY") return "Out For Delivery";
+  if (value === "OUT FOR DELIVERY" || value === "OUT_FOR_DELIVERY")
+    return "Out For Delivery";
   if (value === "DELIVERED") return "Delivered";
-  if (value === "RTO IN TRANSIT" || value === "RTO_IN_TRANSIT") return "RTO In Transit";
-  if (value === "RTO DELIVERED" || value === "RTO_DELIVERED") return "RTO Delivered";
+  if (value === "RTO IN TRANSIT" || value === "RTO_IN_TRANSIT")
+    return "RTO In Transit";
+  if (value === "RTO DELIVERED" || value === "RTO_DELIVERED")
+    return "RTO Delivered";
   if (value === "RETURNED") return "Returned";
   if (value === "CANCELLED" || value === "CANCELED") return "Cancelled";
   if (value === "PENDING") return "Pending";
@@ -346,7 +379,15 @@ const OrderDetailsModal = ({ order, onClose }) => {
             <DetailCard title="Shipment">
               <div className="grid grid-cols-2 gap-x-4">
                 <DetailRow label="AWB" value={order.awb} strong />
-                <DetailRow label="Pickup ID" value={order.pickup_address_id} />
+                <DetailRow
+                  label="Pickup Request ID"
+                  value={order.pickup_request_id || order.pickupId}
+                  strong
+                />
+                <DetailRow
+                  label="Pickup Address ID"
+                  value={order.pickup_address_id}
+                />
                 <DetailRow
                   label="Manifest ID"
                   value={order.manifest_id || order.manifestId}
@@ -618,6 +659,7 @@ const AllOrders = () => {
   const [counts, setCounts] = useState({
     All: 0,
     Processing: 0,
+    Booked: 0,
     Manifested: 0,
     "Not Picked": 0,
     "In Transit": 0,
@@ -691,6 +733,12 @@ const AllOrders = () => {
           order.pincode,
         ].filter(Boolean);
 
+        const pickupReqId =
+          order.pickup_request_id ||
+          order.pickupRequestId ||
+          order.pickup_id ||
+          null;
+
         return {
           ...order,
           id: order.id,
@@ -700,7 +748,9 @@ const AllOrders = () => {
             order.customer_name || order.customer_company || "Unknown Customer",
           uid: order.user_id || "-",
           awb: order.awb || "-",
-          pickupId: order.pickup_address_id || "-",
+          pickup_request_id: pickupReqId,
+          pickup_address_id: order.pickup_address_id || null,
+          pickupId: pickupReqId ? String(pickupReqId) : "—",
           courier:
             order.courier || order.courier_name || order.service_name || "-",
           charge: getCharge(order),
@@ -719,6 +769,10 @@ const AllOrders = () => {
         setCounts({
           All: Number(data.counts.All || 0),
           Processing: Number(data.counts.Processing || 0),
+          Booked: Number(
+            data.counts.Booked ||
+              normalizedOrders.filter((o) => o.status === "Booked").length,
+          ),
           Manifested: Number(data.counts.Manifested || 0),
           "Not Picked": Number(data.counts["Not Picked"] || 0),
           "In Transit": Number(data.counts["In Transit"] || 0),
@@ -737,6 +791,7 @@ const AllOrders = () => {
         setCounts({
           All: normalizedOrders.length,
           Processing: normalizedOrders.filter((o) => o.status === "Processing").length,
+          Booked: normalizedOrders.filter((o) => o.status === "Booked").length,
           Manifested: normalizedOrders.filter((o) => o.status === "Manifested").length,
           "Not Picked": normalizedOrders.filter((o) => o.status === "Not Picked").length,
           "In Transit": normalizedOrders.filter((o) => o.status === "In Transit").length,
@@ -785,6 +840,7 @@ const AllOrders = () => {
         String(order.awb || "").toLowerCase().includes(query) ||
         String(order.customer || "").toLowerCase().includes(query) ||
         String(order.uid || "").toLowerCase().includes(query) ||
+        String(order.pickup_request_id || "").toLowerCase().includes(query) ||
         String(order.pickupId || "").toLowerCase().includes(query);
 
       const matchesActiveStatus =
@@ -885,6 +941,7 @@ const AllOrders = () => {
   const statusTabs = [
     "All",
     "Processing",
+    "Booked",
     "Manifested",
     "Not Picked",
     "In Transit",
@@ -902,15 +959,15 @@ const AllOrders = () => {
       {/* HEADER */}
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-lg sm:text-[21px] font-bold tracking-tight text-slate-800">
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
               {activeStatus === "NDR & Pending" ? "NDR & Pending" : "All Orders"}
             </h1>
-            <span className="rounded-full bg-slate-200/70 px-2.5 py-0.5 text-[11px] font-bold text-slate-700">
+            <span className="rounded-full bg-sky-50 border border-sky-100 px-3 py-0.5 text-xs font-bold text-[#008dd2]">
               {activeStatus === "NDR & Pending" ? counts["NDR & Pending"] : counts.All}
             </span>
           </div>
-          <p className="mt-0.5 text-xs text-slate-400">
+          <p className="mt-1 text-xs text-slate-500 font-medium">
             {activeStatus === "NDR & Pending"
               ? "Manage NDR and pending customer orders"
               : "Manage and track all customer orders"}
@@ -919,7 +976,7 @@ const AllOrders = () => {
 
         <div className="flex items-center gap-2">
           {selectedOrders.length > 0 && (
-            <div className="rounded-xl border border-blue-100 bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-600">
+            <div className="rounded-xl border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-bold text-[#008dd2]">
               {selectedOrders.length} selected
             </div>
           )}
@@ -928,7 +985,7 @@ const AllOrders = () => {
             type="button"
             onClick={fetchOrders}
             disabled={loading}
-            className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-xs transition hover:bg-slate-50 disabled:opacity-60"
+            className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-semibold text-slate-700 shadow-2xs transition hover:bg-slate-50 disabled:opacity-60 active:scale-95"
           >
             <HiOutlineRefresh className={`text-sm ${loading ? "animate-spin" : ""}`} />
             <span>Refresh</span>
@@ -937,7 +994,7 @@ const AllOrders = () => {
           <button
             type="button"
             onClick={resetFilters}
-            className="inline-flex h-9 items-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-xs transition hover:bg-slate-50"
+            className="inline-flex h-9 items-center rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-semibold text-slate-700 shadow-2xs transition hover:bg-slate-50 active:scale-95"
           >
             Reset
           </button>
@@ -945,18 +1002,27 @@ const AllOrders = () => {
       </div>
 
       {/* SEARCH + FILTERS */}
-      <div className="mb-3.5 rounded-2xl border border-slate-200 bg-white p-3 shadow-xs space-y-2.5">
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+      <div className="mb-4 rounded-2xl border border-slate-200/90 bg-white p-3.5 shadow-2xs space-y-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
           {/* SEARCH */}
           <div className="relative min-w-0 flex-1">
-            <HiOutlineSearch className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[17px] text-slate-400" />
+            <HiOutlineSearch className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-lg text-slate-400" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search Order ID, AWB, Customer, UID or Pickup ID..."
-              className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-10 pr-3 text-xs text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
+              className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-10 pr-9 text-xs text-slate-800 font-medium outline-none transition placeholder:text-slate-400 focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
             />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              >
+                <HiOutlineX className="text-sm" />
+              </button>
+            )}
           </div>
 
           <div className="grid grid-cols-2 sm:flex sm:items-center gap-2">
@@ -969,7 +1035,7 @@ const AllOrders = () => {
                   setStatusFilter(value);
                   setActiveStatus(value);
                 }}
-                className="h-10 w-full sm:min-w-[135px] appearance-none rounded-xl border border-slate-200 bg-white px-3 pr-8 text-xs font-semibold text-slate-700 outline-none focus:border-[#008dd2]"
+                className="h-10 w-full sm:min-w-[145px] appearance-none rounded-xl border border-slate-200 bg-white px-3 pr-8 text-xs font-semibold text-slate-700 outline-none focus:border-[#008dd2]"
               >
                 <option value="All">All Status</option>
                 {statusTabs
@@ -988,7 +1054,7 @@ const AllOrders = () => {
               <select
                 value={paymentFilter}
                 onChange={(e) => setPaymentFilter(e.target.value)}
-                className="h-10 w-full sm:min-w-[125px] appearance-none rounded-xl border border-slate-200 bg-white px-3 pr-8 text-xs font-semibold text-slate-700 outline-none focus:border-[#008dd2]"
+                className="h-10 w-full sm:min-w-[130px] appearance-none rounded-xl border border-slate-200 bg-white px-3 pr-8 text-xs font-semibold text-slate-700 outline-none focus:border-[#008dd2]"
               >
                 <option value="All">All Payment</option>
                 <option value="Prepaid">Prepaid</option>
@@ -1011,16 +1077,16 @@ const AllOrders = () => {
             <span>Select All ({filteredOrders.length})</span>
           </label>
 
-          <div className="flex items-center gap-1.5 text-[11px] text-slate-400 ml-auto">
-            <HiOutlineFilter size={13} />
+          <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium ml-auto">
+            <HiOutlineFilter size={14} className="text-slate-400" />
             <span>{filteredOrders.length} results</span>
           </div>
         </div>
       </div>
 
-      {/* 12 STATUS HORIZONTAL PILL TABS */}
-      <div className="mb-3.5 overflow-x-auto pb-1 [scrollbar-width:none]">
-        <div className="flex min-w-max items-center gap-1.5">
+      {/* STATUS HORIZONTAL PILL TABS */}
+      <div className="mb-4 overflow-x-auto pb-1 [scrollbar-width:none]">
+        <div className="flex min-w-max items-center gap-2">
           {statusTabs.map((status) => {
             const active = activeStatus === status;
 
@@ -1032,19 +1098,19 @@ const AllOrders = () => {
                   setActiveStatus(status);
                   setStatusFilter(status);
                 }}
-                className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs transition ${
+                className={`inline-flex items-center gap-2 rounded-xl border px-3.5 py-2 text-xs transition active:scale-95 ${
                   active
-                    ? "border-[#008dd2] bg-[#008dd2]/10 text-[#008dd2] font-bold"
-                    : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50 font-medium"
+                    ? "border-[#008dd2] bg-[#008dd2] text-white font-semibold shadow-xs"
+                    : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:border-slate-300 font-medium"
                 }`}
               >
-                <span>{STATUS_CONFIG[status]?.label}</span>
+                <span>{STATUS_CONFIG[status]?.label || status}</span>
                 <span
-                  className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
-                    active ? "bg-[#008dd2] text-white" : "bg-slate-100 text-slate-600"
+                  className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${
+                    active ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"
                   }`}
                 >
-                  {counts[status]}
+                  {counts[status] || 0}
                 </span>
               </button>
             );
@@ -1097,12 +1163,12 @@ const AllOrders = () => {
             return (
               <div
                 key={order.id}
-                className={`rounded-2xl border bg-white p-3.5 shadow-xs transition space-y-2.5 ${
+                className={`rounded-2xl border bg-white p-4 shadow-xs transition space-y-3 ${
                   selected ? "border-[#008dd2] ring-2 ring-[#008dd2]/10" : "border-slate-200"
                 }`}
               >
                 {/* CARD HEADER */}
-                <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
                   <div className="flex items-center gap-2">
                     <input
                       type="checkbox"
@@ -1110,76 +1176,96 @@ const AllOrders = () => {
                       onChange={() => toggleSelect(order.id)}
                       className="h-4 w-4 rounded accent-[#008dd2]"
                     />
-                    <span className="font-mono text-xs font-bold text-slate-800">
+                    <span className="font-mono text-[13px] font-bold text-slate-900">
                       #{order.order_id || order.id}
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-1.5">
-                    <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`rounded-md border px-2 py-0.5 text-[10px] font-bold uppercase ${
+                        order.payment === "COD"
+                          ? "border-amber-200 bg-amber-50 text-amber-700"
+                          : "border-sky-200 bg-sky-50 text-[#008dd2]"
+                      }`}
+                    >
                       {order.payment}
                     </span>
                     <StatusBadge status={order.status} />
                   </div>
                 </div>
 
-                {/* CUSTOMER & AWB */}
-                <div className="space-y-1 text-xs">
+                {/* CUSTOMER & DETAILS */}
+                <div className="space-y-1.5 text-xs">
                   <div className="flex items-center justify-between">
-                    <span className="font-bold text-slate-800 truncate">
+                    <span className="font-bold text-[13px] text-slate-900 truncate">
                       {order.customer}
                     </span>
-                    <span className="text-[11px] text-slate-400">
+                    <span className="text-xs text-slate-500 font-medium">
                       UID: {order.uid}
                     </span>
                   </div>
 
                   {/* AWB ACTION BAR */}
-                  <div className="flex items-center justify-between font-mono text-[11px] text-slate-700 bg-slate-50/80 px-2.5 py-1.5 rounded-xl border border-slate-100">
+                  <div className="flex items-center justify-between font-mono text-xs text-slate-700 bg-slate-50 px-3 py-2 rounded-xl border border-slate-100">
                     <button
                       type="button"
                       onClick={() => trackAwb(order.awb)}
                       disabled={!order.awb || order.awb === "-"}
                       title="Track shipment"
-                      className="min-w-0 truncate text-left font-semibold text-[#008dd2] hover:underline disabled:cursor-default disabled:text-slate-700"
+                      className="min-w-0 truncate text-left font-bold text-[#008dd2] hover:underline disabled:cursor-default disabled:text-slate-700"
                     >
                       AWB: {order.awb}
                     </button>
 
-                    {order.awb !== "-" && (
+                    {order.awb && order.awb !== "-" && (
                       <button
                         type="button"
                         onClick={() => copyText(order.awb, "AWB")}
-                        className="text-[#008dd2] font-bold flex items-center gap-1 text-[10px] shrink-0 active:scale-95"
+                        className="text-[#008dd2] font-bold flex items-center gap-1 text-[11px] shrink-0 active:scale-95 ml-2"
                       >
-                        <HiOutlineClipboardCopy size={13} />
+                        <HiOutlineClipboardCopy size={14} />
                         Copy
                       </button>
                     )}
                   </div>
 
+                  {/* PICKUP REQUEST ID & COURIER */}
+                  <div className="flex items-center justify-between text-xs text-slate-600 pt-0.5">
+                    <div>
+                      <span className="text-slate-400 font-medium">Pickup ID: </span>
+                      <span className="font-mono font-bold text-slate-800">
+                        {order.pickup_request_id || "—"}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1 text-slate-500 font-medium">
+                      <HiOutlineTruck className="text-slate-400" />
+                      <span>{order.courier}</span>
+                    </div>
+                  </div>
+
                   {/* ROUTE VISUAL */}
-                  <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1">
-                    <span className="truncate max-w-[130px] font-medium">
+                  <div className="flex items-center justify-between text-xs text-slate-600 pt-1">
+                    <span className="truncate max-w-[130px] font-medium text-slate-800">
                       {order.pickup}
                     </span>
                     <span className="text-slate-300 font-bold px-1">→</span>
-                    <span className="truncate max-w-[130px] text-right font-medium">
+                    <span className="truncate max-w-[130px] text-right font-medium text-slate-800">
                       {order.destination}
                     </span>
                   </div>
 
                   {/* CHARGE & DATE */}
-                  <div className="flex items-center justify-between text-[11px] text-slate-400 border-t border-slate-50 pt-1.5">
+                  <div className="flex items-center justify-between text-xs text-slate-500 border-t border-slate-50 pt-2">
                     <span>
                       Charge:{" "}
-                      <b className="font-bold text-slate-800">
+                      <b className="font-bold text-slate-900 text-[13px]">
                         {order.charge !== null && Number.isFinite(Number(order.charge))
                           ? `₹${Number(order.charge).toFixed(2)}`
                           : "—"}
                       </b>
                     </span>
-                    <span>{order.date}</span>
+                    <span className="text-[11px]">{order.date}</span>
                   </div>
                 </div>
 
@@ -1188,10 +1274,10 @@ const AllOrders = () => {
                   <button
                     type="button"
                     onClick={() => setViewingOrder(order)}
-                    className="flex h-8 items-center gap-1 rounded-xl bg-[#008dd2] px-3.5 text-xs font-bold text-white shadow-xs active:scale-95 transition"
+                    className="flex h-8 items-center gap-1.5 rounded-xl bg-[#008dd2] px-4 text-xs font-semibold text-white shadow-2xs active:scale-95 transition hover:bg-[#007ec0]"
                   >
-                    <HiOutlineEye size={14} />
-                    View Details
+                    <HiOutlineEye size={15} />
+                    <span>View Details</span>
                   </button>
                 </div>
               </div>
@@ -1203,50 +1289,50 @@ const AllOrders = () => {
       {/* =========================================================
           2. TABLET & DESKTOP: STRUCTURED TABLE
       ========================================================= */}
-      <div className="hidden sm:block overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xs">
+      <div className="hidden sm:block overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-xs">
         <div className="overflow-x-auto">
-          <table className="min-w-[1180px] w-full border-collapse">
+          <table className="min-w-[1200px] w-full border-collapse text-left">
             <thead>
-              <tr className="border-b border-slate-200 bg-slate-50/70">
-                <th className="w-[52px] border-r border-slate-200 px-3 py-3 text-center">
+              <tr className="border-b border-slate-200 bg-slate-50/75">
+                <th className="w-[52px] px-4 py-3.5 text-center">
                   <input
                     type="checkbox"
                     checked={allSelected}
                     onChange={toggleSelectAll}
-                    className="h-3.5 w-3.5 cursor-pointer rounded border-slate-300 accent-blue-600"
+                    className="h-4 w-4 cursor-pointer rounded border-slate-300 accent-[#008dd2]"
                   />
                 </th>
-                <th className="w-[125px] border-r border-slate-200 px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                <th className="w-[145px] px-4 py-3.5 text-xs font-bold uppercase tracking-wider text-slate-500">
                   Order
                 </th>
-                <th className="w-[160px] border-r border-slate-200 px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                <th className="w-[185px] px-4 py-3.5 text-xs font-bold uppercase tracking-wider text-slate-500">
                   Customer
                 </th>
-                <th className="w-[225px] border-r border-slate-200 px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                  AWB
+                <th className="w-[245px] px-4 py-3.5 text-xs font-bold uppercase tracking-wider text-slate-500">
+                  Shipment & Pickup
                 </th>
-                <th className="w-[115px] border-r border-slate-200 px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                  Charge
-                </th>
-                <th className="w-[205px] border-r border-slate-200 px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                <th className="w-[215px] px-4 py-3.5 text-xs font-bold uppercase tracking-wider text-slate-500">
                   Route
                 </th>
-                <th className="w-[145px] border-r border-slate-200 px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                <th className="w-[135px] px-4 py-3.5 text-xs font-bold uppercase tracking-wider text-slate-500">
+                  Payment
+                </th>
+                <th className="w-[155px] px-4 py-3.5 text-xs font-bold uppercase tracking-wider text-slate-500">
                   Dates
                 </th>
-                <th className="w-[115px] px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                <th className="w-[110px] px-4 py-3.5 text-right text-xs font-bold uppercase tracking-wider text-slate-500">
                   Actions
                 </th>
               </tr>
             </thead>
 
-            <tbody>
+            <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr>
-                  <td colSpan="8" className="px-6 py-16 text-center">
+                  <td colSpan="8" className="px-6 py-20 text-center">
                     <div className="flex flex-col items-center">
-                      <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-200 border-t-blue-600" />
-                      <p className="mt-3 text-[12px] font-medium text-slate-500">
+                      <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-200 border-t-[#008dd2]" />
+                      <p className="mt-3 text-xs font-semibold text-slate-500">
                         Loading orders...
                       </p>
                     </div>
@@ -1254,21 +1340,21 @@ const AllOrders = () => {
                 </tr>
               ) : filteredOrders.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="px-6 py-16 text-center">
+                  <td colSpan="8" className="px-6 py-20 text-center">
                     <div className="mx-auto flex max-w-sm flex-col items-center">
-                      <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-slate-100">
-                        <HiOutlineSearch className="text-[20px] text-slate-400" />
+                      <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+                        <HiOutlineSearch className="text-xl" />
                       </div>
-                      <p className="text-[13px] font-semibold text-slate-700">
+                      <p className="text-sm font-bold text-slate-800">
                         No orders found
                       </p>
-                      <p className="mt-1 text-[11px] text-slate-400">
-                        Try changing your search or filters.
+                      <p className="mt-1 text-xs text-slate-400 font-medium">
+                        Try changing your search keywords or filter criteria.
                       </p>
                       <button
                         type="button"
                         onClick={resetFilters}
-                        className="mt-4 text-[11px] font-medium text-blue-600 hover:text-blue-700"
+                        className="mt-4 text-xs font-semibold text-[#008dd2] hover:underline"
                       >
                         Clear all filters
                       </button>
@@ -1282,106 +1368,166 @@ const AllOrders = () => {
                   return (
                     <tr
                       key={order.id}
-                      className={`border-b border-slate-100 transition last:border-b-0 ${
-                        selected ? "bg-blue-50/40" : "hover:bg-slate-50/50"
+                      className={`group transition hover:bg-slate-50/70 ${
+                        selected ? "bg-sky-50/40" : "bg-white"
                       }`}
                     >
-                      <td className="border-r border-slate-100 px-3 py-3 text-center align-top">
+                      {/* SELECT CHECKBOX */}
+                      <td className="px-4 py-4 text-center align-top">
                         <input
                           type="checkbox"
                           checked={selected}
                           onChange={() => toggleSelect(order.id)}
-                          className="mt-1 h-3.5 w-3.5 cursor-pointer rounded border-slate-300 accent-blue-600"
+                          className="mt-1 h-4 w-4 cursor-pointer rounded border-slate-300 accent-[#008dd2]"
                         />
                       </td>
 
-                      <td className="border-r border-slate-100 px-3 py-3 align-top">
-                        <div className="text-[12px] font-semibold text-slate-800">
+                      {/* ORDER ID & STATUS BADGE */}
+                      <td className="px-4 py-4 align-top">
+                        <div className="font-mono text-[13px] font-bold text-slate-900 group-hover:text-[#008dd2] transition">
                           #{order.order_id || order.id}
                         </div>
-                        <div className="mt-1.5">
+                        <div className="mt-2">
                           <StatusBadge status={order.status} />
                         </div>
                       </td>
 
-                      <td className="border-r border-slate-100 px-3 py-3 align-top">
-                        <div className="max-w-[145px] truncate text-[12px] font-medium text-slate-700">
+                      {/* CUSTOMER & UID */}
+                      <td className="px-4 py-4 align-top">
+                        <div className="text-[13px] font-bold text-slate-900 truncate max-w-[170px]" title={order.customer}>
                           {order.customer}
                         </div>
-                        <div className="mt-1 text-[10px] text-slate-400">
-                          UID: {order.uid}
+                        <div className="mt-1 text-xs text-slate-400 font-medium">
+                          UID: <span className="font-semibold text-slate-600">{order.uid}</span>
                         </div>
+                        {(order.mobile || order.customer_phone) && (
+                          <div className="mt-0.5 text-[11px] text-slate-400">
+                            {order.mobile || order.customer_phone}
+                          </div>
+                        )}
                       </td>
 
-                      <td className="border-r border-slate-100 px-3 py-3 align-top">
+                      {/* SHIPMENT (AWB), PICKUP ID & COURIER */}
+                      <td className="px-4 py-4 align-top">
+                        {/* AWB */}
                         <div className="flex items-center gap-1.5">
                           <button
                             type="button"
                             onClick={() => trackAwb(order.awb)}
                             disabled={!order.awb || order.awb === "-"}
                             title="Track shipment"
-                            className="text-left text-[11px] font-medium font-mono text-[#008dd2] hover:underline disabled:cursor-default disabled:text-slate-700"
+                            className="text-left font-mono text-[13px] font-bold text-[#008dd2] hover:underline disabled:cursor-default disabled:text-slate-700"
                           >
-                            {order.awb}
+                            {order.awb || "—"}
                           </button>
-                          {order.awb !== "-" && (
+                          {order.awb && order.awb !== "-" && (
                             <button
                               type="button"
                               onClick={() => copyText(order.awb, "AWB")}
-                              className="text-slate-400 transition hover:text-blue-600"
+                              className="text-slate-400 hover:text-[#008dd2] transition p-0.5"
                               title="Copy AWB"
                             >
-                              <HiOutlineClipboardCopy className="text-[14px]" />
+                              <HiOutlineClipboardCopy className="text-sm" />
                             </button>
                           )}
                         </div>
-                        <div className="mt-1 text-[10px] text-slate-400">
-                          Pickup ID: {order.pickupId}
+
+                        {/* PICKUP REQUEST ID */}
+                        <div className="mt-1 flex items-center gap-1 text-xs text-slate-500">
+                          <span className="font-medium text-slate-400">Pickup ID:</span>
+                          <span className="font-mono font-bold text-slate-800">
+                            {order.pickup_request_id || "—"}
+                          </span>
+                          {order.pickup_request_id && (
+                            <button
+                              type="button"
+                              onClick={() => copyText(order.pickup_request_id, "Pickup ID")}
+                              className="text-slate-300 hover:text-[#008dd2] transition p-0.5"
+                              title="Copy Pickup ID"
+                            >
+                              <HiOutlineClipboardCopy className="text-xs" />
+                            </button>
+                          )}
                         </div>
-                        <div className="mt-0.5 max-w-[170px] truncate text-[10px] text-slate-400">
-                          {order.courier}
+
+                        {/* COURIER */}
+                        <div className="mt-1 flex items-center gap-1 text-[11px] text-slate-500 font-medium">
+                          <HiOutlineTruck className="text-slate-400 text-xs shrink-0" />
+                          <span className="truncate max-w-[170px]">{order.courier || "—"}</span>
                         </div>
                       </td>
 
-                      <td className="border-r border-slate-100 px-3 py-3 align-top">
-                        <div className="text-[12px] font-semibold text-slate-700">
+                      {/* ROUTE VISUAL */}
+                      <td className="px-4 py-4 align-top">
+                        <div className="flex flex-col gap-0.5 max-w-[200px]">
+                          {/* Pickup point */}
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <HiOutlineLocationMarker className="text-[#008dd2] text-sm shrink-0" />
+                            <span className="truncate text-xs font-semibold text-slate-800" title={order.pickup}>
+                              {order.pickup || "—"}
+                            </span>
+                          </div>
+
+                          {/* Connector */}
+                          <div className="ml-1.5 flex h-3 flex-col justify-between">
+                            <span className="h-1 border-l border-dashed border-slate-300" />
+                            <span className="h-1 border-l border-dashed border-slate-300" />
+                          </div>
+
+                          {/* Destination point */}
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <HiOutlineLocationMarker className="text-emerald-500 text-sm shrink-0" />
+                            <span className="truncate text-xs font-semibold text-slate-800" title={order.destination}>
+                              {order.destination || "—"}
+                            </span>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* CHARGE & PAYMENT TYPE */}
+                      <td className="px-4 py-4 align-top">
+                        <div className="text-[13px] font-extrabold text-slate-900 tracking-tight">
                           {order.charge !== null &&
                           order.charge !== undefined &&
                           Number.isFinite(Number(order.charge))
                             ? `₹${Number(order.charge).toFixed(2)}`
                             : "—"}
                         </div>
-                      </td>
-
-                      <td className="border-r border-slate-100 px-3 py-3 align-top">
-                        <div className="max-w-[180px] text-[10px] leading-[1.45] text-slate-600">
-                          {order.pickup}
-                        </div>
-                        <div className="my-1 text-[10px] text-slate-300">
-                          to
-                        </div>
-                        <div className="max-w-[180px] text-[10px] leading-[1.45] text-slate-600">
-                          {order.destination}
-                        </div>
-                      </td>
-
-                      <td className="border-r border-slate-100 px-3 py-3 align-top">
-                        <div className="text-[10px] leading-[1.45] text-slate-500">
-                          <span className="font-medium text-slate-600">
-                            {order.status}:
-                          </span>{" "}
-                          {order.date}
+                        <div className="mt-1.5">
+                          <span
+                            className={`inline-flex items-center rounded-md border px-2 py-0.5 text-[10px] font-bold uppercase ${
+                              order.payment === "COD"
+                                ? "border-amber-200 bg-amber-50 text-amber-700"
+                                : "border-sky-200 bg-sky-50 text-[#008dd2]"
+                            }`}
+                          >
+                            {order.payment || "—"}
+                          </span>
                         </div>
                       </td>
 
-                      <td className="px-3 py-3 align-top">
+                      {/* DATES */}
+                      <td className="px-4 py-4 align-top">
+                        <div className="text-xs">
+                          <div className="font-semibold text-slate-800">
+                            {order.status}
+                          </div>
+                          <div className="mt-1 text-[11px] text-slate-400 font-medium">
+                            {order.date}
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* ACTIONS */}
+                      <td className="px-4 py-4 align-top text-right">
                         <button
                           type="button"
                           onClick={() => setViewingOrder(order)}
-                          className="flex h-8 w-8 items-center justify-center rounded-lg border border-blue-200 bg-blue-600 text-white transition hover:bg-blue-700 active:scale-95"
-                          title="View Order"
+                          className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-2xs transition hover:border-[#008dd2] hover:bg-[#008dd2] hover:text-white active:scale-95"
+                          title="View Order Details"
                         >
-                          <HiOutlineEye className="text-[15px]" />
+                          <HiOutlineEye className="text-sm" />
+                          <span>View</span>
                         </button>
                       </td>
                     </tr>
@@ -1393,21 +1539,21 @@ const AllOrders = () => {
         </div>
 
         {/* FOOTER */}
-        <div className="flex flex-col gap-2 border-t border-slate-200 bg-slate-50/50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="text-[11px] text-slate-500">
+        <div className="flex flex-col gap-2 border-t border-slate-200 bg-slate-50/60 px-5 py-3.5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="text-xs font-medium text-slate-500">
             Showing{" "}
-            <span className="font-semibold text-slate-700">
+            <span className="font-bold text-slate-800">
               {filteredOrders.length}
             </span>{" "}
             of{" "}
-            <span className="font-semibold text-slate-700">
+            <span className="font-bold text-slate-800">
               {orders.length}
             </span>{" "}
             orders
           </div>
 
           {selectedOrders.length > 0 && (
-            <div className="text-[11px] font-medium text-blue-600">
+            <div className="text-xs font-semibold text-[#008dd2]">
               {selectedOrders.length} order
               {selectedOrders.length > 1 ? "s" : ""} selected
             </div>
