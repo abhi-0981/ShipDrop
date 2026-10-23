@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-hot-toast";
 import api from "../../services/api";
 import { notifyOrderChange, subscribeToOrderUpdates } from "../../services/orderEvents";
 import { RouteSkeleton } from "../../components/Common/TableSkeleton";
@@ -116,13 +117,13 @@ function ProcessingOrders() {
   const [deleting, setDeleting] = useState(false);
 
   const [editingOrder, setEditingOrder] = useState(false);
-  const [toast, setToast] = useState(null);
 
   const showToast = (message, type = "success") => {
-    setToast({ message, type });
-    setTimeout(() => {
-      setToast(null);
-    }, 3500);
+    if (type === "error") {
+      toast.error(message);
+    } else {
+      toast.success(message);
+    }
   };
 
   const fetchOrders = async (showLoader = true) => {
@@ -843,27 +844,7 @@ function ProcessingOrders() {
 
   return (
     <div className="min-h-full w-full bg-[#f6f8fb] p-3 sm:p-5 md:p-6 pb-20 lg:pb-8">
-      {/* TOAST */}
-      {toast && (
-        <div className="fixed right-4 top-4 z-[11000] max-w-[90vw]">
-          <div
-            className={`flex items-center gap-3 rounded-xl border bg-white p-3.5 shadow-2xl ${
-              toast.type === "success" ? "border-green-200" : "border-red-200"
-            }`}
-          >
-            <div
-              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
-                toast.type === "success"
-                  ? "bg-green-100 text-green-600"
-                  : "bg-red-100 text-red-600"
-              }`}
-            >
-              {toast.type === "success" ? "✓" : "!"}
-            </div>
-            <p className="text-xs font-semibold text-slate-700">{toast.message}</p>
-          </div>
-        </div>
-      )}
+
 
       {/* HEADER & CONTROLS */}
       <div className="mb-3.5 rounded-2xl border border-slate-200/80 bg-white p-3.5 sm:p-4 shadow-[0_1px_4px_rgba(15,23,42,0.03)] space-y-3">

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-hot-toast";
 import api from "../../services/api";
 import { notifyOrderChange, subscribeToOrderUpdates } from "../../services/orderEvents";
 import { RouteSkeleton } from "../../components/Common/TableSkeleton";
@@ -143,17 +144,12 @@ function ProcessingOrders() {
   // TOAST
   // ====================================================
 
-  const [toast, setToast] = useState(null);
-
   const showToast = (message, type = "success") => {
-    setToast({
-      message,
-      type,
-    });
-
-    setTimeout(() => {
-      setToast(null);
-    }, 3500);
+    if (type === "error") {
+      toast.error(message);
+    } else {
+      toast.success(message);
+    }
   };
 
   // ====================================================
@@ -1191,37 +1187,7 @@ function ProcessingOrders() {
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-[#f5f7fb] p-4">
-      {/* ==================================================
-          TOAST
-      ================================================== */}
 
-      {toast && (
-        <div className="fixed right-6 top-6 z-[11000]">
-          <div
-            className={`flex min-w-[320px] items-center gap-3 rounded-xl border bg-white px-5 py-4 shadow-2xl ${
-              toast.type === "success" ? "border-green-200" : "border-red-200"
-            }`}
-          >
-            <div
-              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-lg font-bold ${
-                toast.type === "success"
-                  ? "bg-green-100 text-green-600"
-                  : "bg-red-100 text-red-600"
-              }`}
-            >
-              {toast.type === "success" ? "✓" : "!"}
-            </div>
-
-            <div>
-              <p className="text-sm font-bold text-slate-800">
-                {toast.type === "success" ? "Success" : "Something went wrong"}
-              </p>
-
-              <p className="mt-1 text-xs text-slate-500">{toast.message}</p>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ==================================================
           PAGE

@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { toast } from "react-hot-toast";
 import api from "../../services/api";
 import { RateCardSkeleton } from "../../components/Common/TableSkeleton";
 
@@ -881,14 +882,11 @@ function RateCard() {
   // ====================================================
 
   const showToast = (message, type = "success") => {
-    setToast({
-      message,
-      type,
-    });
-
-    window.setTimeout(() => {
-      setToast(null);
-    }, 2800);
+    if (type === "error") {
+      toast.error(message);
+    } else {
+      toast.success(message);
+    }
   };
 
   // ====================================================
