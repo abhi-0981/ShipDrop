@@ -580,7 +580,7 @@ export default function CommandPalette() {
           </div>
 
           <div className="hidden sm:flex items-center gap-1 font-mono text-[10px] text-slate-400">
-            <span>ShipDrop Command</span>
+            <span>ParcelDrop Command</span>
           </div>
         </div>
       </div>
