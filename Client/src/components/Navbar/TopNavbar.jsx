@@ -1128,7 +1128,7 @@
                 <img
                   src={shipdropLogo}
                   alt="ParcelDrop"
-                  className="h-8 sm:h-[38px] w-auto max-w-[145px] sm:max-w-[165px] object-contain"
+                  className="h-9 sm:h-[42px] w-auto max-w-[150px] sm:max-w-[170px] object-contain translate-y-[2.5px]"
                 />
               </Link>
             )}
