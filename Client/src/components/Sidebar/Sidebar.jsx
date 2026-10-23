@@ -21,6 +21,7 @@ import {
 import { FiMenu } from "react-icons/fi";
 import api from "../../services/api";
 import { fetchOrderStatusCounts } from "../../services/orderEvents";
+import shipdropLogo from "../../assets/images/shipdrop-logo.png";
 
 // Dynamic route prefetcher for instant 0ms tab switching
 const prefetchRoute = (path) => {
@@ -466,14 +467,17 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
       >
         {/* HEADER: LOGO + TOGGLE / CLOSE BUTTON */}
         <div className="flex h-[64px] shrink-0 items-center justify-between border-b border-slate-100 px-4">
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#008dd2] text-white font-bold text-base shadow-sm">
-              S
-            </div>
-            <h1 className="text-[21px] font-bold tracking-tight text-[#008dd2]">
-              ParcelDrop
-            </h1>
-          </div>
+          <Link
+            to="/dashboard"
+            className="flex items-center transition hover:opacity-90 active:scale-95"
+            title="ParcelDrop"
+          >
+            <img
+              src={shipdropLogo}
+              alt="ParcelDrop"
+              className="h-8 max-h-8 w-auto max-w-[155px] object-contain"
+            />
+          </Link>
 
           <button
             onClick={() => handleToggle(true)}
