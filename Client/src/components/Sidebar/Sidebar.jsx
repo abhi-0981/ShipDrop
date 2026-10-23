@@ -466,22 +466,22 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
         }`}
       >
         {/* HEADER: LOGO + TOGGLE / CLOSE BUTTON */}
-        <div className="relative flex h-[64px] shrink-0 items-center justify-center border-b border-slate-100 px-4">
+        <div className="flex h-[64px] shrink-0 items-center justify-between border-b border-slate-100 px-4">
           <Link
             to="/dashboard"
-            className="flex items-center justify-center transition hover:opacity-90 active:scale-95"
+            className="flex items-center transition hover:opacity-90 active:scale-95"
             title="ParcelDrop"
           >
             <img
               src={shipdropLogo}
               alt="ParcelDrop"
-              className="h-[42px] sm:h-[46px] w-auto max-w-[155px] sm:max-w-[165px] object-contain object-center translate-y-[2px]"
+              className="h-[44px] sm:h-[46px] w-auto max-w-[170px] sm:max-w-[180px] object-contain object-left translate-y-[3px]"
             />
           </Link>
 
           <button
             onClick={() => handleToggle(true)}
-            className="absolute right-3.5 top-1/2 -translate-y-1/2 z-10 flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 active:scale-95"
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 active:scale-95"
             title="Close Sidebar"
           >
             <span className="hidden lg:inline-block">
