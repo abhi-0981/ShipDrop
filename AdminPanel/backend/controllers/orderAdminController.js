@@ -30,7 +30,6 @@ const getAdminOrders = async (req, res) => {
         ================================================= */
 
         o.pickup_address_id,
-        o.pickup_request_id,
         o.warehouse_id,
         o.awb,
 
