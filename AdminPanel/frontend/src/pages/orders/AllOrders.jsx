@@ -955,7 +955,7 @@ const AllOrders = () => {
   ];
 
   return (
-    <div className="min-h-full bg-[#f8fafc] p-3 sm:p-5 pb-20 lg:pb-8">
+    <div className="min-h-full bg-[#f8fafc] p-3 sm:p-5 pb-20 lg:pb-8 overflow-x-hidden">
       {/* HEADER */}
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -1084,38 +1084,36 @@ const AllOrders = () => {
         </div>
       </div>
 
-      {/* STATUS HORIZONTAL PILL TABS */}
-      <div className="mb-4 overflow-x-auto pb-1 [scrollbar-width:none]">
-        <div className="flex min-w-max items-center gap-2">
-          {statusTabs.map((status) => {
-            const active = activeStatus === status;
+      {/* STATUS PILL TABS */}
+      <div className="mb-4 flex flex-wrap items-center gap-1.5 sm:gap-2">
+        {statusTabs.map((status) => {
+          const active = activeStatus === status;
 
-            return (
-              <button
-                key={status}
-                type="button"
-                onClick={() => {
-                  setActiveStatus(status);
-                  setStatusFilter(status);
-                }}
-                className={`inline-flex items-center gap-2 rounded-xl border px-3.5 py-2 text-xs transition active:scale-95 ${
-                  active
-                    ? "border-[#008dd2] bg-[#008dd2] text-white font-semibold shadow-xs"
-                    : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:border-slate-300 font-medium"
+          return (
+            <button
+              key={status}
+              type="button"
+              onClick={() => {
+                setActiveStatus(status);
+                setStatusFilter(status);
+              }}
+              className={`inline-flex items-center gap-2 rounded-xl border px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs transition active:scale-95 ${
+                active
+                  ? "border-[#008dd2] bg-[#008dd2] text-white font-semibold shadow-xs"
+                  : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:border-slate-300 font-medium"
+              }`}
+            >
+              <span>{STATUS_CONFIG[status]?.label || status}</span>
+              <span
+                className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${
+                  active ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"
                 }`}
               >
-                <span>{STATUS_CONFIG[status]?.label || status}</span>
-                <span
-                  className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${
-                    active ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"
-                  }`}
-                >
-                  {counts[status] || 0}
-                </span>
-              </button>
-            );
-          })}
-        </div>
+                {counts[status] || 0}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       {/* ERROR BANNER */}
@@ -1287,256 +1285,265 @@ const AllOrders = () => {
       </div>
 
       {/* =========================================================
-          2. TABLET & DESKTOP: STRUCTURED TABLE
+          2. TABLET & DESKTOP: STRUCTURED TABLE (100% RESPONSIVE, NO SIDE SCROLL)
       ========================================================= */}
       <div className="hidden sm:block overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-xs">
-        <div className="overflow-x-auto">
-          <table className="min-w-[1200px] w-full border-collapse text-left">
-            <thead>
-              <tr className="border-b border-slate-200 bg-slate-50/75">
-                <th className="w-[52px] px-4 py-3.5 text-center">
-                  <input
-                    type="checkbox"
-                    checked={allSelected}
-                    onChange={toggleSelectAll}
-                    className="h-4 w-4 cursor-pointer rounded border-slate-300 accent-[#008dd2]"
-                  />
-                </th>
-                <th className="w-[145px] px-4 py-3.5 text-xs font-bold uppercase tracking-wider text-slate-500">
-                  Order
-                </th>
-                <th className="w-[185px] px-4 py-3.5 text-xs font-bold uppercase tracking-wider text-slate-500">
-                  Customer
-                </th>
-                <th className="w-[245px] px-4 py-3.5 text-xs font-bold uppercase tracking-wider text-slate-500">
-                  Shipment & Pickup
-                </th>
-                <th className="w-[215px] px-4 py-3.5 text-xs font-bold uppercase tracking-wider text-slate-500">
-                  Route
-                </th>
-                <th className="w-[135px] px-4 py-3.5 text-xs font-bold uppercase tracking-wider text-slate-500">
-                  Payment
-                </th>
-                <th className="w-[155px] px-4 py-3.5 text-xs font-bold uppercase tracking-wider text-slate-500">
-                  Dates
-                </th>
-                <th className="w-[110px] px-4 py-3.5 text-right text-xs font-bold uppercase tracking-wider text-slate-500">
-                  Actions
-                </th>
+        <table className="w-full table-fixed border-collapse text-left">
+          <thead>
+            <tr className="border-b border-slate-200 bg-slate-50/75">
+              <th className="w-[38px] px-2 py-3.5 text-center">
+                <input
+                  type="checkbox"
+                  checked={allSelected}
+                  onChange={toggleSelectAll}
+                  className="h-4 w-4 cursor-pointer rounded border-slate-300 accent-[#008dd2]"
+                />
+              </th>
+              <th className="w-[14%] px-3 py-3.5 text-xs font-bold uppercase tracking-wider text-slate-500">
+                Order
+              </th>
+              <th className="w-[18%] px-3 py-3.5 text-xs font-bold uppercase tracking-wider text-slate-500">
+                Customer
+              </th>
+              <th className="w-[22%] px-3 py-3.5 text-xs font-bold uppercase tracking-wider text-slate-500">
+                Shipment & Pickup
+              </th>
+              <th className="w-[20%] px-3 py-3.5 text-xs font-bold uppercase tracking-wider text-slate-500">
+                Route
+              </th>
+              <th className="w-[11%] px-3 py-3.5 text-xs font-bold uppercase tracking-wider text-slate-500">
+                Payment
+              </th>
+              <th className="w-[11%] px-3 py-3.5 text-xs font-bold uppercase tracking-wider text-slate-500">
+                Dates
+              </th>
+              <th className="w-[4%] px-2 py-3.5 text-center text-xs font-bold uppercase tracking-wider text-slate-500">
+                Action
+              </th>
+            </tr>
+          </thead>
+
+          <tbody className="divide-y divide-slate-100">
+            {loading ? (
+              <tr>
+                <td colSpan="8" className="px-6 py-20 text-center">
+                  <div className="flex flex-col items-center">
+                    <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-200 border-t-[#008dd2]" />
+                    <p className="mt-3 text-xs font-semibold text-slate-500">
+                      Loading orders...
+                    </p>
+                  </div>
+                </td>
               </tr>
-            </thead>
-
-            <tbody className="divide-y divide-slate-100">
-              {loading ? (
-                <tr>
-                  <td colSpan="8" className="px-6 py-20 text-center">
-                    <div className="flex flex-col items-center">
-                      <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-200 border-t-[#008dd2]" />
-                      <p className="mt-3 text-xs font-semibold text-slate-500">
-                        Loading orders...
-                      </p>
+            ) : filteredOrders.length === 0 ? (
+              <tr>
+                <td colSpan="8" className="px-6 py-20 text-center">
+                  <div className="mx-auto flex max-w-sm flex-col items-center">
+                    <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+                      <HiOutlineSearch className="text-xl" />
                     </div>
-                  </td>
-                </tr>
-              ) : filteredOrders.length === 0 ? (
-                <tr>
-                  <td colSpan="8" className="px-6 py-20 text-center">
-                    <div className="mx-auto flex max-w-sm flex-col items-center">
-                      <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400">
-                        <HiOutlineSearch className="text-xl" />
-                      </div>
-                      <p className="text-sm font-bold text-slate-800">
-                        No orders found
-                      </p>
-                      <p className="mt-1 text-xs text-slate-400 font-medium">
-                        Try changing your search keywords or filter criteria.
-                      </p>
-                      <button
-                        type="button"
-                        onClick={resetFilters}
-                        className="mt-4 text-xs font-semibold text-[#008dd2] hover:underline"
-                      >
-                        Clear all filters
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                filteredOrders.map((order) => {
-                  const selected = selectedOrders.includes(order.id);
-
-                  return (
-                    <tr
-                      key={order.id}
-                      className={`group transition hover:bg-slate-50/70 ${
-                        selected ? "bg-sky-50/40" : "bg-white"
-                      }`}
+                    <p className="text-sm font-bold text-slate-800">
+                      No orders found
+                    </p>
+                    <p className="mt-1 text-xs text-slate-400 font-medium">
+                      Try changing your search keywords or filter criteria.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={resetFilters}
+                      className="mt-4 text-xs font-semibold text-[#008dd2] hover:underline"
                     >
-                      {/* SELECT CHECKBOX */}
-                      <td className="px-4 py-4 text-center align-top">
-                        <input
-                          type="checkbox"
-                          checked={selected}
-                          onChange={() => toggleSelect(order.id)}
-                          className="mt-1 h-4 w-4 cursor-pointer rounded border-slate-300 accent-[#008dd2]"
-                        />
-                      </td>
+                      Clear all filters
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ) : (
+              filteredOrders.map((order) => {
+                const selected = selectedOrders.includes(order.id);
 
-                      {/* ORDER ID & STATUS BADGE */}
-                      <td className="px-4 py-4 align-top">
-                        <div className="font-mono text-[13px] font-bold text-slate-900 group-hover:text-[#008dd2] transition">
-                          #{order.order_id || order.id}
-                        </div>
-                        <div className="mt-2">
-                          <StatusBadge status={order.status} />
-                        </div>
-                      </td>
+                return (
+                  <tr
+                    key={order.id}
+                    className={`group transition hover:bg-slate-50/70 ${
+                      selected ? "bg-sky-50/40" : "bg-white"
+                    }`}
+                  >
+                    {/* SELECT CHECKBOX */}
+                    <td className="px-2 py-3.5 text-center align-top">
+                      <input
+                        type="checkbox"
+                        checked={selected}
+                        onChange={() => toggleSelect(order.id)}
+                        className="mt-1 h-4 w-4 cursor-pointer rounded border-slate-300 accent-[#008dd2]"
+                      />
+                    </td>
 
-                      {/* CUSTOMER & UID */}
-                      <td className="px-4 py-4 align-top">
-                        <div className="text-[13px] font-bold text-slate-900 truncate max-w-[170px]" title={order.customer}>
-                          {order.customer}
-                        </div>
-                        <div className="mt-1 text-xs text-slate-400 font-medium">
-                          UID: <span className="font-semibold text-slate-600">{order.uid}</span>
-                        </div>
-                        {(order.mobile || order.customer_phone) && (
-                          <div className="mt-0.5 text-[11px] text-slate-400">
-                            {order.mobile || order.customer_phone}
-                          </div>
-                        )}
-                      </td>
+                    {/* ORDER ID & STATUS BADGE */}
+                    <td className="px-3 py-3.5 align-top min-w-0">
+                      <div className="font-mono text-[13px] font-bold text-slate-900 group-hover:text-[#008dd2] transition truncate">
+                        #{order.order_id || order.id}
+                      </div>
+                      <div className="mt-1.5">
+                        <StatusBadge status={order.status} />
+                      </div>
+                    </td>
 
-                      {/* SHIPMENT (AWB), PICKUP ID & COURIER */}
-                      <td className="px-4 py-4 align-top">
-                        {/* AWB */}
-                        <div className="flex items-center gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => trackAwb(order.awb)}
-                            disabled={!order.awb || order.awb === "-"}
-                            title="Track shipment"
-                            className="text-left font-mono text-[13px] font-bold text-[#008dd2] hover:underline disabled:cursor-default disabled:text-slate-700"
-                          >
-                            {order.awb || "—"}
-                          </button>
-                          {order.awb && order.awb !== "-" && (
-                            <button
-                              type="button"
-                              onClick={() => copyText(order.awb, "AWB")}
-                              className="text-slate-400 hover:text-[#008dd2] transition p-0.5"
-                              title="Copy AWB"
-                            >
-                              <HiOutlineClipboardCopy className="text-sm" />
-                            </button>
-                          )}
+                    {/* CUSTOMER & UID */}
+                    <td className="px-3 py-3.5 align-top min-w-0">
+                      <div
+                        className="text-[13px] font-bold text-slate-900 truncate"
+                        title={order.customer}
+                      >
+                        {order.customer}
+                      </div>
+                      <div className="mt-0.5 text-xs text-slate-400 font-medium truncate">
+                        UID: <span className="font-semibold text-slate-600">{order.uid}</span>
+                      </div>
+                      {(order.mobile || order.customer_phone) && (
+                        <div className="mt-0.5 text-[11px] text-slate-400 truncate">
+                          {order.mobile || order.customer_phone}
                         </div>
+                      )}
+                    </td>
 
-                        {/* PICKUP REQUEST ID */}
-                        <div className="mt-1 flex items-center gap-1 text-xs text-slate-500">
-                          <span className="font-medium text-slate-400">Pickup ID:</span>
-                          <span className="font-mono font-bold text-slate-800">
-                            {order.pickup_request_id || "—"}
-                          </span>
-                          {order.pickup_request_id && (
-                            <button
-                              type="button"
-                              onClick={() => copyText(order.pickup_request_id, "Pickup ID")}
-                              className="text-slate-300 hover:text-[#008dd2] transition p-0.5"
-                              title="Copy Pickup ID"
-                            >
-                              <HiOutlineClipboardCopy className="text-xs" />
-                            </button>
-                          )}
-                        </div>
-
-                        {/* COURIER */}
-                        <div className="mt-1 flex items-center gap-1 text-[11px] text-slate-500 font-medium">
-                          <HiOutlineTruck className="text-slate-400 text-xs shrink-0" />
-                          <span className="truncate max-w-[170px]">{order.courier || "—"}</span>
-                        </div>
-                      </td>
-
-                      {/* ROUTE VISUAL */}
-                      <td className="px-4 py-4 align-top">
-                        <div className="flex flex-col gap-0.5 max-w-[200px]">
-                          {/* Pickup point */}
-                          <div className="flex items-center gap-1.5 min-w-0">
-                            <HiOutlineLocationMarker className="text-[#008dd2] text-sm shrink-0" />
-                            <span className="truncate text-xs font-semibold text-slate-800" title={order.pickup}>
-                              {order.pickup || "—"}
-                            </span>
-                          </div>
-
-                          {/* Connector */}
-                          <div className="ml-1.5 flex h-3 flex-col justify-between">
-                            <span className="h-1 border-l border-dashed border-slate-300" />
-                            <span className="h-1 border-l border-dashed border-slate-300" />
-                          </div>
-
-                          {/* Destination point */}
-                          <div className="flex items-center gap-1.5 min-w-0">
-                            <HiOutlineLocationMarker className="text-emerald-500 text-sm shrink-0" />
-                            <span className="truncate text-xs font-semibold text-slate-800" title={order.destination}>
-                              {order.destination || "—"}
-                            </span>
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* CHARGE & PAYMENT TYPE */}
-                      <td className="px-4 py-4 align-top">
-                        <div className="text-[13px] font-extrabold text-slate-900 tracking-tight">
-                          {order.charge !== null &&
-                          order.charge !== undefined &&
-                          Number.isFinite(Number(order.charge))
-                            ? `₹${Number(order.charge).toFixed(2)}`
-                            : "—"}
-                        </div>
-                        <div className="mt-1.5">
-                          <span
-                            className={`inline-flex items-center rounded-md border px-2 py-0.5 text-[10px] font-bold uppercase ${
-                              order.payment === "COD"
-                                ? "border-amber-200 bg-amber-50 text-amber-700"
-                                : "border-sky-200 bg-sky-50 text-[#008dd2]"
-                            }`}
-                          >
-                            {order.payment || "—"}
-                          </span>
-                        </div>
-                      </td>
-
-                      {/* DATES */}
-                      <td className="px-4 py-4 align-top">
-                        <div className="text-xs">
-                          <div className="font-semibold text-slate-800">
-                            {order.status}
-                          </div>
-                          <div className="mt-1 text-[11px] text-slate-400 font-medium">
-                            {order.date}
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* ACTIONS */}
-                      <td className="px-4 py-4 align-top text-right">
+                    {/* SHIPMENT (AWB), PICKUP ID & COURIER */}
+                    <td className="px-3 py-3.5 align-top min-w-0">
+                      {/* AWB */}
+                      <div className="flex items-center gap-1.5 min-w-0">
                         <button
                           type="button"
-                          onClick={() => setViewingOrder(order)}
-                          className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-2xs transition hover:border-[#008dd2] hover:bg-[#008dd2] hover:text-white active:scale-95"
-                          title="View Order Details"
+                          onClick={() => trackAwb(order.awb)}
+                          disabled={!order.awb || order.awb === "-"}
+                          title="Track shipment"
+                          className="truncate text-left font-mono text-[13px] font-bold text-[#008dd2] hover:underline disabled:cursor-default disabled:text-slate-700"
                         >
-                          <HiOutlineEye className="text-sm" />
-                          <span>View</span>
+                          {order.awb || "—"}
                         </button>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
+                        {order.awb && order.awb !== "-" && (
+                          <button
+                            type="button"
+                            onClick={() => copyText(order.awb, "AWB")}
+                            className="text-slate-400 hover:text-[#008dd2] transition p-0.5 shrink-0"
+                            title="Copy AWB"
+                          >
+                            <HiOutlineClipboardCopy className="text-sm" />
+                          </button>
+                        )}
+                      </div>
+
+                      {/* PICKUP REQUEST ID */}
+                      <div className="mt-1 flex items-center gap-1 text-xs text-slate-500 min-w-0">
+                        <span className="font-medium text-slate-400 shrink-0">Pickup ID:</span>
+                        <span className="font-mono font-bold text-slate-800 truncate">
+                          {order.pickup_request_id || "—"}
+                        </span>
+                        {order.pickup_request_id && (
+                          <button
+                            type="button"
+                            onClick={() => copyText(order.pickup_request_id, "Pickup ID")}
+                            className="text-slate-300 hover:text-[#008dd2] transition p-0.5 shrink-0"
+                            title="Copy Pickup ID"
+                          >
+                            <HiOutlineClipboardCopy className="text-xs" />
+                          </button>
+                        )}
+                      </div>
+
+                      {/* COURIER */}
+                      <div className="mt-0.5 flex items-center gap-1 text-[11px] text-slate-500 font-medium min-w-0">
+                        <HiOutlineTruck className="text-slate-400 text-xs shrink-0" />
+                        <span className="truncate">{order.courier || "—"}</span>
+                      </div>
+                    </td>
+
+                    {/* ROUTE VISUAL */}
+                    <td className="px-3 py-3.5 align-top min-w-0">
+                      <div className="flex flex-col gap-0.5 min-w-0">
+                        {/* Pickup point */}
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <HiOutlineLocationMarker className="text-[#008dd2] text-sm shrink-0" />
+                          <span
+                            className="truncate text-xs font-semibold text-slate-800"
+                            title={order.pickup}
+                          >
+                            {order.pickup || "—"}
+                          </span>
+                        </div>
+
+                        {/* Connector */}
+                        <div className="ml-1.5 flex h-2.5 flex-col justify-between">
+                          <span className="h-0.5 border-l border-dashed border-slate-300" />
+                          <span className="h-0.5 border-l border-dashed border-slate-300" />
+                        </div>
+
+                        {/* Destination point */}
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <HiOutlineLocationMarker className="text-emerald-500 text-sm shrink-0" />
+                          <span
+                            className="truncate text-xs font-semibold text-slate-800"
+                            title={order.destination}
+                          >
+                            {order.destination || "—"}
+                          </span>
+                        </div>
+                      </div>
+                    </td>
+
+                    {/* CHARGE & PAYMENT TYPE */}
+                    <td className="px-3 py-3.5 align-top min-w-0">
+                      <div className="text-[13px] font-extrabold text-slate-900 tracking-tight truncate">
+                        {order.charge !== null &&
+                        order.charge !== undefined &&
+                        Number.isFinite(Number(order.charge))
+                          ? `₹${Number(order.charge).toFixed(2)}`
+                          : "—"}
+                      </div>
+                      <div className="mt-1">
+                        <span
+                          className={`inline-flex items-center rounded-md border px-2 py-0.5 text-[10px] font-bold uppercase truncate max-w-full ${
+                            order.payment === "COD"
+                              ? "border-amber-200 bg-amber-50 text-amber-700"
+                              : "border-sky-200 bg-sky-50 text-[#008dd2]"
+                          }`}
+                        >
+                          {order.payment || "—"}
+                        </span>
+                      </div>
+                    </td>
+
+                    {/* DATES */}
+                    <td className="px-3 py-3.5 align-top min-w-0">
+                      <div className="text-xs min-w-0">
+                        <div className="font-semibold text-slate-800 truncate">
+                          {order.status}
+                        </div>
+                        <div
+                          className="mt-0.5 text-[11px] text-slate-400 font-medium truncate"
+                          title={order.date}
+                        >
+                          {order.date}
+                        </div>
+                      </div>
+                    </td>
+
+                    {/* ACTIONS */}
+                    <td className="px-2 py-3.5 align-top text-center">
+                      <button
+                        type="button"
+                        onClick={() => setViewingOrder(order)}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-2xs transition hover:border-[#008dd2] hover:bg-[#008dd2] hover:text-white active:scale-95"
+                        title="View Order Details"
+                      >
+                        <HiOutlineEye className="text-base" />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
 
         {/* FOOTER */}
         <div className="flex flex-col gap-2 border-t border-slate-200 bg-slate-50/60 px-5 py-3.5 sm:flex-row sm:items-center sm:justify-between">
