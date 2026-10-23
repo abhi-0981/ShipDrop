@@ -14,25 +14,34 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
-          if (id.includes("node_modules")) {
+          const normalized = id.replace(/\\/g, "/");
+          if (normalized.includes("/node_modules/")) {
             if (
-              id.includes("react/") ||
-              id.includes("react-dom/") ||
-              id.includes("react-router-dom/")
+              normalized.includes("/node_modules/react/") ||
+              normalized.includes("/node_modules/react-dom/") ||
+              normalized.includes("/node_modules/react-router/") ||
+              normalized.includes("/node_modules/react-router-dom/") ||
+              normalized.includes("/node_modules/scheduler/")
             ) {
               return "vendor-react";
             }
             if (
-              id.includes("jspdf") ||
-              id.includes("html2canvas") ||
-              id.includes("jsbarcode")
+              normalized.includes("/node_modules/jspdf/") ||
+              normalized.includes("/node_modules/html2canvas/") ||
+              normalized.includes("/node_modules/jsbarcode/")
             ) {
               return "vendor-pdf";
             }
-            if (id.includes("leaflet") || id.includes("react-leaflet")) {
+            if (
+              normalized.includes("/node_modules/leaflet/") ||
+              normalized.includes("/node_modules/react-leaflet/")
+            ) {
               return "vendor-maps";
             }
-            if (id.includes("react-icons") || id.includes("lucide-react")) {
+            if (
+              normalized.includes("/node_modules/react-icons/") ||
+              normalized.includes("/node_modules/lucide-react/")
+            ) {
               return "vendor-icons";
             }
           }
