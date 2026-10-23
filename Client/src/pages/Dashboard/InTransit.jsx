@@ -9,6 +9,7 @@ import api from "../../services/api";
 import OrderDetailsModal from "../../components/Common/OrderDetailsModal";
 import { notifyOrderChange, subscribeToOrderUpdates } from "../../services/orderEvents";
 import { printShippingLabels, downloadShippingLabels } from "../../services/shippingLabelService";
+import OrderStatusNavTabs from "../../components/Common/OrderStatusNavTabs";
 
 // ======================================================
 // COLORS
@@ -1647,11 +1648,9 @@ function InTransit() {
 
         </div>
 
-        {/* ==================================================
-            SMALL SUMMARY
-        ================================================== */}
+        {/* ORDER STATUS TABS */}
+        <OrderStatusNavTabs />
 
-        
         {/* ==================================================
             TABLE
         ================================================== */}

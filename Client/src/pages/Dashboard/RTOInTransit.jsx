@@ -15,6 +15,7 @@ import {
   downloadShippingLabels,
 } from "../../services/shippingLabelService";
 import { TableRowSkeleton } from "../../components/Common/TableSkeleton";
+import OrderStatusNavTabs from "../../components/Common/OrderStatusNavTabs";
 
 // ======================================================
 // COLORS
@@ -991,6 +992,9 @@ function RTOInTransit() {
             </div>
           )}
         </div>
+
+        {/* ORDER STATUS TABS */}
+        <OrderStatusNavTabs />
 
         {/* ==================================================
             1. MOBILE VIEW: APPLIKE SHIPMENT CARDS

@@ -9,6 +9,7 @@ import {
   printShippingLabels,
   downloadShippingLabels,
 } from "../../services/shippingLabelService";
+import OrderStatusNavTabs from "../../components/Common/OrderStatusNavTabs";
 
 // ======================================================
 // COLORS
@@ -1276,6 +1277,9 @@ useEffect(() => {
             </div>
           )}
         </div>
+
+        {/* ORDER STATUS TABS */}
+        <OrderStatusNavTabs />
 
         {/* ==================================================
             1. MOBILE VIEW: APP-STYLE CARD TILES (FIXED TRACKING)

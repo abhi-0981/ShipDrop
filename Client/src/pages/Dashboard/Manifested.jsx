@@ -11,6 +11,7 @@ import {
   downloadShippingLabels,
 } from "../../services/shippingLabelService";
 import { CardSkeleton, TableRowSkeleton } from "../../components/Common/TableSkeleton";
+import OrderStatusNavTabs from "../../components/Common/OrderStatusNavTabs";
 
 const PRIMARY = "#0788ca";
 const PRIMARY_DARK = "#0579b1";
@@ -1385,6 +1386,9 @@ const manifestedCount = useMemo(() => {
             </div>
           )}
         </div>
+
+        {/* ORDER STATUS TABS */}
+        <OrderStatusNavTabs />
 
         {/* =====================================================
             1. MOBILE VIEW: APPLIKE SHIPMENT CARDS

@@ -4,6 +4,7 @@ import { toast } from "react-hot-toast";
 import api from "../../services/api";
 import { notifyOrderChange, subscribeToOrderUpdates } from "../../services/orderEvents";
 import { RouteSkeleton } from "../../components/Common/TableSkeleton";
+import OrderStatusNavTabs from "../../components/Common/OrderStatusNavTabs";
 
 const Icon = ({ name, size = 16 }) => {
   const common = {
@@ -951,6 +952,9 @@ function ProcessingOrders() {
           </div>
         )}
       </div>
+
+      {/* ORDER STATUS TABS */}
+      <OrderStatusNavTabs />
 
       {/* MOBILE CARD VIEW */}
       <div className="space-y-3 lg:hidden">

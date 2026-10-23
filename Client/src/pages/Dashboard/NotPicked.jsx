@@ -3,6 +3,7 @@ import { toast } from "react-hot-toast";
 import api from "../../services/api";
 import { subscribeToOrderUpdates } from "../../services/orderEvents";
 import { CardSkeleton, TableRowSkeleton } from "../../components/Common/TableSkeleton";
+import OrderStatusNavTabs from "../../components/Common/OrderStatusNavTabs";
 
 // ======================================================
 // COLORS
@@ -1085,6 +1086,9 @@ function NotPicked() {
             </div>
           )}
         </div>
+
+        {/* ORDER STATUS TABS */}
+        <OrderStatusNavTabs />
 
         {/* ==================================================
             1. MOBILE VIEW: TOUCH-FRIENDLY APP CARDS

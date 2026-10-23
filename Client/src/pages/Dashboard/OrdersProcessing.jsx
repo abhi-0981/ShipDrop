@@ -4,6 +4,7 @@ import { toast } from "react-hot-toast";
 import api from "../../services/api";
 import { notifyOrderChange, subscribeToOrderUpdates } from "../../services/orderEvents";
 import { RouteSkeleton } from "../../components/Common/TableSkeleton";
+import OrderStatusNavTabs from "../../components/Common/OrderStatusNavTabs";
 
 // ======================================================
 // ICON
@@ -1266,6 +1267,9 @@ function ProcessingOrders() {
             </div>
           </div>
         </div>
+
+        {/* ORDER STATUS TABS */}
+        <OrderStatusNavTabs />
 
         {/* ==================================================
             TABLE

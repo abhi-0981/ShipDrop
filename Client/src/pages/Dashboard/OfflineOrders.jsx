@@ -4,6 +4,7 @@ import { toast } from "react-hot-toast";
 import api from "../../services/api";
 import OfflineOrderModal from "../../components/Common/OfflineOrderModal";
 import { TableSkeleton, CardSkeleton } from "../../components/Common/TableSkeleton";
+import OrderStatusNavTabs from "../../components/Common/OrderStatusNavTabs";
 import { notifyOrderChange } from "../../services/orderEvents";
 
 const PRIMARY = "#008dd2";
@@ -518,6 +519,9 @@ export default function OfflineOrders() {
           </div>
         )}
       </div>
+
+      {/* ORDER STATUS TABS */}
+      <OrderStatusNavTabs />
 
       {/* ==================================================
           TABLE / LIST VIEW

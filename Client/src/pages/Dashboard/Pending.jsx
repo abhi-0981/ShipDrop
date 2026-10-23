@@ -23,6 +23,7 @@ import {
   printShippingLabels,
   downloadShippingLabels,
 } from "../../services/shippingLabelService";
+import OrderStatusNavTabs from "../../components/Common/OrderStatusNavTabs";
 import { TableRowSkeleton } from "../../components/Common/TableSkeleton";
 
 /* =========================================================
@@ -925,6 +926,9 @@ const triggerTracking = (awb) => {
           </div>
         </div>
       </div>
+
+      {/* ORDER STATUS TABS */}
+      <OrderStatusNavTabs />
 
       {/* =================================================
           ERROR

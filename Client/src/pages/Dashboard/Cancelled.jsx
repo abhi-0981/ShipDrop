@@ -10,6 +10,7 @@ import { notifyOrderChange, subscribeToOrderUpdates } from "../../services/order
 import OrderDetailsModal from "../../components/Common/OrderDetailsModal";
 import { printShippingLabels, downloadShippingLabels } from "../../services/shippingLabelService";
 import { TableRowSkeleton } from "../../components/Common/TableSkeleton";
+import OrderStatusNavTabs from "../../components/Common/OrderStatusNavTabs";
 
 // ======================================================
 // COLORS
@@ -1609,11 +1610,9 @@ function Cancelled() {
 
         </div>
 
-        {/* ==================================================
-            SMALL SUMMARY
-        ================================================== */}
+        {/* ORDER STATUS TABS */}
+        <OrderStatusNavTabs />
 
-        
         {/* ==================================================
             TABLE
         ================================================== */}
