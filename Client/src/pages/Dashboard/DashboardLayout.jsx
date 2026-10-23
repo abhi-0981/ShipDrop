@@ -5,7 +5,6 @@ import Sidebar from "../../components/Sidebar/Sidebar";
 import TopNavbar from "../../components/Navbar/TopNavbar";
 import ImpersonationBanner from "../../components/Common/ImpersonationBanner";
 import CommandPalette from "../../components/Common/CommandPalette";
-import OrderStatusTabs from "../../components/Common/OrderStatusTabs";
 import { setupOrderCrossTabSync } from "../../services/orderEvents";
 
 function DashboardLayout() {
@@ -52,9 +51,6 @@ function DashboardLayout() {
       >
         {/* ADMIN SUPPORT MODE BANNER (Rendered when active) */}
         <ImpersonationBanner />
-
-        {/* ORDER STATUS QUICK NAVIGATION TABS */}
-        <OrderStatusTabs />
 
         <div className="w-full max-w-[1600px] mx-auto">
           <Outlet />
