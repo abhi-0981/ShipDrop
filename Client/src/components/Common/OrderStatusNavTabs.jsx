@@ -213,8 +213,8 @@ function OrderStatusNavTabs({ className = "" }) {
   );
 
   return (
-    <div className={`mb-2.5 w-full overflow-hidden ${className}`}>
-      <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto py-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <div className={`mb-3 w-full overflow-hidden ${className}`}>
+      <div className="flex items-center gap-2 overflow-x-auto py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {tabs.map((tab) => {
           const isActive = tab.aliases.some(
             (alias) =>
@@ -229,7 +229,7 @@ function OrderStatusNavTabs({ className = "" }) {
               ref={isActive ? activeTabRef : null}
               to={tab.path}
               onMouseEnter={() => prefetchRoute(tab.path)}
-              className={`inline-flex shrink-0 items-center justify-center rounded-full px-2.5 py-1 sm:px-3 sm:py-1 text-[11px] sm:text-[11.5px] transition-all duration-150 active:scale-95 ${
+              className={`inline-flex shrink-0 items-center justify-center rounded-full px-3 py-1.5 sm:px-3.5 sm:py-1.5 text-[12px] sm:text-[12.5px] transition-all duration-150 active:scale-95 ${
                 isActive
                   ? "bg-[#008dd2] text-white shadow-sm font-semibold border border-[#008dd2]"
                   : "bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50 border border-slate-200/90 font-medium shadow-[0_1px_2px_rgba(15,23,42,0.02)]"
@@ -237,7 +237,7 @@ function OrderStatusNavTabs({ className = "" }) {
             >
               <span>{tab.name}</span>
               <span
-                className={`ml-1 font-semibold ${
+                className={`ml-1.5 font-semibold ${
                   isActive ? "text-white/95" : "text-slate-500"
                 }`}
               >
