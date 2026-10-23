@@ -957,7 +957,7 @@ function Dashboard() {
         {/* FOOTER */}
 
         <div className="mt-4 sm:mt-5 flex items-center justify-between px-1 text-[10px] text-slate-400">
-          <p>ShipDrop Admin Dashboard</p>
+          <p>ParcelDrop Admin Dashboard</p>
           <p>Live operational data</p>
         </div>
       </div>

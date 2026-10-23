@@ -773,7 +773,7 @@ function ShippingLabel({
         >
           <img
             src={shipdropLogo}
-            alt="ShipDrop"
+            alt="ParcelDrop"
             className="
               max-h-[38px]
               max-w-[155px]

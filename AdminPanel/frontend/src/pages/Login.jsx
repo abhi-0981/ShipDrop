@@ -55,7 +55,7 @@ function Login() {
         <div className="flex justify-center mb-9">
           <img
             src="/logo.png"
-            alt="ShipDrop"
+            alt="ParcelDrop"
             className="h-14 w-auto"
           />
         </div>
