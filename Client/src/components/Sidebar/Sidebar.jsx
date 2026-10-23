@@ -606,97 +606,100 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
             >
               <HiOutlineCube size={20} />
               <span className="ml-3 flex-1 text-left truncate">Orders</span>
-              {showOrders ? (
-                <HiChevronDown size={17} />
-              ) : (
-                <HiChevronRight size={17} />
-              )}
+              <HiChevronRight
+                size={17}
+                className={`transition-transform duration-300 ease-in-out ${
+                  showOrders ? "rotate-90 text-slate-800" : "rotate-0 text-slate-400"
+                }`}
+              />
             </button>
 
-            {showOrders && (
-              <div className="mt-1 ml-5 space-y-1 border-l-2 border-slate-100 pl-3">
-                {[
-                  {
-                    name: "Ready to Ship",
-                    path: "/processing-orders",
-                    count: statusCounts.PROCESSING,
-                  },
-                  {
-                    name: "All Orders",
-                    path: "/all-orders",
-                    count: statusCounts.ALL,
-                  },
-                  {
-                    name: "Offline Orders",
-                    path: "/offline-orders",
-                    count: statusCounts.OFFLINE ?? statusCounts.OFFLINE_ORDERS ?? 0,
-                  },
-                  {
-                    name: "Manifested",
-                    path: "/manifested",
-                    count: statusCounts.MANIFESTED,
-                  },
-                  {
-                    name: "Not Picked",
-                    path: "/not-picked",
-                    count: statusCounts["NOT PICKED"],
-                  },
-                  {
-                    name: "In Transit",
-                    path: "/in-transit",
-                    count: statusCounts["IN TRANSIT"],
-                  },
-                  {
-                    name: "Out For Delivery",
-                    path: "/out-for-delivery",
-                    count: statusCounts["OUT FOR DELIVERY"],
-                  },
-                  {
-                    name: "Delivered",
-                    path: "/delivered",
-                    count: statusCounts.DELIVERED,
-                  },
-                  {
-                    name: "RTO In Transit",
-                    path: "/rto-in-transit",
-                    count: statusCounts["RTO IN TRANSIT"],
-                  },
-                  {
-                    name: "RTO Delivered",
-                    path: "/rto-delivered",
-                    count: statusCounts["RTO DELIVERED"],
-                  },
+            <div className={`sidebar-accordion ${showOrders ? "is-open" : ""}`}>
+              <div>
+                <div className="mt-1 ml-5 space-y-1 border-l-2 border-slate-100 pl-3 py-0.5">
+                  {[
+                    {
+                      name: "Ready to Ship",
+                      path: "/processing-orders",
+                      count: statusCounts.PROCESSING,
+                    },
+                    {
+                      name: "All Orders",
+                      path: "/all-orders",
+                      count: statusCounts.ALL,
+                    },
+                    {
+                      name: "Offline Orders",
+                      path: "/offline-orders",
+                      count: statusCounts.OFFLINE ?? statusCounts.OFFLINE_ORDERS ?? 0,
+                    },
+                    {
+                      name: "Manifested",
+                      path: "/manifested",
+                      count: statusCounts.MANIFESTED,
+                    },
+                    {
+                      name: "Not Picked",
+                      path: "/not-picked",
+                      count: statusCounts["NOT PICKED"],
+                    },
+                    {
+                      name: "In Transit",
+                      path: "/in-transit",
+                      count: statusCounts["IN TRANSIT"],
+                    },
+                    {
+                      name: "Out For Delivery",
+                      path: "/out-for-delivery",
+                      count: statusCounts["OUT FOR DELIVERY"],
+                    },
+                    {
+                      name: "Delivered",
+                      path: "/delivered",
+                      count: statusCounts.DELIVERED,
+                    },
+                    {
+                      name: "RTO In Transit",
+                      path: "/rto-in-transit",
+                      count: statusCounts["RTO IN TRANSIT"],
+                    },
+                    {
+                      name: "RTO Delivered",
+                      path: "/rto-delivered",
+                      count: statusCounts["RTO DELIVERED"],
+                    },
 
-                   {
-                    name: "UnDelivered",
-                    path: "/pending",
-                    count: statusCounts.PENDING,
-                  },
-                 
-                  {
-                    name: "Cancelled",
-                    path: "/cancelled",
-                    count: statusCounts.CANCELLED,
-                  },
-                 
-                ].map((item) => (
-                  <Link
-                    key={item.path}
-                    to={item.path}
-                    onMouseEnter={() => prefetchRoute(item.path)}
-                    onClick={handleNavClick}
-                    className={`flex items-center justify-between rounded-lg px-2.5 py-1.5 text-[13px] transition ${subActiveClass(
-                      item.path,
-                    )}`}
-                  >
-                    <span className="truncate">{item.name}</span>
-                    <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
-                      {item.count ?? 0}
-                    </span>
-                  </Link>
-                ))}
+                     {
+                      name: "UnDelivered",
+                      path: "/pending",
+                      count: statusCounts.PENDING,
+                    },
+                   
+                    {
+                      name: "Cancelled",
+                      path: "/cancelled",
+                      count: statusCounts.CANCELLED,
+                    },
+                   
+                  ].map((item) => (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      onMouseEnter={() => prefetchRoute(item.path)}
+                      onClick={handleNavClick}
+                      className={`flex items-center justify-between rounded-lg px-2.5 py-1.5 text-[13px] transition ${subActiveClass(
+                        item.path,
+                      )}`}
+                    >
+                      <span className="truncate">{item.name}</span>
+                      <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
+                        {item.count ?? 0}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
               </div>
-            )}
+            </div>
           </div>
 
           {/* RATE CALCULATOR */}
@@ -731,38 +734,41 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
             >
               <HiOutlineCash size={20} />
               <span className="ml-3 flex-1 text-left truncate">Finance</span>
-              {showFinance ? (
-                <HiChevronDown size={17} />
-              ) : (
-                <HiChevronRight size={17} />
-              )}
+              <HiChevronRight
+                size={17}
+                className={`transition-transform duration-300 ease-in-out ${
+                  showFinance ? "rotate-90 text-slate-800" : "rotate-0 text-slate-400"
+                }`}
+              />
             </button>
 
-            {showFinance && (
-              <div className="mt-1 ml-5 space-y-1 border-l-2 border-slate-100 pl-3">
-                <Link
-                  to="/wallet"
-                  onClick={handleNavClick}
-                  className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[13px] transition ${subActiveClass(
-                    "/wallet",
-                  )}`}
-                >
-                  <HiOutlineCreditCard size={15} />
-                  <span>Wallet</span>
-                </Link>
+            <div className={`sidebar-accordion ${showFinance ? "is-open" : ""}`}>
+              <div>
+                <div className="mt-1 ml-5 space-y-1 border-l-2 border-slate-100 pl-3 py-0.5">
+                  <Link
+                    to="/wallet"
+                    onClick={handleNavClick}
+                    className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[13px] transition ${subActiveClass(
+                      "/wallet",
+                    )}`}
+                  >
+                    <HiOutlineCreditCard size={15} />
+                    <span>Wallet</span>
+                  </Link>
 
-                <Link
-                  to="/cod-remittance"
-                  onClick={handleNavClick}
-                  className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[13px] transition ${subActiveClass(
-                    "/cod-remittance",
-                  )}`}
-                >
-                  <HiOutlineCash size={15} />
-                  <span>COD Remittance</span>
-                </Link>
+                  <Link
+                    to="/cod-remittance"
+                    onClick={handleNavClick}
+                    className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[13px] transition ${subActiveClass(
+                      "/cod-remittance",
+                    )}`}
+                  >
+                    <HiOutlineCash size={15} />
+                    <span>COD Remittance</span>
+                  </Link>
+                </div>
               </div>
-            )}
+            </div>
           </div>
 
           {/* TICKETS */}
@@ -789,52 +795,58 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
             >
               <HiOutlineCog size={20} />
               <span className="ml-3 flex-1 text-left truncate">Settings</span>
-              {showSettings ? (
-                <HiChevronDown size={17} />
-              ) : (
-                <HiChevronRight size={17}  />
-              )}
+              <HiChevronRight
+                size={17}
+                className={`transition-transform duration-300 ease-in-out ${
+                  showSettings
+                    ? "rotate-90 " + (location.pathname.startsWith("/settings") ? "text-white" : "text-slate-800")
+                    : (location.pathname.startsWith("/settings") ? "text-white/80" : "text-slate-400")
+                }`}
+              />
             </button>
 
-            {showSettings && (
-              <div className="mt-1 ml-5 space-y-1 border-l-2 border-slate-100 pl-3">
-                <Link
-                  to="/settings/pickup-address"
-                  onClick={handleNavClick}
-                  className={`block rounded-lg px-2.5 py-1.5 text-[13px] transition ${subActiveClass(
-                    "/settings/pickup-address",
-                  )}`}
-                >
-                  Pickup Address
-                </Link>
-                <Link
-                  to="/settings/return-addresses"
-                  className={`block rounded-md px-3 py-1.5 text-[13px] whitespace-nowrap transition ${subActiveClass(
-                    "/settings/return-addresses",
-                  )}`}
-                >
-                  Return Addresses
-                </Link>
-                <Link
-                  to="/settings/label-settings"
-                  onClick={handleNavClick}
-                  className={`block rounded-lg px-2.5 py-1.5 text-[13px] transition ${subActiveClass(
-                    "/settings/label-settings",
-                  )}`}
-                >
-                  Label Settings
-                </Link>
-                <Link
-                  to="/settings/party-identities"
-                  onClick={handleNavClick}
-                  className={`block rounded-lg px-2.5 py-1.5 text-[13px] transition ${subActiveClass(
-                    "/settings/party-identities",
-                  )}`}
-                >
-                  Party Identities
-                </Link>
+            <div className={`sidebar-accordion ${showSettings ? "is-open" : ""}`}>
+              <div>
+                <div className="mt-1 ml-5 space-y-1 border-l-2 border-slate-100 pl-3 py-0.5">
+                  <Link
+                    to="/settings/pickup-address"
+                    onClick={handleNavClick}
+                    className={`block rounded-lg px-2.5 py-1.5 text-[13px] transition ${subActiveClass(
+                      "/settings/pickup-address",
+                    )}`}
+                  >
+                    Pickup Address
+                  </Link>
+                  <Link
+                    to="/settings/return-addresses"
+                    onClick={handleNavClick}
+                    className={`block rounded-md px-3 py-1.5 text-[13px] whitespace-nowrap transition ${subActiveClass(
+                      "/settings/return-addresses",
+                    )}`}
+                  >
+                    Return Addresses
+                  </Link>
+                  <Link
+                    to="/settings/label-settings"
+                    onClick={handleNavClick}
+                    className={`block rounded-lg px-2.5 py-1.5 text-[13px] transition ${subActiveClass(
+                      "/settings/label-settings",
+                    )}`}
+                  >
+                    Label Settings
+                  </Link>
+                  <Link
+                    to="/settings/party-identities"
+                    onClick={handleNavClick}
+                    className={`block rounded-lg px-2.5 py-1.5 text-[13px] transition ${subActiveClass(
+                      "/settings/party-identities",
+                    )}`}
+                  >
+                    Party Identities
+                  </Link>
+                </div>
               </div>
-            )}
+            </div>
           </div>
 
           {/* LOGOUT */}

@@ -78,3 +78,25 @@ body {
 .animate-fadeIn {
   animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+/* ======================================================
+   SIDEBAR SMOOTH ACCORDION TRANSITION (ZERO JERK)
+   ====================================================== */
+.sidebar-accordion {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition: grid-template-rows 280ms cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 240ms cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: grid-template-rows, opacity;
+}
+
+.sidebar-accordion.is-open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+.sidebar-accordion > div {
+  overflow: hidden;
+  min-height: 0;
+}
