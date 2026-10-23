@@ -2074,7 +2074,7 @@ function CreateOrder() {
               <div className="relative md:col-span-1">
                 <div className="flex items-center justify-between mb-1.5 gap-1.5">
                   <label className="block text-[11px] sm:text-xs font-bold text-slate-600 truncate">
-                    Client / Party Identity
+                    Client  Identity
                   </label>
                   <Link
                     to="/settings/party-identities"
@@ -2147,7 +2147,7 @@ function CreateOrder() {
                 2
               </span>
               <h2 className="text-xs sm:text-sm font-bold tracking-wide uppercase text-slate-700">
-                Consignee Details (Delivery)
+                Consignee Details
               </h2>
             </div>
 

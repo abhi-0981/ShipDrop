@@ -368,7 +368,7 @@ function Dashboard() {
           api.get("/orders/all", {
             params: {
               user_id: currentUser.id,
-              limit: 6,
+              limit: 20,
               include_tracking: false,
             },
           }),
@@ -469,6 +469,21 @@ function Dashboard() {
 
   const recentOrders = useMemo(() => {
     return [...orders]
+      .filter((order) => {
+        const status = getStatus(order);
+        const trackingStatus = String(order?.tracking_status || "")
+          .trim()
+          .toUpperCase()
+          .replace(/\s+/g, " ")
+          .replace(/_/g, " ");
+
+        return (
+          status !== "PROCESSING" &&
+          status !== "BOOKED" &&
+          trackingStatus !== "PROCESSING" &&
+          trackingStatus !== "BOOKED"
+        );
+      })
       .sort((a, b) => Number(b?.id || 0) - Number(a?.id || 0))
       .slice(0, 6);
   }, [orders]);

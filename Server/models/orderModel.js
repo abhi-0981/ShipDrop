@@ -1743,6 +1743,8 @@ const getDashboardSummary = async (userId) => {
          o.created_at
        FROM orders o
        WHERE o.user_id = ?
+         AND UPPER(TRIM(COALESCE(o.status, ''))) NOT IN ('PROCESSING', 'BOOKED')
+         AND UPPER(TRIM(COALESCE(o.tracking_status, ''))) NOT IN ('PROCESSING', 'BOOKED')
        ORDER BY o.id DESC
        LIMIT 6`,
       [numericUserId]
