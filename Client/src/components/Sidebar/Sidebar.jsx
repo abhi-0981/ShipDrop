@@ -475,7 +475,7 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
             <img
               src={shipdropLogo}
               alt="ParcelDrop"
-              className="h-8 max-h-8 w-auto max-w-[155px] object-contain"
+              className="h-[38px] sm:h-[40px] w-auto max-w-[165px] object-contain object-left"
             />
           </Link>
 

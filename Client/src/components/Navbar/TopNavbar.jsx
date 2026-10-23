@@ -1,9 +1,10 @@
   import { useEffect, useRef, useState } from "react";
   import { toast } from "react-hot-toast";
-  import { useNavigate } from "react-router-dom";
+  import { Link, useNavigate } from "react-router-dom";
   import { FiMenu, FiSearch } from "react-icons/fi";
   import api from "../../services/api";
   import { notifyOrderChange } from "../../services/orderEvents";
+  import shipdropLogo from "../../assets/images/shipdrop-logo.png";
 
   const ImportIcon = () => (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -1119,11 +1120,17 @@
             )}
 
             {(isCollapsed || (typeof window !== "undefined" && window.innerWidth < 1024)) && (
-              <div className="flex items-center gap-1.5">
-                <span className="text-[17px] sm:text-[20px] font-black tracking-tight text-[#008dd2]">
-                  ParcelDrop
-                </span>
-              </div>
+              <Link
+                to="/dashboard"
+                className="flex items-center transition hover:opacity-90 active:scale-95"
+                title="ParcelDrop"
+              >
+                <img
+                  src={shipdropLogo}
+                  alt="ParcelDrop"
+                  className="h-8 sm:h-[38px] w-auto max-w-[145px] sm:max-w-[165px] object-contain"
+                />
+              </Link>
             )}
           </div>
 
