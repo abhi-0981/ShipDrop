@@ -1365,20 +1365,12 @@ const buildLabelHtml = (
         .slice(0, isA4 ? 12 : compact ? 1 : 4)
         .map(
           (product) => `
-            <tr>
-              <td class="product-name" style="text-align: left; vertical-align: middle;">
-                <div style="text-align: left; width: 100%;">${esc(product.name)}</div>
-              </td>
-              <td style="text-align: center; vertical-align: middle;">
-                <div style="text-align: center; width: 100%;">${product.rate.toFixed(2)}</div>
-              </td>
-              <td style="text-align: center; vertical-align: middle;">
-                <div style="text-align: center; width: 100%;">${product.qty}</div>
-              </td>
-              <td style="text-align: center; vertical-align: middle;">
-                <div style="text-align: center; width: 100%;">${product.total.toFixed(2)}</div>
-              </td>
-            </tr>
+            <div class="prod-row">
+              <div class="prod-cell prod-name">${esc(product.name)}</div>
+              <div class="prod-cell prod-center">${product.rate.toFixed(2)}</div>
+              <div class="prod-cell prod-center">${product.qty}</div>
+              <div class="prod-cell prod-center">${product.total.toFixed(2)}</div>
+            </div>
           `
         )
         .join("")
@@ -1531,19 +1523,16 @@ const buildLabelHtml = (
           showProducts
             ? `
              <section class="products">
-  <table>
-    <thead>
-      <tr>
-        <th style="text-align: left; vertical-align: middle;"><div style="text-align: left; width: 100%;">PRODUCT</div></th>
-        <th style="text-align: center; vertical-align: middle;"><div style="text-align: center; width: 100%;">RATE (₹)</div></th>
-        <th style="text-align: center; vertical-align: middle;"><div style="text-align: center; width: 100%;">QTY</div></th>
-        <th style="text-align: center; vertical-align: middle;"><div style="text-align: center; width: 100%;">TOTAL (₹)</div></th>
-      </tr>
-    </thead>
-
-    <tbody>${productRows}</tbody>
-  </table>
-</section>
+               <div class="prod-row prod-head">
+                 <div class="prod-cell prod-name">PRODUCT</div>
+                 <div class="prod-cell prod-center">RATE (₹)</div>
+                 <div class="prod-cell prod-center">QTY</div>
+                 <div class="prod-cell prod-center">TOTAL (₹)</div>
+               </div>
+               <div class="prod-body">
+                 ${productRows}
+               </div>
+             </section>
             `
             : ""
         }
@@ -1844,38 +1833,56 @@ const buildLabelHtml = (
         margin-bottom: 1mm;
       }
 
-table {
-  border-collapse: collapse;
-  width: 100%;
-  margin: 0;
+.products {
+  flex: 0 0 auto;
   padding: 0;
-  table-layout: fixed;
-  font-size: ${compact ? "4.5pt" : isA4 ? "9pt" : "6.5pt"};
+  margin: 0;
+  border-bottom: 1px solid #111827;
+  width: 100%;
 }
 
-th,
-td {
-  width: 25%;
-  border: 1px solid #9ca3af;
-  padding: ${compact ? "1mm" : "1.5mm"};
-  text-align: center !important;
-  vertical-align: middle !important;
-  overflow-wrap: anywhere;
-font-size: ${compact ? "5.5pt" : isA4 ? "13pt" : "8.5pt"};
+.prod-row {
+  display: flex !important;
+  flex-direction: row !important;
+  width: 100% !important;
+  border-bottom: 1px solid #9ca3af;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.prod-body .prod-row:last-child {
+  border-bottom: none;
+}
+
+.prod-head {
+  background: #f3f4f6;
   font-weight: 600;
 }
 
-      th {
-        font-weight: 600;
-        background: #f3f4f6;
-        text-align: center !important;
-      }
+.prod-cell {
+  width: 25% !important;
+  flex: 0 0 25% !important;
+  max-width: 25% !important;
+  box-sizing: border-box !important;
+  padding: ${compact ? "1mm" : "1.5mm"};
+  font-size: ${compact ? "5.5pt" : isA4 ? "13pt" : "8.5pt"};
+  font-weight: 600;
+  border-right: 1px solid #9ca3af;
+  overflow-wrap: anywhere;
+}
 
-     th:first-child,
-td:first-child,
-td.product-name {
+.prod-cell:last-child {
+  border-right: none;
+}
+
+.prod-cell.prod-name {
   text-align: left !important;
-  width: 25%;
+  padding-left: ${compact ? "1.5mm" : "2mm"};
+}
+
+.prod-cell.prod-center {
+  text-align: center !important;
 }
 .seller {
   flex: 0 0 auto;
@@ -2205,83 +2212,118 @@ export const printShippingLabels = async (
     return;
   }
 
-  // Pre-open print window immediately on user gesture to prevent popup blocking
-  const win = window.open("", "_blank");
-  if (win) {
-    win.document.write(`
+  let printIframe = null;
+
+  try {
+    const {
+      settings,
+      detailedOrders,
+      size,
+      leftLogoData,
+      rightLogoData,
+    } = await prepareLabels(orders);
+
+    const html = detailedOrders
+      .map((order) =>
+        buildLabelHtml(
+          order,
+          settings,
+          leftLogoData,
+          rightLogoData,
+          size
+        )
+      )
+      .join("");
+
+    // Create a hidden iframe on the CURRENT page (No new tab opened!)
+    printIframe = document.createElement("iframe");
+    printIframe.style.position = "fixed";
+    printIframe.style.left = "-9999px";
+    printIframe.style.top = "-9999px";
+    printIframe.style.width = "0";
+    printIframe.style.height = "0";
+    printIframe.style.border = "0";
+    printIframe.setAttribute("aria-hidden", "true");
+    document.body.appendChild(printIframe);
+
+    const iframeDoc =
+      printIframe.contentDocument || printIframe.contentWindow.document;
+
+    iframeDoc.open();
+    iframeDoc.write(`
       <!doctype html>
       <html>
         <head>
+          <meta charset="utf-8">
           <title>${getParcelDropFilename()}</title>
           <style>
+            @page {
+              size: ${size.widthIn}in ${size.heightIn}in;
+              margin: 0mm;
+            }
+
+            * {
+              box-sizing: border-box;
+            }
+
             html, body {
-              margin: 0;
-              padding: 0;
-              height: 100vh;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              background: #f8fafc;
-              font-family: Arial, sans-serif;
-              color: #475569;
+              margin: 0 !important;
+              padding: 0 !important;
+              background: #ffffff !important;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
             }
-            .loader {
-              display: flex;
-              flex-direction: column;
-              align-items: center;
-              gap: 12px;
+
+            .shipping-label {
+              margin: 0 auto !important;
+              page-break-after: always !important;
+              break-after: page !important;
+              page-break-inside: avoid !important;
+              break-inside: avoid !important;
             }
-            .spinner {
-              width: 32px;
-              height: 32px;
-              border: 3px solid #e2e8f0;
-              border-top: 3px solid #008dd2;
-              border-radius: 50%;
-              animation: spin 0.8s linear infinite;
-            }
-            @keyframes spin {
-              0% { transform: rotate(0deg); }
-              100% { transform: rotate(360deg); }
+
+            .shipping-label:last-child {
+              page-break-after: auto !important;
+              break-after: auto !important;
             }
           </style>
         </head>
-        <body>
-          <div class="loader">
-            <div class="spinner"></div>
-            <div>Preparing shipping label for printing...</div>
-          </div>
-        </body>
+        <body>${html}</body>
       </html>
     `);
-    win.document.close();
-  }
+    iframeDoc.close();
 
-  try {
-    const { pdf, detailedOrders } =
-      await createShippingLabelsPdf(orders);
+    // Wait for all images in the iframe to finish loading
+    const images = Array.from(iframeDoc.images);
+    await Promise.all(
+      images.map((img) => {
+        if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+        return new Promise((resolve) => {
+          img.onload = resolve;
+          img.onerror = resolve;
+        });
+      })
+    );
 
-    pdf.autoPrint();
+    // Give iframe a moment to compute layout, then trigger print dialog directly
+    await new Promise((resolve) => setTimeout(resolve, 200));
 
-    const blob = pdf.output("blob");
-    const blobUrl = URL.createObjectURL(blob);
-
-    if (win && !win.closed) {
-      win.location.replace(blobUrl);
-      win.focus();
-    } else {
-      window.open(blobUrl, "_blank");
-    }
+    printIframe.contentWindow.focus();
+    printIframe.contentWindow.print();
 
     toast.success(
-      `${detailedOrders.length} label(s) ready to print`
+      `${detailedOrders.length} label(s) sent to printer`
     );
   } catch (error) {
     console.error("Print label error:", error);
-    if (win && !win.closed) {
-      win.close();
-    }
-    toast.error(
-      error?.message || "Unable to print labels"
-    );
+    toast.error(error?.message || "Unable to print labels");
+  } finally {
+    setTimeout(() => {
+      try {
+        if (printIframe && printIframe.parentNode) {
+          printIframe.remove();
+        }
+      } catch (_) {}
+    }, 60000);
   }
 };
