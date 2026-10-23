@@ -1365,12 +1365,12 @@ const buildLabelHtml = (
         .slice(0, isA4 ? 12 : compact ? 1 : 4)
         .map(
           (product) => `
-            <div class="prod-row">
-              <div class="prod-cell prod-name">${esc(product.name)}</div>
-              <div class="prod-cell prod-center">${product.rate.toFixed(2)}</div>
-              <div class="prod-cell prod-center">${product.qty}</div>
-              <div class="prod-cell prod-center">${product.total.toFixed(2)}</div>
-            </div>
+            <tr>
+              <td class="product-name">${esc(product.name)}</td>
+              <td>${product.rate.toFixed(2)}</td>
+              <td>${product.qty}</td>
+              <td>${product.total.toFixed(2)}</td>
+            </tr>
           `
         )
         .join("")
@@ -1523,16 +1523,19 @@ const buildLabelHtml = (
           showProducts
             ? `
              <section class="products">
-               <div class="prod-row prod-head">
-                 <div class="prod-cell prod-name">PRODUCT</div>
-                 <div class="prod-cell prod-center">RATE (₹)</div>
-                 <div class="prod-cell prod-center">QTY</div>
-                 <div class="prod-cell prod-center">TOTAL (₹)</div>
-               </div>
-               <div class="prod-body">
-                 ${productRows}
-               </div>
-             </section>
+  <table>
+    <thead>
+      <tr>
+        <th>PRODUCT</th>
+        <th>RATE (₹)</th>
+        <th>QTY</th>
+        <th>TOTAL (₹)</th>
+      </tr>
+    </thead>
+
+    <tbody>${productRows}</tbody>
+  </table>
+</section>
             `
             : ""
         }
@@ -1833,56 +1836,35 @@ const buildLabelHtml = (
         margin-bottom: 1mm;
       }
 
-.products {
-  flex: 0 0 auto;
-  padding: 0;
-  margin: 0;
-  border-bottom: 1px solid #111827;
+table {
+  border-collapse: collapse;
   width: 100%;
-}
-
-.prod-row {
-  display: flex !important;
-  flex-direction: row !important;
-  width: 100% !important;
-  border-bottom: 1px solid #9ca3af;
   margin: 0;
   padding: 0;
-  box-sizing: border-box;
+  table-layout: fixed;
+  font-size: ${compact ? "4.5pt" : isA4 ? "9pt" : "6.5pt"};
 }
 
-.prod-body .prod-row:last-child {
-  border-bottom: none;
-}
-
-.prod-head {
-  background: #f3f4f6;
-  font-weight: 600;
-}
-
-.prod-cell {
-  width: 25% !important;
-  flex: 0 0 25% !important;
-  max-width: 25% !important;
-  box-sizing: border-box !important;
+th,
+td {
+  width: 25%;
+  border: 1px solid #9ca3af;
   padding: ${compact ? "1mm" : "1.5mm"};
-  font-size: ${compact ? "5.5pt" : isA4 ? "13pt" : "8.5pt"};
-  font-weight: 600;
-  border-right: 1px solid #9ca3af;
+  text-align: center;
   overflow-wrap: anywhere;
+font-size: ${compact ? "5.5pt" : isA4 ? "13pt" : "8.5pt"};
+  font-weight: 600;
 }
 
-.prod-cell:last-child {
-  border-right: none;
-}
+      th {
+        font-weight: 600;
+        background: #f3f4f6;
+      }
 
-.prod-cell.prod-name {
-  text-align: left !important;
-  padding-left: ${compact ? "1.5mm" : "2mm"};
-}
-
-.prod-cell.prod-center {
-  text-align: center !important;
+     th:first-child,
+td:first-child {
+  text-align: left;
+  width: 25%;
 }
 .seller {
   flex: 0 0 auto;
@@ -1982,227 +1964,6 @@ const prepareLabels = async (orders) => {
   };
 };
 
-export const createShippingLabelsPdf = async (orders) => {
-  const {
-    settings,
-    detailedOrders,
-    size,
-    leftLogoData,
-    rightLogoData,
-  } = await prepareLabels(orders);
-
-  let iframe = null;
-
-  try {
-    iframe = document.createElement("iframe");
-    iframe.style.position = "fixed";
-    iframe.style.left = "-10000px";
-    iframe.style.top = "0";
-    iframe.style.width = `${size.widthIn}in`;
-    iframe.style.height = `${size.heightIn}in`;
-    iframe.style.border = "0";
-    iframe.style.visibility = "visible";
-    iframe.style.opacity = "1";
-    iframe.style.pointerEvents = "none";
-
-    document.body.appendChild(iframe);
-
-    const iframeDoc =
-      iframe.contentDocument || iframe.contentWindow.document;
-
-    iframeDoc.open();
-    iframeDoc.write(`
-      <!doctype html>
-      <html>
-        <head>
-          <meta charset="utf-8">
-          <style>
-            html,
-            body {
-              margin: 0;
-              padding: 0;
-              background: #ffffff;
-              width: 100%;
-              min-height: 100%;
-            }
-            body {
-              overflow: hidden;
-            }
-            * {
-              box-sizing: border-box;
-            }
-          </style>
-        </head>
-        <body></body>
-      </html>
-    `);
-    iframeDoc.close();
-
-    const labels = [];
-    for (const order of detailedOrders) {
-      const holder = iframeDoc.createElement("div");
-      holder.innerHTML = buildLabelHtml(
-        order,
-        settings,
-        leftLogoData,
-        rightLogoData,
-        size
-      );
-
-      const styles = Array.from(holder.querySelectorAll("style"));
-      styles.forEach((style) => {
-        const styleClone = iframeDoc.createElement("style");
-        styleClone.textContent = style.textContent || "";
-        iframeDoc.head.appendChild(styleClone);
-      });
-
-      const label = holder.querySelector(".shipping-label");
-      if (!label) continue;
-
-      iframeDoc.body.appendChild(label);
-      labels.push(label);
-    }
-
-    if (!labels.length) {
-      throw new Error("No shipping labels could be generated");
-    }
-
-    const images = Array.from(iframeDoc.images);
-    await Promise.all(
-      images.map((img) => {
-        if (img.complete && img.naturalWidth > 0) {
-          return Promise.resolve();
-        }
-        return new Promise((resolve) => {
-          img.onload = resolve;
-          img.onerror = resolve;
-        });
-      })
-    );
-
-    await new Promise((resolve) => {
-      iframe.contentWindow.requestAnimationFrame(() => {
-        iframe.contentWindow.requestAnimationFrame(resolve);
-      });
-    });
-
-    const pdf = new jsPDF({
-      orientation:
-        size.widthMm > size.heightMm ? "landscape" : "portrait",
-      unit: "mm",
-      format: [size.widthMm, size.heightMm],
-      compress: true,
-    });
-
-    for (let index = 0; index < labels.length; index += 1) {
-      const label = labels[index];
-      const pageWidth = label.offsetWidth;
-      const pageHeight = label.offsetHeight;
-
-      if (!pageWidth || !pageHeight) {
-        throw new Error("Unable to determine label size");
-      }
-
-      const contentWidth = Math.max(label.scrollWidth, pageWidth);
-      const contentHeight = Math.max(label.scrollHeight, pageHeight);
-      const fitScale = Math.min(
-        pageWidth / contentWidth,
-        pageHeight / contentHeight,
-        1
-      );
-
-      const labelBorder = label.querySelector(".label-border");
-
-      label.style.overflow = "visible";
-      if (labelBorder) {
-        labelBorder.style.overflow = "visible";
-      }
-
-      label.style.transformOrigin = "top left";
-      label.style.transform =
-        fitScale < 1 ? `scale(${fitScale})` : "none";
-
-      await new Promise((resolve) => {
-        iframe.contentWindow.requestAnimationFrame(() => {
-          iframe.contentWindow.requestAnimationFrame(resolve);
-        });
-      });
-
-      const canvas = await html2canvas(label, {
-        scale: 4,
-        backgroundColor: "#ffffff",
-        useCORS: true,
-        logging: false,
-        width: pageWidth,
-        height: pageHeight,
-        windowWidth: pageWidth,
-        windowHeight: pageHeight,
-        scrollX: 0,
-        scrollY: 0,
-      });
-
-      const image = canvas.toDataURL("image/png");
-
-      label.style.transform = "none";
-      label.style.transformOrigin = "";
-      label.style.overflow = "";
-      if (labelBorder) {
-        labelBorder.style.overflow = "";
-      }
-
-      if (index > 0) {
-        pdf.addPage(
-          [size.widthMm, size.heightMm],
-          size.widthMm > size.heightMm ? "landscape" : "portrait"
-        );
-      }
-
-      pdf.addImage(
-        image,
-        "PNG",
-        0,
-        0,
-        size.widthMm,
-        size.heightMm,
-        undefined,
-        "FAST"
-      );
-    }
-
-    const filename = `${getParcelDropFilename()}.pdf`;
-    return { pdf, filename, detailedOrders, size };
-  } finally {
-    if (iframe) {
-      iframe.remove();
-    }
-  }
-};
-
-export const downloadShippingLabels = async (orders) => {
-  if (!Array.isArray(orders) || orders.length === 0) {
-    toast.error("Please select at least one shipment");
-    return;
-  }
-
-  try {
-    const { pdf, filename, detailedOrders } =
-      await createShippingLabelsPdf(orders);
-
-    pdf.save(filename);
-
-    toast.success(
-      `${detailedOrders.length} ${
-        detailedOrders.length === 1 ? "label" : "labels"
-      } downloaded`
-    );
-  } catch (error) {
-    console.error("Download label error:", error);
-    toast.error(
-      error?.message || "Unable to download labels"
-    );
-  }
-};
-
 export const printShippingLabels = async (
   orders,
   title = "ParcelDrop Shipping Labels"
@@ -2211,8 +1972,6 @@ export const printShippingLabels = async (
     toast.error("Please select at least one shipment");
     return;
   }
-
-  let printIframe = null;
 
   try {
     const {
@@ -2235,69 +1994,258 @@ export const printShippingLabels = async (
       )
       .join("");
 
-    // Create a hidden iframe on the CURRENT page (No new tab opened!)
-    printIframe = document.createElement("iframe");
-    printIframe.style.position = "fixed";
-    printIframe.style.left = "-9999px";
-    printIframe.style.top = "-9999px";
-    printIframe.style.width = "0";
-    printIframe.style.height = "0";
-    printIframe.style.border = "0";
-    printIframe.setAttribute("aria-hidden", "true");
-    document.body.appendChild(printIframe);
+    const win = window.open(
+      "",
+      "_blank",
+      "width=900,height=700"
+    );
 
-    const iframeDoc =
-      printIframe.contentDocument || printIframe.contentWindow.document;
+    if (!win) {
+      toast.error("Please allow pop-ups to print");
+      return;
+    }
 
-    iframeDoc.open();
-    iframeDoc.write(`
+    win.document.open();
+
+    win.document.write(`
       <!doctype html>
       <html>
         <head>
           <meta charset="utf-8">
-          <title>${getParcelDropFilename()}</title>
-          <style>
-            @page {
-              size: ${size.widthIn}in ${size.heightIn}in;
-              margin: 0mm;
+<title>${getParcelDropFilename()}</title>          <style>
+            html, body {
+              margin: 0;
+              padding: 0;
+              background: #fff;
             }
 
             * {
               box-sizing: border-box;
             }
 
-            html, body {
-              margin: 0 !important;
-              padding: 0 !important;
-              background: #ffffff !important;
-              -webkit-print-color-adjust: exact !important;
-              print-color-adjust: exact !important;
+            @page {
+              size: ${size.widthIn}in ${size.heightIn}in;
+              margin: 0;
             }
 
-            .shipping-label {
-              margin: 0 auto !important;
-              page-break-after: always !important;
-              break-after: page !important;
-              page-break-inside: avoid !important;
-              break-inside: avoid !important;
-            }
+            @media print {
+              html, body {
+                margin: 0 !important;
+                padding: 0 !important;
+              }
 
-            .shipping-label:last-child {
-              page-break-after: auto !important;
-              break-after: auto !important;
+              .shipping-label {
+                page-break-after: always;
+              }
+
+              .shipping-label:last-child {
+                page-break-after: auto;
+              }
             }
           </style>
         </head>
+
         <body>${html}</body>
       </html>
     `);
+
+    win.document.close();
+
+    let printStarted = false;
+
+    const printWhenReady = async () => {
+      if (printStarted || win.closed) return;
+
+      const images = Array.from(win.document.images);
+
+      await Promise.all(
+        images.map((img) => {
+          if (img.complete && img.naturalWidth > 0) {
+            return Promise.resolve();
+          }
+
+          return new Promise((resolve) => {
+            img.onload = resolve;
+            img.onerror = resolve;
+          });
+        })
+      );
+
+      if (win.closed || printStarted) return;
+
+      printStarted = true;
+      win.focus();
+      win.print();
+    };
+
+    win.addEventListener(
+      "load",
+      () => {
+        printWhenReady().catch((error) =>
+          console.error("Print readiness error:", error)
+        );
+      },
+      { once: true }
+    );
+
+    window.setTimeout(() => {
+      printWhenReady().catch((error) =>
+        console.error("Print readiness error:", error)
+      );
+    }, 1000);
+
+    toast.success(
+      `${detailedOrders.length} label(s) ready to print`
+    );
+  } catch (error) {
+    console.error("Print label error:", error);
+
+    toast.error(
+      error?.message || "Unable to print labels"
+    );
+  }
+};
+
+export const downloadShippingLabels = async (orders) => {
+  if (!Array.isArray(orders) || orders.length === 0) {
+    toast.error("Please select at least one shipment");
+    return;
+  }
+
+  let iframe = null;
+
+  try {
+    const {
+      settings,
+      detailedOrders,
+      size,
+      leftLogoData,
+      rightLogoData,
+    } = await prepareLabels(orders);
+
+    // =====================================================
+    // ISOLATED PRINT/DOWNLOAD AREA
+    // Main UI ko bilkul touch nahi karega
+    // =====================================================
+
+    iframe = document.createElement("iframe");
+
+    iframe.style.position = "fixed";
+    iframe.style.left = "-10000px";
+    iframe.style.top = "0";
+    iframe.style.width = `${size.widthIn}in`;
+    iframe.style.height = `${size.heightIn}in`;
+    iframe.style.border = "0";
+    iframe.style.visibility = "visible";
+    iframe.style.opacity = "1";
+    iframe.style.pointerEvents = "none";
+
+    document.body.appendChild(iframe);
+
+    const iframeDoc =
+      iframe.contentDocument ||
+      iframe.contentWindow.document;
+
+    iframeDoc.open();
+
+    iframeDoc.write(`
+      <!doctype html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+
+          <style>
+            html,
+            body {
+              margin: 0;
+              padding: 0;
+              background: #ffffff;
+              width: 100%;
+              min-height: 100%;
+            }
+
+            body {
+              overflow: hidden;
+            }
+
+            * {
+              box-sizing: border-box;
+            }
+          </style>
+        </head>
+
+        <body></body>
+      </html>
+    `);
+
     iframeDoc.close();
 
-    // Wait for all images in the iframe to finish loading
-    const images = Array.from(iframeDoc.images);
+    // =====================================================
+    // BUILD LABELS INSIDE IFRAME
+    // =====================================================
+
+    const labels = [];
+
+    for (const order of detailedOrders) {
+      const holder = iframeDoc.createElement("div");
+
+      holder.innerHTML = buildLabelHtml(
+        order,
+        settings,
+        leftLogoData,
+        rightLogoData,
+        size
+      );
+
+      // Generated style ko MAIN PAGE mein nahi,
+      // iframe ke head mein daalna hai.
+      const styles = Array.from(
+        holder.querySelectorAll("style")
+      );
+
+      styles.forEach((style) => {
+        const styleClone =
+          iframeDoc.createElement("style");
+
+        styleClone.textContent =
+          style.textContent || "";
+
+        iframeDoc.head.appendChild(styleClone);
+      });
+
+      const label =
+        holder.querySelector(".shipping-label");
+
+      if (!label) continue;
+
+      iframeDoc.body.appendChild(label);
+
+      labels.push(label);
+    }
+
+    if (!labels.length) {
+      throw new Error(
+        "No shipping labels could be generated"
+      );
+    }
+
+    // =====================================================
+    // WAIT FOR IMAGES
+    // =====================================================
+
+    const images = Array.from(
+      iframeDoc.images
+    );
+
     await Promise.all(
       images.map((img) => {
-        if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+        if (
+          img.complete &&
+          img.naturalWidth > 0
+        ) {
+          return Promise.resolve();
+        }
+
         return new Promise((resolve) => {
           img.onload = resolve;
           img.onerror = resolve;
@@ -2305,25 +2253,242 @@ export const printShippingLabels = async (
       })
     );
 
-    // Give iframe a moment to compute layout, then trigger print dialog directly
-    await new Promise((resolve) => setTimeout(resolve, 200));
+    // Wait for iframe layout
+    await new Promise((resolve) => {
+      iframe.contentWindow.requestAnimationFrame(() => {
+        iframe.contentWindow.requestAnimationFrame(
+          resolve
+        );
+      });
+    });
 
-    printIframe.contentWindow.focus();
-    printIframe.contentWindow.print();
+    // =====================================================
+    // CREATE PDF
+    // =====================================================
+
+    const pdf = new jsPDF({
+      orientation:
+        size.widthMm > size.heightMm
+          ? "landscape"
+          : "portrait",
+
+      unit: "mm",
+
+      format: [
+        size.widthMm,
+        size.heightMm,
+      ],
+
+      compress: true,
+    });
+
+    // =====================================================
+    // RENDER EVERY LABEL
+    // =====================================================
+
+    for (
+      let index = 0;
+      index < labels.length;
+      index += 1
+    ) {
+      const label = labels[index];
+
+      // ---------------------------------------------------
+      // ORIGINAL FIXED LABEL SIZE
+      // ---------------------------------------------------
+
+      const pageWidth =
+        label.offsetWidth;
+
+      const pageHeight =
+        label.offsetHeight;
+
+      if (
+        !pageWidth ||
+        !pageHeight
+      ) {
+        throw new Error(
+          "Unable to determine label size"
+        );
+      }
+
+      // ---------------------------------------------------
+      // CHECK ACTUAL CONTENT SIZE
+      // ---------------------------------------------------
+
+      const contentWidth =
+        Math.max(
+          label.scrollWidth,
+          pageWidth
+        );
+
+      const contentHeight =
+        Math.max(
+          label.scrollHeight,
+          pageHeight
+        );
+
+      // ---------------------------------------------------
+      // IF CONTENT IS TOO BIG,
+      // SCALE IT DOWN INSIDE THE LABEL
+      // ---------------------------------------------------
+
+      const fitScale = Math.min(
+        pageWidth / contentWidth,
+        pageHeight / contentHeight,
+        1
+      );
+
+      const labelBorder =
+        label.querySelector(
+          ".label-border"
+        );
+
+      // Temporarily allow complete content
+      label.style.overflow = "visible";
+
+      if (labelBorder) {
+        labelBorder.style.overflow =
+          "visible";
+      }
+
+      // Keep scaling inside the original page
+      label.style.transformOrigin =
+        "top left";
+
+      label.style.transform =
+        fitScale < 1
+          ? `scale(${fitScale})`
+          : "none";
+
+      // ---------------------------------------------------
+      // WAIT FOR TRANSFORM
+      // ---------------------------------------------------
+
+      await new Promise((resolve) => {
+        iframe.contentWindow.requestAnimationFrame(
+          () => {
+            iframe.contentWindow.requestAnimationFrame(
+              resolve
+            );
+          }
+        );
+      });
+
+      // ---------------------------------------------------
+      // CAPTURE FIXED PAGE SIZE
+      // ---------------------------------------------------
+
+      const canvas =
+        await html2canvas(label, {
+          scale: 4,
+
+          backgroundColor:
+            "#ffffff",
+
+          useCORS: true,
+
+          logging: false,
+
+          width: pageWidth,
+
+          height: pageHeight,
+
+          windowWidth: pageWidth,
+
+          windowHeight: pageHeight,
+
+          scrollX: 0,
+
+          scrollY: 0,
+        });
+
+      const image =
+        canvas.toDataURL(
+          "image/png"
+        );
+
+      // ---------------------------------------------------
+      // RESET TEMPORARY CHANGES
+      // ---------------------------------------------------
+
+      label.style.transform =
+        "none";
+
+      label.style.transformOrigin =
+        "";
+
+      label.style.overflow =
+        "";
+
+      if (labelBorder) {
+        labelBorder.style.overflow =
+          "";
+      }
+
+      // ---------------------------------------------------
+      // ADD PDF PAGE
+      // ---------------------------------------------------
+
+      if (index > 0) {
+        pdf.addPage(
+          [
+            size.widthMm,
+            size.heightMm,
+          ],
+          size.widthMm > size.heightMm
+            ? "landscape"
+            : "portrait"
+        );
+      }
+
+      pdf.addImage(
+        image,
+        "PNG",
+        0,
+        0,
+        size.widthMm,
+        size.heightMm,
+        undefined,
+        "FAST"
+      );
+    }
+
+    // =====================================================
+    // FILE NAME
+    // =====================================================
+
+ const filename = `${getParcelDropFilename()}.pdf`;
+
+    // =====================================================
+    // DOWNLOAD
+    // =====================================================
+
+    pdf.save(filename);
 
     toast.success(
-      `${detailedOrders.length} label(s) sent to printer`
+      `${detailedOrders.length} ${
+        detailedOrders.length === 1
+          ? "label"
+          : "labels"
+      } downloaded`
     );
+
   } catch (error) {
-    console.error("Print label error:", error);
-    toast.error(error?.message || "Unable to print labels");
+    console.error(
+      "Download label error:",
+      error
+    );
+
+    toast.error(
+      error?.message ||
+        "Unable to download labels"
+    );
+
   } finally {
-    setTimeout(() => {
-      try {
-        if (printIframe && printIframe.parentNode) {
-          printIframe.remove();
-        }
-      } catch (_) {}
-    }, 60000);
+    // Iframe cleanup
+    if (iframe) {
+      iframe.remove();
+    }
   }
 };
