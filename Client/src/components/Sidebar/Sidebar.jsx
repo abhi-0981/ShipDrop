@@ -13,7 +13,6 @@ import {
   HiOutlineLogout,
   HiOutlineCreditCard,
   HiOutlineCash,
-  HiOutlineScale,
   HiOutlineCog,
   HiChevronRight,
   HiChevronDown,
@@ -143,17 +142,15 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
     "/delivered",
     "/rto-in-transit",
     "/rto-delivered",
-    "/returned",
     "/cancelled",
     "/pending",
   ].includes(location.pathname);
 
   const [showOrders, setShowOrders] = useState(isOrderPath);
   const [showFinance, setShowFinance] = useState(
-  location.pathname === "/wallet" ||
-    location.pathname === "/weight-mismatch" ||
-    location.pathname === "/cod-remittance",
-);
+    location.pathname === "/wallet" ||
+      location.pathname === "/cod-remittance",
+  );
   const [showSettings, setShowSettings] = useState(
     location.pathname.startsWith("/settings"),
   );
@@ -185,13 +182,11 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
     { name: "Delivered", path: "/delivered" },
     { name: "RTO In Transit", path: "/rto-in-transit" },
     { name: "RTO Delivered", path: "/rto-delivered" },
-    { name: "Returned", path: "/returned" },
     { name: "Cancelled", path: "/cancelled" },
     { name: "Pending", path: "/pending" },
     { name: "Rate Calculator", path: "/rate-calculator" },
     { name: "Serviceability", path: "/serviceability" },
     { name: "Wallet", path: "/wallet" },
-    { name: "Weight Mismatch", path: "/weight-mismatch" },
     { name: "Tickets", path: "/tickets" },
     { name: "Pickup Address", path: "/settings/pickup-address" },
     { name: "Return Addresses", path: "/settings/return-addresses" },
@@ -751,27 +746,17 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
                   <HiOutlineCreditCard size={15} />
                   <span>Wallet</span>
                 </Link>
-                <Link
-                  to="/weight-mismatch"
-                  onClick={handleNavClick}
-                  className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[13px] transition ${subActiveClass(
-                    "/weight-mismatch",
-                  )}`}
-                >
-                  <HiOutlineScale size={15} />
-                  <span>Weight Mismatch</span>
-                </Link>
 
                 <Link
-  to="/cod-remittance"
-  onClick={handleNavClick}
-  className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[13px] transition ${subActiveClass(
-    "/cod-remittance",
-  )}`}
->
-  <HiOutlineCash size={15} />
-  <span>COD Remittance</span>
-</Link>
+                  to="/cod-remittance"
+                  onClick={handleNavClick}
+                  className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[13px] transition ${subActiveClass(
+                    "/cod-remittance",
+                  )}`}
+                >
+                  <HiOutlineCash size={15} />
+                  <span>COD Remittance</span>
+                </Link>
               </div>
             )}
           </div>

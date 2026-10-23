@@ -6,6 +6,7 @@ import Home from "./pages/Home/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ImpersonateExchange from "./pages/Auth/ImpersonateExchange";
+import NotFound from "./pages/NotFound/NotFound";
 
 import ProtectedRoute from "./components/ProtectedRoute/ProtectedRoute";
 import DashboardLayout from "./pages/Dashboard/DashboardLayout";
@@ -35,7 +36,6 @@ const Delivered = lazy(() => import("./pages/Dashboard/Delivered"));
 const RTOInTransit = lazy(() => import("./pages/Dashboard/RTOInTransit"));
 const RTODelivered = lazy(() => import("./pages/Dashboard/RTODelivered"));
 const Cancelled = lazy(() => import("./pages/Dashboard/Cancelled"));
-const Returned = lazy(() => import("./pages/Dashboard/Returned"));
 const Pending = lazy(() => import("./pages/Dashboard/Pending"));
 const CODRemittance = lazy(() => import("./pages/Dashboard/CODRemittance"));
 const OfflineOrders = lazy(() => import("./pages/Dashboard/OfflineOrders"));
@@ -194,15 +194,6 @@ function App() {
               element={
                 <Suspense fallback={<RouteLoader />}>
                   <RTODelivered />
-                </Suspense>
-              }
-            />
-
-            <Route
-              path="/returned"
-              element={
-                <Suspense fallback={<RouteLoader />}>
-                  <Returned />
                 </Suspense>
               }
             />
@@ -421,6 +412,11 @@ function App() {
             />
           </Route>
         </Route>
+
+        {/* ========================================
+            404 NOT FOUND (CATCH-ALL)
+        ======================================== */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </ErrorBoundary>
   );
