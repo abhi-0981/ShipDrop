@@ -453,60 +453,6 @@ app.use(
 
 
 // ======================================================
-// 404
-// ======================================================
-
-app.use(
-  (req, res) => {
-
-    return res.status(404).json({
-
-      success: false,
-
-      message:
-        "API route not found",
-
-      path:
-        req.originalUrl,
-
-    });
-
-  }
-);
-
-
-// ======================================================
-// GLOBAL ERROR HANDLER
-// ======================================================
-
-app.use(
-  (
-    error,
-    req,
-    res,
-    next
-  ) => {
-
-    console.log(
-      "Global server error:",
-      error
-    );
-
-    return res.status(500).json({
-
-      success: false,
-
-      message:
-        error.message ||
-        "Internal server error",
-
-    });
-
-  }
-);
-
-
-// ======================================================
 // CRON TRIGGER ENDPOINTS (FOR VERCEL / EXTERNAL CRON)
 // ======================================================
 
@@ -533,7 +479,7 @@ const verifyCronAuth = (req, res, next) => {
   return next();
 };
 
-app.get("/api/cron/track-orders", verifyCronAuth, async (req, res) => {
+app.get("/api/cron/track-orders", verifyCronAuth, async (req, res, next) => {
   try {
     const { runTrackingJob } = require("./jobs/trackActiveOrders");
     await runTrackingJob();
@@ -542,14 +488,11 @@ app.get("/api/cron/track-orders", verifyCronAuth, async (req, res) => {
       message: "Tracking job executed successfully",
     });
   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    next(error);
   }
 });
 
-app.get("/api/cron/auto-cancel", verifyCronAuth, async (req, res) => {
+app.get("/api/cron/auto-cancel", verifyCronAuth, async (req, res, next) => {
   try {
     const { runAutoCancel } = require("./jobs/autoCancelManifestedOrders");
     await runAutoCancel();
@@ -558,12 +501,21 @@ app.get("/api/cron/auto-cancel", verifyCronAuth, async (req, res) => {
       message: "Auto-cancel job executed successfully",
     });
   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    next(error);
   }
 });
+
+// ======================================================
+// 404 & GLOBAL ERROR HANDLER MIDDLEWARE
+// ======================================================
+
+const {
+  errorHandler,
+  notFoundHandler,
+} = require("./middleware/errorHandler");
+
+app.use(notFoundHandler);
+app.use(errorHandler);
 
 
 // ======================================================

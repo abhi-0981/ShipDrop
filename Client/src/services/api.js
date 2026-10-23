@@ -1,4 +1,5 @@
 import axios from "axios";
+import { parseApiError } from "../utils/errorParser";
 
 export const API_BASE_URL =
   import.meta.env.VITE_API_URL ||
@@ -35,7 +36,7 @@ api.interceptors.request.use(
 );
 
 // ======================================================
-// RESPONSE INTERCEPTOR: CONSISTENT 401 HANDLING
+// RESPONSE INTERCEPTOR: CONSISTENT 401 & ERROR NORMALIZATION
 // ======================================================
 
 let isRedirecting = false;
@@ -45,6 +46,22 @@ api.interceptors.response.use(
   (error) => {
     const status = error.response?.status;
     const requestUrl = error.config?.url || "";
+
+    // Automatically parse and normalize user-friendly message
+    const friendlyMessage = parseApiError(error);
+
+    // Normalize error properties so all components across the app
+    // receive the sanitized, user-friendly message automatically!
+    if (error.response) {
+      if (!error.response.data || typeof error.response.data !== "object") {
+        error.response.data = { success: false };
+      }
+      error.response.data.rawMessage = error.response.data.message;
+      error.response.data.message = friendlyMessage;
+    }
+    error.message = friendlyMessage;
+    error.friendlyMessage = friendlyMessage;
+    error.userMessage = friendlyMessage;
 
     // Ignore 401 errors on login and registration requests (bad credentials / existing account)
     const isAuthRoute =

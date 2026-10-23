@@ -1928,7 +1928,7 @@ function CreateOrder() {
       resetForm(true);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (error) {
-      toast.error(error.message || "Unable to confirm shipment");
+      toast.error(error.response?.data?.message || error.message || "Unable to confirm shipment");
     } finally {
       setLoading(false);
     }
