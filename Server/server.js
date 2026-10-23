@@ -220,6 +220,50 @@ app.use(
 // Apply rate limiter to /api routes
 app.use("/api", generalApiLimiter);
 
+// ======================================================
+// ZERO-DEPENDENCY GZIP COMPRESSION (70-85% Payload Reduction)
+// ======================================================
+
+const zlib = require("zlib");
+
+app.use((req, res, next) => {
+  const acceptEncoding = req.headers["accept-encoding"] || "";
+  if (!acceptEncoding.includes("gzip")) {
+    return next();
+  }
+
+  const originalSend = res.send;
+  res.send = function (body) {
+    if (
+      res.headersSent ||
+      res.getHeader("Content-Encoding") ||
+      res.statusCode === 304 ||
+      !body ||
+      (typeof body !== "string" && !Buffer.isBuffer(body))
+    ) {
+      return originalSend.call(this, body);
+    }
+
+    const buffer = Buffer.isBuffer(body) ? body : Buffer.from(body);
+    if (buffer.length < 1024) {
+      return originalSend.call(this, body);
+    }
+
+    try {
+      const compressed = zlib.gzipSync(buffer, { level: 6 });
+      res.setHeader("Content-Encoding", "gzip");
+      res.removeHeader("Content-Length");
+      res.setHeader("Content-Length", compressed.length);
+      res.setHeader("Vary", "Accept-Encoding");
+      return originalSend.call(this, compressed);
+    } catch {
+      return originalSend.call(this, body);
+    }
+  };
+
+  next();
+});
+
 
 // ======================================================
 // HOME
