@@ -118,7 +118,13 @@ const normalizeStatus = (status) => {
   if (value === "OUT FOR DELIVERY" || value === "OUT_FOR_DELIVERY") return "Out For Delivery";
   if (value === "DELIVERED") return "Delivered";
   if (value === "RTO IN TRANSIT" || value === "RTO_IN_TRANSIT") return "RTO In Transit";
-  if (value === "RTO DELIVERED" || value === "RTO_DELIVERED") return "RTO Delivered";
+  if (
+    value === "RTO DELIVERED" ||
+    value === "RTO_DELIVERED" ||
+    value === "RETURN ACCEPTED" ||
+    value === "RETURN_ACCEPTED" ||
+    value.includes("RETURN ACCEPT")
+  ) return "RTO Delivered";
   if (value === "RETURNED") return "Returned";
   if (value === "CANCELLED" || value === "CANCELED") return "Cancelled";
   if (value === "PENDING") return "Pending";

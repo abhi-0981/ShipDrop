@@ -392,7 +392,7 @@ const formatTime = (value) => {
 };
 
 const getStatus = (order) => {
-  return safeString(
+  const raw = safeString(
     order?.tracking_status ||
       order?.status ||
       order?.order_status ||
@@ -402,14 +402,37 @@ const getStatus = (order) => {
     .toUpperCase()
     .replace(/[-_]+/g, " ")
     .replace(/\s+/g, " ");
+
+  const trackingText = safeString(
+    order?.tracking_instructions ||
+      order?.tracking_raw_status ||
+      ""
+  ).toUpperCase();
+
+  if (
+    raw === "RETURN ACCEPTED" ||
+    raw.includes("RETURN ACCEPT") ||
+    raw.includes("RTO DELIVERED") ||
+    trackingText.includes("RETURN ACCEPT")
+  ) {
+    return "RTO DELIVERED";
+  }
+
+  return raw;
 };
 
 const getStatusLabel = (status) => {
-  return String(status || "PROCESSING")
+  const s = String(status || "PROCESSING")
     .trim()
     .toUpperCase()
     .replace(/[-_]+/g, " ")
     .replace(/\s+/g, " ");
+
+  if (s === "RETURN ACCEPTED" || s.includes("RETURN ACCEPT") || s === "RTO DELIVERED") {
+    return "RTO DELIVERED";
+  }
+
+  return s;
 };
 
 const StatusBadge = ({ status }) => {
@@ -442,6 +465,8 @@ const StatusBadge = ({ status }) => {
       break;
     case "RTO DELIVERED":
     case "RTO_DELIVERED":
+    case "RETURN ACCEPTED":
+    case "RETURN_ACCEPTED":
       className = "bg-rose-50 text-rose-600";
       break;
     case "RETURNED":

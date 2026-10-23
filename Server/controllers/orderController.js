@@ -816,9 +816,28 @@ const getAllOrdersController = async (req, res) => {
                 trackingData = JSON.parse(trackingData);
               }
               if (trackingData && typeof trackingData === "object") {
+                let resolvedTrackingStatus = order.tracking_status || trackingData.tracking_status || order.status;
+                let resolvedStatus = order.status;
+
+                const checkText = `${resolvedTrackingStatus || ""} ${trackingData.tracking_raw_status || ""} ${trackingData.tracking_instructions || ""}`.toUpperCase();
+                if (
+                  checkText.includes("RETURN ACCEPT") ||
+                  checkText.includes("RETURN_ACCEPT") ||
+                  checkText.includes("RETURN DELIVERED") ||
+                  checkText.includes("RTO DELIVERED") ||
+                  checkText.includes("DELIVERED TO SHIPPER") ||
+                  checkText.includes("RETURNED TO SHIPPER")
+                ) {
+                  resolvedTrackingStatus = "RTO DELIVERED";
+                  if (String(resolvedStatus || "").toUpperCase() === "DELIVERED") {
+                    resolvedStatus = "RTO Delivered";
+                  }
+                }
+
                 return {
                   ...order,
-                  tracking_status: order.tracking_status || trackingData.tracking_status || order.status,
+                  status: resolvedStatus,
+                  tracking_status: resolvedTrackingStatus,
                   tracking_raw_status: trackingData.tracking_raw_status || null,
                   tracking_status_code: trackingData.tracking_status_code || null,
                   tracking_status_type: trackingData.tracking_status_type || null,

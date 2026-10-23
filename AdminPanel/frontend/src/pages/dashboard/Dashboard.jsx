@@ -41,11 +41,16 @@ const formatDate = (value) => {
   });
 };
 
-const normalizeStatus = (status) =>
-  String(status || "")
+const normalizeStatus = (status) => {
+  const s = String(status || "")
     .trim()
     .toUpperCase()
     .replace(/_/g, " ");
+  if (s === "RETURN ACCEPTED" || s.includes("RETURN ACCEPT")) {
+    return "RTO DELIVERED";
+  }
+  return s;
+};
 
 const statusConfig = {
   PROCESSING: {

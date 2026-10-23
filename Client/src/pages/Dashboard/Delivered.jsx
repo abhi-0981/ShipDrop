@@ -452,7 +452,7 @@ const formatTime = (value) => {
 // ======================================================
 
 const getStatus = (order) => {
-  return safeString(
+  const raw = safeString(
     order?.tracking_status ||
       order?.status ||
       order?.order_status ||
@@ -460,6 +460,23 @@ const getStatus = (order) => {
   )
     .trim()
     .toUpperCase();
+
+  const trackingText = safeString(
+    order?.tracking_instructions ||
+      order?.tracking_raw_status ||
+      ""
+  ).toUpperCase();
+
+  if (
+    raw === "RETURN ACCEPTED" ||
+    raw.includes("RETURN ACCEPT") ||
+    raw.includes("RTO DELIVERED") ||
+    trackingText.includes("RETURN ACCEPT")
+  ) {
+    return "RTO DELIVERED";
+  }
+
+  return raw;
 };
 
 const getStatusLabel = (status) => {
@@ -476,6 +493,12 @@ const getStatusLabel = (status) => {
 
     case "DELIVERED":
       return "Delivered";
+
+    case "RTO DELIVERED":
+    case "RTO_DELIVERED":
+    case "RETURN ACCEPTED":
+    case "RETURN_ACCEPTED":
+      return "RTO Delivered";
 
     case "CANCELLED":
     case "CANCELED":
