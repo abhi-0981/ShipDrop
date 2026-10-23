@@ -745,7 +745,7 @@ function AdminTickets() {
                   <span className="text-xs font-bold text-slate-800">
                     Customer Conversation
                   </span>
-                  <span className="rounded-full bg-slate-200/80 px-2 py-0.2 text-[10px] font-bold text-slate-600">
+                  <span className="rounded-full bg-slate-200/80 px-2 py-0.5 text-[10px] font-bold text-slate-600">
                     {messages.length}
                   </span>
                 </div>

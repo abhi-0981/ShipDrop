@@ -363,7 +363,7 @@ function RateCard() {
                         <p className="text-sm font-bold text-slate-900 truncate">
                           {card.name}
                         </p>
-                        <span className="rounded-md bg-slate-100 px-1.5 py-0.2 text-[9px] font-bold text-slate-600">
+                        <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[9px] font-bold text-slate-600">
                           B2C
                         </span>
                       </div>

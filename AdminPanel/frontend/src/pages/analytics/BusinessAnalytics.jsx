@@ -358,7 +358,7 @@ export default function BusinessAnalytics() {
             Business & Financial Analytics
           </h1>
           <p className="mt-1 text-sm text-slate-500">
-            Pura business analysis, seller payout tracking, wallet inflow & order pipelines.
+            Comprehensive business performance, seller payout tracking, wallet inflow & order pipelines.
           </p>
         </div>
 
@@ -1600,7 +1600,7 @@ export default function BusinessAnalytics() {
                               <span className="font-bold text-slate-900 truncate">
                                 {u.name}
                               </span>
-                              <span className="rounded-md bg-slate-100 px-1.5 py-0.2 text-[10px] font-semibold text-slate-500">
+                              <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-500">
                                 #{u.userId}
                               </span>
                             </div>

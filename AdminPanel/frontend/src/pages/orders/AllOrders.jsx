@@ -1040,7 +1040,7 @@ const AllOrders = () => {
               >
                 <span>{STATUS_CONFIG[status]?.label}</span>
                 <span
-                  className={`rounded-full px-1.5 py-0.2 text-[10px] font-bold ${
+                  className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
                     active ? "bg-[#008dd2] text-white" : "bg-slate-100 text-slate-600"
                   }`}
                 >
