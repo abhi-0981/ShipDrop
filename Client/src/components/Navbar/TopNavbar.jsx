@@ -825,21 +825,6 @@
               <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white"></span>
             </button>
 
-            {/* THEME (Mobile & Desktop) */}
-            <button
-              type="button"
-              title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
-              aria-label={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
-              onClick={handleTheme}
-              className={`flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full transition-all duration-200 active:scale-90 shrink-0 ${
-                isDark
-                  ? "text-amber-400 hover:bg-slate-800 hover:text-amber-300 ring-1 ring-amber-400/20"
-                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-              }`}
-            >
-              {isDark ? <SunIcon /> : <MoonIcon />}
-            </button>
-
             {/* FULLSCREEN (Desktop) */}
             <button
               type="button"
@@ -896,16 +881,22 @@
 
                   <button
                     type="button"
-                    onClick={() => {
-                      handleTheme();
-                    }}
+                    onClick={handleTheme}
                     className="flex w-full items-center justify-between border-b border-slate-50 px-4 py-2.5 text-left text-xs font-medium text-slate-600 transition hover:bg-slate-50"
                   >
                     <div className="flex items-center gap-2.5">
-                      {isDark ? <SunIcon /> : <MoonIcon />}
+                      <span className={isDark ? "text-amber-400" : "text-slate-600"}>
+                        {isDark ? <SunIcon /> : <MoonIcon />}
+                      </span>
                       <span>{isDark ? "Light Mode" : "Dark Mode"}</span>
                     </div>
-                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-[10px] font-semibold transition ${
+                        isDark
+                          ? "bg-amber-400/15 text-amber-400 border border-amber-400/30"
+                          : "bg-slate-100 text-slate-600 border border-slate-200"
+                      }`}
+                    >
                       {isDark ? "Dark" : "Light"}
                     </span>
                   </button>
