@@ -212,12 +212,25 @@ async function ensureTables() {
         message TEXT NOT NULL,
         reference_id VARCHAR(100) NULL,
         reference_url VARCHAR(255) NULL,
+        message_count INT DEFAULT 1,
         is_read TINYINT(1) DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         INDEX idx_notifications_user_read (user_id, is_read),
         INDEX idx_notifications_created (created_at)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
+
+    // Ensure message_count column exists in notifications
+    try {
+      const [colRows] = await promiseDb.query(
+        `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'notifications' AND COLUMN_NAME = 'message_count'`
+      );
+      if (!colRows || colRows.length === 0) {
+        await promiseDb.query(`ALTER TABLE notifications ADD COLUMN message_count INT DEFAULT 1`);
+      }
+    } catch (colErr) {
+      console.warn("Column check notice for notifications.message_count:", colErr.message);
+    }
 
     console.log("Core tables, notifications, offline_orders table and indexes verified successfully.");
   } catch (error) {

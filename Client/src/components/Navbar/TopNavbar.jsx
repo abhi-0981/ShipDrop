@@ -232,9 +232,8 @@
       if (!notif) return;
       try {
         if (!notif.is_read) {
-          setNotifications((prev) =>
-            prev.map((n) => (n.id === notif.id ? { ...n, is_read: 1 } : n))
-          );
+          // Immediately remove from notification box so it becomes empty once read
+          setNotifications((prev) => prev.filter((n) => n.id !== notif.id));
           setUnreadNotifCount((prev) => Math.max(0, prev - 1));
           const savedUser = JSON.parse(localStorage.getItem("user") || "null");
           await api.post("/notifications/mark-read", {
@@ -258,7 +257,8 @@
     const handleMarkAllNotificationsRead = async () => {
       const savedUser = JSON.parse(localStorage.getItem("user") || "null");
       if (!savedUser?.id) return;
-      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: 1 })));
+      // Immediately clear notification box so it's empty
+      setNotifications([]);
       setUnreadNotifCount(0);
       try {
         await api.post("/notifications/mark-read", {
@@ -953,14 +953,16 @@
                   <div className="max-h-[360px] overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/60 [scrollbar-width:thin]">
                     {notifications.length === 0 ? (
                       <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 mb-3">
-                          <BellIcon />
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-500 mb-3">
+                          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
                         </div>
-                        <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                          No notifications yet
+                        <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                          All caught up!
                         </p>
                         <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5 max-w-[220px]">
-                          When support team replies to your tickets, you'll see them right here.
+                          No unread notifications. New support ticket replies will appear here.
                         </p>
                       </div>
                     ) : (
@@ -968,11 +970,7 @@
                         <div
                           key={notif.id}
                           onClick={() => handleNotificationClick(notif)}
-                          className={`flex items-start gap-3 p-3.5 transition-colors cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/70 ${
-                            !notif.is_read
-                              ? "bg-sky-50/40 dark:bg-sky-950/20"
-                              : ""
-                          }`}
+                          className="flex items-start gap-3 p-3.5 transition-colors cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/70 bg-sky-50/40 dark:bg-sky-950/20"
                         >
                           {/* NOTIFICATION TYPE ICON */}
                           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-sky-100 dark:bg-sky-950/60 text-[#008dd2] dark:text-[#38bdf8] mt-0.5 shadow-2xs">
@@ -982,13 +980,18 @@
                           </div>
 
                           <div className="min-w-0 flex-1">
-                            <div className="flex items-center justify-between gap-1">
-                              <p className={`text-[12px] truncate ${!notif.is_read ? "font-bold text-slate-900 dark:text-slate-100" : "font-medium text-slate-700 dark:text-slate-300"}`}>
+                            <div className="flex items-center justify-between gap-1.5">
+                              <p className="text-[12px] truncate font-bold text-slate-900 dark:text-slate-100">
                                 {notif.title}
                               </p>
-                              {!notif.is_read && (
-                                <span className="h-2 w-2 rounded-full bg-[#008dd2] shrink-0"></span>
-                              )}
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                {Number(notif.message_count) > 1 && (
+                                  <span className="rounded-md bg-[#008dd2]/10 text-[#008dd2] dark:text-[#38bdf8] font-bold text-[10px] px-1.5 py-0.5 border border-[#008dd2]/20">
+                                    {notif.message_count} msgs
+                                  </span>
+                                )}
+                                <span className="h-2 w-2 rounded-full bg-[#008dd2]"></span>
+                              </div>
                             </div>
                             <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 mt-0.5 leading-snug">
                               {notif.message}
