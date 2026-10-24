@@ -197,14 +197,9 @@ const ImportWeightFileModal = ({
             </div>
           </label>
 
-          <div className="mt-3.5 rounded-xl border border-slate-200 bg-slate-50 p-3">
-            <p className="text-[11px] font-bold text-slate-700">Required File Headers:</p>
-            <div className="mt-1 flex items-center gap-2">
-              <span className="rounded bg-white px-2 py-0.5 text-[10px] font-mono font-bold text-slate-800 border border-slate-200">AWB</span>
-              <span className="rounded bg-white px-2 py-0.5 text-[10px] font-mono font-bold text-slate-800 border border-slate-200">Weight(gm)</span>
-            </div>
-            <p className="mt-1.5 text-[10.5px] leading-relaxed text-slate-500">
-              Weight must be in grams (e.g. 2000 for 2kg, 4500 for 4.5kg). The system automatically matches existing orders, recalculates courier charges, and creates pending settlement records.
+          <div className="mt-3.5 rounded-xl border border-blue-100 bg-blue-50/60 p-3">
+            <p className="text-[10.5px] leading-relaxed text-blue-700">
+              AWB and courier weight will be matched with the existing order. The system will calculate the revised shipping charge and create/update pending settlement records.
             </p>
           </div>
         </div>
@@ -454,24 +449,14 @@ const WeightChecking = () => {
         toast.success(
           `${imported} weight record${imported === 1 ? "" : "s"} imported successfully`
         );
-      } else if (errors === 0) {
+      } else {
         toast.success("Weight file processed successfully");
       }
 
-      if (errors > 0) {
-        const firstErr = Array.isArray(data?.errors) && data.errors[0];
-        const errMsg = firstErr
-          ? `Row ${firstErr.row} (AWB: ${firstErr.awb || "N/A"}): ${firstErr.message}`
-          : `${errors} record(s) failed`;
-        toast.error(`Import Error: ${errMsg}`, { duration: 6000 });
-      }
-
-      if (skipped > 0) {
-        const firstSkip = Array.isArray(data?.skipped) && data.skipped[0];
-        const skipMsg = firstSkip
-          ? `AWB ${firstSkip.awb}: ${firstSkip.reason}`
-          : `${skipped} record(s) skipped`;
-        toast(`Skipped: ${skipMsg}`, { icon: "ℹ️", duration: 5000 });
+      if (skipped > 0 || errors > 0) {
+        toast(`${skipped} skipped, ${errors} error${errors === 1 ? "" : "s"}`, {
+          icon: "ℹ️",
+        });
       }
 
       setShowImportModal(false);

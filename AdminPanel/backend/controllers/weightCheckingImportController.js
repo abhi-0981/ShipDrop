@@ -17,19 +17,26 @@ const {
 const normalizeHeader = (value) =>
   String(value || "")
     .trim()
-    .toLowerCase()
-    .replace(/\s+/g, "");
+    .toLowerCase();
 
-const getRowValue = (row, wantedHeaders) => {
-  const targets = Array.isArray(wantedHeaders)
-    ? wantedHeaders.map(normalizeHeader)
-    : [normalizeHeader(wantedHeaders)];
 
-  const key = Object.keys(row).find((item) =>
-    targets.includes(normalizeHeader(item))
-  );
+const getRowValue = (
+  row,
+  wantedHeader
+) => {
+  const target =
+    normalizeHeader(wantedHeader);
 
-  return key === undefined ? "" : row[key];
+  const key =
+    Object.keys(row).find(
+      (item) =>
+        normalizeHeader(item) ===
+        target
+    );
+
+  return key === undefined
+    ? ""
+    : row[key];
 };
 
 
@@ -46,7 +53,7 @@ const roundMoney = (value) =>
 
 
 // ======================================================
-// CALCULATE RATE FOR A SPECIFIC WEIGHT (ULTRA-RESILIENT)
+// CALCULATE RATE FOR A SPECIFIC WEIGHT
 // ======================================================
 
 const calculateRateForWeight = async ({
@@ -57,153 +64,68 @@ const calculateRateForWeight = async ({
   serviceType,
   paymentType,
   productValue,
-  knownZone,
-  originalCharge,
-  declaredWeight,
 }) => {
-  const numericWeight = Number(weight);
-  const safeWeight = Number.isFinite(numericWeight) && numericWeight > 0 ? numericWeight : 0.5;
-  const safeService = String(serviceType || "ROAD").trim().toUpperCase();
-  const safePayment = String(paymentType || "Pre-paid").trim();
-  const safeProductValue = Number(productValue) || 0;
-  const safeZone = String(knownZone || "B").trim().toUpperCase();
-
-  // Tier 1: Try calculateShippingRate with sanitized pincodes
-  try {
-    const cleanPickup = /^\d{6}$/.test(String(pickupPincode || "").trim())
-      ? String(pickupPincode).trim()
-      : "110001";
-    const cleanDelivery = /^\d{6}$/.test(String(deliveryPincode || "").trim())
-      ? String(deliveryPincode).trim()
-      : "110001";
-
-    const result = await calculateShippingRate(
+  const result =
+    await calculateShippingRate(
       userId,
-      cleanPickup,
-      cleanDelivery,
-      safeWeight,
-      safeService,
-      safePayment,
-      safeProductValue
+      pickupPincode,
+      deliveryPincode,
+      weight,
+      serviceType,
+      paymentType,
+      productValue
     );
 
-    const shippingCharge = Number(
-      result?.shipping_charge ?? result?.final_rate ?? 0
+  const shippingCharge =
+    Number(
+      result?.shipping_charge ??
+      result?.final_rate ??
+      0
     );
 
-    if (Number.isFinite(shippingCharge) && shippingCharge > 0) {
-      return {
-        shippingCharge: roundMoney(shippingCharge),
-        rateCardId: result?.rate_card_id || null,
-        serviceType: result?.service_type || safeService,
-        zone: result?.zone || safeZone,
-        distanceKm: result?.distance_km ?? null,
-        baseRate: Number(result?.base_rate || 0),
-        finalRate: Number(result?.final_rate || shippingCharge),
-      };
-    }
-  } catch (err) {
-    console.warn("calculateShippingRate warning for weight import, trying database rate card:", err.message);
+  if (
+    !Number.isFinite(
+      shippingCharge
+    ) ||
+    shippingCharge < 0
+  ) {
+    throw new Error(
+      `Invalid shipping charge returned for ${weight} KG`
+    );
   }
-
-  // Tier 2: Direct Database Rate Card calculation using known order zone (no external HTTP APIs)
-  try {
-    const zoneCol = `zone_${safeZone.toLowerCase()}_rate`;
-
-    // Get user rate card or default rate card
-    const [uRows] = await db.query(
-      "SELECT id, rate_card_id FROM users WHERE id = ? LIMIT 1",
-      [userId]
-    );
-    let rateCardId = uRows[0]?.rate_card_id;
-    if (!rateCardId) {
-      const [defaultCard] = await db.query(
-        "SELECT id FROM admin_rate_cards ORDER BY id ASC LIMIT 1"
-      );
-      rateCardId = defaultCard[0]?.id;
-    }
-
-    if (rateCardId) {
-      const [services] = await db.query(
-        "SELECT * FROM admin_rate_card_services WHERE rate_card_id = ? AND service_type = ? LIMIT 1",
-        [rateCardId, safeService]
-      );
-
-      if (services && services.length > 0) {
-        const srv = services[0];
-
-        // Find rate slab
-        const [slabRows] = await db.query(
-          `SELECT * FROM admin_rate_card_rates WHERE service_id = ? AND ? >= weight_from AND ? <= weight_to ORDER BY weight_from ASC LIMIT 1`,
-          [srv.id, safeWeight, safeWeight]
-        );
-
-        let baseRate = 0;
-        let additionAmount = 0;
-
-        if (slabRows && slabRows.length > 0) {
-          baseRate = Number(slabRows[0][zoneCol] || slabRows[0].zone_b_rate || slabRows[0].zone_a_rate || 0);
-        } else {
-          const [lastSlab] = await db.query(
-            `SELECT * FROM admin_rate_card_rates WHERE service_id = ? ORDER BY weight_to DESC LIMIT 1`,
-            [srv.id]
-          );
-          if (lastSlab && lastSlab.length > 0) {
-            baseRate = Number(lastSlab[0][zoneCol] || lastSlab[0].zone_b_rate || 0);
-            const [addRules] = await db.query(
-              `SELECT * FROM admin_rate_card_additions WHERE service_id = ? AND from_kg <= ? ORDER BY from_kg DESC LIMIT 1`,
-              [srv.id, safeWeight]
-            );
-            if (addRules && addRules.length > 0) {
-              const rule = addRules[0];
-              const fromKg = Number(rule.from_kg);
-              const stepKg = Number(rule.step_kg) || 0.5;
-              const perStepRate = Number(rule[zoneCol] || rule.zone_b_rate || 0);
-              const extraKg = Math.max(0, safeWeight - fromKg);
-              const steps = Math.ceil(extraKg / stepKg);
-              additionAmount = steps * perStepRate;
-            }
-          }
-        }
-
-        const chargeable = baseRate + additionAmount;
-        const fsc = (chargeable * (Number(srv.fsc_percentage) || 0)) / 100;
-        const addFixed = Number(srv.additional_charge) || 0;
-        const subtotal = chargeable + fsc + addFixed;
-        const gst = (subtotal * 18) / 100;
-        const calculatedTotal = roundMoney(subtotal + gst);
-
-        if (calculatedTotal > 0) {
-          return {
-            shippingCharge: calculatedTotal,
-            rateCardId: rateCardId,
-            serviceType: safeService,
-            zone: safeZone,
-            distanceKm: null,
-            baseRate: roundMoney(baseRate),
-            finalRate: calculatedTotal,
-          };
-        }
-      }
-    }
-  } catch (err2) {
-    console.warn("Direct rate card calculation warning, trying proportional estimation:", err2.message);
-  }
-
-  // Tier 3: Proportional Estimation from original shipping charge (never fails)
-  const orig = Number(originalCharge) || 50;
-  const dWeight = Number(declaredWeight) || 0.5;
-  const unitRate = dWeight > 0 ? orig / dWeight : 100;
-  const estimatedShipping = roundMoney(Math.max(orig, orig + (safeWeight - dWeight) * unitRate));
 
   return {
-    shippingCharge: estimatedShipping,
-    rateCardId: null,
-    serviceType: safeService,
-    zone: safeZone,
-    distanceKm: null,
-    baseRate: orig,
-    finalRate: estimatedShipping,
+    shippingCharge:
+      roundMoney(
+        shippingCharge
+      ),
+
+    rateCardId:
+      result?.rate_card_id ||
+      null,
+
+    serviceType:
+      result?.service_type ||
+      serviceType,
+
+    zone:
+      result?.zone ||
+      null,
+
+    distanceKm:
+      result?.distance_km ??
+      null,
+
+    baseRate:
+      Number(
+        result?.base_rate || 0
+      ),
+
+    finalRate:
+      Number(
+        result?.final_rate ||
+        shippingCharge
+      ),
   };
 };
 
@@ -280,28 +202,25 @@ const importWeightFile =
           normalizeHeader
         );
 
-      const hasAwb = headers.includes("awb");
-      const hasWeight = headers.some(
-        (h) =>
-          h === "weight(gm)" ||
-          h === "weight(g)" ||
-          h === "weight(gms)" ||
-          h === "actualweight(gm)" ||
-          h === "actualweight" ||
-          h === "weight"
-      );
-
-      if (!hasAwb) {
+      if (
+        !headers.includes("awb")
+      ) {
         return res.status(400).json({
           success: false,
-          message: 'Required column "AWB" is missing',
+          message:
+            'Required column "AWB" is missing',
         });
       }
 
-      if (!hasWeight) {
+      if (
+        !headers.includes(
+          "weight(gm)"
+        )
+      ) {
         return res.status(400).json({
           success: false,
-          message: 'Required column "Weight(gm)" is missing',
+          message:
+            'Required column "weight(gm)" is missing',
         });
       }
 
@@ -350,18 +269,15 @@ const importWeightFile =
             ).trim();
 
 
+          // ----------------------------------------------
+          // ACTUAL WEIGHT
+          // ----------------------------------------------
+
           const actualWeightGrams =
             Number(
               getRowValue(
                 row,
-                [
-                  "weight(gm)",
-                  "weight(g)",
-                  "weight(gms)",
-                  "actualweight(gm)",
-                  "actualweight",
-                  "weight",
-                ]
+                "weight(gm)"
               )
             );
 
@@ -419,35 +335,37 @@ const importWeightFile =
                   o.user_id,
                   o.awb,
                   o.payment_type,
-                  COALESCE(NULLIF(TRIM(o.pincode), ''), '110001') AS delivery_pincode,
+                  o.pincode AS delivery_pincode,
 
-                  COALESCE(
-                    NULLIF(TRIM(pa.pickup_pincode), ''),
-                    NULLIF(TRIM(w.pincode), ''),
-                    NULLIF(TRIM(pr.pickup_pincode), ''),
-                    '110001'
-                  ) AS pickup_pincode,
+                  pa.pickup_pincode,
 
-                  COALESCE(
-                    NULLIF(pkg.weight, 0),
-                    NULLIF(o.weight, 0),
-                    0.5
-                  ) AS declared_weight,
+                  pkg.weight AS declared_weight,
 
-                  COALESCE(m.id, o.id) AS manifest_id,
-                  COALESCE(m.shipping_charge, o.manual_amount_including_gst, 0) AS shipping_charge,
-                  COALESCE(NULLIF(TRIM(m.zone), ''), 'B') AS zone,
-                  COALESCE(m.distance_km, 0) AS distance_km,
-                  COALESCE(NULLIF(TRIM(m.service_type), ''), 'ROAD') AS service_type,
+                  m.id AS manifest_id,
+                  m.shipping_charge,
+                  m.zone,
+                  m.distance_km,
+                  m.service_type,
 
                   COALESCE(
                     (
                       SELECT
                         SUM(
-                          COALESCE(op.price, 0) * COALESCE(op.qty, 0)
+                          COALESCE(
+                            op.price,
+                            0
+                          ) *
+                          COALESCE(
+                            op.qty,
+                            0
+                          )
                         )
+
                       FROM order_products op
-                      WHERE op.order_id = o.id
+
+                      WHERE
+                        op.order_id =
+                        o.id
                     ),
                     0
                   ) AS product_value
@@ -455,23 +373,33 @@ const importWeightFile =
                 FROM orders o
 
                 LEFT JOIN pickup_addresses pa
-                  ON pa.id = o.pickup_address_id
-
-                LEFT JOIN warehouses w
-                  ON w.id = o.warehouse_id
+                  ON pa.id =
+                     o.pickup_address_id
 
                 LEFT JOIN order_packages pkg
-                  ON pkg.order_id = o.id
+                  ON pkg.order_id =
+                     o.id
 
                 LEFT JOIN manifests m
-                  ON m.order_id = o.id
-                  AND m.user_id = o.user_id
+                  ON m.order_id =
+                     o.id
 
-                LEFT JOIN pickup_requests pr
-                  ON pr.id = m.pickup_request_id
+                  AND m.user_id =
+                     o.user_id
+
+                  AND UPPER(
+                    COALESCE(
+                      m.status,
+                      ''
+                    )
+                  ) = 'CONFIRMED'
 
                 WHERE
-                  REPLACE(TRIM(CAST(o.awb AS CHAR)), ' ', '') = REPLACE(TRIM(?), ' ', '')
+                  TRIM(
+                    CAST(
+                      o.awb AS CHAR
+                    )
+                  ) = ?
 
                 ORDER BY
                   m.id DESC
@@ -556,6 +484,27 @@ const importWeightFile =
 
 
           // ==================================================
+          // CONFIRMED MANIFEST
+          // ==================================================
+
+          if (
+            !order.manifest_id
+          ) {
+            skipped.push({
+              row:
+                excelRowNumber,
+
+              awb,
+
+              reason:
+                "Confirmed manifest was not found for this order",
+            });
+
+            continue;
+          }
+
+
+          // ==================================================
           // ORIGINAL SHIPPING CHARGE
           // ==================================================
 
@@ -632,36 +581,6 @@ const importWeightFile =
 
 
           try {
-            actualRate =
-              await calculateRateForWeight(
-                {
-                  userId:
-                    order.user_id,
-
-                  pickupPincode:
-                    order.pickup_pincode,
-
-                  deliveryPincode:
-                    order.delivery_pincode,
-
-                  weight:
-                    actualWeight,
-
-                  serviceType,
-
-                  paymentType,
-
-                  productValue,
-
-                  knownZone:
-                    order.zone,
-
-                  originalCharge,
-
-                  declaredWeight,
-                }
-              );
-
             declaredRate =
               await calculateRateForWeight(
                 {
@@ -682,13 +601,30 @@ const importWeightFile =
                   paymentType,
 
                   productValue,
+                }
+              );
 
-                  knownZone:
-                    order.zone,
 
-                  originalCharge,
+            actualRate =
+              await calculateRateForWeight(
+                {
+                  userId:
+                    order.user_id,
 
-                  declaredWeight,
+                  pickupPincode:
+                    order.pickup_pincode,
+
+                  deliveryPincode:
+                    order.delivery_pincode,
+
+                  weight:
+                    actualWeight,
+
+                  serviceType,
+
+                  paymentType,
+
+                  productValue,
                 }
               );
 
