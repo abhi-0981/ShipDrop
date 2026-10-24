@@ -736,32 +736,32 @@
               </Link>
             )}
 
-            {/* COMPANY NAME BADGE (MATCHING USER REFERENCE RADIUS & BRAND BLUE COLOR) */}
+            {/* COMPANY NAME BADGE (40px Height Grid, Perfectly Centered) */}
             <div
-              className="flex items-center gap-2.5 rounded-[16px] border border-slate-200/90 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-800/80 px-2.5 sm:px-3.5 py-1.5 shadow-2xs transition-all duration-150 hover:border-slate-300 dark:hover:border-slate-700"
+              className="flex h-10 items-center gap-2.5 rounded-[14px] border border-slate-200/90 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/60 pl-1.5 pr-3.5 shadow-2xs transition-all duration-150 hover:bg-slate-100/70 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-700"
               title={`Company: ${displayCompanyName}`}
             >
-              <div className="flex h-7 w-7 sm:h-[30px] sm:w-[30px] shrink-0 items-center justify-center rounded-full bg-[#008dd2] text-[11px] sm:text-[12px] font-black text-white uppercase tracking-wider shadow-xs shadow-[#008dd2]/25">
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#008dd2] text-[11px] font-black text-white uppercase tracking-wider shadow-xs shadow-[#008dd2]/20">
                 {companyInitials}
               </div>
-              <span className="text-[11.5px] sm:text-[12.5px] font-bold uppercase tracking-wider text-slate-800 dark:text-slate-100 truncate max-w-[130px] sm:max-w-[190px] md:max-w-[280px]">
+              <span className="text-[12px] font-bold uppercase tracking-wide text-slate-800 dark:text-slate-100 truncate max-w-[130px] sm:max-w-[190px] md:max-w-[280px]">
                 {displayCompanyName}
               </span>
             </div>
           </div>
 
           {/* ======================================================== */}
-          {/* RIGHT SECTION: WALLET PILL + ACTIONS + PROFILE */}
+          {/* RIGHT SECTION: SEARCH + WALLET + NOTIFICATION + PROFILE (Uniform 40px Height) */}
           {/* ======================================================== */}
-          <div className="flex items-center gap-1 sm:gap-2.5 shrink-0">
-            {/* TRACKING SEARCH (RESTORED AS BEFORE) */}
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            {/* TRACKING SEARCH */}
             <form
               onSubmit={handleTrackingSearch}
-              className="hidden md:flex relative items-center w-[250px] lg:w-[310px] xl:w-[370px]"
+              className="hidden md:flex relative items-center w-[240px] lg:w-[290px] xl:w-[340px]"
             >
               <FiSearch
                 className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
-                size={17}
+                size={16}
               />
 
               <input
@@ -770,7 +770,7 @@
                 onChange={(event) => setTrackingSearch(event.target.value)}
                 placeholder="Enter Tracking ID or Order ID..."
                 disabled={trackingSearchLoading}
-                className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/70 pl-10 pr-14 text-xs font-medium text-slate-700 placeholder:text-slate-400 outline-none transition-all duration-200 focus:border-[#008dd2] focus:bg-white focus:ring-4 focus:ring-[#008dd2]/10 disabled:cursor-not-allowed disabled:opacity-70"
+                className="h-10 w-full rounded-[14px] border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/60 pl-10 pr-14 text-xs font-medium text-slate-700 dark:text-slate-200 placeholder:text-slate-400 outline-none transition-all duration-200 focus:border-[#008dd2] focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-[#008dd2]/10 disabled:cursor-not-allowed disabled:opacity-70"
               />
 
               {trackingSearchLoading ? (
@@ -789,48 +789,46 @@
               )}
             </form>
 
-
-
-            {/* COMPACT TOUCH-FRIENDLY WALLET PILL */}
-            <div className="flex items-center rounded-full bg-violet-50/90 px-2 sm:px-2.5 py-1 border border-violet-100/90 shrink-0">
-              <span className="text-violet-600 shrink-0">
+            {/* WALLET PILL (40px Height Grid) */}
+            <div className="flex h-10 items-center rounded-full bg-violet-50/90 dark:bg-violet-950/40 px-3 border border-violet-100 dark:border-violet-900/50 shrink-0 gap-1.5 shadow-2xs">
+              <span className="text-violet-600 dark:text-violet-400 shrink-0">
                 <WalletIcon />
               </span>
-              <span className="ml-1 sm:ml-1.5 text-[11px] sm:text-xs font-bold text-slate-800">
+              <span className="text-xs font-bold text-slate-800 dark:text-slate-100">
                 ₹{balance.toLocaleString("en-IN", { maximumFractionDigits: 2 })}
               </span>
               <button
                 type="button"
                 onClick={() => setShowRecharge(true)}
-                className="ml-1.5 flex h-5 w-5 sm:h-6 sm:w-6 items-center justify-center rounded-full bg-[#008dd2] text-xs font-bold text-white transition hover:bg-violet-700 active:scale-90 shrink-0 shadow-xs"
+                className="ml-1 flex h-6 w-6 items-center justify-center rounded-full bg-[#008dd2] text-xs font-bold text-white transition hover:bg-[#007ab6] active:scale-90 shrink-0 shadow-2xs"
                 title="Recharge Wallet"
               >
                 +
               </button>
             </div>
 
-            {/* NOTIFICATION */}
+            {/* NOTIFICATION (40px Height Grid) */}
             <button
               type="button"
               title="Notifications"
               onClick={() => toast("No new notifications")}
-              className="relative flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full text-slate-600 transition hover:bg-slate-100 active:scale-90 shrink-0"
+              className="relative flex h-10 w-10 items-center justify-center rounded-full text-slate-600 dark:text-slate-300 transition hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-90 shrink-0"
             >
               <BellIcon />
-              <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white"></span>
+              <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-[#111827]"></span>
             </button>
 
-            {/* PROFILE AVATAR & DROPDOWN */}
+            {/* PROFILE AVATAR (40px Height Grid) */}
             <div ref={profileRef} className="relative shrink-0">
               <button
                 type="button"
                 onClick={() => setShowProfile((prev) => !prev)}
                 title={userName}
                 aria-label="User Profile Menu"
-                className="relative flex items-center justify-center rounded-full transition-transform active:scale-90"
+                className="flex h-10 w-10 items-center justify-center rounded-full transition-transform active:scale-90"
               >
                 <div
-                  className={`flex h-9 w-9 sm:h-[38px] sm:w-[38px] items-center justify-center overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800 transition-all duration-200 ${
+                  className={`flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800 transition-all duration-200 ${
                     showProfile
                       ? "ring-2 ring-[#008dd2] ring-offset-2 ring-offset-white dark:ring-offset-[#111827] shadow-sm shadow-[#008dd2]/30 scale-105"
                       : "ring-1.5 ring-slate-200/90 dark:ring-slate-700/80 hover:ring-2 hover:ring-[#008dd2]/70 hover:scale-105 hover:shadow-sm"
