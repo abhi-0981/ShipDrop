@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
 import {
@@ -13,6 +13,10 @@ import {
   HiOutlineSparkles,
   HiOutlineClock,
   HiOutlineRefresh,
+  HiOutlineGlobe,
+  HiOutlineUserGroup,
+  HiOutlineSearch,
+  HiOutlineUser,
 } from "react-icons/hi";
 import { API_BASE_URL } from "../../config/api";
 
@@ -61,11 +65,34 @@ export default function Announcements() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [type, setType] = useState("INFO");
+  const [targetType, setTargetType] = useState("ALL"); // "ALL" | "SPECIFIC"
+  const [selectedUserIds, setSelectedUserIds] = useState([]);
+  const [userSearch, setUserSearch] = useState("");
+  const [users, setUsers] = useState([]);
+  const [usersLoading, setUsersLoading] = useState(false);
   const [previewItem, setPreviewItem] = useState(null);
 
   const getAuthHeader = () => {
     const token = localStorage.getItem("adminToken");
     return token ? { Authorization: `Bearer ${token}` } : {};
+  };
+
+  const fetchUsersList = async () => {
+    if (usersLoading) return;
+    setUsersLoading(true);
+    try {
+      const res = await axios.get(`${API_BASE_URL}/admin/users`, {
+        headers: getAuthHeader(),
+      });
+      if (res.data?.users) {
+        setUsers(res.data.users);
+      }
+    } catch (err) {
+      console.error("Fetch users error:", err);
+      toast.error("Failed to load user list");
+    } finally {
+      setUsersLoading(false);
+    }
   };
 
   const fetchAnnouncements = async (silent = false) => {
@@ -89,6 +116,43 @@ export default function Announcements() {
     fetchAnnouncements();
   }, []);
 
+  // Filtered users for specific targeting
+  const filteredUsers = useMemo(() => {
+    if (!userSearch.trim()) return users;
+    const q = userSearch.toLowerCase();
+    return users.filter((u) => {
+      const name = (u.full_name || "").toLowerCase();
+      const email = (u.email || "").toLowerCase();
+      const phone = (u.phone_no || "").toLowerCase();
+      const company = (u.company_name || "").toLowerCase();
+      const idStr = String(u.id);
+      return (
+        name.includes(q) ||
+        email.includes(q) ||
+        phone.includes(q) ||
+        company.includes(q) ||
+        idStr === q
+      );
+    });
+  }, [users, userSearch]);
+
+  const toggleUserSelection = (userId) => {
+    setSelectedUserIds((prev) =>
+      prev.includes(userId)
+        ? prev.filter((id) => id !== userId)
+        : [...prev, userId]
+    );
+  };
+
+  const handleSelectAllFiltered = () => {
+    const filteredIds = filteredUsers.map((u) => u.id);
+    setSelectedUserIds((prev) => Array.from(new Set([...prev, ...filteredIds])));
+  };
+
+  const handleClearSelection = () => {
+    setSelectedUserIds([]);
+  };
+
   const handleCreateSubmit = async (e) => {
     e.preventDefault();
     if (!title.trim()) {
@@ -100,6 +164,11 @@ export default function Announcements() {
       return;
     }
 
+    if (targetType === "SPECIFIC" && selectedUserIds.length === 0) {
+      toast.error("Please select at least 1 user from the list");
+      return;
+    }
+
     setSubmitting(true);
     try {
       const res = await axios.post(
@@ -108,16 +177,25 @@ export default function Announcements() {
           title: title.trim(),
           description: description.trim(),
           type,
+          target_type: targetType,
+          target_user_ids: targetType === "SPECIFIC" ? selectedUserIds : [],
           is_active: 1,
         },
         { headers: getAuthHeader() }
       );
 
       if (res.data?.success) {
-        toast.success("Broadcast announcement sent to all users!");
+        toast.success(
+          targetType === "SPECIFIC"
+            ? `Notice sent to ${selectedUserIds.length} selected user(s)!`
+            : "Broadcast announcement sent to all users!"
+        );
         setTitle("");
         setDescription("");
         setType("INFO");
+        setTargetType("ALL");
+        setSelectedUserIds([]);
+        setUserSearch("");
         setShowModal(false);
         fetchAnnouncements(true);
       }
@@ -333,6 +411,19 @@ export default function Announcements() {
                         </span>
                       )}
 
+                      {/* TARGET AUDIENCE BADGE */}
+                      {item.target_type === "SPECIFIC" ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10.5px] font-semibold bg-purple-50 text-purple-700 border border-purple-200">
+                          <HiOutlineUserGroup className="text-xs" />
+                          <span>Specific ({item.target_user_ids?.length || 0} Users)</span>
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10.5px] font-semibold bg-sky-50 text-sky-700 border border-sky-200">
+                          <HiOutlineGlobe className="text-xs" />
+                          <span>All Users (Broadcast)</span>
+                        </span>
+                      )}
+
                       <span className="text-[11px] text-slate-400 flex items-center gap-1">
                         <HiOutlineClock className="text-xs" />
                         {formatDate(item.created_at)}
@@ -402,33 +493,236 @@ export default function Announcements() {
       {/* CREATE BROADCAST MODAL */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-150">
-          <div className="bg-white rounded-2xl max-w-xl w-full border border-slate-200 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150">
+          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col border border-slate-200 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150">
             {/* MODAL HEADER */}
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/70 shrink-0">
               <div className="flex items-center gap-2.5">
                 <div className="h-8 w-8 rounded-lg bg-[#008dd2]/10 text-[#008dd2] flex items-center justify-center border border-[#008dd2]/20">
                   <HiOutlineSpeakerphone className="text-base" />
                 </div>
                 <div>
                   <h3 className="text-sm font-bold text-slate-900">
-                    Create User Broadcast Notice
+                    Create User Notice / Announcement
                   </h3>
                   <p className="text-[11px] text-slate-500">
-                    This message will pop up on every user's screen until closed
+                    Send real-time popup notice to all users or selected specific users
                   </p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setShowModal(false)}
-                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg transition cursor-pointer"
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg transition cursor-pointer text-lg leading-none"
               >
                 ✕
               </button>
             </div>
 
-            {/* MODAL FORM */}
-            <form onSubmit={handleCreateSubmit} className="p-6 space-y-4">
+            {/* MODAL FORM (SCROLLABLE) */}
+            <form onSubmit={handleCreateSubmit} className="p-6 space-y-4 overflow-y-auto orders-scrollbar flex-1">
+              {/* TARGET AUDIENCE PICKER */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">
+                  Target Audience (Kisko Bhejna Hai?)
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {/* OPTION 1: ALL USERS */}
+                  <button
+                    type="button"
+                    onClick={() => setTargetType("ALL")}
+                    className={`p-3 rounded-xl border text-left transition cursor-pointer flex items-center gap-3 ${
+                      targetType === "ALL"
+                        ? "border-[#008dd2] bg-sky-50/70 ring-2 ring-[#008dd2]/20"
+                        : "border-slate-200 hover:bg-slate-50"
+                    }`}
+                  >
+                    <div
+                      className={`h-9 w-9 rounded-lg flex items-center justify-center shrink-0 transition ${
+                        targetType === "ALL" ? "bg-[#008dd2] text-white" : "bg-slate-100 text-slate-600"
+                      }`}
+                    >
+                      <HiOutlineGlobe className="text-lg" />
+                    </div>
+                    <div className="min-w-0">
+                      <span className="text-xs font-bold text-slate-900 block">All Users (Broadcast)</span>
+                      <span className="text-[11px] text-slate-500 block truncate">Sabhi registered users ko</span>
+                    </div>
+                  </button>
+
+                  {/* OPTION 2: SPECIFIC USERS */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTargetType("SPECIFIC");
+                      fetchUsersList();
+                    }}
+                    className={`p-3 rounded-xl border text-left transition cursor-pointer flex items-center gap-3 ${
+                      targetType === "SPECIFIC"
+                        ? "border-purple-500 bg-purple-50/70 ring-2 ring-purple-500/20"
+                        : "border-slate-200 hover:bg-slate-50"
+                    }`}
+                  >
+                    <div
+                      className={`h-9 w-9 rounded-lg flex items-center justify-center shrink-0 transition ${
+                        targetType === "SPECIFIC" ? "bg-purple-600 text-white" : "bg-slate-100 text-slate-600"
+                      }`}
+                    >
+                      <HiOutlineUserGroup className="text-lg" />
+                    </div>
+                    <div className="min-w-0">
+                      <span className="text-xs font-bold text-slate-900 block">Specific Users (Selective)</span>
+                      <span className="text-[11px] text-slate-500 block truncate">
+                        {selectedUserIds.length > 0
+                          ? `${selectedUserIds.length} user(s) selected`
+                          : "Chuniye specific logo ko"}
+                      </span>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {/* SPECIFIC USERS SELECTION BOX */}
+              {targetType === "SPECIFIC" && (
+                <div className="rounded-2xl border border-purple-200/90 bg-purple-50/30 p-4 space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-slate-800">Choose Users:</span>
+                      <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-100 text-purple-700">
+                        {selectedUserIds.length} of {users.length} Selected
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleSelectAllFiltered}
+                        className="text-[11px] font-semibold text-purple-700 hover:text-purple-900 hover:underline cursor-pointer"
+                      >
+                        Select All Filtered ({filteredUsers.length})
+                      </button>
+                      <span className="text-slate-300">•</span>
+                      <button
+                        type="button"
+                        onClick={handleClearSelection}
+                        className="text-[11px] font-semibold text-slate-500 hover:text-slate-800 hover:underline cursor-pointer"
+                      >
+                        Clear All
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* USER SEARCH INPUT */}
+                  <div className="relative">
+                    <HiOutlineSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm" />
+                    <input
+                      type="text"
+                      placeholder="Search by name, email, phone, company, or user ID..."
+                      value={userSearch}
+                      onChange={(e) => setUserSearch(e.target.value)}
+                      className="w-full pl-9 pr-8 py-2 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-800 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/10 transition"
+                    />
+                    {userSearch && (
+                      <button
+                        type="button"
+                        onClick={() => setUserSearch("")}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs cursor-pointer"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+
+                  {/* SELECTED CHIPS */}
+                  {selectedUserIds.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-1.5 bg-white rounded-xl border border-slate-200/80 orders-scrollbar">
+                      {selectedUserIds.map((id) => {
+                        const userObj = users.find((u) => u.id === id);
+                        return (
+                          <span
+                            key={id}
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-medium bg-purple-50 text-purple-700 border border-purple-200"
+                          >
+                            <span>{userObj?.full_name || `User #${id}`}</span>
+                            <button
+                              type="button"
+                              onClick={() => toggleUserSelection(id)}
+                              className="hover:text-rose-600 cursor-pointer ml-0.5"
+                              title="Remove"
+                            >
+                              ✕
+                            </button>
+                          </span>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* SCROLLABLE USERS LIST */}
+                  <div className="rounded-xl border border-slate-200 bg-white max-h-52 overflow-y-auto divide-y divide-slate-100 shadow-2xs orders-scrollbar">
+                    {usersLoading ? (
+                      <div className="p-6 text-center text-xs text-slate-500">
+                        <div className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-slate-200 border-t-purple-600 mr-2"></div>
+                        Loading registered users...
+                      </div>
+                    ) : filteredUsers.length === 0 ? (
+                      <div className="p-6 text-center text-xs text-slate-400">
+                        {users.length === 0 ? "No users registered yet" : `No users match "${userSearch}"`}
+                      </div>
+                    ) : (
+                      filteredUsers.map((u) => {
+                        const isSelected = selectedUserIds.includes(u.id);
+                        return (
+                          <div
+                            key={u.id}
+                            onClick={() => toggleUserSelection(u.id)}
+                            className={`p-2.5 px-3 flex items-center justify-between gap-3 transition cursor-pointer ${
+                              isSelected ? "bg-purple-50/70 hover:bg-purple-100/60" : "hover:bg-slate-50"
+                            }`}
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => {}} // handled by parent div click
+                                className="h-4 w-4 rounded text-purple-600 focus:ring-purple-500 border-slate-300 cursor-pointer"
+                              />
+                              <div
+                                className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
+                                  isSelected ? "bg-purple-600 text-white" : "bg-slate-100 text-slate-600"
+                                }`}
+                              >
+                                {(u.full_name || "U").charAt(0).toUpperCase()}
+                              </div>
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-xs font-bold text-slate-900 truncate">
+                                    {u.full_name || "Unnamed User"}
+                                  </span>
+                                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-100 text-slate-500 font-mono">
+                                    #{u.id}
+                                  </span>
+                                </div>
+                                <div className="text-[11px] text-slate-500 truncate flex items-center gap-2">
+                                  <span>{u.email}</span>
+                                  {u.phone_no && <span>• {u.phone_no}</span>}
+                                  {u.company_name && <span>• {u.company_name}</span>}
+                                </div>
+                              </div>
+                            </div>
+
+                            {isSelected && (
+                              <span className="text-[10.5px] font-bold text-purple-700 shrink-0 bg-purple-100 px-2 py-0.5 rounded-full">
+                                Selected ✓
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* NOTICE TYPE PICKER */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">
@@ -465,7 +759,7 @@ export default function Announcements() {
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Scheduled Maintenance on Sunday 2:00 AM"
+                  placeholder="e.g. Important Account Verification or Notice"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 focus:outline-none focus:border-[#008dd2] focus:ring-2 focus:ring-[#008dd2]/10 transition"
@@ -490,9 +784,14 @@ export default function Announcements() {
               {/* LIVE PREVIEW OF POPUP */}
               {(title || description) && (
                 <div className="rounded-xl border border-slate-200 bg-slate-50 p-3.5 space-y-1.5">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                    User Screen Popup Preview:
-                  </p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                      User Screen Popup Preview:
+                    </p>
+                    <span className="text-[10.5px] font-semibold text-slate-500">
+                      Audience: {targetType === "SPECIFIC" ? `${selectedUserIds.length} user(s)` : "All Users"}
+                    </span>
+                  </div>
                   <div className="bg-white rounded-lg p-3 border border-slate-200/80 shadow-2xs">
                     <p className="text-xs font-bold text-slate-900">{title || "Notice Title"}</p>
                     <p className="text-[11px] text-slate-600 mt-1 whitespace-pre-line leading-relaxed">
@@ -503,7 +802,7 @@ export default function Announcements() {
               )}
 
               {/* ACTIONS */}
-              <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 sticky bottom-0 bg-white">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
@@ -514,9 +813,17 @@ export default function Announcements() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-5 py-2 text-xs font-bold text-white bg-[#008dd2] hover:bg-[#007cb8] rounded-xl transition shadow-xs cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+                  className={`px-5 py-2.5 text-xs font-bold text-white rounded-xl transition shadow-xs cursor-pointer disabled:opacity-50 flex items-center gap-1.5 ${
+                    targetType === "SPECIFIC"
+                      ? "bg-purple-600 hover:bg-purple-700"
+                      : "bg-[#008dd2] hover:bg-[#007cb8]"
+                  }`}
                 >
-                  {submitting ? "Broadcasting..." : "Broadcast to All Users"}
+                  {submitting
+                    ? "Sending Notice..."
+                    : targetType === "SPECIFIC"
+                    ? `Send Notice to ${selectedUserIds.length} Selected User${selectedUserIds.length === 1 ? "" : "s"}`
+                    : "Broadcast to All Users"}
                 </button>
               </div>
             </form>
@@ -630,11 +937,17 @@ export default function Announcements() {
                 </div>
 
                 <div className="min-w-0 pt-0.5">
-                  <div className="flex items-center gap-1 text-[12px] font-semibold text-slate-500">
+                  <div className="flex items-center gap-1.5 text-[12px] font-semibold text-slate-500">
                     <svg className="w-3.5 h-3.5 text-[#008dd2] shrink-0" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
                     </svg>
-                    <span>ParcelDrop Official Broadcast</span>
+                    <span>ShipDrop Notice</span>
+                    <span className="text-slate-300">•</span>
+                    <span className="text-[11px] font-medium text-purple-700 bg-purple-50 px-2 py-0.2 rounded-full">
+                      {previewItem.target_type === "SPECIFIC"
+                        ? `Target: ${previewItem.target_user_ids?.length || 0} User(s)`
+                        : "Target: All Users"}
+                    </span>
                   </div>
                   <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight leading-snug mt-1">
                     {previewItem.title}

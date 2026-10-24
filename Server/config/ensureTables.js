@@ -260,6 +260,24 @@ async function ensureTables() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
 
+    // Ensure target_type & target_user_ids exist on announcements table
+    try {
+      await promiseDb.query(`
+        ALTER TABLE announcements 
+        ADD COLUMN target_type VARCHAR(20) DEFAULT 'ALL' AFTER type
+      `);
+    } catch (colErr) {
+      // Column may already exist
+    }
+    try {
+      await promiseDb.query(`
+        ALTER TABLE announcements 
+        ADD COLUMN target_user_ids LONGTEXT NULL AFTER target_type
+      `);
+    } catch (colErr) {
+      // Column may already exist
+    }
+
     console.log("Core tables, notifications, announcements, offline_orders table and indexes verified successfully.");
   } catch (error) {
     console.warn("ensureTables notice:", error.message);

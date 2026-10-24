@@ -18,7 +18,7 @@ const getActiveAnnouncementController = async (req, res) => {
       });
     }
 
-    // Find the latest active announcement that this user hasn't read yet
+    // Find active announcements that this user hasn't read yet
     const [rows] = await promiseDb.query(
       `
       SELECT 
@@ -26,6 +26,8 @@ const getActiveAnnouncementController = async (req, res) => {
         a.title,
         a.description,
         a.type,
+        a.target_type,
+        a.target_user_ids,
         a.created_at
       FROM announcements a
       WHERE a.is_active = 1
@@ -35,7 +37,7 @@ const getActiveAnnouncementController = async (req, res) => {
           WHERE user_id = ?
         )
       ORDER BY a.created_at DESC
-      LIMIT 1
+      LIMIT 20
       `,
       [userId]
     );
@@ -48,10 +50,37 @@ const getActiveAnnouncementController = async (req, res) => {
       });
     }
 
+    // Check targeting: show if target_type is ALL or user's ID is in target_user_ids
+    const matchedAnnouncement = rows.find((item) => {
+      const targetType = (item.target_type || "ALL").toUpperCase();
+      if (targetType === "ALL") return true;
+
+      if (targetType === "SPECIFIC") {
+        try {
+          const ids = typeof item.target_user_ids === "string"
+            ? JSON.parse(item.target_user_ids)
+            : item.target_user_ids;
+          return Array.isArray(ids) && ids.map(Number).includes(userId);
+        } catch {
+          return false;
+        }
+      }
+
+      return false;
+    });
+
+    if (!matchedAnnouncement) {
+      return res.status(200).json({
+        success: true,
+        has_announcement: false,
+        announcement: null,
+      });
+    }
+
     return res.status(200).json({
       success: true,
       has_announcement: true,
-      announcement: rows[0],
+      announcement: matchedAnnouncement,
     });
   } catch (error) {
     console.error("Get active announcement error:", error.message);

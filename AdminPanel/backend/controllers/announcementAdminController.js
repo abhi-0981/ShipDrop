@@ -1,7 +1,7 @@
 const db = require("../config/db");
 
 // =========================================================
-// GET ALL ANNOUNCEMENTS (with read count)
+// GET ALL ANNOUNCEMENTS (with read count & target details)
 // =========================================================
 const getAnnouncementsController = async (req, res) => {
   try {
@@ -11,6 +11,8 @@ const getAnnouncementsController = async (req, res) => {
         a.title,
         a.description,
         a.type,
+        a.target_type,
+        a.target_user_ids,
         a.is_active,
         a.created_at,
         a.updated_at,
@@ -21,9 +23,28 @@ const getAnnouncementsController = async (req, res) => {
       ORDER BY a.created_at DESC
     `);
 
+    // Parse target_user_ids if JSON string
+    const parsedRows = (rows || []).map((row) => {
+      let userIds = [];
+      if (row.target_type === "SPECIFIC" && row.target_user_ids) {
+        try {
+          userIds = typeof row.target_user_ids === "string"
+            ? JSON.parse(row.target_user_ids)
+            : row.target_user_ids;
+        } catch {
+          userIds = [];
+        }
+      }
+      return {
+        ...row,
+        target_type: row.target_type || "ALL",
+        target_user_ids: userIds,
+      };
+    });
+
     return res.status(200).json({
       success: true,
-      announcements: rows || [],
+      announcements: parsedRows,
     });
   } catch (error) {
     console.error("Admin get announcements error:", error.message);
@@ -36,11 +57,18 @@ const getAnnouncementsController = async (req, res) => {
 };
 
 // =========================================================
-// CREATE NEW ANNOUNCEMENT (Broadcast to all users)
+// CREATE NEW ANNOUNCEMENT (Broadcast to All or Specific Users)
 // =========================================================
 const createAnnouncementController = async (req, res) => {
   try {
-    const { title, description, type = "INFO", is_active = 1 } = req.body;
+    const {
+      title,
+      description,
+      type = "INFO",
+      target_type = "ALL",
+      target_user_ids = [],
+      is_active = 1,
+    } = req.body;
 
     if (!title || !String(title).trim()) {
       return res.status(400).json({
@@ -65,12 +93,29 @@ const createAnnouncementController = async (req, res) => {
       : "INFO";
     const activeFlag = is_active ? 1 : 0;
 
+    let cleanTargetType = target_type === "SPECIFIC" ? "SPECIFIC" : "ALL";
+    let cleanTargetUserIds = null;
+
+    if (cleanTargetType === "SPECIFIC") {
+      const ids = Array.isArray(target_user_ids)
+        ? target_user_ids.map(Number).filter((id) => Number.isInteger(id) && id > 0)
+        : [];
+
+      if (ids.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Please select at least one user when choosing Specific Users",
+        });
+      }
+      cleanTargetUserIds = JSON.stringify(ids);
+    }
+
     const [result] = await db.query(
       `
-      INSERT INTO announcements (title, description, type, is_active, created_at, updated_at)
-      VALUES (?, ?, ?, ?, NOW(), NOW())
+      INSERT INTO announcements (title, description, type, target_type, target_user_ids, is_active, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())
       `,
-      [cleanTitle, cleanDesc, cleanType, activeFlag]
+      [cleanTitle, cleanDesc, cleanType, cleanTargetType, cleanTargetUserIds, activeFlag]
     );
 
     const [newRow] = await db.query(
@@ -80,7 +125,10 @@ const createAnnouncementController = async (req, res) => {
 
     return res.status(201).json({
       success: true,
-      message: "Announcement broadcasted successfully to all users",
+      message:
+        cleanTargetType === "SPECIFIC"
+          ? "Notice sent successfully to selected users"
+          : "Announcement broadcasted successfully to all users",
       announcement: newRow[0],
     });
   } catch (error) {
