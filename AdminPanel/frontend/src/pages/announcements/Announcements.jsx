@@ -524,115 +524,37 @@ export default function Announcements() {
         </div>
       )}
 
-      {/* POPUP PREVIEW FLOATING CARD */}
-      {previewItem && (() => {
-        const typeCfg =
-          NOTICE_TYPES.find((t) => t.id === previewItem.type) || NOTICE_TYPES[0];
-        const topAccentColors = {
-          INFO: "from-[#008dd2] via-sky-400 to-blue-600",
-          UPDATE: "from-emerald-500 via-teal-400 to-emerald-600",
-          ALERT: "from-amber-500 via-orange-400 to-amber-600",
-          WARNING: "from-rose-500 via-red-500 to-rose-600",
-        };
-        const accentGradient = topAccentColors[previewItem.type] || topAccentColors.INFO;
-
-        return (
-          <div className="fixed bottom-6 right-6 z-50 w-[calc(100%-48px)] sm:w-[410px] pointer-events-auto animate-in slide-in-from-bottom-5 fade-in duration-200">
-            <div className="relative overflow-hidden rounded-2xl bg-white border border-slate-200/90 shadow-[0_16px_40px_-10px_rgba(0,0,0,0.22)]">
-              {/* TOP ACCENT STRIP */}
-              <div className={`h-1 w-full bg-gradient-to-r ${accentGradient}`} />
-
-              {/* CARD CONTENT */}
-              <div className="p-4 sm:p-5">
-                {/* HEADER META ROW */}
-                <div className="flex items-center justify-between gap-2 mb-2.5">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <span
-                      className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10.5px] font-bold border ${typeCfg.badge}`}
-                    >
-                      <span className="h-1.5 w-1.5 rounded-full bg-current animate-pulse" />
-                      {typeCfg.label}
-                    </span>
-
-                    {previewItem.created_at && (
-                      <span className="text-[10.5px] font-medium text-slate-400 truncate">
-                        • {formatDate(previewItem.created_at)}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* CLOSE BUTTON */}
-                  <button
-                    type="button"
-                    onClick={() => setPreviewItem(null)}
-                    aria-label="Close"
-                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
-                  >
-                    ✕
-                  </button>
-                </div>
-
-                {/* MAIN MESSAGE WITH ICON */}
-                <div className="flex items-start gap-3">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border mt-0.5 shadow-xs bg-sky-50 text-[#008dd2] border-sky-200">
-                    <HiOutlineSpeakerphone className="text-lg" />
-                  </div>
-
-                  <div className="min-w-0 flex-1">
-                    <h4 className="text-[14px] font-bold text-slate-900 tracking-tight leading-snug">
-                      {previewItem.title}
-                    </h4>
-
-                    <div className="text-[12.5px] text-slate-600 leading-relaxed font-normal whitespace-pre-line mt-1.5 max-h-[140px] overflow-y-auto pr-1">
-                      {previewItem.description}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* FOOTER BAR */}
-              <div className="px-4 sm:px-5 py-2.5 bg-slate-50/70 border-t border-slate-100 flex items-center justify-between gap-2">
-                <div className="flex items-center gap-1.5 text-[10.5px] text-slate-400 font-medium">
-                  <svg
-                    width="12"
-                    height="12"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="text-emerald-500 shrink-0"
-                  >
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                  <span className="truncate">Won't show again</span>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setPreviewItem(null)}
-                  className="px-3.5 py-1.5 rounded-lg text-xs font-bold text-white bg-[#008dd2] hover:bg-[#007cb8] active:scale-[0.98] transition-all shadow-xs cursor-pointer flex items-center gap-1 shrink-0"
-                >
-                  <span>Got it</span>
-                  <svg
-                    width="12"
-                    height="12"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <polyline points="9 18 15 12 9 6" />
-                  </svg>
-                </button>
-              </div>
+      {/* POPUP PREVIEW MODAL */}
+      {previewItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white rounded-2xl max-w-md w-full border border-slate-200 shadow-2xl p-6 text-center space-y-4 animate-in zoom-in-95 duration-150">
+            <div className="mx-auto h-12 w-12 rounded-2xl bg-sky-50 text-[#008dd2] flex items-center justify-center border border-sky-100">
+              <HiOutlineSpeakerphone className="text-2xl" />
             </div>
+            <div>
+              <span className="inline-block px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-slate-100 text-slate-600 mb-2">
+                Announcement from ShipDrop Admin
+              </span>
+              <h3 className="text-base font-bold text-slate-900 tracking-tight">
+                {previewItem.title}
+              </h3>
+              <p className="text-xs text-slate-600 mt-2 leading-relaxed whitespace-pre-line text-left bg-slate-50 p-3.5 rounded-xl border border-slate-100">
+                {previewItem.description}
+              </p>
+              <p className="text-[10px] text-slate-400 mt-2">
+                Posted: {formatDate(previewItem.created_at)}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setPreviewItem(null)}
+              className="w-full py-2.5 text-xs font-bold text-white bg-[#008dd2] hover:bg-[#007cb8] rounded-xl transition shadow-xs cursor-pointer"
+            >
+              I Understand / Close
+            </button>
           </div>
-        );
-      })()}
+        </div>
+      )}
     </div>
   );
 }
