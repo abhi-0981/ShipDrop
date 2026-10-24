@@ -526,62 +526,62 @@ export default function Announcements() {
 
       {/* POPUP PREVIEW MODAL */}
       {previewItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-md animate-in fade-in duration-150">
-          <div className="relative w-full max-w-[440px] overflow-hidden rounded-[24px] bg-white border border-slate-200 shadow-2xl p-6 sm:p-7 animate-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-950/60 backdrop-blur-md animate-in fade-in duration-150">
+          <div className="relative w-full max-w-[540px] overflow-hidden rounded-[26px] bg-white border border-slate-200 shadow-2xl p-7 sm:p-8 animate-in zoom-in-95 duration-150">
             {/* AMBIENT GLOW */}
-            <div className="absolute top-0 inset-x-0 h-24 bg-gradient-to-b from-[#008dd2]/10 via-[#008dd2]/[0.02] to-transparent pointer-events-none" />
+            <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-[#008dd2]/10 via-[#008dd2]/[0.02] to-transparent pointer-events-none" />
 
             {/* CLOSE BUTTON */}
             <button
               type="button"
               onClick={() => setPreviewItem(null)}
-              className="absolute top-4 right-4 z-10 flex h-8 w-8 items-center justify-center rounded-full text-slate-400 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 transition cursor-pointer"
+              className="absolute top-4.5 right-4.5 z-10 flex h-8.5 w-8.5 items-center justify-center rounded-full text-slate-400 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 transition cursor-pointer"
             >
               ✕
             </button>
 
             <div className="relative">
               {/* ICON & BADGE */}
-              <div className="flex items-center gap-3">
-                <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-50 to-[#008dd2]/15 text-[#008dd2] border border-[#008dd2]/20 shadow-xs">
+              <div className="flex items-center gap-3.5">
+                <div className="relative flex h-13 w-13 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-50 to-[#008dd2]/15 text-[#008dd2] border border-[#008dd2]/20 shadow-xs">
                   <HiOutlineSpeakerphone className="text-2xl" />
-                  <span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
+                  <span className="absolute -top-0.5 -right-0.5 flex h-3 w-3">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#008dd2] opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#008dd2]"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-[#008dd2]"></span>
                   </span>
                 </div>
 
                 <div>
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-sky-50 text-[#008dd2] border border-sky-200">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-bold bg-sky-50 text-[#008dd2] border border-sky-200">
                     <span className="h-1.5 w-1.5 rounded-full bg-current animate-pulse"></span>
                     {previewItem.type || "Notice"}
                   </span>
-                  <p className="text-[11px] text-slate-400 font-medium mt-0.5">
+                  <p className="text-xs text-slate-400 font-medium mt-1">
                     {previewItem.created_at ? formatDate(previewItem.created_at) : "Preview"}
                   </p>
                 </div>
               </div>
 
               {/* TITLE */}
-              <div className="mt-4">
-                <h3 className="text-lg font-bold text-slate-900 tracking-tight leading-snug">
+              <div className="mt-5">
+                <h3 className="text-xl sm:text-[22px] font-bold text-slate-900 tracking-tight leading-snug">
                   {previewItem.title}
                 </h3>
               </div>
 
               {/* MESSAGE CONTENT */}
-              <div className="mt-3 max-h-[260px] overflow-y-auto pr-1">
-                <p className="text-[13.5px] text-slate-600 leading-relaxed whitespace-pre-line font-normal">
+              <div className="mt-3.5 max-h-[320px] overflow-y-auto pr-1">
+                <p className="text-[14px] sm:text-[14.5px] text-slate-600 leading-relaxed whitespace-pre-line font-normal">
                   {previewItem.description}
                 </p>
               </div>
 
               {/* ACTION BUTTON */}
-              <div className="mt-6 pt-2">
+              <div className="mt-7 pt-2">
                 <button
                   type="button"
                   onClick={() => setPreviewItem(null)}
-                  className="w-full py-3 px-5 rounded-[14px] text-xs font-bold text-white bg-gradient-to-r from-[#008dd2] to-[#007cb8] hover:from-[#007cb8] hover:to-[#006ca0] active:scale-[0.98] transition-all shadow-md shadow-[#008dd2]/20 cursor-pointer"
+                  className="w-full py-3.5 px-6 rounded-2xl text-[13px] font-bold text-white bg-gradient-to-r from-[#008dd2] to-[#007cb8] hover:from-[#007cb8] hover:to-[#006ca0] active:scale-[0.98] transition-all shadow-md shadow-[#008dd2]/20 cursor-pointer"
                 >
                   Okay, Got it
                 </button>
