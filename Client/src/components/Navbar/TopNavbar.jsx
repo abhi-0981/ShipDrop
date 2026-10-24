@@ -1,7 +1,7 @@
   import { useEffect, useRef, useState } from "react";
   import { toast } from "react-hot-toast";
   import { Link, useNavigate } from "react-router-dom";
-  import { FiMenu, FiSearch } from "react-icons/fi";
+  import { FiMenu, FiSearch, FiCommand } from "react-icons/fi";
   import api from "../../services/api";
   import { notifyOrderChange } from "../../services/orderEvents";
   import shipdropLogo from "../../assets/images/shipdrop-logo.png";
@@ -740,7 +740,7 @@
             {/* TRACKING SEARCH (Cleanly Left-Aligned) */}
             <form
               onSubmit={handleTrackingSearch}
-              className="hidden md:flex relative items-center w-[250px] lg:w-[310px] xl:w-[360px]"
+              className="hidden md:flex relative items-center w-[230px] lg:w-[270px] xl:w-[310px]"
             >
               <FiSearch
                 className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
@@ -762,6 +762,24 @@
                 </div>
               )}
             </form>
+
+            {/* DEDICATED QUICK ACTIONS (CTRL + K) BUTTON */}
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new CustomEvent("shipdrop:openCommandPalette"))}
+              title="Quick Actions & Navigation (Ctrl + K)"
+              className="hidden lg:flex items-center gap-2 h-10 px-3 rounded-[14px] border border-slate-200/90 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 hover:text-[#008dd2] dark:hover:text-[#38bdf8] hover:border-[#008dd2]/40 hover:bg-slate-100/70 dark:hover:bg-slate-800 transition-all duration-150 cursor-pointer shadow-2xs group"
+            >
+              <span className="flex h-5 w-5 items-center justify-center rounded-md bg-[#008dd2]/10 text-[#008dd2] dark:text-[#38bdf8] group-hover:scale-110 transition-transform">
+                <FiCommand size={12} />
+              </span>
+              <span className="text-[11.5px] font-semibold text-slate-700 dark:text-slate-200">
+                Quick Actions
+              </span>
+              <kbd className="flex items-center rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-1.5 py-0.5 font-mono text-[9.5px] font-bold text-slate-400 dark:text-slate-400 group-hover:text-[#008dd2] group-hover:border-[#008dd2]/40 transition shadow-2xs">
+                Ctrl K
+              </kbd>
+            </button>
           </div>
 
           {/* ======================================================== */}
