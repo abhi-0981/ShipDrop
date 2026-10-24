@@ -1,10 +1,91 @@
 const db = require("../config/db");
 
+let isSchemaEnsured = false;
+
+// Auto-heal / Ensure tables & columns exist even if server wasn't restarted
+const ensureSchema = async () => {
+  try {
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS announcements (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        description TEXT NOT NULL,
+        type VARCHAR(50) DEFAULT 'INFO',
+        target_type VARCHAR(20) DEFAULT 'ALL',
+        target_user_ids TEXT DEFAULT NULL,
+        is_active TINYINT(1) DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_announcements_active (is_active),
+        INDEX idx_announcements_created (created_at)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS announcement_reads (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        announcement_id INT NOT NULL,
+        user_id INT NOT NULL,
+        read_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_user_announcement (user_id, announcement_id),
+        INDEX idx_announcement_reads_user (user_id),
+        INDEX idx_announcement_reads_announcement (announcement_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS announcement_recipients (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        announcement_id INT NOT NULL,
+        user_id INT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_announcement_user (announcement_id, user_id),
+        INDEX idx_recipients_user (user_id),
+        INDEX idx_recipients_announcement (announcement_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
+    try {
+      const [colTargetType] = await db.query(
+        `SHOW COLUMNS FROM announcements LIKE 'target_type'`
+      );
+      if (!colTargetType || colTargetType.length === 0) {
+        await db.query(
+          `ALTER TABLE announcements ADD COLUMN target_type VARCHAR(20) DEFAULT 'ALL'`
+        );
+      }
+    } catch (e) {
+      // ignore
+    }
+
+    try {
+      const [colTargetUserIds] = await db.query(
+        `SHOW COLUMNS FROM announcements LIKE 'target_user_ids'`
+      );
+      if (!colTargetUserIds || colTargetUserIds.length === 0) {
+        await db.query(
+          `ALTER TABLE announcements ADD COLUMN target_user_ids TEXT DEFAULT NULL`
+        );
+      }
+    } catch (e) {
+      // ignore
+    }
+
+    isSchemaEnsured = true;
+  } catch (err) {
+    console.warn("Auto-ensure announcements schema notice:", err.message);
+  }
+};
+
 // =========================================================
 // GET ALL ANNOUNCEMENTS (with read count & target info)
 // =========================================================
 const getAnnouncementsController = async (req, res) => {
   try {
+    if (!isSchemaEnsured) {
+      await ensureSchema();
+    }
+
     const [rows] = await db.query(`
       SELECT 
         a.id,
@@ -30,12 +111,39 @@ const getAnnouncementsController = async (req, res) => {
       announcements: rows || [],
     });
   } catch (error) {
-    console.error("Admin get announcements error:", error.message);
-    return res.status(500).json({
-      success: false,
-      message: "Failed to fetch announcements",
-      error: error.message,
-    });
+    console.error("Admin get announcements primary error:", error.message);
+
+    // Auto-heal retry on error
+    try {
+      await ensureSchema();
+
+      const [fallbackRows] = await db.query(`
+        SELECT 
+          a.id,
+          a.title,
+          a.description,
+          a.type,
+          a.is_active,
+          a.created_at,
+          a.updated_at,
+          COUNT(ar.id) AS read_count
+        FROM announcements a
+        LEFT JOIN announcement_reads ar ON a.id = ar.announcement_id
+        GROUP BY a.id
+        ORDER BY a.created_at DESC
+      `);
+
+      return res.status(200).json({
+        success: true,
+        announcements: fallbackRows || [],
+      });
+    } catch (fallbackError) {
+      console.error("Admin get announcements fallback error:", fallbackError.message);
+      return res.status(500).json({
+        success: false,
+        message: fallbackError.message || "Failed to fetch announcements",
+      });
+    }
   }
 };
 
@@ -44,6 +152,10 @@ const getAnnouncementsController = async (req, res) => {
 // =========================================================
 const createAnnouncementController = async (req, res) => {
   try {
+    if (!isSchemaEnsured) {
+      await ensureSchema();
+    }
+
     const {
       title,
       description,
@@ -144,8 +256,7 @@ const createAnnouncementController = async (req, res) => {
     console.error("Admin create announcement error:", error.message);
     return res.status(500).json({
       success: false,
-      message: "Failed to create announcement",
-      error: error.message,
+      message: error.message || "Failed to create announcement",
     });
   }
 };
@@ -201,9 +312,15 @@ const deleteAnnouncementController = async (req, res) => {
       return res.status(400).json({ success: false, message: "Invalid ID" });
     }
 
-    // Delete recipients and reads first
-    await db.query(`DELETE FROM announcement_reads WHERE announcement_id = ?`, [id]);
-    await db.query(`DELETE FROM announcement_recipients WHERE announcement_id = ?`, [id]);
+    // Delete recipients and reads first (safely ignoring errors if table doesn't exist)
+    try {
+      await db.query(`DELETE FROM announcement_reads WHERE announcement_id = ?`, [id]);
+    } catch (e) {}
+
+    try {
+      await db.query(`DELETE FROM announcement_recipients WHERE announcement_id = ?`, [id]);
+    } catch (e) {}
+
     // Delete announcement
     await db.query(`DELETE FROM announcements WHERE id = ?`, [id]);
 
