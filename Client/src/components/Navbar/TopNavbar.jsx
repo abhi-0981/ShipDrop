@@ -787,7 +787,7 @@
           {/* ======================================================== */}
           <div className="flex items-center gap-2 sm:gap-2.5 lg:gap-3 shrink-0">
             {/* 1. WALLET PILL (40px Height Grid) */}
-            <div className="flex h-10 items-center rounded-full bg-violet-50/90 dark:bg-violet-950/40 px-3 border border-violet-100 dark:border-violet-900/50 shrink-0 gap-1.5 shadow-2xs">
+            <div className="flex h-10 items-center rounded-[14px] bg-violet-50/90 dark:bg-violet-950/40 px-3 border border-violet-100 dark:border-violet-900/50 shrink-0 gap-1.5 shadow-2xs">
               <span className="text-violet-600 dark:text-violet-400 shrink-0">
                 <WalletIcon />
               </span>
