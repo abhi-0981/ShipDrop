@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import api from "../../services/api";
 import { notifyOrderChange } from "../../services/orderEvents";
+import ImportOrderModal from "../../components/Common/ImportOrderModal";
 import L from "leaflet";
 import { MapContainer, Marker, TileLayer, useMapEvents } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
@@ -83,6 +84,7 @@ function CreateOrder() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingOrderId, setEditingOrderId] = useState(null);
   const [editWarehouseId, setEditWarehouseId] = useState(null);
+  const [showImportOrder, setShowImportOrder] = useState(false);
 
   const [products, setProducts] = useState([{ ...initialProduct }]);
   const [packages, setPackages] = useState([{ ...initialPackage }]);
@@ -1953,6 +1955,21 @@ function CreateOrder() {
           </div>
 
           <div className="flex items-center gap-2">
+            {!isEditMode && (
+              <button
+                type="button"
+                onClick={() => setShowImportOrder(true)}
+                className="flex items-center gap-1.5 rounded-xl bg-[#008dd2] px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-[#007ab6] active:scale-95 shadow-xs cursor-pointer"
+                title="Import Orders from Excel"
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 3v12" />
+                  <path d="m7 10 5 5 5-5" />
+                  <path d="M5 21h14" />
+                </svg>
+                <span>Import Order</span>
+              </button>
+            )}
             <button
               type="button"
               onClick={isEditMode ? cancelEdit : () => resetForm()}
@@ -2924,6 +2941,11 @@ function CreateOrder() {
         </div>
       )}
 
+      {/* IMPORT ORDER MODAL */}
+      <ImportOrderModal
+        isOpen={showImportOrder}
+        onClose={() => setShowImportOrder(false)}
+      />
     </div>
   );
 }
