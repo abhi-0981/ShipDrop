@@ -15,6 +15,7 @@ import {
   HiOutlineCash,
   HiOutlineCog,
   HiOutlineDocumentReport,
+  HiOutlineScale,
   HiChevronRight,
   HiChevronDown,
   HiX,
@@ -72,7 +73,11 @@ const prefetchRoute = (path) => {
         import("../../pages/Dashboard/RateCalculator");
         break;
       case "/reports":
-        import("../../pages/Dashboard/Reports");
+      case "/reports/shipment-lifecycle":
+        import("../../pages/Dashboard/ShipmentLifecycleReport");
+        break;
+      case "/reports/weight-discrepancy":
+        import("../../pages/Dashboard/WeightDiscrepancyReport");
         break;
       case "/serviceability":
         import("../../pages/Dashboard/Serviceability");
@@ -159,6 +164,15 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
   const [showSettings, setShowSettings] = useState(
     location.pathname.startsWith("/settings"),
   );
+  const [showReports, setShowReports] = useState(
+    location.pathname.startsWith("/reports"),
+  );
+
+  useEffect(() => {
+    if (location.pathname.startsWith("/reports")) {
+      setShowReports(true);
+    }
+  }, [location.pathname]);
 
   const [statusCounts, setStatusCounts] = useState(() => {
     try {
@@ -194,6 +208,8 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
     { name: "Wallet", path: "/wallet" },
     { name: "Tickets", path: "/tickets" },
     { name: "Reports", path: "/reports" },
+    { name: "Shipment Lifecycle Report", path: "/reports/shipment-lifecycle" },
+    { name: "Weight Discrepancy Report", path: "/reports/weight-discrepancy" },
     { name: "Pickup Address", path: "/settings/pickup-address" },
     { name: "Return Addresses", path: "/settings/return-addresses" },
     { name: "Label Settings", path: "/settings/label-settings" },
@@ -788,18 +804,52 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
             <span className="ml-3 truncate">Tickets</span>
           </Link>
 
-          {/* REPORTS */}
-          <Link
-            to="/reports"
-            onMouseEnter={() => prefetchRoute("/reports")}
-            onClick={handleNavClick}
-            className={`flex items-center rounded-xl px-3 py-2.5 text-[14px] transition duration-150 ${activeClass(
-              "/reports",
-            )}`}
-          >
-            <HiOutlineDocumentReport size={20} />
-            <span className="ml-3 truncate">Reports</span>
-          </Link>
+          {/* REPORTS ACCORDION */}
+          <div>
+            <button
+              onClick={() => setShowReports(!showReports)}
+              className="flex w-full items-center rounded-xl px-3 py-2.5 text-[14px] text-slate-600 transition hover:bg-slate-100"
+            >
+              <HiOutlineDocumentReport size={20} />
+              <span className="ml-3 flex-1 text-left truncate">Reports</span>
+              <HiChevronRight
+                size={17}
+                className={`transition-transform duration-300 ease-in-out ${
+                  showReports ? "rotate-90 text-slate-800" : "rotate-0 text-slate-400"
+                }`}
+              />
+            </button>
+
+            <div className={`sidebar-accordion ${showReports ? "is-open" : ""}`}>
+              <div>
+                <div className="mt-1 ml-5 space-y-1 border-l-2 border-slate-100 pl-3 py-0.5">
+                  <Link
+                    to="/reports/shipment-lifecycle"
+                    onMouseEnter={() => prefetchRoute("/reports/shipment-lifecycle")}
+                    onClick={handleNavClick}
+                    className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[13px] transition ${subActiveClass(
+                      "/reports/shipment-lifecycle",
+                    )}`}
+                  >
+                    <HiOutlineCube size={15} />
+                    <span>Shipment Lifecycle</span>
+                  </Link>
+
+                  <Link
+                    to="/reports/weight-discrepancy"
+                    onMouseEnter={() => prefetchRoute("/reports/weight-discrepancy")}
+                    onClick={handleNavClick}
+                    className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[13px] transition ${subActiveClass(
+                      "/reports/weight-discrepancy",
+                    )}`}
+                  >
+                    <HiOutlineScale size={15} />
+                    <span>Weight Discrepancy</span>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
 
           {/* SETTINGS */}
           <div>

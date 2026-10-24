@@ -1,5 +1,5 @@
 import React, { Suspense, lazy } from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 
 // Public pages loaded normally for instant initial paint
 import Home from "./pages/Home/Home";
@@ -41,6 +41,8 @@ const CODRemittance = lazy(() => import("./pages/Dashboard/CODRemittance"));
 const OfflineOrders = lazy(() => import("./pages/Dashboard/OfflineOrders"));
 const CreateOfflineOrder = lazy(() => import("./pages/Dashboard/CreateOfflineOrder"));
 const Reports = lazy(() => import("./pages/Dashboard/Reports"));
+const ShipmentLifecycleReport = lazy(() => import("./pages/Dashboard/ShipmentLifecycleReport"));
+const WeightDiscrepancyReport = lazy(() => import("./pages/Dashboard/WeightDiscrepancyReport"));
 
 import { RouteSkeleton } from "./components/Common/TableSkeleton";
 
@@ -372,9 +374,21 @@ function App() {
             ======================================== */}
             <Route
               path="/reports"
+              element={<Navigate to="/reports/shipment-lifecycle" replace />}
+            />
+            <Route
+              path="/reports/shipment-lifecycle"
               element={
                 <Suspense fallback={<RouteLoader />}>
-                  <Reports />
+                  <ShipmentLifecycleReport />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/reports/weight-discrepancy"
+              element={
+                <Suspense fallback={<RouteLoader />}>
+                  <WeightDiscrepancyReport />
                 </Suspense>
               }
             />

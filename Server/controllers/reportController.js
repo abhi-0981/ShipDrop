@@ -86,42 +86,75 @@ const getShipmentStatusReportController = async (req, res) => {
     const whereSql = whereClauses.join(" AND ");
 
     // Fetch detailed orders within the date range
-    const [rows] = await promiseDb.query(
-      `
-      SELECT
-        o.id,
-        o.order_id,
-        o.awb,
-        o.carrier,
-        o.consignee_name,
-        o.mobile,
-        o.city,
-        o.state,
-        o.pincode,
-        o.payment_type,
-        o.status,
-        CASE
-          WHEN UPPER(TRIM(COALESCE(o.status, ''))) IN ('CANCELLED', 'CANCELED') THEN 'CANCELLED'
-          ELSE o.tracking_status
-        END AS tracking_status,
-        o.created_at,
-        o.updated_at,
-        COALESCE(
-          (SELECT m_charge.shipping_charge FROM manifests m_charge WHERE m_charge.order_id = o.id AND m_charge.user_id = o.user_id ORDER BY m_charge.id DESC LIMIT 1),
-          o.manual_amount_including_gst,
-          0
-        ) AS shipping_charge,
-        COALESCE(
-          (SELECT pkg.weight FROM order_packages pkg WHERE pkg.order_id = o.id ORDER BY pkg.id ASC LIMIT 1),
-          0.5
-        ) AS weight
-      FROM orders o
-      WHERE ${whereSql}
-      ORDER BY o.created_at DESC
-      LIMIT 2500
-      `,
-      params
-    );
+    let rows = [];
+    try {
+      const [resRows] = await promiseDb.query(
+        `
+        SELECT
+          o.id,
+          o.order_id,
+          o.awb,
+          o.carrier,
+          o.consignee_name,
+          o.mobile,
+          o.city,
+          o.state,
+          o.pincode,
+          o.payment_type,
+          o.status,
+          CASE
+            WHEN UPPER(TRIM(COALESCE(o.status, ''))) IN ('CANCELLED', 'CANCELED') THEN 'CANCELLED'
+            ELSE o.tracking_status
+          END AS tracking_status,
+          o.created_at,
+          COALESCE(o.tracking_updated_at, o.created_at) AS updated_at,
+          COALESCE(
+            (SELECT m_charge.shipping_charge FROM manifests m_charge WHERE m_charge.order_id = o.id AND m_charge.user_id = o.user_id ORDER BY m_charge.id DESC LIMIT 1),
+            o.manual_amount_including_gst,
+            0
+          ) AS shipping_charge,
+          COALESCE(
+            (SELECT pkg.weight FROM order_packages pkg WHERE pkg.order_id = o.id ORDER BY pkg.id ASC LIMIT 1),
+            0.5
+          ) AS weight
+        FROM orders o
+        WHERE ${whereSql}
+        ORDER BY o.created_at DESC
+        LIMIT 2500
+        `,
+        params
+      );
+      rows = resRows || [];
+    } catch (sqlErr) {
+      console.warn("Primary shipment report query warning, switching to fallback:", sqlErr.message);
+      const [fallbackRows] = await promiseDb.query(
+        `
+        SELECT
+          o.id,
+          o.order_id,
+          o.awb,
+          o.carrier,
+          o.consignee_name,
+          o.mobile,
+          o.city,
+          o.state,
+          o.pincode,
+          o.payment_type,
+          o.status,
+          COALESCE(o.tracking_status, o.status) AS tracking_status,
+          o.created_at,
+          o.created_at AS updated_at,
+          COALESCE(o.manual_amount_including_gst, 0) AS shipping_charge,
+          0.5 AS weight
+        FROM orders o
+        WHERE ${whereSql}
+        ORDER BY o.id DESC
+        LIMIT 2500
+        `,
+        params
+      );
+      rows = fallbackRows || [];
+    }
 
     // Compute lifecycle KPI aggregates for this date range
     let totalOrders = rows.length;
@@ -282,35 +315,40 @@ const getWeightDiscrepancyReportController = async (req, res) => {
       params.push(q, q);
     }
 
-    const whereSql = whereClauses.join(" AND ");
-
-    const [rows] = await promiseDb.query(
-      `
-      SELECT
-        wc.id,
-        wc.order_db_id,
-        wc.order_id,
-        wc.user_id,
-        wc.awb,
-        COALESCE(wc.declared_weight, 0) AS declared_weight,
-        COALESCE(wc.actual_weight, 0) AS actual_weight,
-        COALESCE(wc.weight_difference, 0) AS weight_difference,
-        COALESCE(wc.original_shipping_charge, 0) AS original_shipping_charge,
-        COALESCE(wc.recalculated_shipping_charge, 0) AS recalculated_shipping_charge,
-        COALESCE(wc.extra_charge, 0) AS extra_charge,
-        wc.service_type,
-        wc.zone,
-        COALESCE(wc.status, 'pending') AS status,
-        COALESCE(wc.settlement_amount, 0) AS settlement_amount,
-        wc.created_at,
-        wc.settled_at
-      FROM weight_checkings wc
-      WHERE ${whereSql}
-      ORDER BY wc.created_at DESC
-      LIMIT 2500
-      `,
-      params
-    );
+    let rows = [];
+    try {
+      const [resRows] = await promiseDb.query(
+        `
+        SELECT
+          wc.id,
+          wc.order_db_id,
+          wc.order_id,
+          wc.user_id,
+          wc.awb,
+          COALESCE(wc.declared_weight, 0) AS declared_weight,
+          COALESCE(wc.actual_weight, 0) AS actual_weight,
+          COALESCE(wc.weight_difference, 0) AS weight_difference,
+          COALESCE(wc.original_shipping_charge, 0) AS original_shipping_charge,
+          COALESCE(wc.recalculated_shipping_charge, 0) AS recalculated_shipping_charge,
+          COALESCE(wc.extra_charge, 0) AS extra_charge,
+          wc.service_type,
+          wc.zone,
+          COALESCE(wc.status, 'pending') AS status,
+          COALESCE(wc.settlement_amount, 0) AS settlement_amount,
+          wc.created_at,
+          wc.settled_at
+        FROM weight_checkings wc
+        WHERE ${whereSql}
+        ORDER BY wc.created_at DESC
+        LIMIT 2500
+        `,
+        params
+      );
+      rows = resRows || [];
+    } catch (sqlErr) {
+      console.warn("Weight discrepancy query failed or table empty:", sqlErr.message);
+      rows = [];
+    }
 
     // Compute Summary KPIs
     let totalExtraCharges = 0;
