@@ -753,22 +753,13 @@
                 onChange={(event) => setTrackingSearch(event.target.value)}
                 placeholder="Enter Tracking ID or Order ID..."
                 disabled={trackingSearchLoading}
-                className="h-10 w-full rounded-[14px] border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/60 pl-10 pr-14 text-xs font-medium text-slate-700 dark:text-slate-200 placeholder:text-slate-400 outline-none transition-all duration-200 focus:border-[#008dd2] focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-[#008dd2]/10 disabled:cursor-not-allowed disabled:opacity-70"
+                className="h-10 w-full rounded-[14px] border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/60 pl-10 pr-10 text-xs font-medium text-slate-700 dark:text-slate-200 placeholder:text-slate-400 outline-none transition-all duration-200 focus:border-[#008dd2] focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-[#008dd2]/10 disabled:cursor-not-allowed disabled:opacity-70"
               />
 
-              {trackingSearchLoading ? (
+              {trackingSearchLoading && (
                 <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center">
                   <div className="h-4 w-4 rounded-full border-2 border-[#008dd2] border-t-transparent animate-spin" />
                 </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => window.dispatchEvent(new CustomEvent("shipdrop:openCommandPalette"))}
-                  title="Open Command Palette (Ctrl + K)"
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 hidden lg:flex items-center rounded border border-slate-200 bg-white px-1.5 py-0.5 font-mono text-[9.5px] font-semibold text-slate-400 hover:text-[#008dd2] hover:border-[#008dd2]/40 transition shadow-2xs cursor-pointer"
-                >
-                  Ctrl K
-                </button>
               )}
             </form>
           </div>
