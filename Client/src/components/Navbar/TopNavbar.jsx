@@ -952,9 +952,32 @@
                   {/* NOTIFICATION LIST */}
                   <div className="max-h-[360px] overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/60 [scrollbar-width:thin]">
                     {notifications.length === 0 ? (
-                      <div className="flex items-center justify-center py-8 px-4 text-center">
-                        <p className="text-xs font-medium text-slate-400 dark:text-slate-500">
-                          No notifications
+                      <div className="flex flex-col items-center justify-center py-10 px-5 text-center select-none">
+                        <div className="relative mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-b from-slate-50 to-slate-100/80 dark:from-slate-800/80 dark:to-slate-800/40 border border-slate-200/60 dark:border-slate-700/60 shadow-2xs text-slate-400 dark:text-slate-500">
+                          <svg
+                            width="22"
+                            height="22"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.8"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                          </svg>
+                          <span className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-white ring-2 ring-white dark:ring-[#111827] shadow-xs">
+                            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                          </span>
+                        </div>
+                        <p className="text-[13px] font-semibold text-slate-800 dark:text-slate-200 tracking-tight">
+                          No new notifications
+                        </p>
+                        <p className="text-[11.5px] text-slate-400 dark:text-slate-500 mt-1 max-w-[210px] leading-relaxed">
+                          You're all caught up! Ticket replies and updates will appear here.
                         </p>
                       </div>
                     ) : (
@@ -962,35 +985,52 @@
                         <div
                           key={notif.id}
                           onClick={() => handleNotificationClick(notif)}
-                          className="flex items-start gap-3 p-3.5 transition-colors cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/70 bg-sky-50/40 dark:bg-sky-950/20"
+                          className="group flex items-start gap-3 p-3.5 transition-all cursor-pointer hover:bg-sky-50/60 dark:hover:bg-slate-800/80 bg-sky-50/20 dark:bg-sky-950/10"
                         >
                           {/* NOTIFICATION TYPE ICON */}
-                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-sky-100 dark:bg-sky-950/60 text-[#008dd2] dark:text-[#38bdf8] mt-0.5 shadow-2xs">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-sky-50 to-sky-100 dark:from-sky-950/70 dark:to-sky-900/40 text-[#008dd2] dark:text-[#38bdf8] border border-sky-200/60 dark:border-sky-800/50 mt-0.5 shadow-2xs group-hover:scale-105 transition-transform">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                             </svg>
                           </div>
 
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center justify-between gap-1.5">
-                              <p className="text-[12px] truncate font-bold text-slate-900 dark:text-slate-100">
+                              <p className="text-[12px] truncate font-bold text-slate-900 dark:text-slate-100 group-hover:text-[#008dd2] transition-colors">
                                 {notif.title}
                               </p>
                               <div className="flex items-center gap-1.5 shrink-0">
                                 {Number(notif.message_count) > 1 && (
-                                  <span className="rounded-md bg-[#008dd2]/10 text-[#008dd2] dark:text-[#38bdf8] font-bold text-[10px] px-1.5 py-0.5 border border-[#008dd2]/20">
+                                  <span className="rounded-full bg-[#008dd2]/10 text-[#008dd2] dark:text-[#38bdf8] font-bold text-[10px] px-2 py-0.5 border border-[#008dd2]/20">
                                     {notif.message_count} msgs
                                   </span>
                                 )}
-                                <span className="h-2 w-2 rounded-full bg-[#008dd2]"></span>
+                                <span className="h-2 w-2 rounded-full bg-[#008dd2] ring-2 ring-[#008dd2]/20"></span>
                               </div>
                             </div>
-                            <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 mt-0.5 leading-snug">
-                              {notif.message}
-                            </p>
-                            <span className="inline-block text-[10px] text-slate-400 dark:text-slate-500 mt-1 font-medium">
-                              {formatTimeAgo(notif.created_at)}
-                            </span>
+
+                            {/* MESSAGE PREVIEW BUBBLE */}
+                            <div className="mt-1.5 rounded-lg bg-slate-50/90 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 px-2.5 py-1.5">
+                              <p className="text-[11.5px] text-slate-600 dark:text-slate-300 line-clamp-2 leading-relaxed">
+                                <span className="inline-block font-semibold text-slate-700 dark:text-slate-200 mr-1.5 text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-200/60 dark:bg-slate-700/60">
+                                  Admin
+                                </span>
+                                {notif.message}
+                              </p>
+                            </div>
+
+                            <div className="flex items-center justify-between mt-1.5">
+                              <span className="inline-flex items-center gap-1 text-[10px] text-slate-400 dark:text-slate-500 font-medium">
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                  <circle cx="12" cy="12" r="10" />
+                                  <polyline points="12 6 12 12 16 14" />
+                                </svg>
+                                {formatTimeAgo(notif.created_at)}
+                              </span>
+                              <span className="text-[10.5px] font-semibold text-[#008dd2] dark:text-[#38bdf8] opacity-0 group-hover:opacity-100 transition-opacity">
+                                View ticket →
+                              </span>
+                            </div>
                           </div>
                         </div>
                       ))
