@@ -684,6 +684,20 @@
 
     const userName = user?.full_name || "User";
     const userEmail = user?.email || "";
+    const rawCompanyName = user?.company_name || user?.company;
+    const companyName = rawCompanyName ? String(rawCompanyName).trim() : "";
+    const displayCompanyName = companyName || "ShipDrop Services";
+
+    const getCompanyInitials = (name) => {
+      if (!name) return "SS";
+      const words = String(name).trim().split(/\s+/).filter(Boolean);
+      if (words.length >= 2) {
+        return (words[0][0] + words[1][0]).toUpperCase();
+      }
+      return String(name).slice(0, 2).toUpperCase();
+    };
+
+    const companyInitials = getCompanyInitials(displayCompanyName);
 
     return (
       <>
@@ -693,9 +707,9 @@
           }`}
         >
           {/* ======================================================== */}
-          {/* LEFT SECTION: HAMBURGER + SHIPDROP (Auto-hidden on desktop when sidebar open) */}
+          {/* LEFT SECTION: HAMBURGER + SHIPDROP (When collapsed) + COMPANY PILL */}
           {/* ======================================================== */}
-          <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             {(isCollapsed || (typeof window !== "undefined" && window.innerWidth < 1024)) && (
               <button
                 type="button"
@@ -721,6 +735,19 @@
                 />
               </Link>
             )}
+
+            {/* COMPANY NAME CAPSULE PILL (EXACT DESIGN AS REFERENCED) */}
+            <div
+              className="flex items-center gap-2 rounded-full border border-slate-200/90 dark:border-slate-800 bg-[#f8fafc] dark:bg-[#151c2c] px-2.5 sm:px-3 py-1 sm:py-1.5 shadow-2xs transition hover:border-slate-300 dark:hover:border-slate-700"
+              title={`Company: ${displayCompanyName}`}
+            >
+              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#057a55] text-[10px] font-black text-white uppercase tracking-wider shadow-2xs">
+                {companyInitials}
+              </div>
+              <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-100 truncate max-w-[130px] sm:max-w-[190px] md:max-w-[260px]">
+                {displayCompanyName}
+              </span>
+            </div>
           </div>
 
           {/* ======================================================== */}
@@ -837,7 +864,12 @@
                       )}
                     </div>
                     <div className="min-w-0">
-                      <p className="truncate text-xs font-bold text-slate-900">{userName}</p>
+                      <p className="truncate text-xs font-bold text-slate-900 dark:text-slate-100">{userName}</p>
+                      {companyName && (
+                        <p className="truncate text-[10.5px] font-bold uppercase tracking-wider text-[#057a55] dark:text-emerald-400">
+                          {companyName}
+                        </p>
+                      )}
                       <p className="truncate text-[11px] text-slate-400">{userEmail}</p>
                     </div>
                   </div>
