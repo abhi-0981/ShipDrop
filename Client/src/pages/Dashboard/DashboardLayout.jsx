@@ -33,7 +33,7 @@ function DashboardLayout() {
   }, []);
 
   return (
-    <div className="relative min-h-screen bg-[#f6f8fb]">
+    <div className="relative min-h-screen bg-[#f6f8fb] dark:bg-[#0b0f19] text-slate-800 dark:text-slate-100 transition-colors duration-200">
       {/* GLOBAL COMMAND PALETTE (CTRL + K) */}
       <CommandPalette />
 

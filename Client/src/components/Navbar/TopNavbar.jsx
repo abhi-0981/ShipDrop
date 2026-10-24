@@ -34,6 +34,13 @@
     </svg>
   );
 
+  const SunIcon = () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+    </svg>
+  );
+
   const FullscreenIcon = () => (
     <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
       <path d="M8 3H5a2 2 0 0 0-2 2v3" />
@@ -100,6 +107,25 @@
     const profileRef = useRef(null);
     const [amount, setAmount] = useState("");
     const [loading, setLoading] = useState(false);
+
+    const [isDark, setIsDark] = useState(() => {
+      if (typeof window !== "undefined") {
+        return (
+          document.documentElement.classList.contains("dark") ||
+          localStorage.getItem("shipdrop_theme") === "dark"
+        );
+      }
+      return false;
+    });
+
+    useEffect(() => {
+      const syncTheme = () => {
+        setIsDark(document.documentElement.classList.contains("dark"));
+      };
+      syncTheme();
+      window.addEventListener("shipdrop:themeChange", syncTheme);
+      return () => window.removeEventListener("shipdrop:themeChange", syncTheme);
+    }, []);
 
     // ======================================================
     // TRACKING SEARCH STATE
@@ -610,7 +636,18 @@
     };
 
     const handleTheme = () => {
-      document.documentElement.classList.toggle("dark");
+      const nextDark = !document.documentElement.classList.contains("dark");
+      if (nextDark) {
+        document.documentElement.classList.add("dark");
+        localStorage.setItem("shipdrop_theme", "dark");
+        toast.success("Dark mode enabled", { id: "theme-toast", duration: 1500 });
+      } else {
+        document.documentElement.classList.remove("dark");
+        localStorage.setItem("shipdrop_theme", "light");
+        toast.success("Light mode enabled", { id: "theme-toast", duration: 1500 });
+      }
+      setIsDark(nextDark);
+      window.dispatchEvent(new CustomEvent("shipdrop:themeChange", { detail: nextDark }));
     };
 
     const handleLogout = async () => {
@@ -673,7 +710,7 @@
     return (
       <>
         <header
-          className={`fixed top-0 right-0 z-30 flex h-[64px] items-center justify-between border-b border-slate-200 bg-white px-2.5 sm:px-6 transition-all duration-300 ${
+          className={`fixed top-0 right-0 z-30 flex h-[64px] items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827] px-2.5 sm:px-6 transition-all duration-300 ${
             isCollapsed ? "left-0" : "left-0 lg:left-[250px]"
           }`}
         >
@@ -788,14 +825,19 @@
               <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white"></span>
             </button>
 
-            {/* THEME (Tablet & Desktop) */}
+            {/* THEME (Mobile & Desktop) */}
             <button
               type="button"
-              title="Theme"
+              title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
+              aria-label={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
               onClick={handleTheme}
-              className="hidden sm:flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full text-slate-600 transition hover:bg-slate-100 shrink-0"
+              className={`flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full transition-all duration-200 active:scale-90 shrink-0 ${
+                isDark
+                  ? "text-amber-400 hover:bg-slate-800 hover:text-amber-300 ring-1 ring-amber-400/20"
+                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+              }`}
             >
-              <MoonIcon />
+              {isDark ? <SunIcon /> : <MoonIcon />}
             </button>
 
             {/* FULLSCREEN (Desktop) */}
@@ -850,6 +892,22 @@
                   >
                     <ProfileIcon />
                     <span>Profile</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleTheme();
+                    }}
+                    className="flex w-full items-center justify-between border-b border-slate-50 px-4 py-2.5 text-left text-xs font-medium text-slate-600 transition hover:bg-slate-50"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      {isDark ? <SunIcon /> : <MoonIcon />}
+                      <span>{isDark ? "Light Mode" : "Dark Mode"}</span>
+                    </div>
+                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+                      {isDark ? "Dark" : "Light"}
+                    </span>
                   </button>
 
                   <button

@@ -86,6 +86,20 @@
         ]
       }
     </script>
+
+    <!-- Theme Script: Prevent theme flash -->
+    <script>
+      (function () {
+        try {
+          var saved = localStorage.getItem("shipdrop_theme");
+          if (saved === "dark") {
+            document.documentElement.classList.add("dark");
+          } else {
+            document.documentElement.classList.remove("dark");
+          }
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <!-- Fallback content for search engine web crawlers before JS hydration -->
