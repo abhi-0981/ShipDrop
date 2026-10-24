@@ -15,12 +15,6 @@
     </svg>
   );
 
-  const ChatIcon = () => (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <path d="M21 11.5a8.4 8.4 0 0 1-9 8.5 9.8 9.8 0 0 1-4-.8L3 21l1.8-4.3A8.2 8.2 0 0 1 3 11.5 8.4 8.4 0 0 1 12 3a8.4 8.4 0 0 1 9 8.5Z" />
-    </svg>
-  );
-
   const BellIcon = () => (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
       <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
@@ -38,15 +32,6 @@
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
       <circle cx="12" cy="12" r="4" />
       <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
-    </svg>
-  );
-
-  const FullscreenIcon = () => (
-    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <path d="M8 3H5a2 2 0 0 0-2 2v3" />
-      <path d="M16 3h3a2 2 0 0 1 2 2v3" />
-      <path d="M8 21H5a2 2 0 0 1-2-2v-3" />
-      <path d="M16 21h3a2 2 0 0 0 2-2v-3" />
     </svg>
   );
 
@@ -627,13 +612,6 @@
 
 
 
-    const handleFullscreen = () => {
-      if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen();
-      } else {
-        document.exitFullscreen();
-      }
-    };
 
     const handleTheme = () => {
       const nextDark = !document.documentElement.classList.contains("dark");
@@ -804,16 +782,6 @@
               </button>
             </div>
 
-            {/* CHAT (Tablet & Desktop) */}
-            <button
-              type="button"
-              title="Chat"
-              onClick={() => toast("Chat coming soon")}
-              className="hidden sm:flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full text-slate-600 transition hover:bg-slate-100 shrink-0"
-            >
-              <ChatIcon />
-            </button>
-
             {/* NOTIFICATION */}
             <button
               type="button"
@@ -825,33 +793,37 @@
               <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white"></span>
             </button>
 
-            {/* FULLSCREEN (Desktop) */}
-            <button
-              type="button"
-              title="Fullscreen"
-              onClick={handleFullscreen}
-              className="hidden md:flex h-9 w-9 items-center justify-center rounded-full text-slate-600 transition hover:bg-slate-100 shrink-0"
-            >
-              <FullscreenIcon />
-            </button>
-
             {/* PROFILE AVATAR & DROPDOWN */}
             <div ref={profileRef} className="relative shrink-0">
               <button
                 type="button"
                 onClick={() => setShowProfile((prev) => !prev)}
-                className="flex items-center gap-2 rounded-full p-0.5 sm:p-1 transition hover:bg-slate-100 active:scale-95"
+                title={userName}
+                aria-label="User Profile Menu"
+                className="relative flex items-center justify-center rounded-full transition-transform active:scale-90"
               >
-                <div className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center overflow-hidden rounded-full bg-slate-200 text-slate-600 ring-2 ring-slate-100 shrink-0">
+                <div
+                  className={`flex h-9 w-9 sm:h-[38px] sm:w-[38px] items-center justify-center overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800 transition-all duration-200 ${
+                    showProfile
+                      ? "ring-2 ring-[#008dd2] ring-offset-2 ring-offset-white dark:ring-offset-[#111827] shadow-sm shadow-[#008dd2]/30 scale-105"
+                      : "ring-1.5 ring-slate-200/90 dark:ring-slate-700/80 hover:ring-2 hover:ring-[#008dd2]/70 hover:scale-105 hover:shadow-sm"
+                  }`}
+                >
                   {user?.profile_image ? (
-                    <img src={user.profile_image} alt="Profile" className="h-full w-full object-cover" />
+                    <img
+                      src={user.profile_image}
+                      alt={userName}
+                      className="h-full w-full object-cover"
+                    />
                   ) : (
-                    <UserIcon />
+                    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#008dd2] to-sky-600 text-[13px] font-bold text-white uppercase tracking-wider">
+                      {userName?.charAt(0) || <UserIcon />}
+                    </div>
                   )}
                 </div>
-                <span className="hidden max-w-[120px] truncate text-xs font-semibold text-slate-700 lg:block">
-                  {userName}
-                </span>
+
+                {/* Active Online Status Badge */}
+                <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-[#111827]" />
               </button>
 
               {showProfile && (
