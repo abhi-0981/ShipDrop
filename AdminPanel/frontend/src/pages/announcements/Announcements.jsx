@@ -524,157 +524,37 @@ export default function Announcements() {
         </div>
       )}
 
-      {/* POPUP PREVIEW MODAL (ACCURATE USER SCREEN PREVIEW) */}
-      {previewItem && (() => {
-        const pType = previewItem.type || "INFO";
-        const cfg = {
-          INFO: {
-            label: "Official Announcement",
-            badge: "bg-sky-500/10 text-[#008dd2] border-sky-500/25",
-            dotBg: "bg-[#008dd2]",
-            bar: "from-[#008dd2] via-sky-400 to-indigo-500",
-            glowColor: "rgba(0, 141, 210, 0.18)",
-            iconBox: "bg-sky-500/10 text-[#008dd2] border-sky-500/20",
-          },
-          UPDATE: {
-            label: "Platform Update",
-            badge: "bg-emerald-500/10 text-emerald-600 border-emerald-500/25",
-            dotBg: "bg-emerald-500",
-            bar: "from-emerald-500 via-teal-400 to-cyan-500",
-            glowColor: "rgba(16, 185, 129, 0.18)",
-            iconBox: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
-          },
-          ALERT: {
-            label: "Important Notice",
-            badge: "bg-amber-500/10 text-amber-600 border-amber-500/25",
-            dotBg: "bg-amber-500",
-            bar: "from-amber-500 via-orange-400 to-yellow-400",
-            glowColor: "rgba(245, 158, 11, 0.18)",
-            iconBox: "bg-amber-500/10 text-amber-600 border-amber-500/20",
-          },
-          WARNING: {
-            label: "Urgent Priority Alert",
-            badge: "bg-rose-500/10 text-rose-600 border-rose-500/25",
-            dotBg: "bg-rose-500",
-            bar: "from-rose-500 via-red-500 to-amber-500",
-            glowColor: "rgba(244, 63, 94, 0.18)",
-            iconBox: "bg-rose-500/10 text-rose-600 border-rose-500/20",
-          },
-        }[pType] || {
-          label: "Official Announcement",
-          badge: "bg-sky-500/10 text-[#008dd2] border-sky-500/25",
-          dotBg: "bg-[#008dd2]",
-          bar: "from-[#008dd2] via-sky-400 to-indigo-500",
-          glowColor: "rgba(0, 141, 210, 0.18)",
-          iconBox: "bg-sky-500/10 text-[#008dd2] border-sky-500/20",
-        };
-
-        return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/70 backdrop-blur-md animate-in fade-in duration-200 select-none">
-            <div className="relative w-full max-w-[620px] overflow-hidden rounded-3xl bg-white/95 backdrop-blur-2xl border border-slate-200/90 shadow-[0_25px_70px_-15px_rgba(0,0,0,0.35),0_0_0_1px_rgba(255,255,255,0.8)_inset] animate-in zoom-in-95 duration-150">
-              {/* TOP ACCENT GRADIENT BAR */}
-              <div className={`h-1.5 w-full bg-gradient-to-r ${cfg.bar}`} />
-
-              {/* AMBIENT RADIAL LIGHT GLOW */}
-              <div
-                className="pointer-events-none absolute -top-24 -left-16 w-80 h-80 rounded-full blur-3xl opacity-20"
-                style={{ background: cfg.glowColor }}
-              />
-              <div
-                className="pointer-events-none absolute -top-16 -right-16 w-64 h-64 rounded-full blur-3xl opacity-15"
-                style={{ background: cfg.glowColor }}
-              />
-
-              {/* CLOSE BUTTON (X) */}
-              <button
-                type="button"
-                onClick={() => setPreviewItem(null)}
-                aria-label="Close Preview"
-                className="absolute top-4 right-4 sm:top-5 sm:right-5 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-800 transition-all cursor-pointer shadow-xs group"
-              >
-                <HiOutlineXCircle className="w-5 h-5 transition-transform group-hover:scale-110" />
-              </button>
-
-              {/* MODAL MAIN CONTENT */}
-              <div className="relative z-10 p-5 sm:p-7 pt-6">
-                {/* HEADER: ICON + BADGES */}
-                <div className="flex items-start gap-4">
-                  <div
-                    className={`relative flex h-14 w-14 sm:h-16 sm:w-16 shrink-0 items-center justify-center rounded-2xl sm:rounded-3xl border shadow-md ${cfg.iconBox}`}
-                  >
-                    <HiOutlineSpeakerphone className="text-2xl sm:text-3xl" />
-                  </div>
-
-                  <div className="min-w-0 flex-1 pt-0.5">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span
-                        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider border shadow-2xs ${cfg.badge}`}
-                      >
-                        <span className="relative flex h-2 w-2">
-                          <span
-                            className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${cfg.dotBg}`}
-                          ></span>
-                          <span
-                            className={`relative inline-flex rounded-full h-2 w-2 ${cfg.dotBg}`}
-                          ></span>
-                        </span>
-                        {cfg.label}
-                      </span>
-
-                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-500">
-                        <HiOutlineCheckCircle className="w-3.5 h-3.5 text-[#008dd2]" />
-                        Admin Broadcast
-                      </span>
-                    </div>
-
-                    <p className="flex items-center gap-1 text-[11.5px] text-slate-400 font-medium mt-1.5">
-                      <HiOutlineClock className="w-3.5 h-3.5" />
-                      <span>{previewItem.created_at ? formatDate(previewItem.created_at) : "Just now"}</span>
-                      <span className="ml-1 text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-mono">
-                        User Screen Preview
-                      </span>
-                    </p>
-                  </div>
-                </div>
-
-                {/* TITLE */}
-                <div className="mt-4 sm:mt-5">
-                  <h3 className="text-lg sm:text-[21px] font-extrabold text-slate-900 tracking-tight leading-snug">
-                    {previewItem.title}
-                  </h3>
-                </div>
-
-                {/* DESCRIPTION READER BOX */}
-                <div className="relative mt-3.5 sm:mt-4 rounded-2xl bg-gradient-to-b from-slate-50/90 via-slate-50/60 to-slate-100/40 border border-slate-200/80 p-4 sm:p-5 overflow-hidden shadow-inner">
-                  <div className={`absolute left-0 top-3 bottom-3 w-1.5 rounded-r-full bg-gradient-to-b ${cfg.bar}`} />
-                  <div className="max-h-[280px] sm:max-h-[320px] overflow-y-auto pl-2.5 pr-2 [scrollbar-width:thin]">
-                    <p className="text-[13.5px] sm:text-[14.5px] text-slate-700 whitespace-pre-line leading-relaxed font-normal">
-                      {previewItem.description}
-                    </p>
-                  </div>
-                </div>
-
-                {/* FOOTER ACTION BAR */}
-                <div className="mt-5 sm:mt-6 pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
-                  <div className="hidden sm:flex items-center gap-1.5 text-[11.5px] text-slate-400">
-                    <HiOutlineCheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
-                    <span>Official Merchant Notification Preview</span>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => setPreviewItem(null)}
-                    className="w-full sm:w-auto min-w-[210px] py-3 px-6 rounded-xl text-xs sm:text-sm font-bold text-white bg-gradient-to-r from-[#008dd2] via-[#009beb] to-[#007cb8] hover:from-[#007cb8] hover:to-[#006ca3] shadow-md shadow-[#008dd2]/25 hover:shadow-lg hover:shadow-[#008dd2]/35 active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-2"
-                  >
-                    <span>I have read & understood</span>
-                    <HiOutlineCheckCircle className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
+      {/* POPUP PREVIEW MODAL */}
+      {previewItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white rounded-2xl max-w-md w-full border border-slate-200 shadow-2xl p-6 text-center space-y-4 animate-in zoom-in-95 duration-150">
+            <div className="mx-auto h-12 w-12 rounded-2xl bg-sky-50 text-[#008dd2] flex items-center justify-center border border-sky-100">
+              <HiOutlineSpeakerphone className="text-2xl" />
             </div>
+            <div>
+              <span className="inline-block px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-slate-100 text-slate-600 mb-2">
+                Announcement from ShipDrop Admin
+              </span>
+              <h3 className="text-base font-bold text-slate-900 tracking-tight">
+                {previewItem.title}
+              </h3>
+              <p className="text-xs text-slate-600 mt-2 leading-relaxed whitespace-pre-line text-left bg-slate-50 p-3.5 rounded-xl border border-slate-100">
+                {previewItem.description}
+              </p>
+              <p className="text-[10px] text-slate-400 mt-2">
+                Posted: {formatDate(previewItem.created_at)}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setPreviewItem(null)}
+              className="w-full py-2.5 text-xs font-bold text-white bg-[#008dd2] hover:bg-[#007cb8] rounded-xl transition shadow-xs cursor-pointer"
+            >
+              I Understand / Close
+            </button>
           </div>
-        );
-      })()}
+        </div>
+      )}
     </div>
   );
 }
