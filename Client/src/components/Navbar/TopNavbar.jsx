@@ -774,53 +774,12 @@
           </div>
 
           {/* ======================================================== */}
-          {/* RIGHT SECTION: COMPANY BADGE + WALLET + NOTIFICATION + PROFILE */}
+          {/* RIGHT SECTION: 1. PROFILE -> 2. COMPANY NAME -> 3. BELL -> 4. WALLET */}
           {/* ======================================================== */}
           <div className="flex items-center gap-2 sm:gap-2.5 lg:gap-3 shrink-0">
-            {/* COMPANY NAME BADGE */}
-            <div
-              className="flex h-10 items-center gap-2.5 rounded-[14px] border border-slate-200/90 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/60 pl-1.5 pr-3.5 shadow-2xs transition-all duration-150 hover:bg-slate-100/70 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shrink-0"
-              title={`Company: ${displayCompanyName}`}
-            >
-              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#008dd2] text-[11px] font-black text-white uppercase tracking-wider shadow-xs shadow-[#008dd2]/20">
-                {companyInitials}
-              </div>
-              <span className="hidden sm:inline-block text-[12px] font-bold uppercase tracking-wide text-slate-800 dark:text-slate-100 truncate max-w-[130px] md:max-w-[190px] lg:max-w-[240px]">
-                {displayCompanyName}
-              </span>
-            </div>
-
-            {/* WALLET PILL (40px Height Grid) */}
-            <div className="flex h-10 items-center rounded-full bg-violet-50/90 dark:bg-violet-950/40 px-3 border border-violet-100 dark:border-violet-900/50 shrink-0 gap-1.5 shadow-2xs">
-              <span className="text-violet-600 dark:text-violet-400 shrink-0">
-                <WalletIcon />
-              </span>
-              <span className="text-xs font-bold text-slate-800 dark:text-slate-100">
-                ₹{balance.toLocaleString("en-IN", { maximumFractionDigits: 2 })}
-              </span>
-              <button
-                type="button"
-                onClick={() => setShowRecharge(true)}
-                className="ml-1 flex h-6 w-6 items-center justify-center rounded-full bg-[#008dd2] text-xs font-bold text-white transition hover:bg-[#007ab6] active:scale-90 shrink-0 shadow-2xs"
-                title="Recharge Wallet"
-              >
-                +
-              </button>
-            </div>
-
-            {/* NOTIFICATION (40px Height Grid) */}
-            <button
-              type="button"
-              title="Notifications"
-              onClick={() => toast("No new notifications")}
-              className="relative flex h-10 w-10 items-center justify-center rounded-full text-slate-600 dark:text-slate-300 transition hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-90 shrink-0"
-            >
-              <BellIcon />
-              <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-[#111827]"></span>
-            </button>
-
-            {/* PROFILE AVATAR (40px Height Grid) */}
-            <div ref={profileRef} className="relative shrink-0">
+            {/* 1. PROFILE & 2. COMPANY NAME (Grouped together with Dropdown) */}
+            <div ref={profileRef} className="relative flex items-center gap-2 sm:gap-2.5 shrink-0">
+              {/* 1. PROFILE AVATAR */}
               <button
                 type="button"
                 onClick={() => setShowProfile((prev) => !prev)}
@@ -849,10 +808,26 @@
                 </div>
               </button>
 
+              {/* 2. COMPANY NAME BADGE */}
+              <button
+                type="button"
+                onClick={() => setShowProfile((prev) => !prev)}
+                className="flex h-10 items-center gap-2.5 rounded-[14px] border border-slate-200/90 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/60 pl-1.5 pr-3.5 shadow-2xs transition-all duration-150 hover:bg-slate-100/70 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shrink-0 cursor-pointer text-left"
+                title={`Company: ${displayCompanyName} (Click to open menu)`}
+              >
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#008dd2] text-[11px] font-black text-white uppercase tracking-wider shadow-xs shadow-[#008dd2]/20">
+                  {companyInitials}
+                </div>
+                <span className="hidden sm:inline-block text-[12px] font-bold uppercase tracking-wide text-slate-800 dark:text-slate-100 truncate max-w-[130px] md:max-w-[190px] lg:max-w-[240px]">
+                  {displayCompanyName}
+                </span>
+              </button>
+
+              {/* PROFILE DROPDOWN MENU */}
               {showProfile && (
-                <div className="absolute right-0 top-11 sm:top-12 w-60 overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-2xl z-50 animate-in fade-in duration-100">
-                  <div className="flex items-center gap-3 border-b border-slate-100 px-4 py-3 bg-slate-50/70">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-200 text-slate-500">
+                <div className="absolute left-0 top-12 w-64 overflow-hidden rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-[#111827] shadow-2xl z-50 animate-in fade-in duration-100">
+                  <div className="flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 px-4 py-3 bg-slate-50/70 dark:bg-slate-800/60">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-300">
                       {user?.profile_image ? (
                         <img src={user.profile_image} alt="Profile" className="h-full w-full object-cover" />
                       ) : (
@@ -866,14 +841,14 @@
                           {companyName}
                         </p>
                       )}
-                      <p className="truncate text-[11px] text-slate-400">{userEmail}</p>
+                      <p className="truncate text-[11px] text-slate-400 dark:text-slate-400">{userEmail}</p>
                     </div>
                   </div>
 
                   <button
                     type="button"
                     onClick={openProfile}
-                    className="flex w-full items-center gap-2.5 border-b border-slate-50 px-4 py-2.5 text-left text-xs font-medium text-slate-600 transition hover:bg-slate-50"
+                    className="flex w-full items-center gap-2.5 border-b border-slate-50 dark:border-slate-800/60 px-4 py-2.5 text-left text-xs font-medium text-slate-600 dark:text-slate-300 transition hover:bg-slate-50 dark:hover:bg-slate-800/80"
                   >
                     <ProfileIcon />
                     <span>Profile</span>
@@ -882,10 +857,10 @@
                   <button
                     type="button"
                     onClick={handleTheme}
-                    className="flex w-full items-center justify-between border-b border-slate-50 px-4 py-2.5 text-left text-xs font-medium text-slate-600 transition hover:bg-slate-50"
+                    className="flex w-full items-center justify-between border-b border-slate-50 dark:border-slate-800/60 px-4 py-2.5 text-left text-xs font-medium text-slate-600 dark:text-slate-300 transition hover:bg-slate-50 dark:hover:bg-slate-800/80"
                   >
                     <div className="flex items-center gap-2.5">
-                      <span className={isDark ? "text-amber-400" : "text-slate-600"}>
+                      <span className={isDark ? "text-amber-400" : "text-slate-600 dark:text-slate-300"}>
                         {isDark ? <SunIcon /> : <MoonIcon />}
                       </span>
                       <span>{isDark ? "Light Mode" : "Dark Mode"}</span>
@@ -894,7 +869,7 @@
                       className={`rounded-full px-2 py-0.5 text-[10px] font-semibold transition ${
                         isDark
                           ? "bg-amber-400/15 text-amber-400 border border-amber-400/30"
-                          : "bg-slate-100 text-slate-600 border border-slate-200"
+                          : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700"
                       }`}
                     >
                       {isDark ? "Dark" : "Light"}
@@ -907,7 +882,7 @@
                       setShowProfile(false);
                       navigate("/dashboard");
                     }}
-                    className="flex w-full items-center gap-2.5 border-b border-slate-50 px-4 py-2.5 text-left text-xs font-medium text-slate-600 transition hover:bg-slate-50"
+                    className="flex w-full items-center gap-2.5 border-b border-slate-50 dark:border-slate-800/60 px-4 py-2.5 text-left text-xs font-medium text-slate-600 dark:text-slate-300 transition hover:bg-slate-50 dark:hover:bg-slate-800/80"
                   >
                     <DashboardIcon />
                     <span>User Dashboard</span>
@@ -919,7 +894,7 @@
                       setShowProfile(false);
                       toast("Password page coming soon");
                     }}
-                    className="flex w-full items-center gap-2.5 border-b border-slate-50 px-4 py-2.5 text-left text-xs font-medium text-slate-600 transition hover:bg-slate-50"
+                    className="flex w-full items-center gap-2.5 border-b border-slate-50 dark:border-slate-800/60 px-4 py-2.5 text-left text-xs font-medium text-slate-600 dark:text-slate-300 transition hover:bg-slate-50 dark:hover:bg-slate-800/80"
                   >
                     <LockIcon />
                     <span>Password</span>
@@ -928,13 +903,42 @@
                   <button
                     type="button"
                     onClick={handleLogout}
-                    className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-xs font-bold text-rose-500 transition hover:bg-rose-50"
+                    className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-xs font-bold text-rose-500 transition hover:bg-rose-50 dark:hover:bg-rose-950/30"
                   >
                     <LogoutIcon />
                     <span>Logout</span>
                   </button>
                 </div>
               )}
+            </div>
+
+            {/* 3. NOTIFICATION (40px Height Grid) */}
+            <button
+              type="button"
+              title="Notifications"
+              onClick={() => toast("No new notifications")}
+              className="relative flex h-10 w-10 items-center justify-center rounded-full text-slate-600 dark:text-slate-300 transition hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-90 shrink-0"
+            >
+              <BellIcon />
+              <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-[#111827]"></span>
+            </button>
+
+            {/* 4. WALLET PILL (40px Height Grid) */}
+            <div className="flex h-10 items-center rounded-full bg-violet-50/90 dark:bg-violet-950/40 px-3 border border-violet-100 dark:border-violet-900/50 shrink-0 gap-1.5 shadow-2xs">
+              <span className="text-violet-600 dark:text-violet-400 shrink-0">
+                <WalletIcon />
+              </span>
+              <span className="text-xs font-bold text-slate-800 dark:text-slate-100">
+                ₹{balance.toLocaleString("en-IN", { maximumFractionDigits: 2 })}
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowRecharge(true)}
+                className="ml-1 flex h-6 w-6 items-center justify-center rounded-full bg-[#008dd2] text-xs font-bold text-white transition hover:bg-[#007ab6] active:scale-90 shrink-0 shadow-2xs"
+                title="Recharge Wallet"
+              >
+                +
+              </button>
             </div>
           </div>
         </header>
