@@ -31,6 +31,7 @@ const TYPE_CONFIG = {
 export default function AnnouncementModal() {
   const [announcement, setAnnouncement] = useState(null);
   const [isOpen, setIsOpen] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -61,7 +62,7 @@ export default function AnnouncementModal() {
     };
 
     // Small delay after page load so dashboard finishes rendering smoothly
-    const timer = setTimeout(checkActiveAnnouncement, 600);
+    const timer = setTimeout(checkActiveAnnouncement, 700);
     return () => {
       isMounted = false;
       clearTimeout(timer);
@@ -69,12 +70,16 @@ export default function AnnouncementModal() {
   }, []);
 
   const handleClose = async () => {
-    if (!announcement) return;
+    if (!announcement || isClosing) return;
+    setIsClosing(true);
     const itemToDismiss = announcement;
 
-    // Immediately close UI
-    setIsOpen(false);
-    setAnnouncement(null);
+    // Smooth exit delay
+    setTimeout(() => {
+      setIsOpen(false);
+      setAnnouncement(null);
+      setIsClosing(false);
+    }, 220);
 
     try {
       const savedUser = JSON.parse(localStorage.getItem("user") || "null");
@@ -126,28 +131,32 @@ export default function AnnouncementModal() {
 
   return (
     <div
-      role="dialog"
-      aria-modal="true"
-      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/60 dark:bg-black/80 backdrop-blur-sm animate-in fade-in duration-200 select-none"
+      role="region"
+      aria-label="System Announcement"
+      className={`fixed bottom-5 right-5 z-[9999] w-[calc(100%-40px)] sm:w-[410px] pointer-events-auto transition-all duration-200 ${
+        isClosing
+          ? "opacity-0 translate-y-3 scale-95 pointer-events-none"
+          : "opacity-100 translate-y-0 scale-100 animate-in slide-in-from-bottom-5 fade-in duration-300"
+      }`}
     >
-      <div className="relative w-full max-w-[480px] overflow-hidden rounded-2xl bg-white dark:bg-[#111827] border border-slate-200/90 dark:border-slate-800 shadow-[0_20px_50px_-10px_rgba(0,0,0,0.3)] dark:shadow-[0_20px_50px_-10px_rgba(0,0,0,0.85)] animate-in zoom-in-95 duration-200">
+      <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-[#111827] border border-slate-200/90 dark:border-slate-800 shadow-[0_16px_40px_-10px_rgba(0,0,0,0.22)] dark:shadow-[0_16px_45px_-10px_rgba(0,0,0,0.75)]">
         {/* TOP ACCENT STRIP */}
         <div className={`h-1 w-full bg-gradient-to-r ${accentGradient}`} />
 
-        {/* HEADER AREA */}
-        <div className="p-5 sm:p-6 pb-3">
-          {/* TOP META ROW */}
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
+        {/* CARD CONTENT */}
+        <div className="p-4 sm:p-5">
+          {/* HEADER META ROW */}
+          <div className="flex items-center justify-between gap-2 mb-2.5">
+            <div className="flex items-center gap-1.5 min-w-0">
               <span
-                className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${typeConfig.badge}`}
+                className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10.5px] font-bold border ${typeConfig.badge}`}
               >
                 <span className={`h-1.5 w-1.5 rounded-full ${typeConfig.dot} animate-pulse`} />
                 {typeConfig.label}
               </span>
 
               {announcement.created_at && (
-                <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500">
+                <span className="text-[10.5px] font-medium text-slate-400 dark:text-slate-500 truncate">
                   • {formatDate(announcement.created_at)}
                 </span>
               )}
@@ -158,11 +167,11 @@ export default function AnnouncementModal() {
               type="button"
               onClick={handleClose}
               aria-label="Close"
-              className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
             >
               <svg
-                width="14"
-                height="14"
+                width="13"
+                height="13"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
@@ -176,14 +185,14 @@ export default function AnnouncementModal() {
             </button>
           </div>
 
-          {/* TITLE WITH ICON */}
+          {/* MAIN MESSAGE WITH ICON */}
           <div className="flex items-start gap-3">
             <div
               className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border mt-0.5 shadow-xs ${typeConfig.iconBg}`}
             >
               <svg
-                width="18"
-                height="18"
+                width="17"
+                height="17"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
@@ -197,50 +206,45 @@ export default function AnnouncementModal() {
             </div>
 
             <div className="min-w-0 flex-1">
-              <h3 className="text-base sm:text-[17px] font-bold text-slate-900 dark:text-slate-100 tracking-tight leading-snug">
+              <h4 className="text-[14px] font-bold text-slate-900 dark:text-slate-100 tracking-tight leading-snug">
                 {announcement.title}
-              </h3>
-            </div>
-          </div>
-        </div>
+              </h4>
 
-        {/* MESSAGE CARD CANVAS */}
-        <div className="px-5 sm:px-6 pb-5">
-          <div className="rounded-xl bg-slate-50/80 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800/70 p-4">
-            <div className="text-[13px] sm:text-[13.5px] text-slate-600 dark:text-slate-300 leading-relaxed font-normal whitespace-pre-line select-text max-h-[220px] overflow-y-auto pr-1 [scrollbar-width:thin]">
-              {announcement.description}
+              <div className="text-[12.5px] text-slate-600 dark:text-slate-300 leading-relaxed font-normal whitespace-pre-line mt-1.5 max-h-[140px] overflow-y-auto pr-1 select-text [scrollbar-width:thin]">
+                {announcement.description}
+              </div>
             </div>
           </div>
         </div>
 
         {/* FOOTER BAR */}
-        <div className="px-5 sm:px-6 py-3.5 bg-slate-50/60 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-1.5 text-[11px] text-slate-400 dark:text-slate-500 font-medium">
+        <div className="px-4 sm:px-5 py-2.5 bg-slate-50/70 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5 text-[10.5px] text-slate-400 dark:text-slate-500 font-medium">
             <svg
-              width="13"
-              height="13"
+              width="12"
+              height="12"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
               strokeWidth="2.5"
               strokeLinecap="round"
               strokeLinejoin="round"
-              className="text-emerald-500"
+              className="text-emerald-500 shrink-0"
             >
               <polyline points="20 6 9 17 4 12" />
             </svg>
-            <span>Won't show again once closed</span>
+            <span className="truncate">Won't show again</span>
           </div>
 
           <button
             type="button"
             onClick={handleClose}
-            className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#008dd2] hover:bg-[#007cb8] active:scale-[0.98] transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
+            className="px-3.5 py-1.5 rounded-lg text-xs font-bold text-white bg-[#008dd2] hover:bg-[#007cb8] active:scale-[0.98] transition-all shadow-xs cursor-pointer flex items-center gap-1 shrink-0"
           >
-            <span>Understood</span>
+            <span>Got it</span>
             <svg
-              width="13"
-              height="13"
+              width="12"
+              height="12"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -248,7 +252,7 @@ export default function AnnouncementModal() {
               strokeLinecap="round"
               strokeLinejoin="round"
             >
-              <polyline points="20 6 9 17 4 12" />
+              <polyline points="9 18 15 12 9 6" />
             </svg>
           </button>
         </div>
