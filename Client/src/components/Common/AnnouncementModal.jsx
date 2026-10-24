@@ -317,7 +317,7 @@ export default function AnnouncementModal() {
               onClick={handleClose}
               className={`w-full py-3 px-5 rounded-xl text-xs sm:text-sm font-bold text-white bg-gradient-to-r ${typeConfig.btnGradient} hover:brightness-105 active:scale-[0.98] transition-all shadow-md ${typeConfig.btnShadow} cursor-pointer flex items-center justify-center gap-2 group`}
             >
-              <span>I Have Read and Understood</span>
+              <span>Okk! Got it</span>
               <svg
                 className="w-4 h-4 transition-transform group-hover:translate-x-0.5"
                 viewBox="0 0 24 24"

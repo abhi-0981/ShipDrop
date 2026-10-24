@@ -664,7 +664,7 @@ export default function Announcements() {
                       : "bg-gradient-to-r from-[#008dd2] via-sky-500 to-[#007cb8] shadow-sky-500/25 hover:brightness-105"
                   }`}
                 >
-                  <span>I Have Read and Understood</span>
+                  <span>Okk! Got it</span>
                   <svg className="w-4 h-4 transition-transform group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="20 6 9 17 4 12" />
                   </svg>
