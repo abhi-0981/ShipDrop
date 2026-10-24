@@ -90,6 +90,11 @@
     const [showRecharge, setShowRecharge] = useState(false);
     const [showProfile, setShowProfile] = useState(false);
     const profileRef = useRef(null);
+
+    const [showNotifications, setShowNotifications] = useState(false);
+    const [notifications, setNotifications] = useState([]);
+    const [unreadNotifCount, setUnreadNotifCount] = useState(0);
+    const notifRef = useRef(null);
     const [amount, setAmount] = useState("");
     const [loading, setLoading] = useState(false);
 
@@ -209,15 +214,112 @@
       }
     };
 
+    const loadNotifications = async (silent = false) => {
+      const savedUser = JSON.parse(localStorage.getItem("user") || "null");
+      if (!savedUser?.id) return;
+      try {
+        const response = await api.get(`/notifications?user_id=${savedUser.id}`);
+        if (response.data?.success) {
+          setUnreadNotifCount(Number(response.data.unread_count || 0));
+          setNotifications(Array.isArray(response.data.notifications) ? response.data.notifications : []);
+        }
+      } catch (error) {
+        // silent fail
+      }
+    };
+
+    const handleNotificationClick = async (notif) => {
+      if (!notif) return;
+      try {
+        if (!notif.is_read) {
+          setNotifications((prev) =>
+            prev.map((n) => (n.id === notif.id ? { ...n, is_read: 1 } : n))
+          );
+          setUnreadNotifCount((prev) => Math.max(0, prev - 1));
+          const savedUser = JSON.parse(localStorage.getItem("user") || "null");
+          await api.post("/notifications/mark-read", {
+            user_id: savedUser?.id,
+            notification_id: notif.id,
+          });
+        }
+      } catch (err) {
+        // silent
+      }
+      setShowNotifications(false);
+      if (notif.reference_id) {
+        navigate(`/tickets?ticket_id=${notif.reference_id}`, {
+          state: { ticketId: Number(notif.reference_id) },
+        });
+      } else if (notif.reference_url) {
+        navigate(notif.reference_url);
+      }
+    };
+
+    const handleMarkAllNotificationsRead = async () => {
+      const savedUser = JSON.parse(localStorage.getItem("user") || "null");
+      if (!savedUser?.id) return;
+      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: 1 })));
+      setUnreadNotifCount(0);
+      try {
+        await api.post("/notifications/mark-read", {
+          user_id: savedUser.id,
+          mark_all: true,
+        });
+        toast.success("All notifications marked as read", { id: "notif-read", duration: 1500 });
+      } catch (err) {
+        loadNotifications(true);
+      }
+    };
+
+    const formatTimeAgo = (dateStr) => {
+      if (!dateStr) return "";
+      const diffMs = Date.now() - new Date(dateStr).getTime();
+      const diffSec = Math.floor(diffMs / 1000);
+      if (diffSec < 60) return "Just now";
+      const diffMin = Math.floor(diffSec / 60);
+      if (diffMin < 60) return `${diffMin}m ago`;
+      const diffHour = Math.floor(diffMin / 60);
+      if (diffHour < 24) return `${diffHour}h ago`;
+      const diffDays = Math.floor(diffHour / 24);
+      return `${diffDays}d ago`;
+    };
+
     useEffect(() => {
       loadUserProfile();
       loadWallet();
+      loadNotifications();
+
+      // Background auto-sync notifications every 20 seconds when tab is active
+      const notifInterval = setInterval(() => {
+        if (typeof document !== "undefined" && document.visibilityState === "visible") {
+          loadNotifications(true);
+        }
+      }, 20000);
+
+      const handleNotifUpdate = () => loadNotifications(true);
+      window.addEventListener("shipdrop:notificationsUpdated", handleNotifUpdate);
+
+      const handleVisibilityChange = () => {
+        if (document.visibilityState === "visible") {
+          loadNotifications(true);
+        }
+      };
+      document.addEventListener("visibilitychange", handleVisibilityChange);
+
+      return () => {
+        clearInterval(notifInterval);
+        window.removeEventListener("shipdrop:notificationsUpdated", handleNotifUpdate);
+        document.removeEventListener("visibilitychange", handleVisibilityChange);
+      };
     }, []);
 
     useEffect(() => {
       const handleOutsideClick = (event) => {
         if (profileRef.current && !profileRef.current.contains(event.target)) {
           setShowProfile(false);
+        }
+        if (notifRef.current && !notifRef.current.contains(event.target)) {
+          setShowNotifications(false);
         }
       };
       document.addEventListener("mousedown", handleOutsideClick);
@@ -804,16 +906,118 @@
               </button>
             </div>
 
-            {/* 2. NOTIFICATION BELL (40px Height Grid) */}
-            <button
-              type="button"
-              title="Notifications"
-              onClick={() => toast("No new notifications")}
-              className="relative flex h-10 w-10 items-center justify-center rounded-full text-slate-600 dark:text-slate-300 transition hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-90 shrink-0"
-            >
-              <BellIcon />
-              <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-[#111827]"></span>
-            </button>
+            {/* 2. NOTIFICATION BELL (40px Height Grid with Popover) */}
+            <div ref={notifRef} className="relative shrink-0">
+              <button
+                type="button"
+                title={unreadNotifCount > 0 ? `${unreadNotifCount} unread notifications` : "Notifications"}
+                onClick={() => setShowNotifications((prev) => !prev)}
+                className="relative flex h-10 w-10 items-center justify-center rounded-full text-slate-600 dark:text-slate-300 transition hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-90 shrink-0 cursor-pointer"
+              >
+                <BellIcon />
+                {unreadNotifCount > 0 && (
+                  <span className="absolute right-2.5 top-2.5 flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500 ring-2 ring-white dark:ring-[#111827]"></span>
+                  </span>
+                )}
+              </button>
+
+              {/* NOTIFICATIONS DROPDOWN */}
+              {showNotifications && (
+                <div className="absolute right-[-70px] sm:right-[-20px] md:right-0 top-12 w-[320px] sm:w-[380px] overflow-hidden rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-[#111827] shadow-2xl z-50 animate-in fade-in duration-100">
+                  {/* HEADER */}
+                  <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 px-4 py-3 bg-slate-50/80 dark:bg-slate-800/60">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
+                        Notifications
+                      </span>
+                      {unreadNotifCount > 0 && (
+                        <span className="rounded-full bg-rose-50 dark:bg-rose-950/60 border border-rose-200/80 dark:border-rose-900/60 px-2 py-0.5 text-[10px] font-bold text-rose-600 dark:text-rose-400">
+                          {unreadNotifCount} New
+                        </span>
+                      )}
+                    </div>
+                    {unreadNotifCount > 0 && (
+                      <button
+                        type="button"
+                        onClick={handleMarkAllNotificationsRead}
+                        className="text-[11px] font-semibold text-[#008dd2] dark:text-[#38bdf8] hover:underline cursor-pointer"
+                      >
+                        Mark all as read
+                      </button>
+                    )}
+                  </div>
+
+                  {/* NOTIFICATION LIST */}
+                  <div className="max-h-[360px] overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/60 [scrollbar-width:thin]">
+                    {notifications.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 mb-3">
+                          <BellIcon />
+                        </div>
+                        <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                          No notifications yet
+                        </p>
+                        <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5 max-w-[220px]">
+                          When support team replies to your tickets, you'll see them right here.
+                        </p>
+                      </div>
+                    ) : (
+                      notifications.map((notif) => (
+                        <div
+                          key={notif.id}
+                          onClick={() => handleNotificationClick(notif)}
+                          className={`flex items-start gap-3 p-3.5 transition-colors cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/70 ${
+                            !notif.is_read
+                              ? "bg-sky-50/40 dark:bg-sky-950/20"
+                              : ""
+                          }`}
+                        >
+                          {/* NOTIFICATION TYPE ICON */}
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-sky-100 dark:bg-sky-950/60 text-[#008dd2] dark:text-[#38bdf8] mt-0.5 shadow-2xs">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                            </svg>
+                          </div>
+
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center justify-between gap-1">
+                              <p className={`text-[12px] truncate ${!notif.is_read ? "font-bold text-slate-900 dark:text-slate-100" : "font-medium text-slate-700 dark:text-slate-300"}`}>
+                                {notif.title}
+                              </p>
+                              {!notif.is_read && (
+                                <span className="h-2 w-2 rounded-full bg-[#008dd2] shrink-0"></span>
+                              )}
+                            </div>
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 mt-0.5 leading-snug">
+                              {notif.message}
+                            </p>
+                            <span className="inline-block text-[10px] text-slate-400 dark:text-slate-500 mt-1 font-medium">
+                              {formatTimeAgo(notif.created_at)}
+                            </span>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  {/* FOOTER */}
+                  <div className="border-t border-slate-100 dark:border-slate-800 p-2.5 bg-slate-50/50 dark:bg-slate-800/40 text-center">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowNotifications(false);
+                        navigate("/tickets");
+                      }}
+                      className="text-[11.5px] font-bold text-[#008dd2] dark:text-[#38bdf8] hover:underline cursor-pointer"
+                    >
+                      View all tickets →
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* 3. COMPANY NAME & 4. PROFILE (Grouped together with Dropdown) */}
             <div ref={profileRef} className="relative flex items-center gap-2 sm:gap-2.5 shrink-0">

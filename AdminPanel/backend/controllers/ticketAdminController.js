@@ -316,6 +316,33 @@ const replyToTicketController = async (
       [ticketId]
     );
 
+    // Notify user about admin reply
+    try {
+      const [ticketRows] = await db.query(
+        `SELECT id, ticket_number, user_id, subject FROM tickets WHERE id = ? LIMIT 1`,
+        [ticketId]
+      );
+      if (ticketRows && ticketRows.length > 0) {
+        const ticketInfo = ticketRows[0];
+        const snippet = String(message).trim().slice(0, 160);
+        await db.query(
+          `
+            INSERT INTO notifications (user_id, type, title, message, reference_id, reference_url, is_read)
+            VALUES (?, 'TICKET_REPLY', ?, ?, ?, ?, 0)
+          `,
+          [
+            ticketInfo.user_id,
+            `Support replied to Ticket #${ticketInfo.ticket_number}`,
+            snippet,
+            String(ticketInfo.id),
+            `/tickets?ticket_id=${ticketInfo.id}`
+          ]
+        );
+      }
+    } catch (notifErr) {
+      console.warn("Notification insert error in admin reply:", notifErr.message);
+    }
+
     const [replyRows] = await db.query(
       `
         SELECT

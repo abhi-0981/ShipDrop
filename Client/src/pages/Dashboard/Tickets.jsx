@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams, useLocation } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { API_BASE_URL } from "../../services/api";
 import { CardSkeleton, TableRowSkeleton } from "../../components/Common/TableSkeleton";
@@ -523,6 +524,9 @@ function Tickets() {
     }
   };
 
+  const [searchParams] = useSearchParams();
+  const location = useLocation();
+
   const openTicket = async (ticketId) => {
     try {
       setDetailLoading(true);
@@ -538,6 +542,14 @@ function Tickets() {
       setDetailLoading(false);
     }
   };
+
+  // Auto-open ticket if ticket_id is present in URL params or router location state (e.g. from Notification click)
+  useEffect(() => {
+    const targetTicketId = searchParams.get("ticket_id") || location.state?.ticketId;
+    if (targetTicketId) {
+      openTicket(Number(targetTicketId));
+    }
+  }, [searchParams, location.state]);
 
   const goBack = () => {
     setSelectedTicket(null);

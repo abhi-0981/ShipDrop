@@ -202,7 +202,24 @@ async function ensureTables() {
       console.warn("Column check/add notice for offline_orders.remark:", remarkErr.message);
     }
 
-    console.log("Core tables, offline_orders table and indexes verified successfully.");
+    // Ensure notifications table exists
+    await promiseDb.query(`
+      CREATE TABLE IF NOT EXISTS notifications (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        type VARCHAR(50) NOT NULL DEFAULT 'TICKET_REPLY',
+        title VARCHAR(255) NOT NULL,
+        message TEXT NOT NULL,
+        reference_id VARCHAR(100) NULL,
+        reference_url VARCHAR(255) NULL,
+        is_read TINYINT(1) DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_notifications_user_read (user_id, is_read),
+        INDEX idx_notifications_created (created_at)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
+    console.log("Core tables, notifications, offline_orders table and indexes verified successfully.");
   } catch (error) {
     console.warn("ensureTables notice:", error.message);
   }

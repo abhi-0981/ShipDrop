@@ -111,6 +111,9 @@ const partyIdentityRoutes =
 const offlineOrderRoutes =
   require("./routes/offlineOrderRoutes");
 
+const notificationRoutes =
+  require("./routes/notificationRoutes");
+
 
 // ======================================================
 // MIDDLEWARE
@@ -404,6 +407,12 @@ app.use(
 app.use(
   "/api/tickets",
   ticketRoutes
+);
+
+// NOTIFICATIONS
+app.use(
+  "/api/notifications",
+  notificationRoutes
 );
 
 // SERVICEABILITY
