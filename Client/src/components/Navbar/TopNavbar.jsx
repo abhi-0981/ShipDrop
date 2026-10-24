@@ -848,9 +848,6 @@
                     </div>
                   )}
                 </div>
-
-                {/* Active Online Status Badge */}
-                <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-[#111827]" />
               </button>
 
               {showProfile && (
