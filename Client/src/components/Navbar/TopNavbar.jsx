@@ -707,7 +707,8 @@
           }`}
         >
           {/* ======================================================== */}
-          {/* LEFT SECTION: HAMBURGER + SHIPDROP (When collapsed) + COMPANY PILL */}
+          {/* ======================================================== */}
+          {/* LEFT SECTION: HAMBURGER + LOGO (When collapsed) + TRACKING SEARCH */}
           {/* ======================================================== */}
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             {(isCollapsed || (typeof window !== "undefined" && window.innerWidth < 1024)) && (
@@ -736,27 +737,10 @@
               </Link>
             )}
 
-            {/* COMPANY NAME BADGE (40px Height Grid, Perfectly Centered) */}
-            <div
-              className="flex h-10 items-center gap-2.5 rounded-[14px] border border-slate-200/90 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/60 pl-1.5 pr-3.5 shadow-2xs transition-all duration-150 hover:bg-slate-100/70 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-700"
-              title={`Company: ${displayCompanyName}`}
-            >
-              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#008dd2] text-[11px] font-black text-white uppercase tracking-wider shadow-xs shadow-[#008dd2]/20">
-                {companyInitials}
-              </div>
-              <span className="text-[12px] font-bold uppercase tracking-wide text-slate-800 dark:text-slate-100 truncate max-w-[130px] sm:max-w-[190px] md:max-w-[280px]">
-                {displayCompanyName}
-              </span>
-            </div>
-          </div>
-
-          {/* ======================================================== */}
-          {/* CENTER SECTION: TRACKING SEARCH (Centered in Topbar) */}
-          {/* ======================================================== */}
-          <div className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[260px] lg:w-[320px] xl:w-[380px]">
+            {/* TRACKING SEARCH (Cleanly Left-Aligned) */}
             <form
               onSubmit={handleTrackingSearch}
-              className="relative flex items-center w-full"
+              className="hidden md:flex relative items-center w-[250px] lg:w-[310px] xl:w-[360px]"
             >
               <FiSearch
                 className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
@@ -790,9 +774,21 @@
           </div>
 
           {/* ======================================================== */}
-          {/* RIGHT SECTION: WALLET + NOTIFICATION + PROFILE (Uniform 40px Height) */}
+          {/* RIGHT SECTION: COMPANY BADGE + WALLET + NOTIFICATION + PROFILE */}
           {/* ======================================================== */}
-          <div className="flex items-center gap-2 sm:gap-3 shrink-0 z-10">
+          <div className="flex items-center gap-2 sm:gap-2.5 lg:gap-3 shrink-0">
+            {/* COMPANY NAME BADGE */}
+            <div
+              className="flex h-10 items-center gap-2.5 rounded-[14px] border border-slate-200/90 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/60 pl-1.5 pr-3.5 shadow-2xs transition-all duration-150 hover:bg-slate-100/70 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shrink-0"
+              title={`Company: ${displayCompanyName}`}
+            >
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#008dd2] text-[11px] font-black text-white uppercase tracking-wider shadow-xs shadow-[#008dd2]/20">
+                {companyInitials}
+              </div>
+              <span className="hidden sm:inline-block text-[12px] font-bold uppercase tracking-wide text-slate-800 dark:text-slate-100 truncate max-w-[130px] md:max-w-[190px] lg:max-w-[240px]">
+                {displayCompanyName}
+              </span>
+            </div>
 
             {/* WALLET PILL (40px Height Grid) */}
             <div className="flex h-10 items-center rounded-full bg-violet-50/90 dark:bg-violet-950/40 px-3 border border-violet-100 dark:border-violet-900/50 shrink-0 gap-1.5 shadow-2xs">
