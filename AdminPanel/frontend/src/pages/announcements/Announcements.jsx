@@ -525,71 +525,119 @@ export default function Announcements() {
       )}
 
       {/* POPUP PREVIEW MODAL */}
-      {previewItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-950/60 backdrop-blur-md animate-in fade-in duration-150">
-          <div className="relative w-full max-w-[540px] overflow-hidden rounded-[26px] bg-white border border-slate-200 shadow-2xl p-7 sm:p-8 animate-in zoom-in-95 duration-150">
-            {/* AMBIENT GLOW */}
-            <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-[#008dd2]/10 via-[#008dd2]/[0.02] to-transparent pointer-events-none" />
+      {previewItem && (() => {
+        const typeCfg =
+          NOTICE_TYPES.find((t) => t.id === previewItem.type) || NOTICE_TYPES[0];
+        const topAccentColors = {
+          INFO: "from-[#008dd2] via-sky-400 to-blue-600",
+          UPDATE: "from-emerald-500 via-teal-400 to-emerald-600",
+          ALERT: "from-amber-500 via-orange-400 to-amber-600",
+          WARNING: "from-rose-500 via-red-500 to-rose-600",
+        };
+        const accentGradient = topAccentColors[previewItem.type] || topAccentColors.INFO;
 
-            {/* CLOSE BUTTON */}
-            <button
-              type="button"
-              onClick={() => setPreviewItem(null)}
-              className="absolute top-4.5 right-4.5 z-10 flex h-8.5 w-8.5 items-center justify-center rounded-full text-slate-400 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 transition cursor-pointer"
-            >
-              ✕
-            </button>
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-150">
+            <div className="relative w-full max-w-[480px] overflow-hidden rounded-2xl bg-white border border-slate-200/90 shadow-[0_20px_50px_-10px_rgba(0,0,0,0.3)] animate-in zoom-in-95 duration-150">
+              {/* TOP ACCENT STRIP */}
+              <div className={`h-1 w-full bg-gradient-to-r ${accentGradient}`} />
 
-            <div className="relative">
-              {/* ICON & BADGE */}
-              <div className="flex items-center gap-3.5">
-                <div className="relative flex h-13 w-13 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-50 to-[#008dd2]/15 text-[#008dd2] border border-[#008dd2]/20 shadow-xs">
-                  <HiOutlineSpeakerphone className="text-2xl" />
-                  <span className="absolute -top-0.5 -right-0.5 flex h-3 w-3">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#008dd2] opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-[#008dd2]"></span>
-                  </span>
+              {/* HEADER AREA */}
+              <div className="p-5 sm:p-6 pb-3">
+                {/* TOP META ROW */}
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${typeCfg.badge}`}
+                    >
+                      <span className="h-1.5 w-1.5 rounded-full bg-current animate-pulse" />
+                      {typeCfg.label}
+                    </span>
+
+                    {previewItem.created_at && (
+                      <span className="text-[11px] font-medium text-slate-400">
+                        • {formatDate(previewItem.created_at)}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* CLOSE BUTTON */}
+                  <button
+                    type="button"
+                    onClick={() => setPreviewItem(null)}
+                    aria-label="Close"
+                    className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+                  >
+                    ✕
+                  </button>
                 </div>
 
-                <div>
-                  <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-bold bg-sky-50 text-[#008dd2] border border-sky-200">
-                    <span className="h-1.5 w-1.5 rounded-full bg-current animate-pulse"></span>
-                    {previewItem.type || "Notice"}
-                  </span>
-                  <p className="text-xs text-slate-400 font-medium mt-1">
-                    {previewItem.created_at ? formatDate(previewItem.created_at) : "Preview"}
-                  </p>
+                {/* TITLE WITH ICON */}
+                <div className="flex items-start gap-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border mt-0.5 shadow-xs bg-sky-50 text-[#008dd2] border-sky-200">
+                    <HiOutlineSpeakerphone className="text-lg" />
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-base sm:text-[17px] font-bold text-slate-900 tracking-tight leading-snug">
+                      {previewItem.title}
+                    </h3>
+                  </div>
                 </div>
               </div>
 
-              {/* TITLE */}
-              <div className="mt-5">
-                <h3 className="text-xl sm:text-[22px] font-bold text-slate-900 tracking-tight leading-snug">
-                  {previewItem.title}
-                </h3>
+              {/* MESSAGE CARD CANVAS */}
+              <div className="px-5 sm:px-6 pb-5">
+                <div className="rounded-xl bg-slate-50/80 border border-slate-100 p-4">
+                  <div className="text-[13px] sm:text-[13.5px] text-slate-600 leading-relaxed font-normal whitespace-pre-line select-text max-h-[220px] overflow-y-auto pr-1">
+                    {previewItem.description}
+                  </div>
+                </div>
               </div>
 
-              {/* MESSAGE CONTENT */}
-              <div className="mt-3.5 max-h-[320px] overflow-y-auto pr-1">
-                <p className="text-[14px] sm:text-[14.5px] text-slate-600 leading-relaxed whitespace-pre-line font-normal">
-                  {previewItem.description}
-                </p>
-              </div>
+              {/* FOOTER BAR */}
+              <div className="px-5 sm:px-6 py-3.5 bg-slate-50/60 border-t border-slate-100 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-1.5 text-[11px] text-slate-400 font-medium">
+                  <svg
+                    width="13"
+                    height="13"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="text-emerald-500"
+                  >
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                  <span>Won't show again once closed</span>
+                </div>
 
-              {/* ACTION BUTTON */}
-              <div className="mt-7 pt-2">
                 <button
                   type="button"
                   onClick={() => setPreviewItem(null)}
-                  className="w-full py-3.5 px-6 rounded-2xl text-[13px] font-bold text-white bg-gradient-to-r from-[#008dd2] to-[#007cb8] hover:from-[#007cb8] hover:to-[#006ca0] active:scale-[0.98] transition-all shadow-md shadow-[#008dd2]/20 cursor-pointer"
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#008dd2] hover:bg-[#007cb8] active:scale-[0.98] transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
                 >
-                  Okay, Got it
+                  <span>Understood</span>
+                  <svg
+                    width="13"
+                    height="13"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <polyline points="9 18 15 12 9 6" />
+                  </svg>
                 </button>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

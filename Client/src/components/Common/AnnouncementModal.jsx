@@ -4,27 +4,27 @@ import api from "../../services/api";
 const TYPE_CONFIG = {
   INFO: {
     badge: "bg-sky-50 dark:bg-sky-950/70 text-[#008dd2] dark:text-[#38bdf8] border-sky-200/60 dark:border-sky-800/60",
-    bar: "from-[#008dd2] to-sky-400",
     iconBg: "bg-sky-50 dark:bg-sky-950/60 text-[#008dd2] dark:text-[#38bdf8] border-sky-200/60 dark:border-sky-800/50",
-    label: "Important Notice",
+    dot: "bg-[#008dd2]",
+    label: "General Notice",
   },
   UPDATE: {
     badge: "bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 border-emerald-200/60 dark:border-emerald-800/60",
-    bar: "from-emerald-500 to-teal-400",
     iconBg: "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border-emerald-200/60 dark:border-emerald-800/50",
-    label: "New Update",
+    dot: "bg-emerald-500",
+    label: "Feature Update",
   },
   ALERT: {
-    badge: "bg-amber-50 dark:bg-amber-950/70 text-amber-600 dark:text-amber-400 border-amber-200/60 dark:border-amber-800/60",
-    bar: "from-amber-500 to-orange-400",
+    badge: "bg-amber-50 dark:bg-amber-950/70 text-amber-700 dark:text-amber-400 border-amber-200/60 dark:border-amber-800/60",
     iconBg: "bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border-amber-200/60 dark:border-amber-800/50",
+    dot: "bg-amber-500",
     label: "Attention Required",
   },
   WARNING: {
-    badge: "bg-rose-50 dark:bg-rose-950/70 text-rose-600 dark:text-rose-400 border-rose-200/60 dark:border-rose-900/60",
-    bar: "from-rose-500 to-red-500",
+    badge: "bg-rose-50 dark:bg-rose-950/70 text-rose-700 dark:text-rose-400 border-rose-200/60 dark:border-rose-900/60",
     iconBg: "bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border-rose-200/60 dark:border-rose-900/50",
-    label: "Urgent Alert",
+    dot: "bg-rose-500",
+    label: "Urgent Warning",
   },
 };
 
@@ -115,83 +115,142 @@ export default function AnnouncementModal() {
     }
   };
 
+  // Top accent line colors per type
+  const topAccentColors = {
+    INFO: "from-[#008dd2] via-sky-400 to-blue-600",
+    UPDATE: "from-emerald-500 via-teal-400 to-emerald-600",
+    ALERT: "from-amber-500 via-orange-400 to-amber-600",
+    WARNING: "from-rose-500 via-red-500 to-rose-600",
+  };
+  const accentGradient = topAccentColors[announcement.type] || topAccentColors.INFO;
+
   return (
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 bg-slate-950/60 dark:bg-black/80 backdrop-blur-md animate-in fade-in duration-200 select-none"
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/60 dark:bg-black/80 backdrop-blur-sm animate-in fade-in duration-200 select-none"
     >
-      <div className="relative w-full max-w-[540px] overflow-hidden rounded-[26px] bg-white dark:bg-[#111827] border border-slate-200/80 dark:border-slate-800/80 shadow-[0_30px_90px_-15px_rgba(0,0,0,0.35)] dark:shadow-[0_30px_100px_-15px_rgba(0,0,0,0.85)] ring-1 ring-black/[0.04] dark:ring-white/[0.08] animate-in zoom-in-95 duration-200">
-        {/* TOP AMBIENT GLOW ACCENT */}
-        <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-[#008dd2]/10 via-[#008dd2]/[0.02] to-transparent pointer-events-none" />
+      <div className="relative w-full max-w-[480px] overflow-hidden rounded-2xl bg-white dark:bg-[#111827] border border-slate-200/90 dark:border-slate-800 shadow-[0_20px_50px_-10px_rgba(0,0,0,0.3)] dark:shadow-[0_20px_50px_-10px_rgba(0,0,0,0.85)] animate-in zoom-in-95 duration-200">
+        {/* TOP ACCENT STRIP */}
+        <div className={`h-1 w-full bg-gradient-to-r ${accentGradient}`} />
 
-        {/* CLOSE BUTTON (X) */}
-        <button
-          type="button"
-          onClick={handleClose}
-          aria-label="Close Announcement"
-          className="absolute top-4.5 right-4.5 z-10 flex h-8.5 w-8.5 items-center justify-center rounded-full text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 bg-slate-100/80 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-700/80 transition cursor-pointer"
-        >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
-        </button>
-
-        <div className="relative p-7 sm:p-8">
-          {/* HEADER ICON & BADGE */}
-          <div className="flex items-center gap-3.5">
-            <div className="relative flex h-13 w-13 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-50 to-[#008dd2]/15 dark:from-sky-950/60 dark:to-sky-900/30 text-[#008dd2] dark:text-[#38bdf8] border border-[#008dd2]/20 shadow-xs">
-              <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-              </svg>
-              <span className="absolute -top-0.5 -right-0.5 flex h-3 w-3">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#008dd2] opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-[#008dd2]"></span>
-              </span>
-            </div>
-
-            <div>
+        {/* HEADER AREA */}
+        <div className="p-5 sm:p-6 pb-3">
+          {/* TOP META ROW */}
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
               <span
-                className={`inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-bold border ${typeConfig.badge}`}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${typeConfig.badge}`}
               >
-                <span className="h-1.5 w-1.5 rounded-full bg-current animate-pulse"></span>
+                <span className={`h-1.5 w-1.5 rounded-full ${typeConfig.dot} animate-pulse`} />
                 {typeConfig.label}
               </span>
-              <p className="text-xs text-slate-400 dark:text-slate-500 font-medium mt-1">
-                {announcement.created_at ? formatDate(announcement.created_at) : "Important Notice"}
-              </p>
+
+              {announcement.created_at && (
+                <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500">
+                  • {formatDate(announcement.created_at)}
+                </span>
+              )}
             </div>
-          </div>
 
-          {/* TITLE */}
-          <div className="mt-5">
-            <h3 className="text-xl sm:text-[22px] font-bold text-slate-900 dark:text-slate-100 tracking-tight leading-snug">
-              {announcement.title}
-            </h3>
-          </div>
-
-          {/* MESSAGE CONTENT (Clean, open, readable typography with smooth scroll) */}
-          <div className="mt-3.5 max-h-[320px] overflow-y-auto pr-1 [scrollbar-width:thin]">
-            <p className="text-[14px] sm:text-[14.5px] text-slate-600 dark:text-slate-300 leading-relaxed font-normal whitespace-pre-line">
-              {announcement.description}
-            </p>
-          </div>
-
-          {/* ACTION BUTTON */}
-          <div className="mt-7 pt-2">
+            {/* CLOSE BUTTON */}
             <button
               type="button"
               onClick={handleClose}
-              className="w-full py-3.5 px-6 rounded-2xl text-[13px] font-bold text-white bg-gradient-to-r from-[#008dd2] to-[#007cb8] hover:from-[#007cb8] hover:to-[#006ca0] active:scale-[0.98] transition-all shadow-md shadow-[#008dd2]/20 cursor-pointer flex items-center justify-center gap-2"
+              aria-label="Close"
+              className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
             >
-              <span>Okay, Got it</span>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="20 6 9 17 4 12" />
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
               </svg>
             </button>
           </div>
+
+          {/* TITLE WITH ICON */}
+          <div className="flex items-start gap-3">
+            <div
+              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border mt-0.5 shadow-xs ${typeConfig.iconBg}`}
+            >
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+              </svg>
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <h3 className="text-base sm:text-[17px] font-bold text-slate-900 dark:text-slate-100 tracking-tight leading-snug">
+                {announcement.title}
+              </h3>
+            </div>
+          </div>
+        </div>
+
+        {/* MESSAGE CARD CANVAS */}
+        <div className="px-5 sm:px-6 pb-5">
+          <div className="rounded-xl bg-slate-50/80 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800/70 p-4">
+            <div className="text-[13px] sm:text-[13.5px] text-slate-600 dark:text-slate-300 leading-relaxed font-normal whitespace-pre-line select-text max-h-[220px] overflow-y-auto pr-1 [scrollbar-width:thin]">
+              {announcement.description}
+            </div>
+          </div>
+        </div>
+
+        {/* FOOTER BAR */}
+        <div className="px-5 sm:px-6 py-3.5 bg-slate-50/60 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-1.5 text-[11px] text-slate-400 dark:text-slate-500 font-medium">
+            <svg
+              width="13"
+              height="13"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="text-emerald-500"
+            >
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            <span>Won't show again once closed</span>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleClose}
+            className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#008dd2] hover:bg-[#007cb8] active:scale-[0.98] transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
+          >
+            <span>Understood</span>
+            <svg
+              width="13"
+              height="13"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          </button>
         </div>
       </div>
     </div>
