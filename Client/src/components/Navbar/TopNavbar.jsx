@@ -952,17 +952,9 @@
                   {/* NOTIFICATION LIST */}
                   <div className="max-h-[360px] overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/60 [scrollbar-width:thin]">
                     {notifications.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-500 mb-3">
-                          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <polyline points="20 6 9 17 4 12" />
-                          </svg>
-                        </div>
-                        <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                          All caught up!
-                        </p>
-                        <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5 max-w-[220px]">
-                          No unread notifications. New support ticket replies will appear here.
+                      <div className="flex items-center justify-center py-8 px-4 text-center">
+                        <p className="text-xs font-medium text-slate-400 dark:text-slate-500">
+                          No notifications
                         </p>
                       </div>
                     ) : (
