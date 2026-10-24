@@ -1135,7 +1135,7 @@ function Tickets() {
               value={search}
               onChange={handleSearchChange}
               onKeyDown={handleSearch}
-              placeholder="Search by ticket #, subject, AWB, or order ID..."
+              placeholder="Search by ticket #, subject, AWB, or order ID"
               className="h-10 w-full rounded-xl border border-slate-200/90 bg-slate-50/60 pl-10 pr-9 text-xs font-medium text-slate-800 placeholder:text-slate-400 outline-none transition focus:border-[#008dd2] focus:bg-white focus:ring-4 focus:ring-[#008dd2]/10"
             />
             {search && (
