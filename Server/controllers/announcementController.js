@@ -19,6 +19,7 @@ const getActiveAnnouncementController = async (req, res) => {
     }
 
     // Find the latest active announcement that this user hasn't read yet
+    // and which is targeted to ALL users OR specifically to this user
     const [rows] = await promiseDb.query(
       `
       SELECT 
@@ -29,6 +30,14 @@ const getActiveAnnouncementController = async (req, res) => {
         a.created_at
       FROM announcements a
       WHERE a.is_active = 1
+        AND (
+          a.target_type = 'ALL' 
+          OR a.target_type IS NULL
+          OR EXISTS (
+            SELECT 1 FROM announcement_recipients ar2 
+            WHERE ar2.announcement_id = a.id AND ar2.user_id = ?
+          )
+        )
         AND a.id NOT IN (
           SELECT announcement_id 
           FROM announcement_reads 
@@ -37,7 +46,7 @@ const getActiveAnnouncementController = async (req, res) => {
       ORDER BY a.created_at DESC
       LIMIT 1
       `,
-      [userId]
+      [userId, userId]
     );
 
     if (!rows || rows.length === 0) {

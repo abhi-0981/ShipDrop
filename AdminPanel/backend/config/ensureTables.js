@@ -89,6 +89,38 @@ async function ensureTables() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
 
+    // 5. Ensure announcement_recipients table exists (for targeted announcements)
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS announcement_recipients (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        announcement_id INT NOT NULL,
+        user_id INT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_announcement_user (announcement_id, user_id),
+        INDEX idx_recipients_user (user_id),
+        INDEX idx_recipients_announcement (announcement_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
+    // 6. Ensure target_type and target_user_ids columns exist on announcements table
+    try {
+      const [colTargetType] = await db.query(`SHOW COLUMNS FROM announcements LIKE 'target_type'`);
+      if (!colTargetType || colTargetType.length === 0) {
+        await db.query(`ALTER TABLE announcements ADD COLUMN target_type VARCHAR(20) DEFAULT 'ALL'`);
+      }
+    } catch (colErr) {
+      console.warn("Notice checking target_type column:", colErr.message);
+    }
+
+    try {
+      const [colTargetUserIds] = await db.query(`SHOW COLUMNS FROM announcements LIKE 'target_user_ids'`);
+      if (!colTargetUserIds || colTargetUserIds.length === 0) {
+        await db.query(`ALTER TABLE announcements ADD COLUMN target_user_ids TEXT DEFAULT NULL`);
+      }
+    } catch (colErr) {
+      console.warn("Notice checking target_user_ids column:", colErr.message);
+    }
+
     console.log("AdminPanel: Impersonation audit, tickets, and announcements tables verified successfully.");
   } catch (error) {
     console.warn("AdminPanel ensureTables notice:", error.message);
