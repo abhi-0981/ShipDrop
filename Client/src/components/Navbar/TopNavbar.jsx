@@ -736,15 +736,15 @@
               </Link>
             )}
 
-            {/* COMPANY NAME CAPSULE PILL (EXACT DESIGN AS REFERENCED) */}
+            {/* COMPANY NAME BADGE (MATCHING USER REFERENCE RADIUS & BRAND BLUE COLOR) */}
             <div
-              className="flex items-center gap-2 rounded-full border border-slate-200/90 dark:border-slate-800 bg-[#f8fafc] dark:bg-[#151c2c] px-2.5 sm:px-3 py-1 sm:py-1.5 shadow-2xs transition hover:border-slate-300 dark:hover:border-slate-700"
+              className="flex items-center gap-2.5 rounded-[16px] border border-slate-200/90 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-800/80 px-2.5 sm:px-3.5 py-1.5 shadow-2xs transition-all duration-150 hover:border-slate-300 dark:hover:border-slate-700"
               title={`Company: ${displayCompanyName}`}
             >
-              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#057a55] text-[10px] font-black text-white uppercase tracking-wider shadow-2xs">
+              <div className="flex h-7 w-7 sm:h-[30px] sm:w-[30px] shrink-0 items-center justify-center rounded-full bg-[#008dd2] text-[11px] sm:text-[12px] font-black text-white uppercase tracking-wider shadow-xs shadow-[#008dd2]/25">
                 {companyInitials}
               </div>
-              <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-100 truncate max-w-[130px] sm:max-w-[190px] md:max-w-[260px]">
+              <span className="text-[11.5px] sm:text-[12.5px] font-bold uppercase tracking-wider text-slate-800 dark:text-slate-100 truncate max-w-[130px] sm:max-w-[190px] md:max-w-[280px]">
                 {displayCompanyName}
               </span>
             </div>
@@ -866,7 +866,7 @@
                     <div className="min-w-0">
                       <p className="truncate text-xs font-bold text-slate-900 dark:text-slate-100">{userName}</p>
                       {companyName && (
-                        <p className="truncate text-[10.5px] font-bold uppercase tracking-wider text-[#057a55] dark:text-emerald-400">
+                        <p className="truncate text-[10.5px] font-bold uppercase tracking-wider text-[#008dd2] dark:text-[#38bdf8]">
                           {companyName}
                         </p>
                       )}
