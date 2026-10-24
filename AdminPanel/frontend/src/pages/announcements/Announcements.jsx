@@ -524,34 +524,162 @@ export default function Announcements() {
         </div>
       )}
 
-      {/* POPUP PREVIEW MODAL */}
+      {/* POPUP PREVIEW MODAL (EXACT USER SIDE REPLICA) */}
       {previewItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
-          <div className="bg-white rounded-2xl max-w-md w-full border border-slate-200 shadow-2xl p-6 text-center space-y-4 animate-in zoom-in-95 duration-150">
-            <div className="mx-auto h-12 w-12 rounded-2xl bg-sky-50 text-[#008dd2] flex items-center justify-center border border-sky-100">
-              <HiOutlineSpeakerphone className="text-2xl" />
-            </div>
-            <div>
-              <span className="inline-block px-2.5 py-0.5 rounded-full text-[10.5px] font-bold bg-slate-100 text-slate-600 mb-2">
-                Announcement from ShipDrop Admin
-              </span>
-              <h3 className="text-base font-bold text-slate-900 tracking-tight">
-                {previewItem.title}
-              </h3>
-              <p className="text-xs text-slate-600 mt-2 leading-relaxed whitespace-pre-line text-left bg-slate-50 p-3.5 rounded-xl border border-slate-100">
-                {previewItem.description}
-              </p>
-              <p className="text-[10px] text-slate-400 mt-2">
-                Posted: {formatDate(previewItem.created_at)}
-              </p>
-            </div>
+        <div
+          role="dialog"
+          aria-modal="true"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setPreviewItem(null);
+          }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-950/65 backdrop-blur-md animate-in fade-in duration-150 select-none"
+        >
+          <div className="relative w-full max-w-[490px] overflow-hidden rounded-[26px] bg-white border border-slate-200/90 shadow-[0_25px_70px_-15px_rgba(2,12,27,0.35)] animate-in zoom-in-95 duration-150">
+            {/* AMBIENT RADIANT GLOW */}
+            <div
+              className={`absolute -top-24 left-1/2 -translate-x-1/2 w-80 h-36 rounded-full blur-3xl pointer-events-none opacity-60 ${
+                previewItem.type === "UPDATE"
+                  ? "bg-gradient-to-b from-emerald-500/25 via-teal-500/10 to-transparent"
+                  : previewItem.type === "ALERT"
+                  ? "bg-gradient-to-b from-amber-500/25 via-orange-500/10 to-transparent"
+                  : previewItem.type === "WARNING"
+                  ? "bg-gradient-to-b from-rose-500/25 via-red-500/10 to-transparent"
+                  : "bg-gradient-to-b from-sky-500/25 via-blue-500/10 to-transparent"
+              }`}
+            />
+
+            {/* TOP ACCENT LINE */}
+            <div
+              className={`h-[2px] w-full bg-gradient-to-r ${
+                previewItem.type === "UPDATE"
+                  ? "from-transparent via-emerald-400 to-transparent"
+                  : previewItem.type === "ALERT"
+                  ? "from-transparent via-amber-400 to-transparent"
+                  : previewItem.type === "WARNING"
+                  ? "from-transparent via-rose-500 to-transparent"
+                  : "from-transparent via-sky-400 to-transparent"
+              }`}
+            />
+
+            {/* CLOSE BUTTON */}
             <button
               type="button"
               onClick={() => setPreviewItem(null)}
-              className="w-full py-2.5 text-xs font-bold text-white bg-[#008dd2] hover:bg-[#007cb8] rounded-xl transition shadow-xs cursor-pointer"
+              className="absolute top-4 right-4 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-slate-100/90 hover:bg-slate-200 text-slate-400 hover:text-slate-700 transition-all cursor-pointer shadow-xs active:scale-90"
             >
-              I Understand / Close
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
             </button>
+
+            <div className="p-6 sm:p-7 pt-5 relative">
+              {/* TOP META ROW */}
+              <div className="flex items-center justify-between pr-10 mb-5">
+                <span
+                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold border tracking-wide uppercase ${
+                    previewItem.type === "UPDATE"
+                      ? "bg-emerald-50 text-emerald-600 border-emerald-200/80"
+                      : previewItem.type === "ALERT"
+                      ? "bg-amber-50 text-amber-700 border-amber-200/80"
+                      : previewItem.type === "WARNING"
+                      ? "bg-rose-50 text-rose-700 border-rose-200/80"
+                      : "bg-sky-50 text-sky-600 border-sky-200/80"
+                  }`}
+                >
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-current opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-current"></span>
+                  </span>
+                  {previewItem.type === "UPDATE"
+                    ? "Feature Update"
+                    : previewItem.type === "ALERT"
+                    ? "Attention Required"
+                    : previewItem.type === "WARNING"
+                    ? "Urgent Alert"
+                    : "Official Notice"}
+                </span>
+
+                {previewItem.created_at && (
+                  <span className="text-[11px] font-medium text-slate-400">
+                    {formatDate(previewItem.created_at)}
+                  </span>
+                )}
+              </div>
+
+              {/* HERO ICON & AUTHOR */}
+              <div className="flex items-start gap-4 mb-4">
+                <div
+                  className={`flex h-13 w-13 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-2xl text-white shadow-lg ring-4 ring-white ${
+                    previewItem.type === "UPDATE"
+                      ? "bg-gradient-to-br from-emerald-500 to-teal-600 shadow-emerald-500/25"
+                      : previewItem.type === "ALERT"
+                      ? "bg-gradient-to-br from-amber-500 to-orange-500 shadow-amber-500/25"
+                      : previewItem.type === "WARNING"
+                      ? "bg-gradient-to-br from-rose-500 to-red-600 shadow-rose-500/25"
+                      : "bg-gradient-to-br from-sky-500 to-[#008dd2] shadow-sky-500/25"
+                  }`}
+                >
+                  {previewItem.type === "UPDATE" ? (
+                    <HiOutlineSparkles className="text-2xl" />
+                  ) : previewItem.type === "WARNING" || previewItem.type === "ALERT" ? (
+                    <HiOutlineExclamationCircle className="text-2xl" />
+                  ) : (
+                    <HiOutlineSpeakerphone className="text-2xl" />
+                  )}
+                </div>
+
+                <div className="min-w-0 pt-0.5">
+                  <div className="flex items-center gap-1 text-[12px] font-semibold text-slate-500">
+                    <svg className="w-3.5 h-3.5 text-[#008dd2] shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+                    </svg>
+                    <span>ShipDrop Official Broadcast</span>
+                  </div>
+                  <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight leading-snug mt-1">
+                    {previewItem.title}
+                  </h2>
+                </div>
+              </div>
+
+              {/* MESSAGE CONTENT BOX */}
+              <div className="mt-3 rounded-2xl bg-slate-50/80 border border-slate-200/60 p-4 sm:p-4.5">
+                <div className="text-[13px] sm:text-[13.5px] text-slate-700 whitespace-pre-line leading-relaxed font-normal max-h-[220px] overflow-y-auto pr-1">
+                  {previewItem.description}
+                </div>
+              </div>
+
+              {/* ACTION BUTTON */}
+              <div className="mt-5 space-y-2.5">
+                <button
+                  type="button"
+                  onClick={() => setPreviewItem(null)}
+                  className={`w-full py-3 px-5 rounded-xl text-xs sm:text-sm font-bold text-white transition-all shadow-md cursor-pointer flex items-center justify-center gap-2 group ${
+                    previewItem.type === "UPDATE"
+                      ? "bg-gradient-to-r from-emerald-600 via-teal-500 to-emerald-600 shadow-emerald-500/25 hover:brightness-105"
+                      : previewItem.type === "ALERT"
+                      ? "bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 shadow-amber-500/25 hover:brightness-105"
+                      : previewItem.type === "WARNING"
+                      ? "bg-gradient-to-r from-rose-600 via-red-500 to-rose-600 shadow-rose-500/25 hover:brightness-105"
+                      : "bg-gradient-to-r from-[#008dd2] via-sky-500 to-[#007cb8] shadow-sky-500/25 hover:brightness-105"
+                  }`}
+                >
+                  <span>I Have Read and Understood</span>
+                  <svg className="w-4 h-4 transition-transform group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                </button>
+
+                <p className="text-[11px] text-slate-400 text-center flex items-center justify-center gap-1.5">
+                  <svg className="w-3.5 h-3.5 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="16" x2="12" y2="12" />
+                    <line x1="12" y1="8" x2="12.01" y2="8" />
+                  </svg>
+                  <span>This notification won't pop up again once closed.</span>
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       )}
