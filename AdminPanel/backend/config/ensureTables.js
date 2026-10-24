@@ -89,24 +89,6 @@ async function ensureTables() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
 
-    // Ensure target_type & target_user_ids exist on announcements table
-    try {
-      await db.query(`
-        ALTER TABLE announcements 
-        ADD COLUMN target_type VARCHAR(20) DEFAULT 'ALL' AFTER type
-      `);
-    } catch (colErr) {
-      // Column may already exist
-    }
-    try {
-      await db.query(`
-        ALTER TABLE announcements 
-        ADD COLUMN target_user_ids LONGTEXT NULL AFTER target_type
-      `);
-    } catch (colErr) {
-      // Column may already exist
-    }
-
     console.log("AdminPanel: Impersonation audit, tickets, and announcements tables verified successfully.");
   } catch (error) {
     console.warn("AdminPanel ensureTables notice:", error.message);
