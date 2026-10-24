@@ -40,6 +40,7 @@ const Pending = lazy(() => import("./pages/Dashboard/Pending"));
 const CODRemittance = lazy(() => import("./pages/Dashboard/CODRemittance"));
 const OfflineOrders = lazy(() => import("./pages/Dashboard/OfflineOrders"));
 const CreateOfflineOrder = lazy(() => import("./pages/Dashboard/CreateOfflineOrder"));
+const Reports = lazy(() => import("./pages/Dashboard/Reports"));
 
 import { RouteSkeleton } from "./components/Common/TableSkeleton";
 
@@ -362,6 +363,18 @@ function App() {
               element={
                 <Suspense fallback={<RouteLoader />}>
                   <CODRemittance />
+                </Suspense>
+              }
+            />
+
+            {/* ========================================
+                REPORTS
+            ======================================== */}
+            <Route
+              path="/reports"
+              element={
+                <Suspense fallback={<RouteLoader />}>
+                  <Reports />
                 </Suspense>
               }
             />

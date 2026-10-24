@@ -117,6 +117,9 @@ const notificationRoutes =
 const announcementRoutes =
   require("./routes/announcementRoutes");
 
+const reportRoutes =
+  require("./routes/reportRoutes");
+
 
 // ======================================================
 // MIDDLEWARE
@@ -426,6 +429,16 @@ app.use(
 app.use(
   "/announcements",
   announcementRoutes
+);
+
+// USER REPORTS
+app.use(
+  "/api/reports",
+  reportRoutes
+);
+app.use(
+  "/reports",
+  reportRoutes
 );
 
 // SERVICEABILITY

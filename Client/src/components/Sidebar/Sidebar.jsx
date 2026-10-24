@@ -14,6 +14,7 @@ import {
   HiOutlineCreditCard,
   HiOutlineCash,
   HiOutlineCog,
+  HiOutlineDocumentReport,
   HiChevronRight,
   HiChevronDown,
   HiX,
@@ -69,6 +70,9 @@ const prefetchRoute = (path) => {
         break;
       case "/rate-calculator":
         import("../../pages/Dashboard/RateCalculator");
+        break;
+      case "/reports":
+        import("../../pages/Dashboard/Reports");
         break;
       case "/serviceability":
         import("../../pages/Dashboard/Serviceability");
@@ -189,6 +193,7 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
     { name: "Serviceability", path: "/serviceability" },
     { name: "Wallet", path: "/wallet" },
     { name: "Tickets", path: "/tickets" },
+    { name: "Reports", path: "/reports" },
     { name: "Pickup Address", path: "/settings/pickup-address" },
     { name: "Return Addresses", path: "/settings/return-addresses" },
     { name: "Label Settings", path: "/settings/label-settings" },
@@ -781,6 +786,19 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
           >
             <HiOutlineTicket size={20} />
             <span className="ml-3 truncate">Tickets</span>
+          </Link>
+
+          {/* REPORTS */}
+          <Link
+            to="/reports"
+            onMouseEnter={() => prefetchRoute("/reports")}
+            onClick={handleNavClick}
+            className={`flex items-center rounded-xl px-3 py-2.5 text-[14px] transition duration-150 ${activeClass(
+              "/reports",
+            )}`}
+          >
+            <HiOutlineDocumentReport size={20} />
+            <span className="ml-3 truncate">Reports</span>
           </Link>
 
           {/* SETTINGS */}
