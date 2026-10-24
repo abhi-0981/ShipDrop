@@ -751,13 +751,12 @@
           </div>
 
           {/* ======================================================== */}
-          {/* RIGHT SECTION: SEARCH + WALLET + NOTIFICATION + PROFILE (Uniform 40px Height) */}
+          {/* CENTER SECTION: TRACKING SEARCH (Centered in Topbar) */}
           {/* ======================================================== */}
-          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-            {/* TRACKING SEARCH */}
+          <div className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[260px] lg:w-[320px] xl:w-[380px]">
             <form
               onSubmit={handleTrackingSearch}
-              className="hidden md:flex relative items-center w-[240px] lg:w-[290px] xl:w-[340px]"
+              className="relative flex items-center w-full"
             >
               <FiSearch
                 className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
@@ -788,6 +787,12 @@
                 </button>
               )}
             </form>
+          </div>
+
+          {/* ======================================================== */}
+          {/* RIGHT SECTION: WALLET + NOTIFICATION + PROFILE (Uniform 40px Height) */}
+          {/* ======================================================== */}
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0 z-10">
 
             {/* WALLET PILL (40px Height Grid) */}
             <div className="flex h-10 items-center rounded-full bg-violet-50/90 dark:bg-violet-950/40 px-3 border border-violet-100 dark:border-violet-900/50 shrink-0 gap-1.5 shadow-2xs">
