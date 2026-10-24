@@ -22,6 +22,7 @@ const userRoutes = require("./routes/userRoutes");
 const weightCheckingRoutes = require("./routes/weightCheckingRoutes");  
 const impersonateRoutes = require("./routes/impersonateRoutes");
 const analyticsRoutes = require("./routes/analyticsRoutes");
+const announcementRoutes = require("./routes/announcementRoutes");
 const { ensureTables } = require("./config/ensureTables");
 
 ensureTables().catch((err) =>
@@ -315,6 +316,15 @@ app.use(
 app.use(
   "/api/admin/analytics",
   analyticsRoutes
+);
+
+// =====================================================
+// ANNOUNCEMENT / BROADCAST NOTICE ROUTES
+// =====================================================
+
+app.use(
+  "/api/admin/announcements",
+  announcementRoutes
 );
 
 // =====================================================

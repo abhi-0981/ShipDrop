@@ -32,6 +32,8 @@ import CODRemittance from "./pages/orders/CODRemittance";
 
 import WeightChecking from "./pages/weightcheck/WeightChecking";
 
+import Announcements from "./pages/announcements/Announcements";
+
 
 // =====================================================
 // PROTECTED ROUTE
@@ -216,6 +218,16 @@ function App() {
           element={
             <AdminPage>
               <WeightChecking />
+            </AdminPage>
+          }
+        />
+
+        {/* BROADCAST ANNOUNCEMENTS */}
+        <Route
+          path="/announcements"
+          element={
+            <AdminPage>
+              <Announcements />
             </AdminPage>
           }
         />

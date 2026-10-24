@@ -61,7 +61,35 @@ async function ensureTables() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
 
-    console.log("AdminPanel: Impersonation audit and ticket tables verified successfully.");
+    // 3. Ensure announcements table exists
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS announcements (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        description TEXT NOT NULL,
+        type VARCHAR(50) DEFAULT 'INFO',
+        is_active TINYINT(1) DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_announcements_active (is_active),
+        INDEX idx_announcements_created (created_at)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
+    // 4. Ensure announcement_reads table exists
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS announcement_reads (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        announcement_id INT NOT NULL,
+        user_id INT NOT NULL,
+        read_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_user_announcement (user_id, announcement_id),
+        INDEX idx_announcement_reads_user (user_id),
+        INDEX idx_announcement_reads_announcement (announcement_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
+    console.log("AdminPanel: Impersonation audit, tickets, and announcements tables verified successfully.");
   } catch (error) {
     console.warn("AdminPanel ensureTables notice:", error.message);
   }

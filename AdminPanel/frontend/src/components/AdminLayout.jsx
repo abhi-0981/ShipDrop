@@ -11,6 +11,7 @@ import {
   HiOutlineScale,
   HiOutlineCurrencyRupee,
   HiOutlinePresentationChartLine,
+  HiOutlineSpeakerphone,
   HiOutlineX,
   HiX,
 } from "react-icons/hi";
@@ -114,6 +115,11 @@ function AdminLayout({ children }) {
       },
       { name: "Rate Card", path: "/rate-card", icon: HiOutlineCreditCard },
       { name: "Tickets", path: "/tickets", icon: HiOutlineTicket },
+      {
+        name: "Broadcast Notice",
+        path: "/announcements",
+        icon: HiOutlineSpeakerphone,
+      },
     ],
     []
   );

@@ -5,6 +5,7 @@ import Sidebar from "../../components/Sidebar/Sidebar";
 import TopNavbar from "../../components/Navbar/TopNavbar";
 import ImpersonationBanner from "../../components/Common/ImpersonationBanner";
 import CommandPalette from "../../components/Common/CommandPalette";
+import AnnouncementModal from "../../components/Common/AnnouncementModal";
 import { setupOrderCrossTabSync } from "../../services/orderEvents";
 
 function DashboardLayout() {
@@ -34,6 +35,9 @@ function DashboardLayout() {
 
   return (
     <div className="relative min-h-screen bg-[#f6f8fb] dark:bg-[#0b0f19] text-slate-800 dark:text-slate-100 transition-colors duration-200">
+      {/* GLOBAL POPUP ANNOUNCEMENT FROM ADMIN */}
+      <AnnouncementModal />
+
       {/* GLOBAL COMMAND PALETTE (CTRL + K) */}
       <CommandPalette />
 

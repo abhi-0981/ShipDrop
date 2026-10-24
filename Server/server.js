@@ -114,6 +114,9 @@ const offlineOrderRoutes =
 const notificationRoutes =
   require("./routes/notificationRoutes");
 
+const announcementRoutes =
+  require("./routes/announcementRoutes");
+
 
 // ======================================================
 // MIDDLEWARE
@@ -413,6 +416,16 @@ app.use(
 app.use(
   "/api/notifications",
   notificationRoutes
+);
+
+// ANNOUNCEMENTS / BROADCAST POPUPS
+app.use(
+  "/api/announcements",
+  announcementRoutes
+);
+app.use(
+  "/announcements",
+  announcementRoutes
 );
 
 // SERVICEABILITY
