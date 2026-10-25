@@ -774,17 +774,12 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
                     to="/analytics"
                     onMouseEnter={() => prefetchRoute("/analytics")}
                     onClick={handleNavClick}
-                    className={`flex items-center justify-between rounded-lg px-2.5 py-1.5 text-[13px] transition ${subActiveClass(
+                    className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[13px] transition ${subActiveClass(
                       "/analytics",
                     )}`}
                   >
-                    <div className="flex items-center gap-2 truncate">
-                      <HiOutlineChartBar size={16} />
-                      <span className="truncate">Analytics</span>
-                    </div>
-                    <span className="ml-1 rounded-full bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 text-[9px] font-bold text-emerald-600">
-                      NEW
-                    </span>
+                    <HiOutlineChartBar size={16} />
+                    <span className="truncate">Analytics</span>
                   </Link>
 
                   <Link
