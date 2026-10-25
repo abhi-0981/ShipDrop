@@ -5,6 +5,7 @@
   import api from "../../services/api";
   import { notifyOrderChange } from "../../services/orderEvents";
   import shipdropLogo from "../../assets/images/shipdrop-logo.png";
+  import NotificationToast from "../Common/NotificationToast";
 
 
 
@@ -95,6 +96,9 @@
     const [notifications, setNotifications] = useState([]);
     const [unreadNotifCount, setUnreadNotifCount] = useState(0);
     const notifRef = useRef(null);
+    const [activeToastNotification, setActiveToastNotification] = useState(null);
+    const knownNotificationIdsRef = useRef(new Set());
+    const isInitialNotifFetchRef = useRef(true);
     const [amount, setAmount] = useState("");
     const [loading, setLoading] = useState(false);
 
@@ -220,12 +224,37 @@
       try {
         const response = await api.get(`/notifications?user_id=${savedUser.id}`);
         if (response.data?.success) {
+          const list = Array.isArray(response.data.notifications) ? response.data.notifications : [];
           setUnreadNotifCount(Number(response.data.unread_count || 0));
-          setNotifications(Array.isArray(response.data.notifications) ? response.data.notifications : []);
+          setNotifications(list);
+
+          // Detect genuinely NEW incoming unread notifications
+          if (isInitialNotifFetchRef.current) {
+            // First load: cache existing unread IDs so we don't pop up old notifications on page refresh
+            list.forEach((n) => knownNotificationIdsRef.current.add(n.id));
+            isInitialNotifFetchRef.current = false;
+          } else {
+            // Subsequent polls or real-time event updates:
+            const newOnes = list.filter((n) => !knownNotificationIdsRef.current.has(n.id));
+            if (newOnes.length > 0) {
+              newOnes.forEach((n) => knownNotificationIdsRef.current.add(n.id));
+              setActiveToastNotification(newOnes[0]);
+            }
+          }
         }
       } catch (error) {
         // silent fail
       }
+    };
+
+    const handleToastOpen = (notif) => {
+      setActiveToastNotification(null);
+      handleNotificationClick(notif);
+    };
+
+    const handleToastDismiss = () => {
+      // User closed or auto-dismissed: keep it unread inside the bell icon
+      setActiveToastNotification(null);
     };
 
     const handleNotificationClick = (notif) => {
@@ -327,6 +356,31 @@
       const handleNotifUpdate = () => loadNotifications(true);
       window.addEventListener("shipdrop:notificationsUpdated", handleNotifUpdate);
 
+      // Listen for direct real-time incoming notification event
+      const handleDirectNotification = (e) => {
+        if (e?.detail) {
+          knownNotificationIdsRef.current.add(e.detail.id);
+          setActiveToastNotification(e.detail);
+          loadNotifications(true);
+        }
+      };
+      window.addEventListener("shipdrop:newNotification", handleDirectNotification);
+
+      // Console testing helper for user/QA
+      if (typeof window !== "undefined") {
+        window.__testShipDropNotification = (title, message, type = "NDR_ALERT") => {
+          const mockNotif = {
+            id: `test-${Date.now()}`,
+            title: title || "NDR Alert: Customer Unreachable",
+            message: message || "Delivery attempt failed for AWB #DEL882910. Action required to re-attempt.",
+            type,
+            reference_url: "/pending",
+            created_at: new Date().toISOString(),
+          };
+          window.dispatchEvent(new CustomEvent("shipdrop:newNotification", { detail: mockNotif }));
+        };
+      }
+
       const handleVisibilityChange = () => {
         if (document.visibilityState === "visible") {
           loadNotifications(true);
@@ -337,6 +391,7 @@
       return () => {
         clearInterval(notifInterval);
         window.removeEventListener("shipdrop:notificationsUpdated", handleNotifUpdate);
+        window.removeEventListener("shipdrop:newNotification", handleDirectNotification);
         document.removeEventListener("visibilitychange", handleVisibilityChange);
       };
     }, []);
@@ -1567,6 +1622,15 @@
               </p>
             </div>
           </div>
+        )}
+        {/* SLIDE-IN DESKTOP / MOBILE PUSH NOTIFICATION TOAST */}
+        {activeToastNotification && (
+          <NotificationToast
+            notification={activeToastNotification}
+            onOpen={handleToastOpen}
+            onDismiss={handleToastDismiss}
+            duration={6500}
+          />
         )}
       </>
     );
