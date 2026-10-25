@@ -3,6 +3,7 @@ import api from "../../services/api";
 import { subscribeToOrderUpdates } from "../../services/orderEvents";
 import { useNavigate } from "react-router-dom";
 import { DashboardSkeleton } from "../../components/Common/TableSkeleton";
+import { toast } from "react-hot-toast";
 
 // ======================================================
 // ICONS
@@ -115,6 +116,15 @@ const Icon = ({ name, size = 18 }) => {
       <svg {...common}>
         <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" />
         <circle cx="12" cy="10" r="2.5" />
+      </svg>
+    );
+  }
+
+  if (name === "copy") {
+    return (
+      <svg {...common}>
+        <rect x="9" y="9" width="10" height="10" rx="2" />
+        <path d="M15 9V7a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2" />
       </svg>
     );
   }
@@ -603,20 +613,54 @@ function Dashboard() {
     return "—";
   };
 
+  const triggerTracking = (awb) => {
+    if (!awb || awb === "—") return;
+    window.dispatchEvent(
+      new CustomEvent("shipdrop:openTracking", {
+        detail: String(awb).trim(),
+      })
+    );
+  };
+
+  const handleCopyAwb = async (e, awb) => {
+    e.stopPropagation();
+    if (!awb || awb === "—") return;
+    try {
+      await navigator.clipboard.writeText(String(awb).trim());
+      toast.success("AWB copied to clipboard", { id: "awb-copy", duration: 1500 });
+    } catch {
+      toast.error("Unable to copy AWB");
+    }
+  };
+
   const getStatusClass = (status) => {
-    switch (String(status).toUpperCase()) {
-      case "PROCESSING":
-        return "border-amber-100 bg-amber-50 text-amber-600";
-      case "MANIFESTED":
-      case "SHIPPED":
-      case "IN_TRANSIT":
+    const s = String(status || "").trim().toUpperCase().replace(/[-_]+/g, " ");
+
+    switch (s) {
       case "DELIVERED":
-        return "border-emerald-100 bg-emerald-50 text-emerald-600";
+        return "border-emerald-200 bg-emerald-50 text-emerald-700 font-bold";
+      case "MANIFESTED":
+        return "border-sky-200 bg-sky-50 text-sky-700 font-bold";
+      case "NOT PICKED":
+        return "border-orange-200 bg-orange-50 text-orange-700 font-bold";
+      case "IN TRANSIT":
+        return "border-indigo-200 bg-indigo-50 text-indigo-700 font-bold";
+      case "OUT FOR DELIVERY":
+      case "OFD":
+        return "border-cyan-200 bg-cyan-50 text-cyan-700 font-bold";
       case "CANCELLED":
       case "CANCELED":
-        return "border-rose-100 bg-rose-50 text-rose-600";
+        return "border-rose-200 bg-rose-50 text-rose-700 font-bold";
+      case "RTO IN TRANSIT":
+        return "border-amber-200 bg-amber-50 text-amber-700 font-bold";
+      case "RTO DELIVERED":
+      case "RETURN ACCEPTED":
+        return "border-red-200 bg-red-50 text-red-700 font-bold";
+      case "PROCESSING":
+      case "PENDING":
+        return "border-amber-200 bg-amber-50 text-amber-700 font-bold";
       default:
-        return "border-slate-200 bg-slate-50 text-slate-500";
+        return "border-slate-200 bg-slate-100 text-slate-700 font-semibold";
     }
   };
 
@@ -624,9 +668,19 @@ function Dashboard() {
     const value = String(status || "").trim().toUpperCase();
     if (!value) return "Unknown";
 
-    return value
+    const normalized = value.replace(/[-_]+/g, " ");
+    if (normalized === "RTO DELIVERED" || normalized === "RETURN ACCEPTED") {
+      return "RTO Delivered";
+    }
+    if (normalized === "RTO IN TRANSIT") {
+      return "RTO In Transit";
+    }
+    if (normalized === "OUT FOR DELIVERY" || normalized === "OFD") {
+      return "Out For Delivery";
+    }
+
+    return normalized
       .toLowerCase()
-      .replace(/_/g, " ")
       .replace(/\b\w/g, (char) => char.toUpperCase());
   };
 
@@ -769,13 +823,13 @@ function Dashboard() {
           </div>
 
           {/* RECENT ORDERS CONTAINER */}
-          <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_4px_rgba(15,23,42,0.03)]">
-            <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3.5">
+          <div className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-[0_2px_8px_rgba(15,23,42,0.04)]">
+            <div className="flex items-center justify-between border-b border-slate-100 bg-white px-4 sm:px-5 py-3.5">
               <div>
-                <h2 className="text-[14px] font-bold text-slate-800">
+                <h2 className="text-[15px] font-bold tracking-tight text-slate-900">
                   Recent Orders
                 </h2>
-                <p className="mt-0.5 text-[11px] text-slate-400">
+                <p className="mt-0.5 text-[11px] sm:text-[12px] font-medium text-slate-500">
                   Your latest shipment activity
                 </p>
               </div>
@@ -783,10 +837,12 @@ function Dashboard() {
               <button
                 type="button"
                 onClick={() => navigate("/all-orders")}
-                className="flex items-center gap-1 text-[12px] font-bold text-[#008dd2] transition hover:opacity-80"
+                className="group flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[12px] font-bold text-[#008dd2] transition hover:bg-sky-50 hover:text-[#0073ab]"
               >
-                View all
-                <Icon name="arrow-right" size={13} />
+                <span>View all</span>
+                <span className="transition-transform group-hover:translate-x-0.5">
+                  <Icon name="arrow-right" size={13} />
+                </span>
               </button>
             </div>
 
@@ -815,17 +871,21 @@ function Dashboard() {
                 <div className="divide-y divide-slate-100 md:hidden">
                   {recentOrders.map((order) => {
                     const status = getStatus(order);
+                    const awb = getAWB(order);
+                    const payment = getPayment(order);
+                    const customer = getCustomer(order);
+
                     return (
                       <div
                         key={order?.id ?? order?.order_id}
-                        className="p-3.5 space-y-2 hover:bg-slate-50/50 transition-colors"
+                        className="p-3.5 space-y-2.5 hover:bg-slate-50/60 transition-colors"
                       >
                         <div className="flex items-center justify-between">
-                          <span className="text-[13px] font-bold text-slate-800">
+                          <span className="text-[13px] font-bold text-slate-900 tracking-tight">
                             #{getOrderId(order)}
                           </span>
                           <span
-                            className={`inline-flex rounded-md border px-2 py-0.5 text-[10px] font-semibold ${getStatusClass(
+                            className={`inline-flex rounded-md border px-2 py-0.5 text-[10px] ${getStatusClass(
                               status
                             )}`}
                           >
@@ -833,25 +893,52 @@ function Dashboard() {
                           </span>
                         </div>
 
-                        <div className="flex items-center justify-between text-[12px] text-slate-600">
-                          <span className="font-medium truncate max-w-[180px]">
-                            {getCustomer(order)}
+                        <div className="flex items-center justify-between text-[12px]">
+                          <span
+                            className="font-semibold text-slate-800 truncate max-w-[200px]"
+                            title={customer}
+                          >
+                            {customer}
                           </span>
                           <span
-                            className={`rounded px-1.5 py-0.5 text-[10px] font-semibold border ${getPayment(order) === "COD"
-                              ? "border-violet-100 bg-violet-50 text-violet-600"
-                              : "border-slate-200 bg-slate-50 text-slate-500"
-                              }`}
+                            className={`rounded-md px-2 py-0.5 text-[10px] font-bold border ${
+                              payment === "COD"
+                                ? "border-violet-200 bg-violet-50 text-violet-700"
+                                : "border-sky-200 bg-sky-50 text-sky-700"
+                            }`}
                           >
-                            {getPayment(order)}
+                            {payment}
                           </span>
                         </div>
 
-                        <div className="flex items-center justify-between text-[11px] text-slate-400 border-t border-slate-50 pt-1.5">
-                          <span className="font-mono">
-                            AWB: {getAWB(order) || "—"}
+                        <div className="flex items-center justify-between text-[11px] border-t border-slate-100 pt-2">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-slate-500 font-medium">AWB:</span>
+                            {awb && awb !== "—" ? (
+                              <div className="flex items-center gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => triggerTracking(awb)}
+                                  className="font-mono font-bold text-slate-800 hover:text-[#008dd2] underline decoration-slate-300 underline-offset-2 hover:decoration-[#008dd2] transition"
+                                >
+                                  {awb}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(e) => handleCopyAwb(e, awb)}
+                                  title="Copy AWB"
+                                  className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded transition"
+                                >
+                                  <Icon name="copy" size={12} />
+                                </button>
+                              </div>
+                            ) : (
+                              <span className="text-slate-400">—</span>
+                            )}
+                          </div>
+                          <span className="text-slate-500 font-medium">
+                            {formatDate(order?.created_at)}
                           </span>
-                          <span>{formatDate(order?.created_at)}</span>
                         </div>
                       </div>
                     );
@@ -860,66 +947,97 @@ function Dashboard() {
 
                 {/* 2. TABLET & DESKTOP: Traditional Table View */}
                 <div className="hidden md:block overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="border-b border-slate-100 bg-slate-50/70">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-200 bg-slate-50/80">
+                        <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-600">
                           Order
                         </th>
-                        <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                        <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-600">
                           Customer
                         </th>
-                        <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                        <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-600">
                           AWB
                         </th>
-                        <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                        <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-600">
                           Payment
                         </th>
-                        <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                        <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-600">
                           Status
                         </th>
-                        <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                        <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-600">
                           Date
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100 text-[12px]">
+                    <tbody className="divide-y divide-slate-100 text-[13px]">
                       {recentOrders.map((order) => {
                         const status = getStatus(order);
+                        const awb = getAWB(order);
+                        const customer = getCustomer(order);
+                        const payment = getPayment(order);
+
                         return (
                           <tr
                             key={order?.id ?? order?.order_id}
-                            className="transition-colors hover:bg-slate-50/60"
+                            className="transition-colors hover:bg-slate-50/80 group"
                           >
-                            <td className="px-4 py-3 font-semibold text-slate-800">
+                            <td className="px-4 py-3.5 font-bold text-slate-900 whitespace-nowrap">
                               #{getOrderId(order)}
                             </td>
-                            <td className="max-w-[140px] px-4 py-3 truncate font-medium text-slate-700">
-                              {getCustomer(order)}
-                            </td>
-                            <td className="px-4 py-3 text-slate-500 font-mono text-[11px]">
-                              {getAWB(order) || "—"}
-                            </td>
-                            <td className="px-4 py-3">
+                            <td className="px-4 py-3.5 font-semibold text-slate-800">
                               <span
-                                className={`inline-flex rounded-md border px-2 py-0.5 text-[10px] font-semibold ${getPayment(order) === "COD"
-                                  ? "border-violet-100 bg-violet-50 text-violet-600"
-                                  : "border-slate-200 bg-slate-50 text-slate-500"
-                                  }`}
+                                className="inline-block max-w-[200px] truncate align-middle"
+                                title={customer}
                               >
-                                {getPayment(order)}
+                                {customer}
                               </span>
                             </td>
-                            <td className="px-4 py-3">
+                            <td className="px-4 py-3.5 whitespace-nowrap">
+                              {awb && awb !== "—" ? (
+                                <div className="flex items-center gap-1.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => triggerTracking(awb)}
+                                    title="Click to track shipment"
+                                    className="font-mono text-[12px] font-bold text-slate-800 hover:text-[#008dd2] transition cursor-pointer select-none underline decoration-slate-300 underline-offset-2 hover:decoration-[#008dd2]"
+                                  >
+                                    {awb}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => handleCopyAwb(e, awb)}
+                                    title="Copy AWB"
+                                    className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 rounded transition"
+                                  >
+                                    <Icon name="copy" size={13} />
+                                  </button>
+                                </div>
+                              ) : (
+                                <span className="text-slate-400 font-medium text-[12px]">—</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3.5 whitespace-nowrap">
                               <span
-                                className={`inline-flex rounded-md border px-2 py-0.5 text-[10px] font-semibold ${getStatusClass(
+                                className={`inline-flex items-center rounded-md border px-2.5 py-0.5 text-[10px] font-bold tracking-wide uppercase ${
+                                  payment === "COD"
+                                    ? "border-violet-200 bg-violet-50 text-violet-700"
+                                    : "border-sky-200 bg-sky-50 text-sky-700"
+                                }`}
+                              >
+                                {payment}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3.5 whitespace-nowrap">
+                              <span
+                                className={`inline-flex items-center rounded-md border px-2.5 py-0.5 text-[11px] ${getStatusClass(
                                   status
                                 )}`}
                               >
                                 {getStatusLabel(status)}
                               </span>
                             </td>
-                            <td className="px-4 py-3 text-[11px] text-slate-400">
+                            <td className="px-4 py-3.5 text-[12px] font-medium text-slate-600 whitespace-nowrap">
                               {formatDate(order?.created_at)}
                             </td>
                           </tr>
