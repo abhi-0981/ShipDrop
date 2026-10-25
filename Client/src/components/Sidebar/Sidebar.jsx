@@ -16,6 +16,7 @@ import {
   HiOutlineCog,
   HiOutlineDocumentReport,
   HiOutlineScale,
+  HiOutlineChartBar,
   HiChevronRight,
   HiChevronDown,
   HiX,
@@ -31,6 +32,9 @@ const prefetchRoute = (path) => {
     switch (path) {
       case "/dashboard":
         import("../../pages/Dashboard/Dashboard");
+        break;
+      case "/analytics":
+        import("../../pages/Dashboard/Analytics");
         break;
       case "/create-order":
         import("../../pages/Dashboard/CreateOrder");
@@ -189,6 +193,9 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
 
   const sidebarSearchItems = [
     { name: "Dashboard", path: "/dashboard" },
+    { name: "Analytics", path: "/analytics" },
+    { name: "Business Analytics", path: "/analytics" },
+    { name: "India Sales Heatmap", path: "/analytics" },
     { name: "Create Order", path: "/create-order" },
     { name: "Create Offline Order", path: "/create-offline-order" },
     { name: "Processing Orders", path: "/processing-orders" },
@@ -574,6 +581,22 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
           >
             <HiOutlineViewGrid size={20} />
             <span className="ml-3 truncate">Dashboard</span>
+          </Link>
+
+          {/* BUSINESS ANALYTICS & HEATMAP */}
+          <Link
+            to="/analytics"
+            onMouseEnter={() => prefetchRoute("/analytics")}
+            onClick={handleNavClick}
+            className={`flex items-center rounded-xl px-3 py-2.5 text-[14px] transition duration-150 ${activeClass(
+              "/analytics",
+            )}`}
+          >
+            <HiOutlineChartBar size={20} />
+            <span className="ml-3 truncate">Analytics</span>
+            <span className="ml-auto rounded-full bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 text-[9px] font-bold text-emerald-600">
+              NEW
+            </span>
           </Link>
 
           {/* CREATE ORDER */}

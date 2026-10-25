@@ -120,6 +120,9 @@ const announcementRoutes =
 const reportRoutes =
   require("./routes/reportRoutes");
 
+const analyticsRoutes =
+  require("./routes/analyticsRoutes");
+
 
 // ======================================================
 // MIDDLEWARE
@@ -439,6 +442,16 @@ app.use(
 app.use(
   "/reports",
   reportRoutes
+);
+
+// SELLER ANALYTICS
+app.use(
+  "/api/analytics",
+  analyticsRoutes
+);
+app.use(
+  "/analytics",
+  analyticsRoutes
 );
 
 // SERVICEABILITY

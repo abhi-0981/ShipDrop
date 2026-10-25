@@ -9,6 +9,7 @@ const NAVIGATION_ITEMS = [
   { id: "create-order", title: "Create New Order", category: "Actions", path: "/create-order", icon: "plus", shortcut: "C" },
   { id: "create-offline", title: "Create Offline Order", category: "Actions", path: "/create-offline-order", icon: "document", shortcut: "O" },
   { id: "dashboard", title: "Dashboard Overview", category: "Pages", path: "/dashboard", icon: "home" },
+  { id: "analytics", title: "Business Analytics & Heatmap", category: "Pages", path: "/analytics", icon: "navigation" },
   { id: "all-orders", title: "All Orders", category: "Orders", path: "/all-orders", icon: "box", shortcut: "A" },
   { id: "processing", title: "Ready to Ship (Processing)", category: "Orders", path: "/processing-orders", icon: "clock" },
   { id: "offline-orders", title: "Offline Orders", category: "Orders", path: "/offline-orders", icon: "truck" },

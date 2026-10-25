@@ -43,6 +43,7 @@ const CreateOfflineOrder = lazy(() => import("./pages/Dashboard/CreateOfflineOrd
 const Reports = lazy(() => import("./pages/Dashboard/Reports"));
 const ShipmentLifecycleReport = lazy(() => import("./pages/Dashboard/ShipmentLifecycleReport"));
 const WeightDiscrepancyReport = lazy(() => import("./pages/Dashboard/WeightDiscrepancyReport"));
+const Analytics = lazy(() => import("./pages/Dashboard/Analytics"));
 
 import { RouteSkeleton } from "./components/Common/TableSkeleton";
 
@@ -90,6 +91,16 @@ function App() {
               element={
                 <Suspense fallback={<RouteLoader />}>
                   <Dashboard />
+                </Suspense>
+              }
+            />
+
+            {/* Business Analytics */}
+            <Route
+              path="/analytics"
+              element={
+                <Suspense fallback={<RouteLoader />}>
+                  <Analytics />
                 </Suspense>
               }
             />
