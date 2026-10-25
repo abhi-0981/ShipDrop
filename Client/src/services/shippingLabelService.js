@@ -1964,152 +1964,9 @@ const prepareLabels = async (orders) => {
   };
 };
 
-export const printShippingLabels = async (
-  orders,
-  title = "ParcelDrop Shipping Labels"
-) => {
+export const generateShippingLabelsPdf = async (orders) => {
   if (!Array.isArray(orders) || orders.length === 0) {
-    toast.error("Please select at least one shipment");
-    return;
-  }
-
-  try {
-    const {
-      settings,
-      detailedOrders,
-      size,
-      leftLogoData,
-      rightLogoData,
-    } = await prepareLabels(orders);
-
-    const html = detailedOrders
-      .map((order) =>
-        buildLabelHtml(
-          order,
-          settings,
-          leftLogoData,
-          rightLogoData,
-          size
-        )
-      )
-      .join("");
-
-    const win = window.open(
-      "",
-      "_blank",
-      "width=900,height=700"
-    );
-
-    if (!win) {
-      toast.error("Please allow pop-ups to print");
-      return;
-    }
-
-    win.document.open();
-
-    win.document.write(`
-      <!doctype html>
-      <html>
-        <head>
-          <meta charset="utf-8">
-<title>${getParcelDropFilename()}</title>          <style>
-            html, body {
-              margin: 0;
-              padding: 0;
-              background: #fff;
-            }
-
-            * {
-              box-sizing: border-box;
-            }
-
-            @page {
-              size: ${size.widthIn}in ${size.heightIn}in;
-              margin: 0;
-            }
-
-            @media print {
-              html, body {
-                margin: 0 !important;
-                padding: 0 !important;
-              }
-
-              .shipping-label {
-                page-break-after: always;
-              }
-
-              .shipping-label:last-child {
-                page-break-after: auto;
-              }
-            }
-          </style>
-        </head>
-
-        <body>${html}</body>
-      </html>
-    `);
-
-    win.document.close();
-
-    let printStarted = false;
-
-    const printWhenReady = async () => {
-      if (printStarted || win.closed) return;
-
-      const images = Array.from(win.document.images);
-
-      await Promise.all(
-        images.map((img) => {
-          if (img.complete && img.naturalWidth > 0) {
-            return Promise.resolve();
-          }
-
-          return new Promise((resolve) => {
-            img.onload = resolve;
-            img.onerror = resolve;
-          });
-        })
-      );
-
-      if (win.closed || printStarted) return;
-
-      printStarted = true;
-      win.focus();
-      win.print();
-    };
-
-    win.addEventListener(
-      "load",
-      () => {
-        printWhenReady().catch((error) =>
-          console.error("Print readiness error:", error)
-        );
-      },
-      { once: true }
-    );
-
-    window.setTimeout(() => {
-      printWhenReady().catch((error) =>
-        console.error("Print readiness error:", error)
-      );
-    }, 1000);
-
-    toast.success(
-      `${detailedOrders.length} label(s) ready to print`
-    );
-  } catch (error) {
-    console.error("Print label error:", error);
-
-    toast.error(
-      error?.message || "Unable to print labels"
-    );
-  }
-};
-
-export const downloadShippingLabels = async (orders) => {
-  if (!Array.isArray(orders) || orders.length === 0) {
-    toast.error("Please select at least one shipment");
-    return;
+    throw new Error("Please select at least one shipment");
   }
 
   let iframe = null;
@@ -2280,6 +2137,15 @@ export const downloadShippingLabels = async (orders) => {
       ],
 
       compress: true,
+    });
+
+    const filename = `${getParcelDropFilename()}.pdf`;
+
+    pdf.setProperties({
+      title: getParcelDropFilename(),
+      subject: "ParcelDrop Shipping Label",
+      creator: "ParcelDrop",
+      author: "ParcelDrop",
     });
 
     // =====================================================
@@ -2454,37 +2320,12 @@ export const downloadShippingLabels = async (orders) => {
       );
     }
 
-    // =====================================================
-    // FILE NAME
-    // =====================================================
-
- const filename = `${getParcelDropFilename()}.pdf`;
-
-    // =====================================================
-    // DOWNLOAD
-    // =====================================================
-
-    pdf.save(filename);
-
-    toast.success(
-      `${detailedOrders.length} ${
-        detailedOrders.length === 1
-          ? "label"
-          : "labels"
-      } downloaded`
-    );
-
-  } catch (error) {
-    console.error(
-      "Download label error:",
-      error
-    );
-
-    toast.error(
-      error?.message ||
-        "Unable to download labels"
-    );
-
+    return {
+      pdf,
+      filename,
+      detailedOrders,
+      size,
+    };
   } finally {
     // Iframe cleanup
     if (iframe) {
@@ -2492,3 +2333,120 @@ export const downloadShippingLabels = async (orders) => {
     }
   }
 };
+
+export const printShippingLabels = async (
+  orders,
+  title = "ParcelDrop Shipping Labels"
+) => {
+  if (!Array.isArray(orders) || orders.length === 0) {
+    toast.error("Please select at least one shipment");
+    return;
+  }
+
+  // Open preview tab immediately to prevent browser popup blockers
+  const previewTab = window.open("", "_blank");
+  if (previewTab) {
+    try {
+      previewTab.document.write(`
+        <!doctype html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <title>${getParcelDropFilename()}</title>
+            <style>
+              body {
+                margin: 0;
+                height: 100vh;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                background-color: #2b2b2b;
+                color: #e0e0e0;
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+              }
+              .spinner {
+                width: 42px;
+                height: 42px;
+                border: 4px solid rgba(255, 255, 255, 0.15);
+                border-top: 4px solid #3b82f6;
+                border-radius: 50%;
+                animation: spin 0.8s linear infinite;
+                margin-bottom: 16px;
+              }
+              @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+              .title { font-size: 16px; font-weight: 500; letter-spacing: 0.2px; }
+              .sub { font-size: 12px; color: #9ca3af; margin-top: 6px; }
+            </style>
+          </head>
+          <body>
+            <div class="spinner"></div>
+            <div class="title">Generating Shipping Label PDF...</div>
+            <div class="sub">Opening in PDF Viewer</div>
+          </body>
+        </html>
+      `);
+      previewTab.document.close();
+    } catch (e) {
+      console.warn("Could not write initial loading screen to preview tab", e);
+    }
+  }
+
+  try {
+    const { pdf, filename, detailedOrders } = await generateShippingLabelsPdf(orders);
+
+    const pdfBlob = pdf.output("blob");
+    const blobUrl = URL.createObjectURL(
+      new Blob([pdfBlob], { type: "application/pdf" })
+    );
+
+    if (previewTab && !previewTab.closed) {
+      previewTab.location.href = blobUrl;
+    } else {
+      window.open(blobUrl, "_blank");
+    }
+
+    toast.success(
+      `${detailedOrders.length} ${
+        detailedOrders.length === 1 ? "label" : "labels"
+      } opened in PDF viewer`
+    );
+  } catch (error) {
+    console.error("Print label error:", error);
+
+    if (previewTab && !previewTab.closed) {
+      previewTab.close();
+    }
+
+    toast.error(
+      error?.message || "Unable to print labels"
+    );
+  }
+};
+
+export const downloadShippingLabels = async (orders) => {
+  if (!Array.isArray(orders) || orders.length === 0) {
+    toast.error("Please select at least one shipment");
+    return;
+  }
+
+  try {
+    const { pdf, filename, detailedOrders } =
+      await generateShippingLabelsPdf(orders);
+
+    pdf.save(filename);
+
+    toast.success(
+      `${detailedOrders.length} ${
+        detailedOrders.length === 1 ? "label" : "labels"
+      } downloaded`
+    );
+  } catch (error) {
+    console.error("Download label error:", error);
+
+    toast.error(
+      error?.message || "Unable to download labels"
+    );
+  }
+};
+
