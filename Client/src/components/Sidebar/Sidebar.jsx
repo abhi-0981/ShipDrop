@@ -17,11 +17,12 @@ import {
   HiOutlineDocumentReport,
   HiOutlineScale,
   HiOutlineChartBar,
+  HiOutlineTag,
   HiChevronRight,
   HiChevronDown,
   HiX,
 } from "react-icons/hi";
-import { FiMenu } from "react-icons/fi";
+import { FiMenu, FiTool } from "react-icons/fi";
 import api from "../../services/api";
 import { fetchOrderStatusCounts } from "../../services/orderEvents";
 import shipdropLogo from "../../assets/images/shipdrop-logo.png";
@@ -72,6 +73,9 @@ const prefetchRoute = (path) => {
         break;
       case "/rto-delivered":
         import("../../pages/Dashboard/RTODelivered");
+        break;
+      case "/rate-card":
+        import("../../pages/Dashboard/RateCard");
         break;
       case "/rate-calculator":
         import("../../pages/Dashboard/RateCalculator");
@@ -160,7 +164,15 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
     "/pending",
   ].includes(location.pathname);
 
+  const isToolPath = [
+    "/analytics",
+    "/rate-card",
+    "/rate-calculator",
+    "/serviceability",
+  ].includes(location.pathname);
+
   const [showOrders, setShowOrders] = useState(isOrderPath);
+  const [showTools, setShowTools] = useState(isToolPath);
   const [showFinance, setShowFinance] = useState(
     location.pathname === "/wallet" ||
       location.pathname === "/cod-remittance",
@@ -171,6 +183,19 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
   const [showReports, setShowReports] = useState(
     location.pathname.startsWith("/reports"),
   );
+
+  useEffect(() => {
+    if (
+      [
+        "/analytics",
+        "/rate-card",
+        "/rate-calculator",
+        "/serviceability",
+      ].includes(location.pathname)
+    ) {
+      setShowTools(true);
+    }
+  }, [location.pathname]);
 
   useEffect(() => {
     if (location.pathname.startsWith("/reports")) {
@@ -193,9 +218,11 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
 
   const sidebarSearchItems = [
     { name: "Dashboard", path: "/dashboard" },
+    { name: "Tools", path: "/analytics" },
     { name: "Analytics", path: "/analytics" },
     { name: "Business Analytics", path: "/analytics" },
     { name: "India Sales Heatmap", path: "/analytics" },
+    { name: "Rate Card", path: "/rate-card" },
     { name: "Create Order", path: "/create-order" },
     { name: "Create Offline Order", path: "/create-offline-order" },
     { name: "Processing Orders", path: "/processing-orders" },
@@ -583,22 +610,6 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
             <span className="ml-3 truncate">Dashboard</span>
           </Link>
 
-          {/* BUSINESS ANALYTICS & HEATMAP */}
-          <Link
-            to="/analytics"
-            onMouseEnter={() => prefetchRoute("/analytics")}
-            onClick={handleNavClick}
-            className={`flex items-center rounded-xl px-3 py-2.5 text-[14px] transition duration-150 ${activeClass(
-              "/analytics",
-            )}`}
-          >
-            <HiOutlineChartBar size={20} />
-            <span className="ml-3 truncate">Analytics</span>
-            <span className="ml-auto rounded-full bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 text-[9px] font-bold text-emerald-600">
-              NEW
-            </span>
-          </Link>
-
           {/* CREATE ORDER */}
           <Link
             to="/create-order"
@@ -746,29 +757,81 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
             </div>
           </div>
 
-          {/* RATE CALCULATOR */}
-          <Link
-            to="/rate-calculator"
-            onClick={handleNavClick}
-            className={`flex items-center rounded-xl px-3 py-2.5 text-[14px] transition duration-150 ${activeClass(
-              "/rate-calculator",
-            )}`}
-          >
-            <HiOutlineCalculator size={20} />
-            <span className="ml-3 truncate">Rate Calculator</span>
-          </Link>
+          {/* TOOLS ACCORDION */}
+          <div>
+            <button
+              onClick={() => setShowTools(!showTools)}
+              className="flex w-full items-center rounded-xl px-3 py-2.5 text-[14px] text-slate-600 dark:text-slate-300 transition hover:bg-slate-100 dark:hover:bg-slate-800"
+            >
+              <FiTool size={18} />
+              <span className="ml-3 flex-1 text-left truncate">Tools</span>
+              <HiChevronRight
+                size={17}
+                className={`transition-transform duration-300 ease-in-out ${
+                  showTools ? "rotate-90 text-slate-800 dark:text-slate-200" : "rotate-0 text-slate-400"
+                }`}
+              />
+            </button>
 
-          {/* SERVICEABILITY */}
-          <Link
-            to="/serviceability"
-            onClick={handleNavClick}
-            className={`flex items-center rounded-xl px-3 py-2.5 text-[14px] transition duration-150 ${activeClass(
-              "/serviceability",
-            )}`}
-          >
-            <HiOutlineLocationMarker size={20} />
-            <span className="ml-3 truncate">Serviceability</span>
-          </Link>
+            <div className={`sidebar-accordion ${showTools ? "is-open" : ""}`}>
+              <div>
+                <div className="mt-1 ml-5 space-y-1 border-l-2 border-slate-100 dark:border-slate-800 pl-3 py-0.5">
+                  <Link
+                    to="/analytics"
+                    onMouseEnter={() => prefetchRoute("/analytics")}
+                    onClick={handleNavClick}
+                    className={`flex items-center justify-between rounded-lg px-2.5 py-1.5 text-[13px] transition ${subActiveClass(
+                      "/analytics",
+                    )}`}
+                  >
+                    <div className="flex items-center gap-2 truncate">
+                      <HiOutlineChartBar size={16} />
+                      <span className="truncate">Analytics</span>
+                    </div>
+                    <span className="ml-1 rounded-full bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 text-[9px] font-bold text-emerald-600">
+                      NEW
+                    </span>
+                  </Link>
+
+                  <Link
+                    to="/rate-card"
+                    onMouseEnter={() => prefetchRoute("/rate-card")}
+                    onClick={handleNavClick}
+                    className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[13px] transition ${subActiveClass(
+                      "/rate-card",
+                    )}`}
+                  >
+                    <HiOutlineTag size={16} />
+                    <span className="truncate">Rate Card</span>
+                  </Link>
+
+                  <Link
+                    to="/rate-calculator"
+                    onMouseEnter={() => prefetchRoute("/rate-calculator")}
+                    onClick={handleNavClick}
+                    className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[13px] transition ${subActiveClass(
+                      "/rate-calculator",
+                    )}`}
+                  >
+                    <HiOutlineCalculator size={16} />
+                    <span className="truncate">Rate Calculator</span>
+                  </Link>
+
+                  <Link
+                    to="/serviceability"
+                    onMouseEnter={() => prefetchRoute("/serviceability")}
+                    onClick={handleNavClick}
+                    className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[13px] transition ${subActiveClass(
+                      "/serviceability",
+                    )}`}
+                  >
+                    <HiOutlineLocationMarker size={16} />
+                    <span className="truncate">Serviceability</span>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
 
           {/* FINANCE */}
           <div>

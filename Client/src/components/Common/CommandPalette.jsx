@@ -9,7 +9,10 @@ const NAVIGATION_ITEMS = [
   { id: "create-order", title: "Create New Order", category: "Actions", path: "/create-order", icon: "plus", shortcut: "C" },
   { id: "create-offline", title: "Create Offline Order", category: "Actions", path: "/create-offline-order", icon: "document", shortcut: "O" },
   { id: "dashboard", title: "Dashboard Overview", category: "Pages", path: "/dashboard", icon: "home" },
-  { id: "analytics", title: "Business Analytics & Heatmap", category: "Pages", path: "/analytics", icon: "navigation" },
+  { id: "analytics", title: "Business Analytics & Heatmap", category: "Tools", path: "/analytics", icon: "chart" },
+  { id: "rate-card", title: "Courier Rate Card", category: "Tools", path: "/rate-card", icon: "document" },
+  { id: "rate-calc", title: "Rate Calculator", category: "Tools", path: "/rate-calculator", icon: "calculator", shortcut: "R" },
+  { id: "serviceability", title: "Pincode Serviceability", category: "Tools", path: "/serviceability", icon: "map-pin" },
   { id: "all-orders", title: "All Orders", category: "Orders", path: "/all-orders", icon: "box", shortcut: "A" },
   { id: "processing", title: "Ready to Ship (Processing)", category: "Orders", path: "/processing-orders", icon: "clock" },
   { id: "offline-orders", title: "Offline Orders", category: "Orders", path: "/offline-orders", icon: "truck" },
@@ -107,6 +110,14 @@ const Icon = ({ name, className = "h-4 w-4" }) => {
         <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
           <circle cx="12" cy="10" r="3" />
+        </svg>
+      );
+    case "chart":
+      return (
+        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="18" y1="20" x2="18" y2="10" />
+          <line x1="12" y1="20" x2="12" y2="4" />
+          <line x1="6" y1="20" x2="6" y2="14" />
         </svg>
       );
     default:
