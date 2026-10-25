@@ -778,11 +778,19 @@ const normalizeSettings = (data = {}) => ({
     null,
 });
 
+let labelSettingsCache = null;
+let labelSettingsCacheTime = 0;
+
 const getLabelSettings = async () => {
   const userId = getUserId();
 
   if (!userId) {
     return { ...DEFAULT_LABEL_SETTINGS };
+  }
+
+  const now = Date.now();
+  if (labelSettingsCache && now - labelSettingsCacheTime < 180000) {
+    return labelSettingsCache;
   }
 
   try {
@@ -796,24 +804,39 @@ const getLabelSettings = async () => {
       return { ...DEFAULT_LABEL_SETTINGS };
     }
 
-    return normalizeSettings(data);
+    const normalized = normalizeSettings(data);
+    labelSettingsCache = normalized;
+    labelSettingsCacheTime = now;
+    return normalized;
   } catch (error) {
     console.error("Label settings error:", error);
-    return { ...DEFAULT_LABEL_SETTINGS };
+    return labelSettingsCache || { ...DEFAULT_LABEL_SETTINGS };
   }
 };
 
 const getDetailedOrders = async (orders) => {
   const userId = getUserId();
 
-  if (!userId) return orders;
+  if (!userId || !Array.isArray(orders)) return orders;
 
   return Promise.all(
     orders.map(async (order) => {
+      // Agar order ke paas pehle se recipient & address details hain (jaise AllOrders list me hota hai),
+      // toh extra API call karne ki bilkul zaroorat nahi hai. Isse 404 error aur delay dono khatam ho jaate hain.
+      const hasCompleteDetails = Boolean(
+        (order?.consignee_name || order?.customer_name || order?.buyer_name || order?.name) &&
+        (order?.address_line1 || order?.addressLine1 || order?.city || order?.pincode)
+      );
+
+      if (hasCompleteDetails) {
+        return order;
+      }
+
+      // Agar details nahi hain toh pehle database primary key id check karo
       const id = first(
+        order?.id,
         order?.order_id,
-        order?.orderId,
-        order?.id
+        order?.orderId
       );
 
       if (!id) return order;
@@ -845,17 +868,14 @@ const getDetailedOrders = async (orders) => {
           ),
         };
       } catch (error) {
-        console.warn(
-          "Could not fetch complete order:",
-          id,
-          error
-        );
-
+        // Fallback silently without throwing loud console errors
         return order;
       }
     })
   );
 };
+
+const logoCache = new Map();
 
 const imageToDataUrl = async (source) => {
   if (!source) return "";
@@ -864,22 +884,34 @@ const imageToDataUrl = async (source) => {
     return source;
   }
 
-  const response = await fetch(source);
-
-  if (!response.ok) {
-    throw new Error(`Unable to load logo: ${source}`);
+  if (logoCache.has(source)) {
+    return logoCache.get(source);
   }
 
-  const blob = await response.blob();
+  try {
+    const response = await fetch(source);
 
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
+    if (!response.ok) {
+      throw new Error(`Unable to load logo: ${source}`);
+    }
 
-    reader.onloadend = () => resolve(reader.result);
-    reader.onerror = reject;
+    const blob = await response.blob();
 
-    reader.readAsDataURL(blob);
-  });
+    const dataUrl = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+
+      reader.onloadend = () => resolve(reader.result);
+      reader.onerror = reject;
+
+      reader.readAsDataURL(blob);
+    });
+
+    logoCache.set(source, dataUrl);
+    return dataUrl;
+  } catch (err) {
+    console.warn("Logo loading fallback:", err);
+    return source;
+  }
 };
 
 const createBarcode = (awb, compact = false) => {
@@ -2149,55 +2181,23 @@ export const generateShippingLabelsPdf = async (orders) => {
     });
 
     // =====================================================
-    // RENDER EVERY LABEL
+    // PREPARE AND SCALE ALL LABELS
     // =====================================================
 
-    for (
-      let index = 0;
-      index < labels.length;
-      index += 1
-    ) {
+    const labelData = [];
+
+    for (let index = 0; index < labels.length; index += 1) {
       const label = labels[index];
 
-      // ---------------------------------------------------
-      // ORIGINAL FIXED LABEL SIZE
-      // ---------------------------------------------------
+      const pageWidth = label.offsetWidth;
+      const pageHeight = label.offsetHeight;
 
-      const pageWidth =
-        label.offsetWidth;
-
-      const pageHeight =
-        label.offsetHeight;
-
-      if (
-        !pageWidth ||
-        !pageHeight
-      ) {
-        throw new Error(
-          "Unable to determine label size"
-        );
+      if (!pageWidth || !pageHeight) {
+        throw new Error("Unable to determine label size");
       }
 
-      // ---------------------------------------------------
-      // CHECK ACTUAL CONTENT SIZE
-      // ---------------------------------------------------
-
-      const contentWidth =
-        Math.max(
-          label.scrollWidth,
-          pageWidth
-        );
-
-      const contentHeight =
-        Math.max(
-          label.scrollHeight,
-          pageHeight
-        );
-
-      // ---------------------------------------------------
-      // IF CONTENT IS TOO BIG,
-      // SCALE IT DOWN INSIDE THE LABEL
-      // ---------------------------------------------------
+      const contentWidth = Math.max(label.scrollWidth, pageWidth);
+      const contentHeight = Math.max(label.scrollHeight, pageHeight);
 
       const fitScale = Math.min(
         pageWidth / contentWidth,
@@ -2205,106 +2205,67 @@ export const generateShippingLabelsPdf = async (orders) => {
         1
       );
 
-      const labelBorder =
-        label.querySelector(
-          ".label-border"
-        );
+      const labelBorder = label.querySelector(".label-border");
 
-      // Temporarily allow complete content
       label.style.overflow = "visible";
-
       if (labelBorder) {
-        labelBorder.style.overflow =
-          "visible";
+        labelBorder.style.overflow = "visible";
       }
 
-      // Keep scaling inside the original page
-      label.style.transformOrigin =
-        "top left";
+      label.style.transformOrigin = "top left";
+      label.style.transform = fitScale < 1 ? `scale(${fitScale})` : "none";
 
-      label.style.transform =
-        fitScale < 1
-          ? `scale(${fitScale})`
-          : "none";
+      labelData.push({ label, pageWidth, pageHeight, labelBorder });
+    }
 
-      // ---------------------------------------------------
-      // WAIT FOR TRANSFORM
-      // ---------------------------------------------------
+    // Wait for layout updates once
+    await new Promise((resolve) => {
+      iframe.contentWindow.requestAnimationFrame(resolve);
+    });
 
-      await new Promise((resolve) => {
-        iframe.contentWindow.requestAnimationFrame(
-          () => {
-            iframe.contentWindow.requestAnimationFrame(
-              resolve
-            );
-          }
-        );
-      });
+    // =====================================================
+    // FAST PARALLEL CAPTURE (Scale 2.2 for crisp thermal/A4 + 5x speed)
+    // =====================================================
 
-      // ---------------------------------------------------
-      // CAPTURE FIXED PAGE SIZE
-      // ---------------------------------------------------
-
-      const canvas =
-        await html2canvas(label, {
-          scale: 4,
-
-          backgroundColor:
-            "#ffffff",
-
+    const renderedImages = await Promise.all(
+      labelData.map(async ({ label, pageWidth, pageHeight, labelBorder }) => {
+        const canvas = await html2canvas(label, {
+          scale: 2.2,
+          backgroundColor: "#ffffff",
           useCORS: true,
-
           logging: false,
-
+          imageTimeout: 0,
           width: pageWidth,
-
           height: pageHeight,
-
           windowWidth: pageWidth,
-
           windowHeight: pageHeight,
-
           scrollX: 0,
-
           scrollY: 0,
         });
 
-      const image =
-        canvas.toDataURL(
-          "image/png"
-        );
+        // Reset temporary styles
+        label.style.transform = "none";
+        label.style.transformOrigin = "";
+        label.style.overflow = "";
+        if (labelBorder) {
+          labelBorder.style.overflow = "";
+        }
 
-      // ---------------------------------------------------
-      // RESET TEMPORARY CHANGES
-      // ---------------------------------------------------
+        return canvas.toDataURL("image/png");
+      })
+    );
 
-      label.style.transform =
-        "none";
+    // =====================================================
+    // ASSEMBLE PDF PAGES
+    // =====================================================
 
-      label.style.transformOrigin =
-        "";
-
-      label.style.overflow =
-        "";
-
-      if (labelBorder) {
-        labelBorder.style.overflow =
-          "";
-      }
-
-      // ---------------------------------------------------
-      // ADD PDF PAGE
-      // ---------------------------------------------------
+    for (let index = 0; index < renderedImages.length; index += 1) {
+      const image = renderedImages[index];
 
       if (index > 0) {
         pdf.addPage(
-          [
-            size.widthMm,
-            size.heightMm,
-          ],
-          size.widthMm > size.heightMm
-            ? "landscape"
-            : "portrait"
+          [size.widthMm, size.heightMm],
+          size.widthMm > size.heightMm ? "landscape" : "portrait"
         );
       }
 

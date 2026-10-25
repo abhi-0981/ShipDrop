@@ -911,13 +911,13 @@ o.status,
           ON pkg.order_id = o.id
 
         WHERE
-          o.id = ?
+          (o.id = ? OR o.order_id = ?)
           AND o.user_id = ?
 
         LIMIT 1
       `;
 
-    db.query(query, [orderId, userId], (error, rows) => {
+    db.query(query, [orderId, orderId, userId], (error, rows) => {
       if (error) {
         return reject(error);
       }
