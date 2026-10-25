@@ -152,12 +152,17 @@ export default function NotificationToast({
   const remainingTimeRef = useRef(duration);
   const timerRef = useRef(null);
 
-  // Play audio chime on mount
+  // Play audio chime on mount or on any update/reply
   useEffect(() => {
     if (notification) {
       playNotificationChime();
     }
-  }, [notification?.id]);
+  }, [
+    notification?.id,
+    notification?.toastInstanceKey,
+    notification?.message_count,
+    notification?.created_at,
+  ]);
 
   // Handle countdown & progress bar
   useEffect(() => {
@@ -280,9 +285,16 @@ export default function NotificationToast({
 
             {/* CONTENT */}
             <div className="min-w-0 flex-1">
-              <h4 className="text-xs sm:text-[13px] font-bold text-slate-900 dark:text-slate-100 leading-snug line-clamp-1">
-                {notification.title || "New notification"}
-              </h4>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <h4 className="text-xs sm:text-[13px] font-bold text-slate-900 dark:text-slate-100 leading-snug line-clamp-1">
+                  {notification.title || "New notification"}
+                </h4>
+                {Number(notification.message_count || 1) > 1 && (
+                  <span className="rounded-full bg-sky-100 dark:bg-sky-950/80 text-[#008dd2] dark:text-[#38bdf8] border border-sky-200 dark:border-sky-900 px-1.5 py-0.2 text-[9px] font-extrabold shrink-0">
+                    +{notification.message_count} replies
+                  </span>
+                )}
+              </div>
               <p className="mt-1 text-xs text-slate-600 dark:text-slate-300 leading-relaxed line-clamp-2">
                 {notification.message || "You have a new update in your account."}
               </p>

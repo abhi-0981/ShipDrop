@@ -97,7 +97,7 @@
     const [unreadNotifCount, setUnreadNotifCount] = useState(0);
     const notifRef = useRef(null);
     const [activeToastNotification, setActiveToastNotification] = useState(null);
-    const knownNotificationIdsRef = useRef(new Set());
+    const knownNotifMapRef = useRef(new Map());
     const isInitialNotifFetchRef = useRef(true);
     const [amount, setAmount] = useState("");
     const [loading, setLoading] = useState(false);
@@ -228,17 +228,57 @@
           setUnreadNotifCount(Number(response.data.unread_count || 0));
           setNotifications(list);
 
-          // Detect genuinely NEW incoming unread notifications
+          // Detect genuinely NEW incoming unread notifications OR updates to existing notifications (like another ticket reply)
           if (isInitialNotifFetchRef.current) {
-            // First load: cache existing unread IDs so we don't pop up old notifications on page refresh
-            list.forEach((n) => knownNotificationIdsRef.current.add(n.id));
+            // First load: cache existing unread snapshots so we don't pop up old notifications on initial page load
+            list.forEach((n) => {
+              knownNotifMapRef.current.set(n.id, {
+                count: Number(n.message_count || 1),
+                createdAt: n.created_at,
+                message: n.message,
+              });
+            });
             isInitialNotifFetchRef.current = false;
           } else {
             // Subsequent polls or real-time event updates:
-            const newOnes = list.filter((n) => !knownNotificationIdsRef.current.has(n.id));
-            if (newOnes.length > 0) {
-              newOnes.forEach((n) => knownNotificationIdsRef.current.add(n.id));
-              setActiveToastNotification(newOnes[0]);
+            // Find notifications that are:
+            // 1. Completely new ID
+            // 2. OR existing ID with a new update (e.g. admin replied again, message_count increased, created_at changed, or new message snippet)
+            const incomingUpdates = [];
+
+            list.forEach((n) => {
+              const prev = knownNotifMapRef.current.get(n.id);
+              if (!prev) {
+                // New notification ID
+                incomingUpdates.push(n);
+              } else {
+                const currentCount = Number(n.message_count || 1);
+                const isNewMessage = currentCount > prev.count;
+                const isNewTime =
+                  n.created_at &&
+                  prev.createdAt &&
+                  new Date(n.created_at).getTime() > new Date(prev.createdAt).getTime();
+                const isDiffMessage = n.message && n.message !== prev.message;
+
+                if (isNewMessage || isNewTime || isDiffMessage) {
+                  incomingUpdates.push(n);
+                }
+              }
+
+              // Always update the snapshot in the map
+              knownNotifMapRef.current.set(n.id, {
+                count: Number(n.message_count || 1),
+                createdAt: n.created_at,
+                message: n.message,
+              });
+            });
+
+            if (incomingUpdates.length > 0) {
+              const latest = incomingUpdates[0];
+              setActiveToastNotification({
+                ...latest,
+                toastInstanceKey: `${latest.id}_${Date.now()}`,
+              });
             }
           }
         }
@@ -346,12 +386,12 @@
       loadWallet();
       loadNotifications();
 
-      // Background auto-sync notifications every 20 seconds when tab is active
+      // Background auto-sync notifications every 12 seconds when tab is active
       const notifInterval = setInterval(() => {
         if (typeof document !== "undefined" && document.visibilityState === "visible") {
           loadNotifications(true);
         }
-      }, 20000);
+      }, 12000);
 
       const handleNotifUpdate = () => loadNotifications(true);
       window.addEventListener("shipdrop:notificationsUpdated", handleNotifUpdate);
@@ -359,8 +399,16 @@
       // Listen for direct real-time incoming notification event
       const handleDirectNotification = (e) => {
         if (e?.detail) {
-          knownNotificationIdsRef.current.add(e.detail.id);
-          setActiveToastNotification(e.detail);
+          const detail = e.detail;
+          knownNotifMapRef.current.set(detail.id, {
+            count: Number(detail.message_count || 1),
+            createdAt: detail.created_at,
+            message: detail.message,
+          });
+          setActiveToastNotification({
+            ...detail,
+            toastInstanceKey: `${detail.id}_${Date.now()}`,
+          });
           loadNotifications(true);
         }
       };
@@ -1626,6 +1674,7 @@
         {/* SLIDE-IN DESKTOP / MOBILE PUSH NOTIFICATION TOAST */}
         {activeToastNotification && (
           <NotificationToast
+            key={activeToastNotification.toastInstanceKey || activeToastNotification.id}
             notification={activeToastNotification}
             onOpen={handleToastOpen}
             onDismiss={handleToastDismiss}
