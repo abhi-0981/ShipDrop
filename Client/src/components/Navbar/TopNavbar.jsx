@@ -445,6 +445,9 @@
               setAmount("");
               setShowRecharge(false);
               toast.success("Wallet recharged successfully");
+              // Instantly refresh notification bell box
+              loadNotifications(true);
+              window.dispatchEvent(new Event("shipdrop:notificationsUpdated"));
             } catch (error) {
               toast.error(error.response?.data?.message || "Payment verification failed");
             }

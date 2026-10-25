@@ -363,6 +363,29 @@ const verifyPayment = (req, res) => {
                   }
 
 
+                  // Automatically trigger notification for the recharge
+                  try {
+                    const rechargeAmt = Number(transaction.amount || 0).toFixed(2);
+                    db.query(
+                      `INSERT INTO notifications (user_id, type, title, message, reference_id, reference_url, message_count, is_read, created_at)
+                       VALUES (?, 'WALLET', ?, ?, ?, '/wallet', 1, 0, NOW())`,
+                      [
+                        user_id,
+                        `Wallet Credited: ₹${rechargeAmt}`,
+                        `₹${rechargeAmt} has been successfully credited to your wallet.`,
+                        `WALLET_TX_${transaction.id}`,
+                      ]
+                    );
+                    if (Number(wallet[0]?.balance || 0) >= 200) {
+                      db.query(
+                        `UPDATE notifications SET is_read = 1 WHERE user_id = ? AND type = 'WALLET' AND reference_id = 'LOW_WALLET_BALANCE'`,
+                        [user_id]
+                      );
+                    }
+                  } catch (notifErr) {
+                    console.warn("Could not insert recharge notification:", notifErr.message);
+                  }
+
                   return res.status(200).json({
                     message:
                       "Wallet recharged successfully",

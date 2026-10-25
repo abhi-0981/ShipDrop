@@ -216,16 +216,22 @@ const syncWalletAlerts = async (userId) => {
             ]
           );
         }
+      } else {
+        // If balance is now healthy (>= ₹200), auto-resolve/dismiss any unread low balance alert
+        await promiseDb.query(
+          `UPDATE notifications SET is_read = 1 WHERE user_id = ? AND type = 'WALLET' AND reference_id = 'LOW_WALLET_BALANCE' AND is_read = 0`,
+          [userId]
+        );
       }
     }
 
-    // 2. Check recent successful recharge transactions
+    // 2. Check recent successful recharge transactions (type is 'RECHARGE' or 'CREDIT')
     const [txRows] = await promiseDb.query(
       `
       SELECT id, amount, created_at
       FROM wallet_transactions
       WHERE user_id = ?
-        AND UPPER(TRIM(type)) = 'CREDIT'
+        AND UPPER(TRIM(type)) IN ('RECHARGE', 'CREDIT')
         AND UPPER(TRIM(COALESCE(status, ''))) IN ('SUCCESS', 'COMPLETED')
         AND created_at >= DATE_SUB(NOW(), INTERVAL 5 DAY)
       ORDER BY id DESC
