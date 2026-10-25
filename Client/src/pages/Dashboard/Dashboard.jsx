@@ -895,7 +895,7 @@ function Dashboard() {
 
                         <div className="flex items-center justify-between text-[12px]">
                           <span
-                            className="font-semibold text-slate-800 truncate max-w-[200px]"
+                            className="font-semibold text-slate-800 text-[11.5px] leading-snug break-words max-w-[200px]"
                             title={customer}
                           >
                             {customer}
@@ -950,10 +950,10 @@ function Dashboard() {
                   <table className="w-full table-fixed border-collapse">
                     <thead>
                       <tr className="border-b border-slate-200 bg-slate-50/80">
-                        <th className="w-[15%] px-2.5 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-slate-600">
+                        <th className="w-[14%] px-2.5 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-slate-600">
                           Order
                         </th>
-                        <th className="w-[23%] px-2.5 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-slate-600">
+                        <th className="w-[24%] px-2.5 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-slate-600">
                           Customer
                         </th>
                         <th className="w-[23%] px-2.5 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-slate-600">
@@ -985,9 +985,9 @@ function Dashboard() {
                             <td className="px-2.5 py-2.5 font-bold text-slate-900 text-[12px] truncate">
                               #{getOrderId(order)}
                             </td>
-                            <td className="px-2.5 py-2.5">
+                            <td className="px-2.5 py-2">
                               <p
-                                className="truncate text-[12px] font-semibold text-slate-800"
+                                className="text-[11px] font-semibold text-slate-800 leading-snug break-words line-clamp-2"
                                 title={customer}
                               >
                                 {customer}
