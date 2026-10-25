@@ -228,30 +228,31 @@
       }
     };
 
-    const handleNotificationClick = async (notif) => {
+    const handleNotificationClick = (notif) => {
       if (!notif) return;
-      try {
-        if (!notif.is_read) {
-          // Immediately remove from notification box so it becomes empty once read
-          setNotifications((prev) => prev.filter((n) => n.id !== notif.id));
-          setUnreadNotifCount((prev) => Math.max(0, prev - 1));
-          const savedUser = JSON.parse(localStorage.getItem("user") || "null");
-          await api.post("/notifications/mark-read", {
-            user_id: savedUser?.id,
-            notification_id: notif.id,
-          });
-        }
-      } catch (err) {
-        // silent
-      }
+
+      // 1. Instantly close dropdown so user experiences zero lag or glitch
       setShowNotifications(false);
+
+      // 2. Optimistically remove from notifications list and badge
+      setNotifications((prev) => prev.filter((n) => n.id !== notif.id));
+      setUnreadNotifCount((prev) => Math.max(0, prev - 1));
+
+      // 3. Mark as read on server in background (fire-and-forget)
+      const savedUser = JSON.parse(localStorage.getItem("user") || "null");
+      if (savedUser?.id && notif.id) {
+        api.post("/notifications/mark-read", {
+          user_id: savedUser.id,
+          notification_id: notif.id,
+        }).catch((err) => console.warn("Background mark-read notice:", err.message));
+      }
+
+      // 4. Instantly navigate to exact target location
       const type = String(notif.type || "").toUpperCase();
       if (type === "TICKET_REPLY" && notif.reference_id) {
         navigate(`/tickets?ticket_id=${notif.reference_id}`, {
           state: { ticketId: Number(notif.reference_id) },
         });
-      } else if (notif.reference_url) {
-        navigate(notif.reference_url);
       } else if (type === "NDR_ALERT") {
         navigate("/pending");
       } else if (type === "WALLET") {
@@ -260,24 +261,24 @@
         navigate("/cod-remittance");
       } else if (type === "WEIGHT_DISCREPANCY") {
         navigate("/reports/weight-discrepancy");
+      } else if (notif.reference_url) {
+        navigate(notif.reference_url);
       } else {
         navigate("/dashboard");
       }
     };
 
-    const handleDismissNotification = async (e, notif) => {
+    const handleDismissNotification = (e, notif) => {
       e?.stopPropagation?.();
       if (!notif) return;
       setNotifications((prev) => prev.filter((n) => n.id !== notif.id));
       setUnreadNotifCount((prev) => Math.max(0, prev - 1));
-      try {
-        const savedUser = JSON.parse(localStorage.getItem("user") || "null");
-        await api.post("/notifications/mark-read", {
-          user_id: savedUser?.id,
+      const savedUser = JSON.parse(localStorage.getItem("user") || "null");
+      if (savedUser?.id && notif.id) {
+        api.post("/notifications/mark-read", {
+          user_id: savedUser.id,
           notification_id: notif.id,
-        });
-      } catch (err) {
-        // silent
+        }).catch(() => {});
       }
     };
 
