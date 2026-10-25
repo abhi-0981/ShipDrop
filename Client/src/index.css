@@ -333,16 +333,3 @@ html.dark .orders-scrollbar::-webkit-scrollbar-thumb {
 html.dark .orders-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #475569;
 }
-
-/* Modern Leaflet Tooltip & Map Container Styling */
-.leaflet-modern-tooltip {
-  background: #ffffff !important;
-  border: 1px solid #e2e8f0 !important;
-  border-radius: 12px !important;
-  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.15), 0 8px 10px -6px rgba(15, 23, 42, 0.1) !important;
-  padding: 6px 10px !important;
-}
-
-.leaflet-modern-tooltip::before {
-  border-top-color: #ffffff !important;
-}

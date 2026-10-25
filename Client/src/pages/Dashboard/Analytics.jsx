@@ -514,7 +514,8 @@ export default function Analytics() {
                 </span>
               </div>
               <p className="mt-0.5 text-[11px] text-slate-500 font-medium">
-                Geographical density of buyer orders across Indian states. Hover or click on any state bubble to view delivery rates & freight.
+                Geographical density of buyer orders across Indian states. Hover
+                on any state to view metrics.
               </p>
             </div>
 
@@ -529,7 +530,7 @@ export default function Analytics() {
             )}
           </div>
 
-          {/* REAL LEAFLET GEO MAP */}
+          {/* SVG MAP */}
           <div className="py-2">
             <IndiaMap
               stateData={stateBreakdown}
@@ -540,7 +541,8 @@ export default function Analytics() {
 
           {/* BOTTOM NOTICE */}
           <div className="rounded-xl border border-slate-100 bg-slate-50 p-2.5 text-center text-[11px] font-medium text-slate-500">
-            💡 Bubble size and vibrant blue shades indicate order volume. Click any state bubble or quick pill to filter the dashboard.
+            💡 Darker blue highlights represent your highest order density
+            clusters.
           </div>
         </div>
 
