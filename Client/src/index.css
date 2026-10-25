@@ -333,3 +333,24 @@ html.dark .orders-scrollbar::-webkit-scrollbar-thumb {
 html.dark .orders-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #475569;
 }
+
+/* ======================================================
+   3D TRACKING ANIMATIONS
+   ====================================================== */
+@keyframes moveRoad {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-30px);
+  }
+}
+
+@keyframes floatVehicle {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-4px) rotate(1deg);
+  }
+}
