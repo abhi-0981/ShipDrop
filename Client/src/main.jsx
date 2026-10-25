@@ -54,3 +54,40 @@ createRoot(document.getElementById("root")).render(
     </BrowserRouter>
   </StrictMode>
 );
+
+// ======================================================
+// GLOBAL SMART POINTER DETECTOR
+// Automatically ensures any custom element with a React onClick handler,
+// actionable attribute, or interactive role displays `cursor: pointer`.
+// ======================================================
+if (typeof window !== "undefined") {
+  document.addEventListener(
+    "mouseover",
+    (event) => {
+      let el = event.target;
+      while (el && el !== document.body && el !== document.documentElement) {
+        if (
+          el.tagName === "BUTTON" ||
+          el.tagName === "A" ||
+          el.tagName === "SELECT" ||
+          el.tagName === "LABEL" ||
+          el.tagName === "SUMMARY"
+        ) {
+          return;
+        }
+
+        // Check if element has a React onClick handler attached
+        const reactKey = Object.keys(el).find((k) => k.startsWith("__reactProps$"));
+        if (reactKey && typeof el[reactKey]?.onClick === "function") {
+          if (!el.style.cursor && !el.classList.contains("cursor-not-allowed")) {
+            el.style.cursor = "pointer";
+          }
+          return;
+        }
+
+        el = el.parentElement;
+      }
+    },
+    { passive: true }
+  );
+}

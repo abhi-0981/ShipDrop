@@ -1,5 +1,53 @@
 @import "tailwindcss";
 
+/* ======================================================
+   GLOBAL INTERACTIVE CURSOR POINTER SYSTEM
+   Ensures every clickable/actionable element across the entire
+   software immediately shows pointer cursor on hover.
+   ====================================================== */
+button,
+button:not(:disabled),
+a,
+a:not([aria-disabled="true"]),
+select:not(:disabled),
+summary,
+label:not([for=""]),
+input[type="button"]:not(:disabled),
+input[type="submit"]:not(:disabled),
+input[type="reset"]:not(:disabled),
+input[type="checkbox"]:not(:disabled),
+input[type="radio"]:not(:disabled),
+input[type="file"]:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+[role="tab"]:not([aria-disabled="true"]),
+[role="link"]:not([aria-disabled="true"]),
+[role="menuitem"]:not([aria-disabled="true"]),
+[role="option"]:not([aria-disabled="true"]),
+[role="switch"]:not([aria-disabled="true"]),
+[role="checkbox"]:not([aria-disabled="true"]),
+[tabindex]:not([tabindex="-1"]),
+.cursor-pointer,
+[onclick],
+.pointer,
+[data-action],
+[data-clickable="true"] {
+  cursor: pointer !important;
+}
+
+/* Disabled elements should always show not-allowed */
+button:disabled,
+button[disabled],
+input:disabled,
+input[disabled],
+select:disabled,
+select[disabled],
+textarea:disabled,
+textarea[disabled],
+[aria-disabled="true"],
+.cursor-not-allowed {
+  cursor: not-allowed !important;
+}
+
 body {
   font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   overflow-x: hidden;
