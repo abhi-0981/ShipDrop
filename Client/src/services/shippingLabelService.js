@@ -877,41 +877,47 @@ const getDetailedOrders = async (orders) => {
 
 const logoCache = new Map();
 
-const imageToDataUrl = async (source) => {
-  if (!source) return "";
+const imageToDataUrl = (source) => {
+  if (!source) return Promise.resolve("");
 
   if (String(source).startsWith("data:")) {
-    return source;
+    return Promise.resolve(source);
   }
 
   if (logoCache.has(source)) {
-    return logoCache.get(source);
+    return Promise.resolve(logoCache.get(source));
   }
 
-  try {
-    const response = await fetch(source);
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    const timer = setTimeout(() => {
+      resolve(source);
+    }, 400);
 
-    if (!response.ok) {
-      throw new Error(`Unable to load logo: ${source}`);
-    }
+    img.onload = () => {
+      clearTimeout(timer);
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.naturalWidth || img.width || 180;
+        canvas.height = img.naturalHeight || img.height || 50;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0);
+        const dataUrl = canvas.toDataURL("image/png");
+        logoCache.set(source, dataUrl);
+        resolve(dataUrl);
+      } catch (err) {
+        resolve(source);
+      }
+    };
 
-    const blob = await response.blob();
+    img.onerror = () => {
+      clearTimeout(timer);
+      resolve(source);
+    };
 
-    const dataUrl = await new Promise((resolve, reject) => {
-      const reader = new FileReader();
-
-      reader.onloadend = () => resolve(reader.result);
-      reader.onerror = reject;
-
-      reader.readAsDataURL(blob);
-    });
-
-    logoCache.set(source, dataUrl);
-    return dataUrl;
-  } catch (err) {
-    console.warn("Logo loading fallback:", err);
-    return source;
-  }
+    img.src = source;
+  });
 };
 
 const createBarcode = (awb, compact = false) => {
@@ -2019,15 +2025,16 @@ export const generateShippingLabelsPdf = async (orders) => {
 
     iframe = document.createElement("iframe");
 
+    // In-viewport invisible positioning taaki Chrome layout engine throttling na kare
     iframe.style.position = "fixed";
-    iframe.style.left = "-10000px";
     iframe.style.top = "0";
-    iframe.style.width = `${size.widthIn}in`;
-    iframe.style.height = `${size.heightIn}in`;
+    iframe.style.left = "0";
+    iframe.style.width = "100vw";
+    iframe.style.height = "100vh";
     iframe.style.border = "0";
-    iframe.style.visibility = "visible";
-    iframe.style.opacity = "1";
+    iframe.style.opacity = "0";
     iframe.style.pointerEvents = "none";
+    iframe.style.zIndex = "-99999";
 
     document.body.appendChild(iframe);
 
@@ -2119,37 +2126,33 @@ export const generateShippingLabelsPdf = async (orders) => {
     }
 
     // =====================================================
-    // WAIT FOR IMAGES
+    // WAIT FOR IMAGES (Safe with immediate return and 200ms timeout)
     // =====================================================
 
-    const images = Array.from(
-      iframeDoc.images
-    );
+    const images = Array.from(iframeDoc.images);
 
     await Promise.all(
       images.map((img) => {
-        if (
-          img.complete &&
-          img.naturalWidth > 0
-        ) {
+        if (img.complete) {
           return Promise.resolve();
         }
 
         return new Promise((resolve) => {
-          img.onload = resolve;
-          img.onerror = resolve;
+          const timer = setTimeout(resolve, 200);
+          img.onload = () => {
+            clearTimeout(timer);
+            resolve();
+          };
+          img.onerror = () => {
+            clearTimeout(timer);
+            resolve();
+          };
         });
       })
     );
 
-    // Wait for iframe layout
-    await new Promise((resolve) => {
-      iframe.contentWindow.requestAnimationFrame(() => {
-        iframe.contentWindow.requestAnimationFrame(
-          resolve
-        );
-      });
-    });
+    // Fast layout settle
+    await new Promise((resolve) => setTimeout(resolve, 30));
 
     // =====================================================
     // CREATE PDF
@@ -2218,19 +2221,14 @@ export const generateShippingLabelsPdf = async (orders) => {
       labelData.push({ label, pageWidth, pageHeight, labelBorder });
     }
 
-    // Wait for layout updates once
-    await new Promise((resolve) => {
-      iframe.contentWindow.requestAnimationFrame(resolve);
-    });
-
     // =====================================================
-    // FAST PARALLEL CAPTURE (Scale 2.2 for crisp thermal/A4 + 5x speed)
+    // FAST PARALLEL CAPTURE (Scale 1.8 for crystal sharp 180+ DPI & instant rendering)
     // =====================================================
 
     const renderedImages = await Promise.all(
       labelData.map(async ({ label, pageWidth, pageHeight, labelBorder }) => {
         const canvas = await html2canvas(label, {
-          scale: 2.2,
+          scale: 1.8,
           backgroundColor: "#ffffff",
           useCORS: true,
           logging: false,
@@ -2362,7 +2360,7 @@ export const printShippingLabels = async (
     );
 
     if (previewTab && !previewTab.closed) {
-      previewTab.location.href = blobUrl;
+      previewTab.location.replace(blobUrl);
     } else {
       window.open(blobUrl, "_blank");
     }
