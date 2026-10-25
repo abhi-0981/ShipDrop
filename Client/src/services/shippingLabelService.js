@@ -1926,7 +1926,7 @@ export const generateShippingLabelsPdf = async (orders) => {
       try {
         await new Promise((resolve) => setTimeout(resolve, 20));
         const canvas = await html2canvas(batchContainer, {
-          scale: 1.5,
+          scale: 1.35,
           backgroundColor: "#ffffff",
           useCORS: true,
           logging: false,
@@ -1988,8 +1988,11 @@ export const generateShippingLabelsPdf = async (orders) => {
         );
       }
 
+      // Compress to ~20KB per label so 20 labels download at ~400KB
+      const imgData = pageCanvas.toDataURL("image/jpeg", 0.72);
+
       pdf.addImage(
-        pageCanvas,
+        imgData,
         "JPEG",
         0,
         0,
