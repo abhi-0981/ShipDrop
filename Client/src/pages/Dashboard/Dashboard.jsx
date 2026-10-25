@@ -919,7 +919,7 @@ function Dashboard() {
                                 <button
                                   type="button"
                                   onClick={() => triggerTracking(awb)}
-                                  className="font-mono font-bold text-slate-800 hover:text-[#008dd2] underline decoration-slate-300 underline-offset-2 hover:decoration-[#008dd2] transition"
+                                  className="font-mono font-semibold text-slate-800 hover:text-[#008dd2] transition"
                                 >
                                   {awb}
                                 </button>
@@ -946,26 +946,26 @@ function Dashboard() {
                 </div>
 
                 {/* 2. TABLET & DESKTOP: Traditional Table View */}
-                <div className="hidden md:block overflow-x-auto">
+                <div className="hidden md:block overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
                   <table className="w-full text-left border-collapse">
                     <thead>
                       <tr className="border-b border-slate-200 bg-slate-50/80">
-                        <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-600">
+                        <th className="px-3.5 py-2.5 text-[11px] font-bold uppercase tracking-wider text-slate-600">
                           Order
                         </th>
-                        <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-600">
+                        <th className="px-3.5 py-2.5 text-[11px] font-bold uppercase tracking-wider text-slate-600">
                           Customer
                         </th>
-                        <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-600">
+                        <th className="px-3.5 py-2.5 text-[11px] font-bold uppercase tracking-wider text-slate-600">
                           AWB
                         </th>
-                        <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-600">
+                        <th className="px-3 py-2.5 text-[11px] font-bold uppercase tracking-wider text-slate-600">
                           Payment
                         </th>
-                        <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-600">
+                        <th className="px-3 py-2.5 text-[11px] font-bold uppercase tracking-wider text-slate-600">
                           Status
                         </th>
-                        <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-600">
+                        <th className="px-3.5 py-2.5 text-[11px] font-bold uppercase tracking-wider text-slate-600">
                           Date
                         </th>
                       </tr>
@@ -982,25 +982,25 @@ function Dashboard() {
                             key={order?.id ?? order?.order_id}
                             className="transition-colors hover:bg-slate-50/80 group"
                           >
-                            <td className="px-4 py-3.5 font-bold text-slate-900 whitespace-nowrap">
+                            <td className="px-3.5 py-3 font-bold text-slate-900 whitespace-nowrap">
                               #{getOrderId(order)}
                             </td>
-                            <td className="px-4 py-3.5 font-semibold text-slate-800">
+                            <td className="px-3.5 py-3 font-semibold text-slate-800">
                               <span
-                                className="inline-block max-w-[200px] truncate align-middle"
+                                className="inline-block max-w-[170px] truncate align-middle"
                                 title={customer}
                               >
                                 {customer}
                               </span>
                             </td>
-                            <td className="px-4 py-3.5 whitespace-nowrap">
+                            <td className="px-3.5 py-3 whitespace-nowrap">
                               {awb && awb !== "—" ? (
                                 <div className="flex items-center gap-1.5">
                                   <button
                                     type="button"
                                     onClick={() => triggerTracking(awb)}
                                     title="Click to track shipment"
-                                    className="font-mono text-[12px] font-bold text-slate-800 hover:text-[#008dd2] transition cursor-pointer select-none underline decoration-slate-300 underline-offset-2 hover:decoration-[#008dd2]"
+                                    className="font-mono text-[12px] font-semibold text-slate-800 hover:text-[#008dd2] transition cursor-pointer select-none"
                                   >
                                     {awb}
                                   </button>
@@ -1017,9 +1017,9 @@ function Dashboard() {
                                 <span className="text-slate-400 font-medium text-[12px]">—</span>
                               )}
                             </td>
-                            <td className="px-4 py-3.5 whitespace-nowrap">
+                            <td className="px-3 py-3 whitespace-nowrap">
                               <span
-                                className={`inline-flex items-center rounded-md border px-2.5 py-0.5 text-[10px] font-bold tracking-wide uppercase ${
+                                className={`inline-flex items-center rounded-md border px-2 py-0.5 text-[10px] font-bold tracking-wide uppercase ${
                                   payment === "COD"
                                     ? "border-violet-200 bg-violet-50 text-violet-700"
                                     : "border-sky-200 bg-sky-50 text-sky-700"
@@ -1028,16 +1028,16 @@ function Dashboard() {
                                 {payment}
                               </span>
                             </td>
-                            <td className="px-4 py-3.5 whitespace-nowrap">
+                            <td className="px-3 py-3 whitespace-nowrap">
                               <span
-                                className={`inline-flex items-center rounded-md border px-2.5 py-0.5 text-[11px] ${getStatusClass(
+                                className={`inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] ${getStatusClass(
                                   status
                                 )}`}
                               >
                                 {getStatusLabel(status)}
                               </span>
                             </td>
-                            <td className="px-4 py-3.5 text-[12px] font-medium text-slate-600 whitespace-nowrap">
+                            <td className="px-3.5 py-3 text-[12px] font-medium text-slate-600 whitespace-nowrap">
                               {formatDate(order?.created_at)}
                             </td>
                           </tr>
