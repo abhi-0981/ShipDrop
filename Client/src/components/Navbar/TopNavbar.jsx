@@ -4,8 +4,8 @@
   import { FiMenu, FiSearch, FiCommand } from "react-icons/fi";
   import api from "../../services/api";
   import { notifyOrderChange } from "../../services/orderEvents";
+  import shipdropLogo from "../../assets/images/shipdrop-logo.png";
   import NotificationToast from "../Common/NotificationToast";
-  import InteractiveTrackingVisualizer from "../Common/InteractiveTrackingVisualizer";
 
 
 
@@ -1359,20 +1359,20 @@
               }
             }}
           >
-            <div className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xl">
+            <div className="flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
               {/* HEADER */}
-              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 px-5 py-4 sm:px-6">
+              <div className="flex items-center justify-between border-b border-slate-100 bg-white px-5 py-4 sm:px-6">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-sky-50 dark:bg-sky-950/60 text-[#008dd2]">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-sky-50 text-[#008dd2]">
                       <FiSearch size={17} />
                     </div>
                     <div className="min-w-0">
-                      <h2 className="truncate text-base font-bold text-slate-800 dark:text-slate-100 sm:text-lg">
-                        Interactive Live Tracking & 3D Route
+                      <h2 className="truncate text-base font-bold text-slate-800 sm:text-lg">
+                        Tracking Details
                       </h2>
                       <p className="mt-0.5 truncate text-[10px] text-slate-400 sm:text-xs">
-                        Real-time delivery milestones & carrier scan updates
+                        Live shipment status and Delhivery scan history
                       </p>
                     </div>
                   </div>
@@ -1381,31 +1381,180 @@
                 <button
                   type="button"
                   onClick={closeTrackingDetails}
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xl text-slate-400 transition hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200 cursor-pointer"
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
                   aria-label="Close tracking details"
                 >
                   ×
                 </button>
               </div>
 
-              {/* BODY: 3D ANIMATED ROUTE & MILESTONES */}
-              <div className="overflow-y-auto bg-slate-50/70 dark:bg-slate-950/50 p-4 sm:p-6">
-                <InteractiveTrackingVisualizer
-                  order={trackingOrder}
-                  scans={trackingScans}
-                  onClose={closeTrackingDetails}
-                />
+              {/* BODY */}
+              <div className="overflow-y-auto bg-slate-50/60 px-4 py-4 sm:px-6 sm:py-5">
+                {/* SUMMARY */}
+                <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                  <div className="grid grid-cols-1 divide-y divide-slate-100 sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
+                    <div className="px-4 py-3.5">
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                        Order ID
+                      </p>
+                      <p className="mt-1 truncate text-sm font-bold text-slate-800">
+                        {trackingOrder.order_id ?? trackingOrder.id ?? "—"}
+                      </p>
+                    </div>
+
+                    <div className="px-4 py-3.5">
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                        Tracking No
+                      </p>
+                      <p className="mt-1 truncate text-sm font-bold text-slate-800">
+                        {trackingOrder.tracking_awb || trackingOrder.awb || "—"}
+                      </p>
+                    </div>
+
+                    <div className="px-4 py-3.5">
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                        Courier
+                      </p>
+                      <p className="mt-1 truncate text-sm font-bold text-slate-800">
+                        {getTrackingCourier(trackingOrder)}
+                      </p>
+                    </div>
+
+                    <div className="px-4 py-3.5">
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                        Current Status
+                      </p>
+                      <div className="mt-1 flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                        <p className="truncate text-sm font-bold text-emerald-600">
+                          {humanizeTrackingStatus(trackingOrder.tracking_status)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 border-t border-slate-100 md:grid-cols-2 lg:grid-cols-4">
+                    <div className="border-b border-slate-100 px-4 py-3.5 md:border-b-0 md:border-r lg:border-r">
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                        Status Location
+                      </p>
+                      <p className="mt-1 text-xs font-semibold text-slate-700">
+                        {trackingOrder.tracking_location || "—"}
+                      </p>
+                    </div>
+
+                    <div className="border-b border-slate-100 px-4 py-3.5 lg:border-b-0 lg:border-r">
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                        Status Date & Time
+                      </p>
+                      <p className="mt-1 text-xs font-semibold text-slate-700">
+                        {formatTrackingDateTime(trackingOrder.tracking_status_datetime)}
+                      </p>
+                    </div>
+
+                  <div className="border-b border-slate-100 px-4 py-3.5 md:border-r lg:border-b-0">
+    <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+      Expected Delivery
+    </p>
+
+    <p className="mt-1 text-xs font-semibold text-slate-700">
+      {formatTrackingDate(
+    getExpectedDelivery(trackingOrder)
+  )}
+    </p>
+  </div>
+
+                    <div className="px-4 py-3.5">
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                        Update
+                      </p>
+                      <p className="mt-1 line-clamp-2 text-xs font-semibold text-slate-700">
+                        {trackingOrder.tracking_instructions || "—"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* TRACKING TIMELINE */}
+                <div className="mt-4 rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm sm:px-5 sm:py-5">
+                  <div className="mb-5 flex items-center justify-between gap-3">
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-800 sm:text-base">
+                        Shipment Timeline
+                      </h3>
+                      <p className="mt-0.5 text-[10px] text-slate-400 sm:text-xs">
+                        Complete tracking history from Delhivery
+                      </p>
+                    </div>
+                    <span className="shrink-0 rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-bold text-slate-500">
+                      {trackingScans.length} {trackingScans.length === 1 ? "event" : "events"}
+                    </span>
+                  </div>
+
+                  {trackingScans.length > 0 ? (
+                    <div className="relative">
+                      <div className="absolute bottom-4 left-[7px] top-4 w-px bg-slate-200" />
+
+                      <div className="space-y-3.5">
+                        {trackingScans.map((scan, index) => (
+                          <div key={scan.id} className="relative flex gap-3">
+                            <div className="relative z-10 mt-4 flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full border-2 border-[#008dd2] bg-white">
+                              {index === 0 && (
+                                <span className="h-1.5 w-1.5 rounded-full bg-[#008dd2]" />
+                              )}
+                            </div>
+
+                            <div className={`min-w-0 flex-1 rounded-xl border px-4 py-3 transition ${
+                              index === 0
+                                ? "border-sky-200 bg-sky-50/50 shadow-sm"
+                                : "border-slate-200 bg-white"
+                            }`}>
+                              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+                                <div className="min-w-0">
+                                  <p className="text-sm font-bold text-slate-800">
+                                    {scan.status || "Shipment update"}
+                                  </p>
+                                  {scan.location && (
+                                    <p className="mt-1 text-[11px] font-medium text-slate-500">
+                                      {scan.location}
+                                    </p>
+                                  )}
+                                  {scan.instructions &&
+                                    scan.instructions !== scan.status && (
+                                      <p className="mt-1 text-[11px] leading-5 text-slate-500">
+                                        {scan.instructions}
+                                      </p>
+                                    )}
+                                </div>
+
+                                <p className="shrink-0 text-[10px] font-semibold text-slate-400 sm:text-right">
+                                  {formatTrackingDateTime(scan.dateTime)}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center">
+                      <p className="text-sm font-semibold text-slate-600">
+                        No tracking scan history available
+                      </p>
+                      <p className="mt-1 text-[11px] text-slate-400">
+                        The latest shipment status is shown above.
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* FOOTER */}
-              <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 px-5 py-3 sm:px-6">
-                <span className="text-[11px] font-medium text-slate-400">
-                  ShipDrop Live Express Fleet Network
-                </span>
+              <div className="flex items-center justify-end border-t border-slate-100 bg-white px-5 py-3.5 sm:px-6">
                 <button
                   type="button"
                   onClick={closeTrackingDetails}
-                  className="h-9 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-5 text-xs font-bold text-slate-600 dark:text-slate-200 transition hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer"
+                  className="h-9 rounded-xl border border-slate-200 bg-white px-5 text-xs font-bold text-slate-600 transition hover:bg-slate-50 hover:text-slate-800"
                 >
                   Close
                 </button>
