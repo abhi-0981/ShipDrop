@@ -381,9 +381,6 @@
         };
       }
 
-      const handleOpenRecharge = () => setShowRecharge(true);
-      window.addEventListener("shipdrop:openRecharge", handleOpenRecharge);
-
       const handleVisibilityChange = () => {
         if (document.visibilityState === "visible") {
           loadNotifications(true);
@@ -395,7 +392,6 @@
         clearInterval(notifInterval);
         window.removeEventListener("shipdrop:notificationsUpdated", handleNotifUpdate);
         window.removeEventListener("shipdrop:newNotification", handleDirectNotification);
-        window.removeEventListener("shipdrop:openRecharge", handleOpenRecharge);
         document.removeEventListener("visibilitychange", handleVisibilityChange);
       };
     }, []);
