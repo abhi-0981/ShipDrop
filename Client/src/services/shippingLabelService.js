@@ -779,146 +779,37 @@ const normalizeSettings = (data = {}) => ({
 });
 
 let labelSettingsCache = null;
-let labelSettingsCacheTime = 0;
 
-const getLabelSettings = async () => {
-  const userId = getUserId();
-
-  if (!userId) {
-    return { ...DEFAULT_LABEL_SETTINGS };
-  }
-
-  const now = Date.now();
-  if (labelSettingsCache && now - labelSettingsCacheTime < 180000) {
-    return labelSettingsCache;
-  }
-
+export const getLabelSettings = () => {
+  if (labelSettingsCache) return labelSettingsCache;
   try {
-    const response = await api.get("/label-settings", {
-      params: { user_id: userId },
-    });
-
-    const data = response.data?.settings;
-
-    if (!response.data?.success || !data) {
-      return { ...DEFAULT_LABEL_SETTINGS };
+    const raw = localStorage.getItem("shipdrop_label_settings");
+    if (raw) {
+      labelSettingsCache = normalizeSettings(JSON.parse(raw));
+      return labelSettingsCache;
     }
-
-    const normalized = normalizeSettings(data);
-    labelSettingsCache = normalized;
-    labelSettingsCacheTime = now;
-    return normalized;
-  } catch (error) {
-    console.error("Label settings error:", error);
-    return labelSettingsCache || { ...DEFAULT_LABEL_SETTINGS };
-  }
+  } catch {}
+  return { ...DEFAULT_LABEL_SETTINGS };
 };
 
-const getDetailedOrders = async (orders) => {
+// Non-blocking background sync to keep settings fresh without blocking user actions
+const syncLabelSettingsInBackground = async () => {
   const userId = getUserId();
-
-  if (!userId || !Array.isArray(orders)) return orders;
-
-  return Promise.all(
-    orders.map(async (order) => {
-      // Agar order ke paas pehle se recipient & address details hain (jaise AllOrders list me hota hai),
-      // toh extra API call karne ki bilkul zaroorat nahi hai. Isse 404 error aur delay dono khatam ho jaate hain.
-      const hasCompleteDetails = Boolean(
-        (order?.consignee_name || order?.customer_name || order?.buyer_name || order?.name) &&
-        (order?.address_line1 || order?.addressLine1 || order?.city || order?.pincode)
-      );
-
-      if (hasCompleteDetails) {
-        return order;
-      }
-
-      // Agar details nahi hain toh pehle database primary key id check karo
-      const id = first(
-        order?.id,
-        order?.order_id,
-        order?.orderId
-      );
-
-      if (!id) return order;
-
-      try {
-        const response = await api.get(`/orders/${id}`, {
-          params: { user_id: userId },
-        });
-
-        const full =
-          response.data?.order ||
-          response.data?.result?.order ||
-          response.data?.result ||
-          null;
-
-        if (!full) return order;
-
-        return {
-          ...order,
-          ...full,
-          awb: first(
-            order.awb,
-            full.awb,
-            full.waybill
-          ),
-          order_id: first(
-            order.order_id,
-            full.order_id
-          ),
-        };
-      } catch (error) {
-        // Fallback silently without throwing loud console errors
-        return order;
-      }
-    })
-  );
+  if (!userId) return;
+  try {
+    const response = await api.get("/label-settings", { params: { user_id: userId } });
+    const data = response.data?.settings;
+    if (data) {
+      labelSettingsCache = normalizeSettings(data);
+      localStorage.setItem("shipdrop_label_settings", JSON.stringify(data));
+    }
+  } catch {}
 };
+setTimeout(syncLabelSettingsInBackground, 1000);
 
-const logoCache = new Map();
+const getDetailedOrders = (orders) => orders;
 
-const imageToDataUrl = (source) => {
-  if (!source) return Promise.resolve("");
-
-  if (String(source).startsWith("data:")) {
-    return Promise.resolve(source);
-  }
-
-  if (logoCache.has(source)) {
-    return Promise.resolve(logoCache.get(source));
-  }
-
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    const timer = setTimeout(() => {
-      resolve(source);
-    }, 400);
-
-    img.onload = () => {
-      clearTimeout(timer);
-      try {
-        const canvas = document.createElement("canvas");
-        canvas.width = img.naturalWidth || img.width || 180;
-        canvas.height = img.naturalHeight || img.height || 50;
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0);
-        const dataUrl = canvas.toDataURL("image/png");
-        logoCache.set(source, dataUrl);
-        resolve(dataUrl);
-      } catch (err) {
-        resolve(source);
-      }
-    };
-
-    img.onerror = () => {
-      clearTimeout(timer);
-      resolve(source);
-    };
-
-    img.src = source;
-  });
-};
+const imageToDataUrl = (source) => Promise.resolve(source);
 
 const createBarcode = (awb, compact = false) => {
   const svg = document.createElementNS(
@@ -1971,27 +1862,16 @@ td:first-child {
   `;
 };
 
-const prepareLabels = async (orders) => {
-  const settings = await getLabelSettings();
-  const detailedOrders = await getDetailedOrders(orders);
+const prepareLabels = (orders) => {
+  const settings = getLabelSettings();
+  const detailedOrders = orders;
   const size = getLabelSize(settings.labelSize);
 
-  const leftLogoData = await imageToDataUrl(shipdropLogo);
-
-  const rightLogoSource =
-    settings.rightLogoMode === "custom" &&
-    settings.customLogo
+  const leftLogoData = shipdropLogo;
+  const rightLogoData =
+    settings.rightLogoMode === "custom" && settings.customLogo
       ? settings.customLogo
       : delhiveryLogo;
-
-  let rightLogoData;
-
-  try {
-    rightLogoData = await imageToDataUrl(rightLogoSource);
-  } catch (error) {
-    console.error("Carrier logo loading error:", error);
-    rightLogoData = await imageToDataUrl(delhiveryLogo);
-  }
 
   return {
     settings,
@@ -2007,170 +1887,47 @@ export const generateShippingLabelsPdf = async (orders) => {
     throw new Error("Please select at least one shipment");
   }
 
-  let iframe = null;
+  const {
+    settings,
+    detailedOrders,
+    size,
+    leftLogoData,
+    rightLogoData,
+  } = prepareLabels(orders);
 
-  try {
-    const {
-      settings,
-      detailedOrders,
-      size,
-      leftLogoData,
-      rightLogoData,
-    } = await prepareLabels(orders);
+  // Render directly in document via hidden container (10x faster than creating an iframe)
+  const container = document.createElement("div");
+  container.style.cssText =
+    "position:fixed;top:0;left:0;opacity:0;pointer-events:none;z-index:-99999;";
 
-    // =====================================================
-    // ISOLATED PRINT/DOWNLOAD AREA
-    // Main UI ko bilkul touch nahi karega
-    // =====================================================
-
-    iframe = document.createElement("iframe");
-
-    // In-viewport invisible positioning taaki Chrome layout engine throttling na kare
-    iframe.style.position = "fixed";
-    iframe.style.top = "0";
-    iframe.style.left = "0";
-    iframe.style.width = "100vw";
-    iframe.style.height = "100vh";
-    iframe.style.border = "0";
-    iframe.style.opacity = "0";
-    iframe.style.pointerEvents = "none";
-    iframe.style.zIndex = "-99999";
-
-    document.body.appendChild(iframe);
-
-    const iframeDoc =
-      iframe.contentDocument ||
-      iframe.contentWindow.document;
-
-    iframeDoc.open();
-
-    iframeDoc.write(`
-      <!doctype html>
-      <html>
-        <head>
-          <meta charset="utf-8">
-
-          <style>
-            html,
-            body {
-              margin: 0;
-              padding: 0;
-              background: #ffffff;
-              width: 100%;
-              min-height: 100%;
-            }
-
-            body {
-              overflow: hidden;
-            }
-
-            * {
-              box-sizing: border-box;
-            }
-          </style>
-        </head>
-
-        <body></body>
-      </html>
-    `);
-
-    iframeDoc.close();
-
-    // =====================================================
-    // BUILD LABELS INSIDE IFRAME
-    // =====================================================
-
-    const labels = [];
-
-    for (const order of detailedOrders) {
-      const holder = iframeDoc.createElement("div");
-
-      holder.innerHTML = buildLabelHtml(
+  const html = detailedOrders
+    .map((order) =>
+      buildLabelHtml(
         order,
         settings,
         leftLogoData,
         rightLogoData,
         size
-      );
+      )
+    )
+    .join("");
 
-      // Generated style ko MAIN PAGE mein nahi,
-      // iframe ke head mein daalna hai.
-      const styles = Array.from(
-        holder.querySelectorAll("style")
-      );
+  container.innerHTML = html;
+  document.body.appendChild(container);
 
-      styles.forEach((style) => {
-        const styleClone =
-          iframeDoc.createElement("style");
-
-        styleClone.textContent =
-          style.textContent || "";
-
-        iframeDoc.head.appendChild(styleClone);
-      });
-
-      const label =
-        holder.querySelector(".shipping-label");
-
-      if (!label) continue;
-
-      iframeDoc.body.appendChild(label);
-
-      labels.push(label);
-    }
-
-    if (!labels.length) {
-      throw new Error(
-        "No shipping labels could be generated"
-      );
-    }
-
-    // =====================================================
-    // WAIT FOR IMAGES (Safe with immediate return and 200ms timeout)
-    // =====================================================
-
-    const images = Array.from(iframeDoc.images);
-
-    await Promise.all(
-      images.map((img) => {
-        if (img.complete) {
-          return Promise.resolve();
-        }
-
-        return new Promise((resolve) => {
-          const timer = setTimeout(resolve, 200);
-          img.onload = () => {
-            clearTimeout(timer);
-            resolve();
-          };
-          img.onerror = () => {
-            clearTimeout(timer);
-            resolve();
-          };
-        });
-      })
+  try {
+    const labelElements = Array.from(
+      container.querySelectorAll(".shipping-label")
     );
 
-    // Fast layout settle
-    await new Promise((resolve) => setTimeout(resolve, 30));
-
-    // =====================================================
-    // CREATE PDF
-    // =====================================================
+    if (!labelElements.length) {
+      throw new Error("No shipping labels could be generated");
+    }
 
     const pdf = new jsPDF({
-      orientation:
-        size.widthMm > size.heightMm
-          ? "landscape"
-          : "portrait",
-
+      orientation: size.widthMm > size.heightMm ? "landscape" : "portrait",
       unit: "mm",
-
-      format: [
-        size.widthMm,
-        size.heightMm,
-      ],
-
+      format: [size.widthMm, size.heightMm],
       compress: true,
     });
 
@@ -2183,82 +1940,18 @@ export const generateShippingLabelsPdf = async (orders) => {
       author: "ParcelDrop",
     });
 
-    // =====================================================
-    // PREPARE AND SCALE ALL LABELS
-    // =====================================================
+    for (let index = 0; index < labelElements.length; index += 1) {
+      const label = labelElements[index];
 
-    const labelData = [];
+      const canvas = await html2canvas(label, {
+        scale: 1.5,
+        backgroundColor: "#ffffff",
+        useCORS: true,
+        logging: false,
+        imageTimeout: 0,
+      });
 
-    for (let index = 0; index < labels.length; index += 1) {
-      const label = labels[index];
-
-      const pageWidth = label.offsetWidth;
-      const pageHeight = label.offsetHeight;
-
-      if (!pageWidth || !pageHeight) {
-        throw new Error("Unable to determine label size");
-      }
-
-      const contentWidth = Math.max(label.scrollWidth, pageWidth);
-      const contentHeight = Math.max(label.scrollHeight, pageHeight);
-
-      const fitScale = Math.min(
-        pageWidth / contentWidth,
-        pageHeight / contentHeight,
-        1
-      );
-
-      const labelBorder = label.querySelector(".label-border");
-
-      label.style.overflow = "visible";
-      if (labelBorder) {
-        labelBorder.style.overflow = "visible";
-      }
-
-      label.style.transformOrigin = "top left";
-      label.style.transform = fitScale < 1 ? `scale(${fitScale})` : "none";
-
-      labelData.push({ label, pageWidth, pageHeight, labelBorder });
-    }
-
-    // =====================================================
-    // FAST PARALLEL CAPTURE (Scale 1.8 for crystal sharp 180+ DPI & instant rendering)
-    // =====================================================
-
-    const renderedImages = await Promise.all(
-      labelData.map(async ({ label, pageWidth, pageHeight, labelBorder }) => {
-        const canvas = await html2canvas(label, {
-          scale: 1.8,
-          backgroundColor: "#ffffff",
-          useCORS: true,
-          logging: false,
-          imageTimeout: 0,
-          width: pageWidth,
-          height: pageHeight,
-          windowWidth: pageWidth,
-          windowHeight: pageHeight,
-          scrollX: 0,
-          scrollY: 0,
-        });
-
-        // Reset temporary styles
-        label.style.transform = "none";
-        label.style.transformOrigin = "";
-        label.style.overflow = "";
-        if (labelBorder) {
-          labelBorder.style.overflow = "";
-        }
-
-        return canvas.toDataURL("image/png");
-      })
-    );
-
-    // =====================================================
-    // ASSEMBLE PDF PAGES
-    // =====================================================
-
-    for (let index = 0; index < renderedImages.length; index += 1) {
-      const image = renderedImages[index];
+      const image = canvas.toDataURL("image/jpeg", 0.95);
 
       if (index > 0) {
         pdf.addPage(
@@ -2269,7 +1962,7 @@ export const generateShippingLabelsPdf = async (orders) => {
 
       pdf.addImage(
         image,
-        "PNG",
+        "JPEG",
         0,
         0,
         size.widthMm,
@@ -2286,10 +1979,7 @@ export const generateShippingLabelsPdf = async (orders) => {
       size,
     };
   } finally {
-    // Iframe cleanup
-    if (iframe) {
-      iframe.remove();
-    }
+    container.remove();
   }
 };
 
@@ -2302,54 +1992,8 @@ export const printShippingLabels = async (
     return;
   }
 
-  // Open preview tab immediately to prevent browser popup blockers
+  // Pre-open preview tab synchronously so popup blocker doesn't trigger
   const previewTab = window.open("", "_blank");
-  if (previewTab) {
-    try {
-      previewTab.document.write(`
-        <!doctype html>
-        <html>
-          <head>
-            <meta charset="utf-8">
-            <title>${getParcelDropFilename()}</title>
-            <style>
-              body {
-                margin: 0;
-                height: 100vh;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                background-color: #2b2b2b;
-                color: #e0e0e0;
-                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-              }
-              .spinner {
-                width: 42px;
-                height: 42px;
-                border: 4px solid rgba(255, 255, 255, 0.15);
-                border-top: 4px solid #3b82f6;
-                border-radius: 50%;
-                animation: spin 0.8s linear infinite;
-                margin-bottom: 16px;
-              }
-              @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-              .title { font-size: 16px; font-weight: 500; letter-spacing: 0.2px; }
-              .sub { font-size: 12px; color: #9ca3af; margin-top: 6px; }
-            </style>
-          </head>
-          <body>
-            <div class="spinner"></div>
-            <div class="title">Generating Shipping Label PDF...</div>
-            <div class="sub">Opening in PDF Viewer</div>
-          </body>
-        </html>
-      `);
-      previewTab.document.close();
-    } catch (e) {
-      console.warn("Could not write initial loading screen to preview tab", e);
-    }
-  }
 
   try {
     const { pdf, filename, detailedOrders } = await generateShippingLabelsPdf(orders);
