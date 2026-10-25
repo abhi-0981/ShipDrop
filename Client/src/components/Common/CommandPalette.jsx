@@ -10,7 +10,6 @@ const NAVIGATION_ITEMS = [
   { id: "create-offline", title: "Create Offline Order", category: "Actions", path: "/create-offline-order", icon: "document", shortcut: "O" },
   { id: "dashboard", title: "Dashboard Overview", category: "Pages", path: "/dashboard", icon: "home" },
   { id: "analytics", title: "Business Analytics & Heatmap", category: "Tools", path: "/analytics", icon: "chart" },
-  { id: "rate-card", title: "Courier Rate Card", category: "Tools", path: "/rate-card", icon: "document" },
   { id: "rate-calc", title: "Rate Calculator", category: "Tools", path: "/rate-calculator", icon: "calculator", shortcut: "R" },
   { id: "serviceability", title: "Pincode Serviceability", category: "Tools", path: "/serviceability", icon: "map-pin" },
   { id: "all-orders", title: "All Orders", category: "Orders", path: "/all-orders", icon: "box", shortcut: "A" },

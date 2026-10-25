@@ -17,7 +17,6 @@ import {
   HiOutlineDocumentReport,
   HiOutlineScale,
   HiOutlineChartBar,
-  HiOutlineTag,
   HiChevronRight,
   HiChevronDown,
   HiX,
@@ -73,9 +72,6 @@ const prefetchRoute = (path) => {
         break;
       case "/rto-delivered":
         import("../../pages/Dashboard/RTODelivered");
-        break;
-      case "/rate-card":
-        import("../../pages/Dashboard/RateCard");
         break;
       case "/rate-calculator":
         import("../../pages/Dashboard/RateCalculator");
@@ -166,7 +162,6 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
 
   const isToolPath = [
     "/analytics",
-    "/rate-card",
     "/rate-calculator",
     "/serviceability",
   ].includes(location.pathname);
@@ -188,7 +183,6 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
     if (
       [
         "/analytics",
-        "/rate-card",
         "/rate-calculator",
         "/serviceability",
       ].includes(location.pathname)
@@ -222,7 +216,7 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
     { name: "Analytics", path: "/analytics" },
     { name: "Business Analytics", path: "/analytics" },
     { name: "India Sales Heatmap", path: "/analytics" },
-    { name: "Rate Card", path: "/rate-card" },
+    { name: "Rate Calculator", path: "/rate-calculator" },
     { name: "Create Order", path: "/create-order" },
     { name: "Create Offline Order", path: "/create-offline-order" },
     { name: "Processing Orders", path: "/processing-orders" },
@@ -791,18 +785,6 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
                     <span className="ml-1 rounded-full bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 text-[9px] font-bold text-emerald-600">
                       NEW
                     </span>
-                  </Link>
-
-                  <Link
-                    to="/rate-card"
-                    onMouseEnter={() => prefetchRoute("/rate-card")}
-                    onClick={handleNavClick}
-                    className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[13px] transition ${subActiveClass(
-                      "/rate-card",
-                    )}`}
-                  >
-                    <HiOutlineTag size={16} />
-                    <span className="truncate">Rate Card</span>
                   </Link>
 
                   <Link

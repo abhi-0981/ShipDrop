@@ -355,11 +355,7 @@ function App() {
 
             <Route
               path="/rate-card"
-              element={
-                <Suspense fallback={<RouteLoader />}>
-                  <RateCard />
-                </Suspense>
-              }
+              element={<Navigate to="/rate-calculator" replace />}
             />
 
             <Route
