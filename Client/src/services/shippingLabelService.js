@@ -675,9 +675,9 @@ const getLabelSize = (value) => {
   const sizes = {
     "4x6": {
       key: "4x6",
-      widthIn: 4.2,
+      widthIn: 4,
       heightIn: 6,
-      widthMm: 107.6,
+      widthMm: 101.6,
       heightMm: 152.4,
     },
     A4: {
@@ -1278,307 +1278,154 @@ const build3x2LabelHtml = (
   `;
 };
 
+const formatSlashDate = (value) => {
+  if (!value) {
+    const now = new Date();
+    const d = String(now.getDate()).padStart(2, "0");
+    const m = String(now.getMonth() + 1).padStart(2, "0");
+    const y = now.getFullYear();
+    return `${d}/${m}/${y}`;
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  const d = String(date.getDate()).padStart(2, "0");
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const y = date.getFullYear();
+  return `${d}/${m}/${y}`;
+};
+
+const getPieces = (o) => {
+  return (
+    first(
+      o.pieces,
+      o.pcs,
+      o.package_count,
+      o.packageCount,
+      o.total_packages,
+      o.totalPackages,
+      Array.isArray(o.packages) && o.packages.length > 0 ? o.packages.length : 1
+    ) || 1
+  );
+};
+
+const getInvoiceNo = (o) =>
+  txt(
+    first(
+      o.invoice_no,
+      o.invoiceNo,
+      o.invoice_number,
+      o.invoiceNumber,
+      o.invoice_id,
+      o.invoiceId
+    ),
+    ""
+  );
+
 const buildLabelHtml = (
   order,
   settings,
-  leftLogo,
-  rightLogo,
+  carrierLogo,
+  companyLogo,
   size
 ) => {
-  const compact = size.heightIn <= 2.5;
-  const isA4 = size.key === "A4";
   const is3x2 = size.key === "3x2";
 
   if (is3x2) {
     return build3x2LabelHtml(
       order,
       settings,
-      leftLogo,
-      rightLogo,
+      companyLogo,
+      carrierLogo,
       size
     );
   }
 
   const awb = getAWB(order);
   const payment = getPaymentType(order);
-  const fromAddress = getFromAddress(order);
   const buyerAddress = getBuyerAddress(order);
-
-  const fromMobiles = [
-    getFromMobile(order),
-    getAlternateFromMobile(order),
-  ]
-    .filter(Boolean)
-    .join(" / ");
-
-  const showFromName = settings.fromName !== false;
-
-  const showFromAddress =
-    settings.fromAddress !== false &&
-    settings.shipperAddress !== false;
-
-  const showFromMobile =
-    settings.fromMobile !== false &&
-    settings.shipperMobiles !== false;
+  const customerName = getCustomerName(order);
+  const customerMobile = getMobile(order);
+  const sellerName = getSellerName(order);
+  const sellerGstin = getSellerGstin(order);
+  const invoiceNo = getInvoiceNo(order);
+  const slashDate = formatSlashDate(getDate(order));
+  const pieces = getPieces(order);
+  const codAmount = getCodAmount(order);
 
   const showBuyerMobile =
-    settings.buyerMobile !== false &&
-    Boolean(getMobile(order));
+    settings.buyerMobile !== false && Boolean(customerMobile);
 
-  const showWeight = settings.orderWeight === true;
-  const showOrderId = settings.orderId === true;
-
-  const showOrderValue =
-    settings.orderValue !== false;
-
-  const showCod =
-    settings.codAmount !== false &&
-    payment === "COD";
-
-  const showProducts =
-    settings.productDetails !== false &&
-    settings.productName !== false;
-
-  // Only enabled, non-empty fields count as From details.
-  const fromName = showFromName
-    ? getFromName(order)
-    : "";
-
-  const fromAddressValue = showFromAddress
-    ? fromAddress
-    : "";
-
-  const fromMobileValue = showFromMobile
-    ? fromMobiles
-    : "";
-
-  const hasFromDetails = Boolean(
-    fromName.trim() ||
-    fromAddressValue.trim() ||
-    fromMobileValue.trim()
-  );
-
-  const products = getProducts(order);
-
-  const productRows = showProducts
-    ? products
-        .slice(0, isA4 ? 12 : compact ? 1 : 4)
-        .map(
-          (product) => `
-            <tr>
-              <td class="product-name">${esc(product.name)}</td>
-              <td>${product.rate.toFixed(2)}</td>
-              <td>${product.qty}</td>
-              <td>${product.total.toFixed(2)}</td>
-            </tr>
-          `
-        )
-        .join("")
-    : "";
-
-    const orderCells = [];
-
-  const returnAddress =
-    getReturnAddress(order) || fromAddress;
-
-  const contactLine =
-    "For complaints & queries please contact 8384930617";
+  const isCod = payment === "COD";
+  const paymentText = isCod
+    ? `COD : ${money(codAmount)}`
+    : "Prepaid";
 
   return `
     <article
-      class="shipping-label ${compact ? "compact" : ""} ${isA4 ? "a4" : ""}"
-      style="width:${size.widthIn}in;height:${size.heightIn}in"
+      class="shipping-label"
+      style="width:${size.widthIn}in;height:${size.heightIn}in;"
     >
       <div class="label-border">
-
-        <header class="logos">
-          <div class="logo left">
-            <img src="${esc(leftLogo)}" alt="ParcelDrop" />
+        <!-- 1. TOP HEADER: 50% Delhivery Courier Logo | 50% ShipDrop / Company Logo -->
+        <header class="logos-header">
+          <div class="logo-col left-logo">
+            <img src="${esc(carrierLogo)}" alt="Courier" />
           </div>
-
-          <div class="logo right">
-            <img src="${esc(rightLogo)}" alt="Carrier" />
+          <div class="logo-col right-logo">
+            <img src="${esc(companyLogo)}" alt="Company" />
           </div>
         </header>
 
-        <!-- ADDRESS SECTION -->
-
-        <section class="addresses ${hasFromDetails ? "has-from" : "to-only"}">
-
+        <!-- 2. TO ADDRESS BLOCK (FULL WIDTH) -->
+        <section class="to-block">
+          <div class="to-caption">To</div>
+          <div class="consignee-name">${esc(customerName)}</div>
+          <div class="consignee-address">${esc(buyerAddress || "—")}</div>
           ${
-            hasFromDetails
-              ? `
-                <div class="address-block">
-                  <div class="eyebrow">FROM</div>
-
-                  ${
-                    fromName
-                      ? `<b class="person">${esc(fromName)}</b>`
-                      : ""
-                  }
-
-                  ${
-                    fromAddressValue
-                      ? `<div class="address">${esc(fromAddressValue)}</div>`
-                      : ""
-                  }
-
-                  ${
-                    fromMobileValue
-                      ? `<div class="phone">☎ ${esc(fromMobileValue)}</div>`
-                      : ""
-                  }
-                          <div style="height: 1mm;"></div>
-
-                </div>
-              `
+            showBuyerMobile
+              ? `<div class="consignee-phone">☎ ${esc(customerMobile)}</div>`
               : ""
           }
-
-          <div class="address-block to-block">
-            <div class="eyebrow">TO</div>
-
-            <b class="person">${esc(getCustomerName(order))}</b>
-
-            <div class="address">${esc(buyerAddress || "—")}</div>
-
-            ${
-              showBuyerMobile
-                ? `<div class="phone">☎ ${esc(getMobile(order))}</div>`
-                : ""
-            }
-          </div>
-
         </section>
 
-        <!-- AWB AND BARCODE -->
-
-        <section class="awb">
-          <div class="eyebrow">AWB NUMBER - ${esc(awb)}</div>
-          <div class="awb-number"> </div>
-          <div class="barcode">${createBarcode(awb, compact)}</div>
-        </section>
-
-        <!-- PAYMENT / SERVICE / OPTIONAL WEIGHT -->
-
- <section
-  class="summary ${
-    showWeight
-      ? showOrderId
-        ? "four-cols"
-        : "three-cols"
-      : showOrderId
-        ? "three-cols"
-        : "two-cols"
-  }"
->
-  <div>
-    <span>PAYMENT</span>
-    <b>${payment}</b>
-  </div>
-
-  ${
-    showOrderId
-      ? `
-        <div>
-          <span>ORDER ID</span>
-          <b>${esc(getOrderId(order))}</b>
-        </div>
-      `
-      : ""
-  }
-
-  <div>
-    <span>SERVICE</span>
-    <b>${getServiceType(order)}</b>
-  </div>
-
-  ${
-    showWeight
-      ? `
-        <div>
-          <span>WEIGHT</span>
-          <b>${getWeight(order).toFixed(2)} KG</b>
-        </div>
-      `
-      : ""
-  }
-</section>
-
-
-
-       
-        ${
-          showCod
-            ? `
-              <section class="cod">
-                <b>CASH ON DELIVERY</b>
-                <strong>${money(getCodAmount(order))}</strong>
-              </section>
-            `
-            : ""
-        }
-
-        ${
-          showProducts
-            ? `
-             <section class="products">
-  <table>
-    <thead>
-      <tr>
-        <th>PRODUCT</th>
-        <th>RATE (₹)</th>
-        <th>QTY</th>
-        <th>TOTAL (₹)</th>
-      </tr>
-    </thead>
-
-    <tbody>${productRows}</tbody>
-  </table>
-</section>
-            `
-            : ""
-        }
-
-        <section class="seller">
-          <div>
-            <span>SELLER : </span>
-            <b>${esc(getSellerName(order))}</b>
-          </div>
-
-          <div>
-            <span>GSTIN : </span>
-            <b>${esc(getSellerGstin(order) || " ")}</b>
-          </div>
-
-          <div>
-            <span>INVOICE NO. : </span>
-            <b>&nbsp;</b>
-          </div>
-
-          <div>
-            <span>DATE : </span>
-            <b>${esc(formatDate(getDate(order)))}</b>
+        <!-- 3. AWB & BARCODE BLOCK -->
+        <section class="awb-barcode-block">
+          <div class="awb-text">AWB No: ${esc(awb)}</div>
+          <div class="pcs-text">PCS #: ${esc(pieces)}</div>
+          <div class="barcode-wrapper">
+            ${createBarcode(awb, false)}
           </div>
         </section>
 
-        ${
-          settings.returnAddress !== false
-            ? `
-              <section class="return">
-                <b>RETURN ADDRESS</b>
-                <div>${esc(returnAddress || "—")}</div>
-              </section>
-            `
-            : ""
-        }
+        <!-- 4. PAYMENT ROW -->
+        <section class="payment-row">
+          <div class="payment-cell">
+            ${esc(paymentText)}
+          </div>
+          <div class="payment-right-cell"></div>
+        </section>
 
-        ${
-          settings.contactLine !== false
-            ? `<footer class="contact">${esc(contactLine)}</footer>`
-            : ""
-        }
+        <!-- 5. SELLER TABLE (4 COLUMNS) -->
+        <section class="seller-grid">
+          <div class="seller-headers">
+            <div class="col-cell">Seller</div>
+            <div class="col-cell">GSTIN</div>
+            <div class="col-cell">Invoice No</div>
+            <div class="col-cell">Date</div>
+          </div>
+          <div class="seller-values">
+            <div class="col-cell seller-name">${esc(sellerName ? sellerName.toUpperCase() : "—")}</div>
+            <div class="col-cell seller-gstin">${esc(sellerGstin || "—")}</div>
+            <div class="col-cell seller-invoice">${esc(invoiceNo || "")}</div>
+            <div class="col-cell seller-date">${esc(slashDate)}</div>
+          </div>
+        </section>
 
+        <!-- 6. BOTTOM INVOICE SUMMARY BOX -->
+        <footer class="invoice-summary-box">
+          <div class="inv-line">Invoice No: ${esc(invoiceNo)} | Invoice Date : ${esc(slashDate)}</div>
+          <div class="gst-line">GSTIN No: ${esc(sellerGstin || "—")}</div>
+        </footer>
       </div>
     </article>
 
@@ -1589,12 +1436,11 @@ const buildLabelHtml = (
 
       .shipping-label {
         margin: 0;
-        padding: ${compact ? "1.2mm" : isA4 ? "6mm" : "3mm"};
-        background: #fff;
-        color: #111827;
+        padding: 2.5mm;
+        background: #ffffff;
+        color: #000000;
         font-family: Arial, Helvetica, sans-serif;
-        font-size: ${compact ? "5.5pt" : isA4 ? "11pt" : "8pt"};
-        line-height: 1.25;
+        box-sizing: border-box;
         overflow: hidden;
         page-break-after: always;
         break-after: page;
@@ -1604,512 +1450,256 @@ const buildLabelHtml = (
 
       .label-border {
         width: 100%;
-        height: 100%;
-        border: 1px solid #111827;
+        border: 1.5px solid #000000;
+        background: #ffffff;
+        box-sizing: border-box;
         display: flex;
         flex-direction: column;
-        align-items: stretch;
-        overflow: hidden;
-        background: #fff;
       }
 
-.logos {
-  position: relative;
-  flex: 0 0 ${compact ? "5mm" : isA4 ? "15mm" : "9mm"};
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.5mm 2mm;
-  border-bottom: 1px solid #111827;
-}
-
-.logos::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 50.4%;
-  width: 1px;
-  background: #111827;
-  transform: translateX(-50%);
-}
-
-.logo {
-  width: 47%;
-  height: 100%;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-}
-
-.logo.left {
-  justify-content: flex-start;
-  border-right: none;
-  padding-right: 0;
-}
-
-.logo.right {
-  justify-content: flex-end;
-  padding-left: 0;
-}
-
-      .logo img {
-        display: block;
-        max-width: 100%;
-        max-height: 100%;
-        object-fit: contain;
-      }
-
-      .addresses {
+      /* 1. TOP HEADER */
+      .logos-header {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        flex: 0 0 auto;
-        border-bottom: 1px solid #111827;
+        height: 18mm;
+        border-bottom: 1.5px solid #000000;
+        align-items: center;
       }
 
-      /* When From has no enabled data, To takes the full width. */
-      .addresses.to-only {
-        grid-template-columns: minmax(0, 1fr);
-      }
-
-      .address-block {
-        min-width: 0;
-        padding: ${compact ? "0.5mm" : isA4 ? "3mm" : "1mm"};
-        overflow-wrap: anywhere;
-      }
-
-      .address-block + .address-block {
-        border-left: 1px solid #111827;
-      }
-
-      .addresses.to-only .address-block {
-        width: 100%;
-        border-left: none;
-      }
-
-      .eyebrow {
-        font-size: ${compact ? "4.5pt" : isA4 ? "9pt" : "9pt"};
-        font-weight: 600;
-        letter-spacing: .2px;
-        color: #374151;
-      }
-
-     .person {
-  display: block;
-  font-size: ${compact ? "5.5pt" : isA4 ? "13pt" : "8.5pt"};
-  line-height: 1.2;
-  margin-top: 1mm;
-  font-weight: 600;
-  overflow-wrap: anywhere;
-}
-
-     .address {
-  font-size: ${compact ? "4.8pt" : isA4 ? "10pt" : "8pt"};
-  line-height: 1.35;
-  margin-top: 1mm;
-  overflow-wrap: anywhere;
-  font-weight: 400;
-}
-
-      .phone {
-        font-size: ${compact ? "4.8pt" : isA4 ? "9pt" : "6.5pt"};
-        font-weight: 600;
-        margin-top: 1mm;
-        overflow-wrap: anywhere;
-      }
-
-    .awb {
-  flex: 0 0 auto;
-  text-align: center;
-  padding: ${compact ? "1.5mm" : isA4 ? "5mm" : "3mm"};
-  border-bottom: 1px solid #111827;
-}
-
-    .awb-number {
-  font-size: ${compact ? "7pt" : isA4 ? "17pt" : "15pt"};
-  font-weight: 700;
-  letter-spacing: .4px;
-  margin: 1mm 0 2mm;
-  overflow-wrap: anywhere;
-}
-
-      .barcode svg {
-        display: block;
-        max-width: 100%;
-       max-height: ${compact ? "4mm" : isA4 ? "14mm" : "12mm"};
-        height: auto;
-        margin: 0 auto;
-      }
-
-      .summary {
-        display: grid;
-        flex: 0 0 auto;
-        border-bottom: 1px solid #111827;
-      }
-
-      .summary.two-cols {
-        grid-template-columns: 1fr 1fr;
-      }
-
-      .summary.three-cols {
-  grid-template-columns: 1fr 1fr 1fr;
-}
-
-      .summary.four-cols {
-  grid-template-columns: 1fr 1fr 1fr 1fr;
-}
-
-      .summary > div {
-        min-width: 0;
-        padding: ${compact ? "1mm" : isA4 ? "3mm" : "2mm"};
-        overflow-wrap: anywhere;
-      }
-
-      .summary > div + div {
-        border-left: 1px solid #9ca3af;
-      }
-
-      .summary span,
-      .info-cell span,
-      .seller span {
-          display: block;
-  font-size: ${compact ? "4.3pt" : isA4 ? "8pt" : "5.8pt"};
-  font-weight: 600;
-  line-height: 1;
-  margin-bottom: 0.5mm;
-      }
-
-      .summary b {
-        display: block;
-        font-size: ${compact ? "5.5pt" : isA4 ? "13pt" : "8.5pt"};
-        font-weight: 600;
-      }
-
-      .order-info {
-        display: grid;
-        flex: 0 0 auto;
-        border-bottom: 1px solid #111827;
-      }
-
-      .info-cell {
-        min-width: 0;
-        padding: ${compact ? "1mm" : "2mm"};
-        overflow-wrap: anywhere;
-      }
-
-      .info-cell + .info-cell {
-        border-left: 1px solid #9ca3af;
-      }
-
-      .info-cell b {
-        display: block;
-        font-size: ${compact ? "5pt" : "7.5pt"};
-      }
-
-      .cod {
-        flex: 0 0 auto;
+      .logo-col {
+        height: 100%;
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        gap: 2mm;
-        padding: ${compact ? "1mm" : "2mm"};
-        border-bottom: 1px solid #111827;
+        justify-content: center;
+        padding: 1.5mm 3mm;
       }
 
-      .cod b {
-        font-size: ${compact ? "5pt" : "7.5pt"};
+      .logo-col.left-logo {
+        border-right: 1.5px solid #000000;
       }
 
-      .cod strong {
-        font-size: ${compact ? "5.5pt" : "9pt"};
+      .logo-col img {
+        max-width: 90%;
+        max-height: 14mm;
+        object-fit: contain;
+        display: block;
       }
-.products {
-  flex: 0 0 auto;
-  padding: 0;
-  margin: 0;
-  border-bottom: 1px solid #111827;
-}
 
-      .section-title {
-        font-size: ${compact ? "4pt" : "6pt"};
-        font-weight: 600;
+      /* 2. TO BLOCK */
+      .to-block {
+        padding: 2mm 3mm 2.5mm 3mm;
+        border-bottom: 1.5px solid #000000;
+      }
+
+      .to-caption {
+        font-size: 8.5pt;
+        font-weight: 500;
+        color: #000000;
         margin-bottom: 1mm;
       }
 
-table {
-  border-collapse: collapse;
-  width: 100%;
-  margin: 0;
-  padding: 0;
-  table-layout: fixed;
-  font-size: ${compact ? "4.5pt" : isA4 ? "9pt" : "6.5pt"};
-}
+      .consignee-name {
+        font-size: 9.5pt;
+        font-weight: 700;
+        color: #000000;
+        margin-bottom: 1mm;
+        word-break: break-word;
+      }
 
-th,
-td {
-  width: 25%;
-  border: 1px solid #9ca3af;
-  padding: ${compact ? "1mm" : "1.5mm"};
-  text-align: center;
-  overflow-wrap: anywhere;
-font-size: ${compact ? "5.5pt" : isA4 ? "13pt" : "8.5pt"};
-  font-weight: 600;
-}
+      .consignee-address {
+        font-size: 8pt;
+        line-height: 1.35;
+        color: #000000;
+        word-break: break-word;
+      }
 
-      th {
+      .consignee-phone {
+        font-size: 7.5pt;
         font-weight: 600;
-        background: #f3f4f6;
+        color: #000000;
+        margin-top: 1mm;
       }
 
-     th:first-child,
-td:first-child {
-  text-align: left;
-  width: 25%;
-}
-.seller {
-  flex: 0 0 auto;
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr 1fr;
-  border-bottom: 1px solid #111827;
-  min-height: 10mm;
-  align-items: start;
-}
-
-.seller > div {
-  min-width: 0;
-  padding: ${compact ? "1mm" : "1.2mm"} ${compact ? "1mm" : "1.5mm"};
-  overflow-wrap: anywhere;
-  min-height: ${compact ? "7mm" : "9mm"};
-  box-sizing: border-box;
-}
-
-
-      .seller > div + div {
-        border-left: 1px solid #9ca3af;
+      /* 3. AWB & BARCODE */
+      .awb-barcode-block {
+        padding: 2.5mm 3mm 2mm 3mm;
+        border-bottom: 1.5px solid #000000;
+        text-align: center;
       }
 
-.seller b {
-  display: block;
-  font-size: ${compact ? "4.8pt" : isA4 ? "9.5pt" : "6pt"};
-  font-weight: 600;
-  line-height: 1.2;
-  margin-top: 0.8mm;
+      .awb-text {
+        font-size: 9pt;
+        font-weight: 600;
+        color: #000000;
+        margin-bottom: 0.5mm;
+        letter-spacing: 0.4px;
+      }
 
-  white-space: nowrap;
-  overflow: visible;
-  text-overflow: clip;
+      .pcs-text {
+        font-size: 8.5pt;
+        font-weight: 600;
+        color: #000000;
+        margin-bottom: 1.5mm;
+      }
 
-  height: auto;
-  min-height: 0;
-}
+      .barcode-wrapper {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+      }
 
-.return {
-  margin-top: auto;
-  padding: ${compact ? "1mm" : isA4 ? "2.5mm" : "1.5mm"};
-  border-top: none;
-  border-bottom: 1px solid #111827;
-  font-size: ${compact ? "5.5pt" : isA4 ? "11pt" : "8pt"};
-  line-height: 1.2;
-  overflow-wrap: anywhere;
-}
+      .barcode-wrapper svg {
+        display: block;
+        max-width: 92%;
+        height: 16mm;
+        margin: 0 auto;
+      }
 
-     .return b {
-  display: block;
-  font-size: ${compact ? "5.5pt" : isA4 ? "11pt" : "8pt"};
-  font-weight: 600;
-  margin-bottom: 1mm;
-}
+      /* 4. PAYMENT ROW */
+      .payment-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        border-bottom: 1.5px solid #000000;
+        min-height: 7mm;
+      }
 
-.contact {
-  flex: 0 0 auto;
-  margin-top: 0;
-  padding: ${compact ? "1mm" : isA4 ? "2.5mm" : "1.5mm"};
-  font-size: ${compact ? "5.5pt" : isA4 ? "10pt" : "8pt"};
-  line-height: 1.15;
-  text-align: center;
-  font-weight: 600;
-}
+      .payment-cell {
+        padding: 1.5mm 3mm;
+        font-size: 8.5pt;
+        font-weight: 700;
+        color: #000000;
+        border-right: 1.5px solid #000000;
+        display: flex;
+        align-items: center;
+      }
+
+      .payment-right-cell {
+        padding: 1.5mm 3mm;
+      }
+
+      /* 5. SELLER GRID */
+      .seller-grid {
+        display: flex;
+        flex-direction: column;
+        border-bottom: 1.5px solid #000000;
+      }
+
+      .seller-headers {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr 1fr;
+        border-bottom: 1px solid #000000;
+      }
+
+      .seller-headers .col-cell {
+        padding: 1.2mm 2mm;
+        font-size: 7.5pt;
+        font-weight: 600;
+        color: #000000;
+      }
+
+      .seller-headers .col-cell:not(:last-child) {
+        border-right: 1px solid #000000;
+      }
+
+      .seller-values {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr 1fr;
+        min-height: 8.5mm;
+      }
+
+      .seller-values .col-cell {
+        padding: 1.5mm 2mm;
+        font-size: 7pt;
+        color: #000000;
+        word-break: break-word;
+      }
+
+      .seller-values .col-cell:not(:last-child) {
+        border-right: 1px solid #000000;
+      }
+
+      .seller-name {
+        font-weight: 600;
+        line-height: 1.2;
+      }
+
+      .seller-gstin {
+        font-weight: 500;
+      }
+
+      /* 6. INVOICE SUMMARY BOX */
+      .invoice-summary-box {
+        padding: 1.8mm 3mm;
+        font-size: 7.5pt;
+        font-weight: 500;
+        line-height: 1.45;
+        color: #000000;
+      }
+
+      .inv-line {
+        margin-bottom: 0.5mm;
+      }
     </style>
   `;
 };
 
-const prepareLabels = async (orders) => {
-  const settings = await getLabelSettings();
+const prepareLabels = async (orders, settingsOverride = null, customLogoOverride = null) => {
+  let settings = settingsOverride || (await getLabelSettings());
+  if (customLogoOverride && !settings.customLogo) {
+    settings = {
+      ...settings,
+      customLogo: customLogoOverride,
+      rightLogoMode: "custom",
+    };
+  }
+
   const detailedOrders = await getDetailedOrders(orders);
   const size = getLabelSize(settings.labelSize);
 
-  const leftLogoData = await imageToDataUrl(shipdropLogo);
-
-  const rightLogoSource =
-    settings.rightLogoMode === "custom" &&
-    settings.customLogo
-      ? settings.customLogo
-      : delhiveryLogo;
-
-  let rightLogoData;
-
+  // Left: Delhivery courier logo (matches reference)
+  let carrierLogoData = "";
   try {
-    rightLogoData = await imageToDataUrl(rightLogoSource);
+    carrierLogoData = await imageToDataUrl(delhiveryLogo);
   } catch (error) {
-    console.error("Carrier logo loading error:", error);
-    rightLogoData = await imageToDataUrl(delhiveryLogo);
+    console.warn("Carrier logo loading error:", error);
+    carrierLogoData = "";
+  }
+
+  // Right: Merchant/Company logo (ShipDrop or custom uploaded logo)
+  const companyLogoSource =
+    settings.rightLogoMode === "custom" && settings.customLogo
+      ? settings.customLogo
+      : shipdropLogo;
+
+  let companyLogoData = "";
+  try {
+    companyLogoData = await imageToDataUrl(companyLogoSource);
+  } catch (error) {
+    console.warn("Company logo loading error:", error);
+    try {
+      companyLogoData = await imageToDataUrl(shipdropLogo);
+    } catch {
+      companyLogoData = "";
+    }
   }
 
   return {
     settings,
     detailedOrders,
     size,
-    leftLogoData,
-    rightLogoData,
+    carrierLogoData,
+    companyLogoData,
   };
 };
 
-export const printShippingLabels = async (
+export const generateShippingLabelsPdf = async (
   orders,
-  title = "ParcelDrop Shipping Labels"
+  settingsOverride = null,
+  customLogoOverride = null
 ) => {
   if (!Array.isArray(orders) || orders.length === 0) {
-    toast.error("Please select at least one shipment");
-    return;
-  }
-
-  try {
-    const {
-      settings,
-      detailedOrders,
-      size,
-      leftLogoData,
-      rightLogoData,
-    } = await prepareLabels(orders);
-
-    const html = detailedOrders
-      .map((order) =>
-        buildLabelHtml(
-          order,
-          settings,
-          leftLogoData,
-          rightLogoData,
-          size
-        )
-      )
-      .join("");
-
-    const win = window.open(
-      "",
-      "_blank",
-      "width=900,height=700"
-    );
-
-    if (!win) {
-      toast.error("Please allow pop-ups to print");
-      return;
-    }
-
-    win.document.open();
-
-    win.document.write(`
-      <!doctype html>
-      <html>
-        <head>
-          <meta charset="utf-8">
-<title>${getParcelDropFilename()}</title>          <style>
-            html, body {
-              margin: 0;
-              padding: 0;
-              background: #fff;
-            }
-
-            * {
-              box-sizing: border-box;
-            }
-
-            @page {
-              size: ${size.widthIn}in ${size.heightIn}in;
-              margin: 0;
-            }
-
-            @media print {
-              html, body {
-                margin: 0 !important;
-                padding: 0 !important;
-              }
-
-              .shipping-label {
-                page-break-after: always;
-              }
-
-              .shipping-label:last-child {
-                page-break-after: auto;
-              }
-            }
-          </style>
-        </head>
-
-        <body>${html}</body>
-      </html>
-    `);
-
-    win.document.close();
-
-    let printStarted = false;
-
-    const printWhenReady = async () => {
-      if (printStarted || win.closed) return;
-
-      const images = Array.from(win.document.images);
-
-      await Promise.all(
-        images.map((img) => {
-          if (img.complete && img.naturalWidth > 0) {
-            return Promise.resolve();
-          }
-
-          return new Promise((resolve) => {
-            img.onload = resolve;
-            img.onerror = resolve;
-          });
-        })
-      );
-
-      if (win.closed || printStarted) return;
-
-      printStarted = true;
-      win.focus();
-      win.print();
-    };
-
-    win.addEventListener(
-      "load",
-      () => {
-        printWhenReady().catch((error) =>
-          console.error("Print readiness error:", error)
-        );
-      },
-      { once: true }
-    );
-
-    window.setTimeout(() => {
-      printWhenReady().catch((error) =>
-        console.error("Print readiness error:", error)
-      );
-    }, 1000);
-
-    toast.success(
-      `${detailedOrders.length} label(s) ready to print`
-    );
-  } catch (error) {
-    console.error("Print label error:", error);
-
-    toast.error(
-      error?.message || "Unable to print labels"
-    );
-  }
-};
-
-export const downloadShippingLabels = async (orders) => {
-  if (!Array.isArray(orders) || orders.length === 0) {
-    toast.error("Please select at least one shipment");
-    return;
+    throw new Error("Please select at least one shipment");
   }
 
   let iframe = null;
@@ -2119,17 +1709,11 @@ export const downloadShippingLabels = async (orders) => {
       settings,
       detailedOrders,
       size,
-      leftLogoData,
-      rightLogoData,
-    } = await prepareLabels(orders);
-
-    // =====================================================
-    // ISOLATED PRINT/DOWNLOAD AREA
-    // Main UI ko bilkul touch nahi karega
-    // =====================================================
+      carrierLogoData,
+      companyLogoData,
+    } = await prepareLabels(orders, settingsOverride, customLogoOverride);
 
     iframe = document.createElement("iframe");
-
     iframe.style.position = "fixed";
     iframe.style.left = "-10000px";
     iframe.style.top = "0";
@@ -2143,109 +1727,73 @@ export const downloadShippingLabels = async (orders) => {
     document.body.appendChild(iframe);
 
     const iframeDoc =
-      iframe.contentDocument ||
-      iframe.contentWindow.document;
+      iframe.contentDocument || iframe.contentWindow.document;
 
     iframeDoc.open();
-
     iframeDoc.write(`
       <!doctype html>
       <html>
         <head>
           <meta charset="utf-8">
-
+          <title>Label</title>
           <style>
-            html,
-            body {
+            html, body {
               margin: 0;
               padding: 0;
               background: #ffffff;
               width: 100%;
               min-height: 100%;
             }
-
             body {
               overflow: hidden;
             }
-
             * {
               box-sizing: border-box;
             }
           </style>
         </head>
-
         <body></body>
       </html>
     `);
-
     iframeDoc.close();
-
-    // =====================================================
-    // BUILD LABELS INSIDE IFRAME
-    // =====================================================
 
     const labels = [];
 
     for (const order of detailedOrders) {
       const holder = iframeDoc.createElement("div");
-
       holder.innerHTML = buildLabelHtml(
         order,
         settings,
-        leftLogoData,
-        rightLogoData,
+        carrierLogoData,
+        companyLogoData,
         size
       );
 
-      // Generated style ko MAIN PAGE mein nahi,
-      // iframe ke head mein daalna hai.
-      const styles = Array.from(
-        holder.querySelectorAll("style")
-      );
-
+      const styles = Array.from(holder.querySelectorAll("style"));
       styles.forEach((style) => {
-        const styleClone =
-          iframeDoc.createElement("style");
-
-        styleClone.textContent =
-          style.textContent || "";
-
+        const styleClone = iframeDoc.createElement("style");
+        styleClone.textContent = style.textContent || "";
         iframeDoc.head.appendChild(styleClone);
       });
 
-      const label =
-        holder.querySelector(".shipping-label");
-
+      const label = holder.querySelector(".shipping-label");
       if (!label) continue;
 
       iframeDoc.body.appendChild(label);
-
       labels.push(label);
     }
 
     if (!labels.length) {
-      throw new Error(
-        "No shipping labels could be generated"
-      );
+      throw new Error("No shipping labels could be generated");
     }
 
-    // =====================================================
-    // WAIT FOR IMAGES
-    // =====================================================
-
-    const images = Array.from(
-      iframeDoc.images
-    );
-
+    // Wait for images to load
+    const images = Array.from(iframeDoc.images);
     await Promise.all(
       images.map((img) => {
-        if (
-          img.complete &&
-          img.naturalWidth > 0
-        ) {
+        if (img.complete && img.naturalWidth > 0) {
           return Promise.resolve();
         }
-
         return new Promise((resolve) => {
           img.onload = resolve;
           img.onerror = resolve;
@@ -2253,192 +1801,52 @@ export const downloadShippingLabels = async (orders) => {
       })
     );
 
-    // Wait for iframe layout
+    // Wait for layout frame
     await new Promise((resolve) => {
       iframe.contentWindow.requestAnimationFrame(() => {
-        iframe.contentWindow.requestAnimationFrame(
-          resolve
-        );
+        iframe.contentWindow.requestAnimationFrame(resolve);
       });
     });
-
-    // =====================================================
-    // CREATE PDF
-    // =====================================================
 
     const pdf = new jsPDF({
       orientation:
-        size.widthMm > size.heightMm
-          ? "landscape"
-          : "portrait",
-
+        size.widthMm > size.heightMm ? "landscape" : "portrait",
       unit: "mm",
-
-      format: [
-        size.widthMm,
-        size.heightMm,
-      ],
-
+      format: [size.widthMm, size.heightMm],
       compress: true,
     });
 
-    // =====================================================
-    // RENDER EVERY LABEL
-    // =====================================================
+    pdf.setProperties({
+      title: "Label",
+      subject: "Shipping Labels",
+      author: "ParcelDrop",
+      creator: "ParcelDrop",
+    });
 
-    for (
-      let index = 0;
-      index < labels.length;
-      index += 1
-    ) {
+    for (let index = 0; index < labels.length; index += 1) {
       const label = labels[index];
+      const pageWidth = label.offsetWidth;
+      const pageHeight = label.offsetHeight;
 
-      // ---------------------------------------------------
-      // ORIGINAL FIXED LABEL SIZE
-      // ---------------------------------------------------
-
-      const pageWidth =
-        label.offsetWidth;
-
-      const pageHeight =
-        label.offsetHeight;
-
-      if (
-        !pageWidth ||
-        !pageHeight
-      ) {
-        throw new Error(
-          "Unable to determine label size"
-        );
-      }
-
-      // ---------------------------------------------------
-      // CHECK ACTUAL CONTENT SIZE
-      // ---------------------------------------------------
-
-      const contentWidth =
-        Math.max(
-          label.scrollWidth,
-          pageWidth
-        );
-
-      const contentHeight =
-        Math.max(
-          label.scrollHeight,
-          pageHeight
-        );
-
-      // ---------------------------------------------------
-      // IF CONTENT IS TOO BIG,
-      // SCALE IT DOWN INSIDE THE LABEL
-      // ---------------------------------------------------
-
-      const fitScale = Math.min(
-        pageWidth / contentWidth,
-        pageHeight / contentHeight,
-        1
-      );
-
-      const labelBorder =
-        label.querySelector(
-          ".label-border"
-        );
-
-      // Temporarily allow complete content
-      label.style.overflow = "visible";
-
-      if (labelBorder) {
-        labelBorder.style.overflow =
-          "visible";
-      }
-
-      // Keep scaling inside the original page
-      label.style.transformOrigin =
-        "top left";
-
-      label.style.transform =
-        fitScale < 1
-          ? `scale(${fitScale})`
-          : "none";
-
-      // ---------------------------------------------------
-      // WAIT FOR TRANSFORM
-      // ---------------------------------------------------
-
-      await new Promise((resolve) => {
-        iframe.contentWindow.requestAnimationFrame(
-          () => {
-            iframe.contentWindow.requestAnimationFrame(
-              resolve
-            );
-          }
-        );
+      const canvas = await html2canvas(label, {
+        scale: 3,
+        backgroundColor: "#ffffff",
+        useCORS: true,
+        logging: false,
+        width: pageWidth,
+        height: pageHeight,
+        windowWidth: pageWidth,
+        windowHeight: pageHeight,
+        scrollX: 0,
+        scrollY: 0,
       });
 
-      // ---------------------------------------------------
-      // CAPTURE FIXED PAGE SIZE
-      // ---------------------------------------------------
-
-      const canvas =
-        await html2canvas(label, {
-          scale: 4,
-
-          backgroundColor:
-            "#ffffff",
-
-          useCORS: true,
-
-          logging: false,
-
-          width: pageWidth,
-
-          height: pageHeight,
-
-          windowWidth: pageWidth,
-
-          windowHeight: pageHeight,
-
-          scrollX: 0,
-
-          scrollY: 0,
-        });
-
-      const image =
-        canvas.toDataURL(
-          "image/png"
-        );
-
-      // ---------------------------------------------------
-      // RESET TEMPORARY CHANGES
-      // ---------------------------------------------------
-
-      label.style.transform =
-        "none";
-
-      label.style.transformOrigin =
-        "";
-
-      label.style.overflow =
-        "";
-
-      if (labelBorder) {
-        labelBorder.style.overflow =
-          "";
-      }
-
-      // ---------------------------------------------------
-      // ADD PDF PAGE
-      // ---------------------------------------------------
+      const image = canvas.toDataURL("image/png");
 
       if (index > 0) {
         pdf.addPage(
-          [
-            size.widthMm,
-            size.heightMm,
-          ],
-          size.widthMm > size.heightMm
-            ? "landscape"
-            : "portrait"
+          [size.widthMm, size.heightMm],
+          size.widthMm > size.heightMm ? "landscape" : "portrait"
         );
       }
 
@@ -2454,41 +1862,166 @@ export const downloadShippingLabels = async (orders) => {
       );
     }
 
-    // =====================================================
-    // FILE NAME
-    // =====================================================
+    const filename = `${getParcelDropFilename()}.pdf`;
 
- const filename = `${getParcelDropFilename()}.pdf`;
+    return {
+      pdf,
+      count: detailedOrders.length,
+      filename,
+    };
+  } finally {
+    if (iframe) {
+      iframe.remove();
+    }
+  }
+};
 
-    // =====================================================
-    // DOWNLOAD
-    // =====================================================
+export const printShippingLabels = async (
+  orders,
+  settingsOrTitle,
+  customLogoArg
+) => {
+  if (!Array.isArray(orders) || orders.length === 0) {
+    toast.error("Please select at least one shipment");
+    return;
+  }
+
+  let settingsOverride = null;
+  let customLogoOverride = null;
+
+  if (settingsOrTitle && typeof settingsOrTitle === "object") {
+    settingsOverride = settingsOrTitle;
+  }
+  if (customLogoArg && typeof customLogoArg === "string") {
+    customLogoOverride = customLogoArg;
+  }
+
+  // Pre-open tab synchronously so browser popup blocker never blocks it
+  let printTab = null;
+  try {
+    printTab = window.open("", "_blank");
+    if (printTab) {
+      printTab.document.write(`
+        <!doctype html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <title>Label</title>
+            <style>
+              body {
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                height: 100vh;
+                margin: 0;
+                background: #111827;
+                color: #ffffff;
+              }
+              .loader-card {
+                text-align: center;
+                padding: 28px 36px;
+                background: #1f2937;
+                border-radius: 12px;
+                box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+                max-width: 320px;
+                border: 1px solid rgba(255, 255, 255, 0.08);
+              }
+              .spinner {
+                width: 44px;
+                height: 44px;
+                border: 3.5px solid rgba(255, 255, 255, 0.15);
+                border-top-color: #3b82f6;
+                border-radius: 50%;
+                animation: spin 0.8s linear infinite;
+                margin: 0 auto 16px;
+              }
+              @keyframes spin { to { transform: rotate(360deg); } }
+              .title { font-size: 16px; font-weight: 600; letter-spacing: 0.2px; }
+              .sub { font-size: 13px; color: #9ca3af; margin-top: 6px; }
+            </style>
+          </head>
+          <body>
+            <div class="loader-card">
+              <div class="spinner"></div>
+              <div class="title">Generating Shipping Labels...</div>
+              <div class="sub">Preparing ${orders.length} label${orders.length > 1 ? "s" : ""}</div>
+            </div>
+          </body>
+        </html>
+      `);
+      printTab.document.close();
+    }
+  } catch (err) {
+    console.warn("Could not pre-open window:", err);
+  }
+
+  try {
+    const { pdf, count } = await generateShippingLabelsPdf(
+      orders,
+      settingsOverride,
+      customLogoOverride
+    );
+
+    const pdfBlob = pdf.output("blob");
+    const blobUrl = URL.createObjectURL(pdfBlob);
+
+    if (printTab && !printTab.closed) {
+      printTab.location.href = blobUrl;
+      printTab.focus();
+    } else {
+      const opened = window.open(blobUrl, "_blank");
+      if (!opened) {
+        pdf.save(`${getParcelDropFilename()}.pdf`);
+        toast.success(`${count} label(s) generated & downloaded!`);
+        return;
+      }
+    }
+
+    toast.success(`${count} ${count === 1 ? "label" : "labels"} ready`);
+  } catch (error) {
+    if (printTab && !printTab.closed) {
+      printTab.close();
+    }
+    console.error("Print shipping labels error:", error);
+    toast.error(error?.message || "Unable to print labels");
+  }
+};
+
+export const downloadShippingLabels = async (
+  orders,
+  settingsOrTitle,
+  customLogoArg
+) => {
+  if (!Array.isArray(orders) || orders.length === 0) {
+    toast.error("Please select at least one shipment");
+    return;
+  }
+
+  let settingsOverride = null;
+  let customLogoOverride = null;
+
+  if (settingsOrTitle && typeof settingsOrTitle === "object") {
+    settingsOverride = settingsOrTitle;
+  }
+  if (customLogoArg && typeof customLogoArg === "string") {
+    customLogoOverride = customLogoArg;
+  }
+
+  try {
+    const { pdf, count, filename } = await generateShippingLabelsPdf(
+      orders,
+      settingsOverride,
+      customLogoOverride
+    );
 
     pdf.save(filename);
 
     toast.success(
-      `${detailedOrders.length} ${
-        detailedOrders.length === 1
-          ? "label"
-          : "labels"
-      } downloaded`
+      `${count} ${count === 1 ? "label" : "labels"} downloaded`
     );
-
   } catch (error) {
-    console.error(
-      "Download label error:",
-      error
-    );
-
-    toast.error(
-      error?.message ||
-        "Unable to download labels"
-    );
-
-  } finally {
-    // Iframe cleanup
-    if (iframe) {
-      iframe.remove();
-    }
+    console.error("Download shipping labels error:", error);
+    toast.error(error?.message || "Unable to download labels");
   }
 };
