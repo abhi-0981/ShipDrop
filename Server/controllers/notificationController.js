@@ -29,6 +29,18 @@ const ensureNotificationTable = async () => {
     if (!colRows || colRows.length === 0) {
       await promiseDb.query(`ALTER TABLE notifications ADD COLUMN message_count INT DEFAULT 1`);
     }
+
+    // Modernize any legacy notification messages to clean, professional English
+    await promiseDb.query(`
+      UPDATE notifications 
+      SET message = 'Shipment marked as NDR / Undelivered. Delivery attempt was unsuccessful.'
+      WHERE type = 'NDR_ALERT' AND (message LIKE '%ho gaya%' OR message LIKE '%unsuccessful raha%')
+    `);
+    await promiseDb.query(`
+      UPDATE notifications 
+      SET message = 'Your wallet balance is low. Please recharge your wallet to avoid fulfillment disruptions.'
+      WHERE type = 'WALLET' AND (message LIKE '%bacha hai%' OR message LIKE '%recharge karein%')
+    `);
   } catch (err) {
     console.warn("ensureNotificationTable notice:", err.message);
   }
@@ -118,6 +130,259 @@ const syncMissedTicketReplies = async (userId) => {
 };
 
 /**
+ * Auto-sync NDR / Pending Alerts:
+ * Informs the merchant when a shipment has gone into NDR / Pending status.
+ * (Simple informational alert without re-attempt button, navigates to /pending)
+ */
+const syncNdrAlerts = async (userId) => {
+  try {
+    const [orders] = await promiseDb.query(
+      `
+      SELECT id, order_id, awb, status, tracking_status, created_at
+      FROM orders
+      WHERE user_id = ?
+        AND (
+          UPPER(TRIM(COALESCE(status, ''))) IN ('PENDING', 'NDR', 'UNDELIVERED')
+          OR UPPER(TRIM(COALESCE(tracking_status, ''))) IN ('PENDING', 'NDR', 'UNDELIVERED')
+        )
+        AND created_at >= DATE_SUB(NOW(), INTERVAL 14 DAY)
+      ORDER BY id DESC
+      LIMIT 10
+      `,
+      [userId]
+    );
+
+    if (orders && orders.length > 0) {
+      for (const o of orders) {
+        const refId = `NDR_${o.id}`;
+        const [existing] = await promiseDb.query(
+          `SELECT 1 FROM notifications WHERE user_id = ? AND type = 'NDR_ALERT' AND reference_id = ? LIMIT 1`,
+          [userId, refId]
+        );
+
+        if (!existing || existing.length === 0) {
+          const parcelLabel = o.awb ? `AWB: ${o.awb}` : `Order #${o.order_id}`;
+          await promiseDb.query(
+            `
+            INSERT INTO notifications (user_id, type, title, message, reference_id, reference_url, message_count, is_read, created_at)
+            VALUES (?, 'NDR_ALERT', ?, ?, ?, '/pending', 1, 0, NOW())
+            `,
+            [
+              userId,
+              `NDR / Pending: Order #${o.order_id}`,
+              `Shipment (${parcelLabel}) marked as NDR / Undelivered. Delivery attempt was unsuccessful.`,
+              refId,
+            ]
+          );
+        }
+      }
+    }
+  } catch (err) {
+    console.warn("syncNdrAlerts notice:", err.message);
+  }
+};
+
+/**
+ * Auto-sync Wallet Alerts:
+ * 1. Low wallet balance alert (if balance < ₹200)
+ * 2. Recent successful recharge credit alert
+ */
+const syncWalletAlerts = async (userId) => {
+  try {
+    // 1. Check current balance
+    const [wallets] = await promiseDb.query(
+      `SELECT balance FROM wallets WHERE user_id = ? LIMIT 1`,
+      [userId]
+    );
+
+    if (wallets && wallets.length > 0) {
+      const balance = Number(wallets[0].balance || 0);
+      if (balance < 200) {
+        const [existingLow] = await promiseDb.query(
+          `SELECT 1 FROM notifications WHERE user_id = ? AND type = 'WALLET' AND reference_id = 'LOW_WALLET_BALANCE' AND is_read = 0 LIMIT 1`,
+          [userId]
+        );
+
+        if (!existingLow || existingLow.length === 0) {
+          await promiseDb.query(
+            `
+            INSERT INTO notifications (user_id, type, title, message, reference_id, reference_url, message_count, is_read, created_at)
+            VALUES (?, 'WALLET', ?, ?, 'LOW_WALLET_BALANCE', '/wallet', 1, 0, NOW())
+            `,
+            [
+              userId,
+              "Low Wallet Balance Alert",
+              `Your wallet balance is ₹${balance.toFixed(2)}. Please recharge your wallet to avoid fulfillment disruptions.`,
+            ]
+          );
+        }
+      }
+    }
+
+    // 2. Check recent successful recharge transactions
+    const [txRows] = await promiseDb.query(
+      `
+      SELECT id, amount, created_at
+      FROM wallet_transactions
+      WHERE user_id = ?
+        AND UPPER(TRIM(type)) = 'CREDIT'
+        AND UPPER(TRIM(COALESCE(status, ''))) IN ('SUCCESS', 'COMPLETED')
+        AND created_at >= DATE_SUB(NOW(), INTERVAL 5 DAY)
+      ORDER BY id DESC
+      LIMIT 5
+      `,
+      [userId]
+    );
+
+    if (txRows && txRows.length > 0) {
+      for (const tx of txRows) {
+        const refId = `WALLET_TX_${tx.id}`;
+        const [existingTx] = await promiseDb.query(
+          `SELECT 1 FROM notifications WHERE user_id = ? AND type = 'WALLET' AND reference_id = ? LIMIT 1`,
+          [userId, refId]
+        );
+
+        if (!existingTx || existingTx.length === 0) {
+          await promiseDb.query(
+            `
+            INSERT INTO notifications (user_id, type, title, message, reference_id, reference_url, message_count, is_read, created_at)
+            VALUES (?, 'WALLET', ?, ?, ?, '/wallet', 1, 0, ?)
+            `,
+            [
+              userId,
+              `Wallet Credited: ₹${Number(tx.amount).toFixed(2)}`,
+              `₹${Number(tx.amount).toFixed(2)} has been successfully credited to your wallet.`,
+              refId,
+              tx.created_at || new Date(),
+            ]
+          );
+        }
+      }
+    }
+  } catch (err) {
+    console.warn("syncWalletAlerts notice:", err.message);
+  }
+};
+
+/**
+ * Auto-sync COD Remittance Payout Alerts:
+ * Alerts the merchant when COD collected funds have been processed to their bank.
+ */
+const syncCodRemittanceAlerts = async (userId) => {
+  try {
+    const [tableCheck] = await promiseDb.query(`SHOW TABLES LIKE 'cod_remittances'`);
+    if (!tableCheck || tableCheck.length === 0) return;
+
+    const [remittances] = await promiseDb.query(
+      `
+      SELECT id, cod_amount, status, transferred_on, description, created_at
+      FROM cod_remittances
+      WHERE user_id = ?
+        AND UPPER(TRIM(COALESCE(status, ''))) IN ('PAID', 'TRANSFERRED', 'COMPLETED')
+        AND created_at >= DATE_SUB(NOW(), INTERVAL 14 DAY)
+      ORDER BY id DESC
+      LIMIT 5
+      `,
+      [userId]
+    );
+
+    if (remittances && remittances.length > 0) {
+      for (const r of remittances) {
+        const refId = `REMITTANCE_${r.id}`;
+        const [existing] = await promiseDb.query(
+          `SELECT 1 FROM notifications WHERE user_id = ? AND type = 'COD_REMITTANCE' AND reference_id = ? LIMIT 1`,
+          [userId, refId]
+        );
+
+        if (!existing || existing.length === 0) {
+          const amt = Number(r.cod_amount || 0).toFixed(2);
+          await promiseDb.query(
+            `
+            INSERT INTO notifications (user_id, type, title, message, reference_id, reference_url, message_count, is_read, created_at)
+            VALUES (?, 'COD_REMITTANCE', ?, ?, ?, '/cod-remittance', 1, 0, ?)
+            `,
+            [
+              userId,
+              `COD Remittance Processed: ₹${amt}`,
+              `₹${amt} has been successfully transferred to your registered bank account.${r.description ? ` (${r.description})` : ""}`,
+              refId,
+              r.transferred_on || r.created_at || new Date(),
+            ]
+          );
+        }
+      }
+    }
+  } catch (err) {
+    console.warn("syncCodRemittanceAlerts notice:", err.message);
+  }
+};
+
+/**
+ * Auto-sync Weight Discrepancy Alerts:
+ * Informs the merchant when a carrier has claimed extra weight or when a dispute is resolved.
+ */
+const syncWeightDiscrepancyAlerts = async (userId) => {
+  try {
+    const [tableCheck] = await promiseDb.query(`SHOW TABLES LIKE 'weight_checkings'`);
+    if (!tableCheck || tableCheck.length === 0) return;
+
+    const [discrepancies] = await promiseDb.query(
+      `
+      SELECT id, awb, order_id, weight_difference, extra_charge, status, created_at, settled_at
+      FROM weight_checkings
+      WHERE user_id = ?
+        AND created_at >= DATE_SUB(NOW(), INTERVAL 14 DAY)
+      ORDER BY id DESC
+      LIMIT 5
+      `,
+      [userId]
+    );
+
+    if (discrepancies && discrepancies.length > 0) {
+      for (const d of discrepancies) {
+        const isSettled = String(d.status || "").toLowerCase() === "settled";
+        const isWaived = String(d.status || "").toLowerCase() === "waived";
+        const refId = isSettled || isWaived ? `WEIGHT_RESOLVED_${d.id}` : `WEIGHT_FLAG_${d.id}`;
+
+        const [existing] = await promiseDb.query(
+          `SELECT 1 FROM notifications WHERE user_id = ? AND type = 'WEIGHT_DISCREPANCY' AND reference_id = ? LIMIT 1`,
+          [userId, refId]
+        );
+
+        if (!existing || existing.length === 0) {
+          let title = `Weight Discrepancy: AWB ${d.awb}`;
+          let msg = `Courier flagged +${Number(d.weight_difference || 0).toFixed(2)} kg excess weight on AWB ${d.awb} (Extra Debit: ₹${Number(d.extra_charge || 0).toFixed(2)}).`;
+
+          if (isSettled) {
+            title = `Dispute Resolved: AWB ${d.awb}`;
+            msg = `Weight discrepancy dispute for AWB ${d.awb} has been resolved in your favor.`;
+          } else if (isWaived) {
+            title = `Charge Waived: AWB ${d.awb}`;
+            msg = `Excess weight charges for AWB ${d.awb} have been waived and adjusted.`;
+          }
+
+          await promiseDb.query(
+            `
+            INSERT INTO notifications (user_id, type, title, message, reference_id, reference_url, message_count, is_read, created_at)
+            VALUES (?, 'WEIGHT_DISCREPANCY', ?, ?, ?, '/reports/weight-discrepancy', 1, 0, ?)
+            `,
+            [
+              userId,
+              title,
+              msg,
+              refId,
+              isSettled || isWaived ? (d.settled_at || new Date()) : (d.created_at || new Date()),
+            ]
+          );
+        }
+      }
+    }
+  } catch (err) {
+    console.warn("syncWeightDiscrepancyAlerts notice:", err.message);
+  }
+};
+
+/**
  * GET /api/notifications
  * Fetch UNREAD notifications (Box clears once read)
  */
@@ -133,8 +398,14 @@ const getNotificationsController = async (req, res) => {
       });
     }
 
-    // Auto-sync & consolidate duplicate unread notifications
-    await syncMissedTicketReplies(userId);
+    // Auto-sync notifications across all core modules
+    await Promise.allSettled([
+      syncMissedTicketReplies(userId),
+      syncNdrAlerts(userId),
+      syncWalletAlerts(userId),
+      syncCodRemittanceAlerts(userId),
+      syncWeightDiscrepancyAlerts(userId),
+    ]);
 
     // Fetch ONLY UNREAD notifications so the box clears once read
     const [notifications] = await promiseDb.query(
@@ -153,7 +424,7 @@ const getNotificationsController = async (req, res) => {
       FROM notifications
       WHERE user_id = ? AND is_read = 0
       ORDER BY id DESC
-      LIMIT 20
+      LIMIT 30
       `,
       [userId]
     );

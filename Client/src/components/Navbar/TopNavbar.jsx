@@ -245,12 +245,23 @@
         // silent
       }
       setShowNotifications(false);
-      if (notif.reference_id) {
+      const type = String(notif.type || "").toUpperCase();
+      if (type === "TICKET_REPLY" && notif.reference_id) {
         navigate(`/tickets?ticket_id=${notif.reference_id}`, {
           state: { ticketId: Number(notif.reference_id) },
         });
       } else if (notif.reference_url) {
         navigate(notif.reference_url);
+      } else if (type === "NDR_ALERT") {
+        navigate("/pending");
+      } else if (type === "WALLET") {
+        navigate("/wallet");
+      } else if (type === "COD_REMITTANCE") {
+        navigate("/cod-remittance");
+      } else if (type === "WEIGHT_DISCREPANCY") {
+        navigate("/reports/weight-discrepancy");
+      } else {
+        navigate("/dashboard");
       }
     };
 
@@ -992,68 +1003,150 @@
                         </p>
                       </div>
                     ) : (
-                      notifications.map((notif) => (
-                        <div
-                          key={notif.id}
-                          onClick={() => handleNotificationClick(notif)}
-                          className="flex items-start gap-2.5 px-3.5 py-2.5 transition-colors cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/60 bg-sky-50/20 dark:bg-sky-950/10"
-                        >
-                          {/* ICON */}
-                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-sky-50 dark:bg-sky-950/60 text-[#008dd2] dark:text-[#38bdf8] mt-0.5 border border-sky-100 dark:border-sky-900/50">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                            </svg>
-                          </div>
+                      notifications.map((notif) => {
+                        const notifType = String(notif.type || "").toUpperCase();
+                        let badgeBg = "bg-sky-50 dark:bg-sky-950/60 text-[#008dd2] dark:text-[#38bdf8] border-sky-100 dark:border-sky-900/50";
+                        let dotColor = "bg-[#008dd2]";
+                        let itemBg = "hover:bg-slate-50 dark:hover:bg-slate-800/60 bg-sky-50/20 dark:bg-sky-950/10";
+                        let tagLabel = "Support";
+                        let tagStyle = "bg-sky-100 text-[#008dd2]";
+                        let iconSvg = (
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                          </svg>
+                        );
 
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center justify-between gap-1.5">
-                              <p className="text-xs truncate font-semibold text-slate-800 dark:text-slate-200">
-                                {notif.title}
-                              </p>
-                              <div className="flex items-center gap-1 shrink-0">
-                                {Number(notif.message_count) > 1 && (
-                                  <span className="rounded bg-[#008dd2]/10 text-[#008dd2] dark:text-[#38bdf8] font-bold text-[10px] px-1.5 py-0.2 border border-[#008dd2]/20">
-                                    {notif.message_count}
+                        if (notifType === "NDR_ALERT") {
+                          badgeBg = "bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-900/50";
+                          dotColor = "bg-rose-500";
+                          itemBg = "hover:bg-rose-50/40 dark:hover:bg-rose-950/30 bg-rose-50/20 dark:bg-rose-950/10";
+                          tagLabel = "NDR";
+                          tagStyle = "bg-rose-100 text-rose-700";
+                          iconSvg = (
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                              <circle cx="12" cy="12" r="10" />
+                              <line x1="12" y1="8" x2="12" y2="12" />
+                              <line x1="12" y1="16" x2="12.01" y2="16" />
+                            </svg>
+                          );
+                        } else if (notifType === "WALLET") {
+                          badgeBg = "bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-900/50";
+                          dotColor = "bg-amber-500";
+                          itemBg = "hover:bg-amber-50/40 dark:hover:bg-amber-950/30 bg-amber-50/20 dark:bg-amber-950/10";
+                          tagLabel = "Wallet";
+                          tagStyle = "bg-amber-100 text-amber-800";
+                          iconSvg = (
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                              <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" />
+                              <path d="M3 5v14a2 2 0 0 0 2 2h16v-5" />
+                              <path d="M18 12a2 2 0 0 0 0 4h4v-4z" />
+                            </svg>
+                          );
+                        } else if (notifType === "COD_REMITTANCE") {
+                          badgeBg = "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900/50";
+                          dotColor = "bg-emerald-500";
+                          itemBg = "hover:bg-emerald-50/40 dark:hover:bg-emerald-950/30 bg-emerald-50/20 dark:bg-emerald-950/10";
+                          tagLabel = "Payout";
+                          tagStyle = "bg-emerald-100 text-emerald-800";
+                          iconSvg = (
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                              <rect x="2" y="6" width="20" height="12" rx="2" />
+                              <circle cx="12" cy="12" r="2" />
+                              <path d="M6 12h.01M18 12h.01" />
+                            </svg>
+                          );
+                        } else if (notifType === "WEIGHT_DISCREPANCY") {
+                          badgeBg = "bg-orange-50 dark:bg-orange-950/60 text-orange-600 dark:text-orange-400 border-orange-200 dark:border-orange-900/50";
+                          dotColor = "bg-orange-500";
+                          itemBg = "hover:bg-orange-50/40 dark:hover:bg-orange-950/30 bg-orange-50/20 dark:bg-orange-950/10";
+                          tagLabel = "Weight";
+                          tagStyle = "bg-orange-100 text-orange-800";
+                          iconSvg = (
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                              <path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" />
+                              <path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" />
+                              <path d="M7 21h10" />
+                              <path d="M12 3v18" />
+                            </svg>
+                          );
+                        }
+
+                        return (
+                          <div
+                            key={notif.id}
+                            onClick={() => handleNotificationClick(notif)}
+                            className={`flex items-start gap-2.5 px-3.5 py-2.5 transition-colors cursor-pointer ${itemBg}`}
+                          >
+                            {/* ICON BADGE */}
+                            <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg mt-0.5 border ${badgeBg}`}>
+                              {iconSvg}
+                            </div>
+
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center justify-between gap-1.5">
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                  <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded uppercase shrink-0 ${tagStyle}`}>
+                                    {tagLabel}
                                   </span>
-                                )}
-                                <span className="h-1.5 w-1.5 rounded-full bg-[#008dd2]"></span>
+                                  <p className="text-xs truncate font-semibold text-slate-800 dark:text-slate-200">
+                                    {notif.title}
+                                  </p>
+                                </div>
+                                <div className="flex items-center gap-1 shrink-0">
+                                  {Number(notif.message_count) > 1 && (
+                                    <span className="rounded bg-[#008dd2]/10 text-[#008dd2] dark:text-[#38bdf8] font-bold text-[10px] px-1.5 py-0.2 border border-[#008dd2]/20">
+                                      {notif.message_count}
+                                    </span>
+                                  )}
+                                  <span className={`h-1.5 w-1.5 rounded-full ${dotColor}`}></span>
+                                </div>
+                              </div>
+
+                              <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1 mt-0.5 leading-normal">
+                                {notif.message}
+                              </p>
+
+                              <div className="flex items-center justify-between mt-1">
+                                <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
+                                  {formatTimeAgo(notif.created_at)}
+                                </span>
+                                <button
+                                  type="button"
+                                  title="Dismiss notification"
+                                  onClick={(e) => handleDismissNotification(e, notif)}
+                                  className="text-[10px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 font-medium transition-colors cursor-pointer"
+                                >
+                                  Dismiss
+                                </button>
                               </div>
                             </div>
-
-                            <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1 mt-0.5 leading-normal">
-                              {notif.message}
-                            </p>
-
-                            <div className="flex items-center justify-between mt-1">
-                              <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
-                                {formatTimeAgo(notif.created_at)}
-                              </span>
-                              <button
-                                type="button"
-                                title="Dismiss notification"
-                                onClick={(e) => handleDismissNotification(e, notif)}
-                                className="text-[10px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 font-medium transition-colors cursor-pointer"
-                              >
-                                Dismiss
-                              </button>
-                            </div>
                           </div>
-                        </div>
-                      ))
+                        );
+                      })
                     )}
                   </div>
 
                   {/* FOOTER */}
-                  <div className="border-t border-slate-100 dark:border-slate-800 p-2 bg-slate-50/50 dark:bg-slate-850/40 text-center">
+                  <div className="border-t border-slate-100 dark:border-slate-800 px-3 py-2 bg-slate-50/60 dark:bg-slate-850/40 flex items-center justify-between text-[11px]">
                     <button
                       type="button"
                       onClick={() => {
                         setShowNotifications(false);
                         navigate("/tickets");
                       }}
-                      className="text-[11px] font-medium text-[#008dd2] dark:text-[#38bdf8] hover:underline cursor-pointer"
+                      className="font-medium text-[#008dd2] dark:text-[#38bdf8] hover:underline cursor-pointer"
                     >
-                      View all tickets →
+                      Support Tickets →
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowNotifications(false);
+                        navigate("/pending");
+                      }}
+                      className="font-medium text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition cursor-pointer"
+                    >
+                      Pending NDRs →
                     </button>
                   </div>
                 </div>
