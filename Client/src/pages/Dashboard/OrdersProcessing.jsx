@@ -5,6 +5,7 @@ import api from "../../services/api";
 import { notifyOrderChange, subscribeToOrderUpdates } from "../../services/orderEvents";
 import { RouteSkeleton } from "../../components/Common/TableSkeleton";
 import OrderStatusNavTabs from "../../components/Common/OrderStatusNavTabs";
+import ShippingTruckLoader from "../../components/Common/ShippingTruckLoader";
 
 // ======================================================
 // ICON
@@ -1751,13 +1752,10 @@ function ProcessingOrders() {
                   type="button"
                   disabled={shipping || previewLoading || previewTotal <= 0}
                   onClick={confirmShipNow}
-                  className="flex h-[40px] items-center gap-2 rounded-[5px] bg-[#7451ff] px-6 text-[13px] font-medium text-white hover:bg-[#6745ec] disabled:cursor-not-allowed disabled:opacity-50"
+                  className={`flex h-[40px] items-center justify-center gap-2 rounded-[5px] bg-[#7451ff] px-6 text-[13px] font-medium text-white hover:bg-[#6745ec] transition ${shipping ? "opacity-100 cursor-wait" : "disabled:cursor-not-allowed disabled:opacity-50"}`}
                 >
                   {shipping ? (
-                    <>
-                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
-                      Shipping...
-                    </>
+                    <ShippingTruckLoader text="Shipping Orders..." />
                   ) : (
                     <>
                       <Icon name="truck" size={15} />

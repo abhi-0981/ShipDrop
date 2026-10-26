@@ -5,6 +5,7 @@ import api from "../../services/api";
 import { notifyOrderChange, subscribeToOrderUpdates } from "../../services/orderEvents";
 import { RouteSkeleton } from "../../components/Common/TableSkeleton";
 import OrderStatusNavTabs from "../../components/Common/OrderStatusNavTabs";
+import ShippingTruckLoader from "../../components/Common/ShippingTruckLoader";
 
 const Icon = ({ name, size = 16 }) => {
   const common = {
@@ -1483,9 +1484,13 @@ function ProcessingOrders() {
                   type="button"
                   onClick={confirmShipNow}
                   disabled={shipping || previewLoading || previewTotal <= 0}
-                  className="flex-1 h-10.5 rounded-xl bg-[#008dd2] text-xs font-bold text-white shadow-xs active:scale-95 disabled:opacity-50 transition"
+                  className={`flex-1 h-10.5 rounded-xl bg-[#008dd2] text-xs font-bold text-white shadow-xs active:scale-95 transition ${shipping ? "opacity-100 cursor-wait" : "disabled:opacity-50"}`}
                 >
-                  {shipping ? "Processing..." : "Confirm & Ship Now →"}
+                  {shipping ? (
+                    <ShippingTruckLoader text="Shipping Orders..." />
+                  ) : (
+                    "Confirm & Ship Now →"
+                  )}
                 </button>
               </div>
             </div>

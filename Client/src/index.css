@@ -389,3 +389,52 @@ html.dark .orders-scrollbar::-webkit-scrollbar-thumb {
 html.dark .orders-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #475569;
 }
+
+/* ======================================================
+   SHIPPING TRUCK DRIVING ANIMATION
+   Lightweight, charming moving truck animation for order shipment
+   ====================================================== */
+@keyframes truckBob {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+}
+
+@keyframes truckSpeedDash {
+  0% {
+    opacity: 0.2;
+    transform: translateX(4px);
+  }
+  50% {
+    opacity: 1;
+    transform: translateX(-2px);
+  }
+  100% {
+    opacity: 0.2;
+    transform: translateX(4px);
+  }
+}
+
+@keyframes truckRoadDash {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-12px);
+  }
+}
+
+.animate-truck-bob {
+  animation: truckBob 0.35s ease-in-out infinite;
+}
+
+.animate-truck-dash {
+  animation: truckSpeedDash 0.5s ease-in-out infinite;
+}
+
+.animate-truck-road-dash {
+  animation: truckRoadDash 0.4s linear infinite;
+}

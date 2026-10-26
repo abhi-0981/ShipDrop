@@ -4,6 +4,7 @@ import { toast } from "react-hot-toast";
 import api from "../../services/api";
 import { notifyOrderChange } from "../../services/orderEvents";
 import ImportOrderModal from "../../components/Common/ImportOrderModal";
+import ShippingTruckLoader from "../../components/Common/ShippingTruckLoader";
 import L from "leaflet";
 import { MapContainer, Marker, TileLayer, useMapEvents } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
@@ -2932,9 +2933,13 @@ function CreateOrder() {
                 type="button"
                 onClick={handleConfirmShipment}
                 disabled={loading || !shippingRate}
-                className="flex-1 h-10 rounded-xl bg-[#008dd2] text-xs font-bold text-white shadow-xs active:scale-95 disabled:opacity-60"
+                className={`flex-1 h-10 rounded-xl bg-[#008dd2] text-xs font-bold text-white shadow-xs active:scale-95 transition ${loading ? "opacity-100 cursor-wait" : "disabled:opacity-60"}`}
               >
-                {loading ? "Confirming..." : "Confirm & Ship Now →"}
+                {loading ? (
+                  <ShippingTruckLoader text="Shipping Order..." />
+                ) : (
+                  "Confirm & Ship Now →"
+                )}
               </button>
             </div>
           </div>
