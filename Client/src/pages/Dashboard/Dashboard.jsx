@@ -246,19 +246,19 @@ const StatCard = ({
     >
       <div className="flex items-start justify-between">
         <div className="min-w-0 flex-1 pr-1.5 sm:pr-2">
-          <p className="text-[11px] sm:text-[12px] font-medium text-slate-400 truncate">
+          <p className="text-[12px] sm:text-[13px] font-semibold text-slate-600 truncate">
             {title}
           </p>
 
           <p
-            className={`mt-1 font-bold tracking-tight text-slate-800 truncate ${fontClass}`}
+            className={`mt-1 font-bold tracking-tight text-slate-900 truncate ${fontClass}`}
             title={typeof value === "string" ? value : undefined}
           >
             {value}
           </p>
 
           {subtitle && (
-            <p className="mt-0.5 text-[10px] sm:text-[11px] text-slate-400 truncate">
+            <p className="mt-0.5 text-[11px] sm:text-[12px] font-medium text-slate-500 truncate">
               {subtitle}
             </p>
           )}
@@ -821,10 +821,10 @@ function Dashboard() {
           <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_1px_4px_rgba(15,23,42,0.03)]">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <p className="text-[14px] font-bold text-slate-800">
+                <p className="text-[14px] font-bold text-slate-900">
                   Ship something today?
                 </p>
-                <p className="mt-0.5 text-[12px] text-slate-400">
+                <p className="mt-0.5 text-[12px] font-medium text-slate-500">
                   Create a new shipment and get it moving.
                 </p>
               </div>
@@ -1077,10 +1077,10 @@ function Dashboard() {
                 <Icon name="calculator" size={16} />
               </div>
               <div className="min-w-0 flex-1">
-                <h2 className="text-[14px] font-bold text-slate-800">
+                <h2 className="text-[14.5px] font-bold text-slate-900">
                   Calculate Shipping Rate
                 </h2>
-                <p className="mt-0.5 text-[11px] text-slate-400">
+                <p className="mt-0.5 text-[11.5px] font-medium text-slate-500">
                   Get your rate instantly
                 </p>
               </div>
@@ -1099,11 +1099,11 @@ function Dashboard() {
           <form onSubmit={handleCalculateRate} className="p-4">
             <div className="grid grid-cols-2 gap-2.5">
               <div>
-                <label className="mb-1.5 block text-[11px] font-semibold text-slate-500">
+                <label className="mb-1.5 block text-[11.5px] font-bold text-slate-700">
                   Pickup Pincode
                 </label>
                 <div className="relative">
-                  <div className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400">
+                  <div className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500">
                     <Icon name="location" size={14} />
                   </div>
                   <input
@@ -1117,17 +1117,17 @@ function Dashboard() {
                       )
                     }
                     placeholder="302001"
-                    className="h-9.5 w-full rounded-xl border border-slate-200 bg-slate-50 pl-8 pr-2.5 text-[12px] text-slate-700 outline-none transition placeholder:text-slate-300 focus:border-[#008dd2] focus:bg-white"
+                    className="h-9.5 w-full rounded-xl border border-slate-200/90 bg-white pl-8 pr-2.5 text-[12.5px] font-semibold text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-[#008dd2] focus:ring-2 focus:ring-[#008dd2]/10 shadow-2xs"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="mb-1.5 block text-[11px] font-semibold text-slate-500">
+                <label className="mb-1.5 block text-[11.5px] font-bold text-slate-700">
                   Delivery Pincode
                 </label>
                 <div className="relative">
-                  <div className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400">
+                  <div className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500">
                     <Icon name="location" size={14} />
                   </div>
                   <input
@@ -1141,7 +1141,7 @@ function Dashboard() {
                       )
                     }
                     placeholder="110001"
-                    className="h-9.5 w-full rounded-xl border border-slate-200 bg-slate-50 pl-8 pr-2.5 text-[12px] text-slate-700 outline-none transition placeholder:text-slate-300 focus:border-[#008dd2] focus:bg-white"
+                    className="h-9.5 w-full rounded-xl border border-slate-200/90 bg-white pl-8 pr-2.5 text-[12.5px] font-semibold text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-[#008dd2] focus:ring-2 focus:ring-[#008dd2]/10 shadow-2xs"
                   />
                 </div>
               </div>
@@ -1149,7 +1149,7 @@ function Dashboard() {
 
             <div className="mt-3 grid grid-cols-2 gap-2.5">
               <div>
-                <label className="mb-1.5 block text-[11px] font-semibold text-slate-500">
+                <label className="mb-1.5 block text-[11.5px] font-bold text-slate-700">
                   Weight
                 </label>
                 <div className="relative">
@@ -1160,20 +1160,20 @@ function Dashboard() {
                     value={weight}
                     onChange={(e) => setWeight(e.target.value)}
                     placeholder="1.00"
-                    className="h-9.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 pr-8 text-[12px] text-slate-700 outline-none transition placeholder:text-slate-300 focus:border-[#008dd2] focus:bg-white"
+                    className="h-9.5 w-full rounded-xl border border-slate-200/90 bg-white px-3 pr-8 text-[12.5px] font-semibold text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-[#008dd2] focus:ring-2 focus:ring-[#008dd2]/10 shadow-2xs"
                   />
-                  <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-medium text-slate-400">
+                  <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] font-bold text-slate-500">
                     kg
                   </span>
                 </div>
               </div>
 
               <div>
-                <label className="mb-1.5 block text-[11px] font-semibold text-slate-500">
+                <label className="mb-1.5 block text-[11.5px] font-bold text-slate-700">
                   Product Price
                 </label>
                 <div className="relative">
-                  <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-[11px] text-slate-400 font-medium">
+                  <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-[12px] text-slate-600 font-bold">
                     ₹
                   </span>
                   <input
@@ -1183,23 +1183,23 @@ function Dashboard() {
                     value={productPrice}
                     onChange={(e) => setProductPrice(e.target.value)}
                     placeholder="500"
-                    className="h-9.5 w-full rounded-xl border border-slate-200 bg-slate-50 pl-6 pr-2.5 text-[12px] text-slate-700 outline-none transition placeholder:text-slate-300 focus:border-[#008dd2] focus:bg-white"
+                    className="h-9.5 w-full rounded-xl border border-slate-200/90 bg-white pl-6 pr-2.5 text-[12.5px] font-semibold text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-[#008dd2] focus:ring-2 focus:ring-[#008dd2]/10 shadow-2xs"
                   />
                 </div>
               </div>
             </div>
 
             <div className="mt-3">
-              <label className="mb-1.5 block text-[11px] font-semibold text-slate-500">
+              <label className="mb-1.5 block text-[11.5px] font-bold text-slate-700">
                 Payment Mode
               </label>
               <div className="grid grid-cols-2 rounded-xl border border-slate-200 bg-slate-50 p-1">
                 <button
                   type="button"
                   onClick={() => setPaymentType("PREPAID")}
-                  className={`h-8 rounded-lg text-[11px] font-bold transition ${paymentType === "PREPAID"
-                    ? "bg-white text-slate-800 shadow-xs"
-                    : "text-slate-400 hover:text-slate-600"
+                  className={`h-8 rounded-lg text-[11.5px] font-bold transition ${paymentType === "PREPAID"
+                    ? "bg-white text-slate-900 shadow-xs"
+                    : "text-slate-600 hover:text-slate-800"
                     }`}
                 >
                   Prepaid
@@ -1207,9 +1207,9 @@ function Dashboard() {
                 <button
                   type="button"
                   onClick={() => setPaymentType("COD")}
-                  className={`h-8 rounded-lg text-[11px] font-bold transition ${paymentType === "COD"
-                    ? "bg-white text-slate-800 shadow-xs"
-                    : "text-slate-400 hover:text-slate-600"
+                  className={`h-8 rounded-lg text-[11.5px] font-bold transition ${paymentType === "COD"
+                    ? "bg-white text-slate-900 shadow-xs"
+                    : "text-slate-600 hover:text-slate-800"
                     }`}
                 >
                   COD
