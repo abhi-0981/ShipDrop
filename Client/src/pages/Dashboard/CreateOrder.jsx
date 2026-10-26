@@ -4,6 +4,7 @@ import { toast } from "react-hot-toast";
 import api from "../../services/api";
 import { notifyOrderChange } from "../../services/orderEvents";
 import ImportOrderModal from "../../components/Common/ImportOrderModal";
+import ShipmentBookingAnimationModal from "../../components/Common/ShipmentBookingAnimationModal";
 import L from "leaflet";
 import { MapContainer, Marker, TileLayer, useMapEvents } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
@@ -109,6 +110,16 @@ function CreateOrder() {
   const [shippingOptions, setShippingOptions] = useState(null);
   const [selectedShippingType, setSelectedShippingType] = useState(null);
   const [defaultReturnAddress, setDefaultReturnAddress] = useState(null);
+
+  const [bookingAnimation, setBookingAnimation] = useState({
+    isOpen: false,
+    stage: "booking",
+    orderCount: 1,
+    serviceType: "ROAD",
+    amount: 0,
+    errorMessage: "",
+  });
+  const completedOrderIdRef = useRef(null);
   const initialWarehouseForm = {
     warehouse_name: "",
     contact_name: "",
@@ -1857,6 +1868,17 @@ function CreateOrder() {
     if (!user?.id) return toast.error("Session expired");
 
     setLoading(true);
+    setBookingAnimation({
+      isOpen: true,
+      stage: "booking",
+      orderCount: 1,
+      serviceType: selectedShippingType,
+      amount: Number(shippingRate.shipping_charge),
+      errorMessage: "",
+    });
+
+    const startTime = Date.now();
+
     try {
       const freshReturnAddress = await loadDefaultReturnAddress();
       if (!freshReturnAddress?.id) {
@@ -1923,17 +1945,45 @@ function CreateOrder() {
       const shipRes = await api.post("/shipments/confirm", shipmentData);
       if (!shipRes.data?.success) throw new Error("Shipment booking failed");
 
-      toast.success(`Shipment confirmed for Order #${orderId}`);
-      window.dispatchEvent(new Event("walletUpdated"));
-      notifyOrderChange({ type: "status_changed", action: "shipped", orderId });
-      resetShippingRate();
-      resetForm(true);
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      completedOrderIdRef.current = orderId;
+
+      // Ensure truck animation shows for at least 1.3s for smooth user experience
+      const elapsed = Date.now() - startTime;
+      if (elapsed < 1300) {
+        await new Promise((resolve) => setTimeout(resolve, 1300 - elapsed));
+      }
+
+      setBookingAnimation((prev) => ({
+        ...prev,
+        stage: "success",
+      }));
     } catch (error) {
-      toast.error(error.response?.data?.message || error.message || "Unable to confirm shipment");
+      const errMsg =
+        error.response?.data?.message ||
+        error.message ||
+        "Unable to confirm shipment";
+
+      setBookingAnimation((prev) => ({
+        ...prev,
+        stage: "error",
+        errorMessage: errMsg,
+      }));
+      toast.error(errMsg);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleBookingAnimationComplete = () => {
+    const orderId = completedOrderIdRef.current;
+    setBookingAnimation((prev) => ({ ...prev, isOpen: false }));
+    toast.success(`Shipment confirmed for Order #${orderId}`);
+    window.dispatchEvent(new Event("walletUpdated"));
+    notifyOrderChange({ type: "status_changed", action: "shipped", orderId });
+    resetShippingRate();
+    resetForm(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    completedOrderIdRef.current = null;
   };
 
   return (
@@ -2945,6 +2995,20 @@ function CreateOrder() {
       <ImportOrderModal
         isOpen={showImportOrder}
         onClose={() => setShowImportOrder(false)}
+      />
+
+      {/* SHIPMENT BOOKING ANIMATION MODAL */}
+      <ShipmentBookingAnimationModal
+        isOpen={bookingAnimation.isOpen}
+        stage={bookingAnimation.stage}
+        orderCount={bookingAnimation.orderCount}
+        serviceType={bookingAnimation.serviceType}
+        amount={bookingAnimation.amount}
+        errorMessage={bookingAnimation.errorMessage}
+        onComplete={handleBookingAnimationComplete}
+        onClose={() =>
+          setBookingAnimation((prev) => ({ ...prev, isOpen: false }))
+        }
       />
     </div>
   );
