@@ -198,16 +198,20 @@ const syncWalletAlerts = async (userId) => {
     if (wallets && wallets.length > 0) {
       const balance = Number(wallets[0].balance || 0);
       if (balance < 200) {
-        const [existingLow] = await promiseDb.query(
-          `SELECT 1 FROM notifications WHERE user_id = ? AND type = 'WALLET' AND reference_id = 'LOW_WALLET_BALANCE' AND is_read = 0 LIMIT 1`,
+        // Fetch any existing low balance alert for this user
+        const [existingRows] = await promiseDb.query(
+          `SELECT id, is_read, created_at FROM notifications 
+           WHERE user_id = ? AND type = 'WALLET' AND reference_id = 'LOW_WALLET_BALANCE' 
+           ORDER BY id DESC LIMIT 1`,
           [userId]
         );
 
-        if (!existingLow || existingLow.length === 0) {
+        if (!existingRows || existingRows.length === 0) {
+          // First time dropping below ₹200: notify the user once
           await promiseDb.query(
             `
             INSERT INTO notifications (user_id, type, title, message, reference_id, reference_url, message_count, is_read, created_at)
-            VALUES (?, 'WALLET', ?, ?, 'LOW_WALLET_BALANCE', '/wallet', 1, 0, NOW())
+            VALUES (?, 'WALLET', ?, ?, 'LOW_WALLET_BALANCE', '/wallet?open_recharge=true', 1, 0, NOW())
             `,
             [
               userId,
@@ -215,11 +219,35 @@ const syncWalletAlerts = async (userId) => {
               `Your wallet balance is ₹${balance.toFixed(2)}. Please recharge your wallet to avoid fulfillment disruptions.`,
             ]
           );
+        } else {
+          // Clean up any stray duplicate rows from previous spam cycles
+          await promiseDb.query(
+            `DELETE FROM notifications 
+             WHERE user_id = ? AND type = 'WALLET' AND reference_id = 'LOW_WALLET_BALANCE' AND id != ?`,
+            [userId, existingRows[0].id]
+          );
+
+          // If the user already marked it read, DO NOT re-alert repeatedly!
+          // Only re-alert after at least 24 hours have passed as a gentle daily reminder
+          if (existingRows[0].is_read === 1) {
+            const hoursSince = (Date.now() - new Date(existingRows[0].created_at).getTime()) / (1000 * 60 * 60);
+            if (hoursSince >= 24) {
+              await promiseDb.query(
+                `UPDATE notifications 
+                 SET is_read = 0, message = ?, reference_url = '/wallet?open_recharge=true', created_at = NOW() 
+                 WHERE id = ?`,
+                [
+                  `Your wallet balance is ₹${balance.toFixed(2)}. Please recharge your wallet to avoid fulfillment disruptions.`,
+                  existingRows[0].id,
+                ]
+              );
+            }
+          }
         }
       } else {
-        // If balance is now healthy (>= ₹200), auto-resolve/dismiss any unread low balance alert
+        // If balance is now healthy (>= ₹200), auto-resolve/dismiss any low balance alert
         await promiseDb.query(
-          `UPDATE notifications SET is_read = 1 WHERE user_id = ? AND type = 'WALLET' AND reference_id = 'LOW_WALLET_BALANCE' AND is_read = 0`,
+          `DELETE FROM notifications WHERE user_id = ? AND type = 'WALLET' AND reference_id = 'LOW_WALLET_BALANCE'`,
           [userId]
         );
       }

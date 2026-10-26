@@ -378,7 +378,7 @@ const verifyPayment = (req, res) => {
                     );
                     if (Number(wallet[0]?.balance || 0) >= 200) {
                       db.query(
-                        `UPDATE notifications SET is_read = 1 WHERE user_id = ? AND type = 'WALLET' AND reference_id = 'LOW_WALLET_BALANCE'`,
+                        `DELETE FROM notifications WHERE user_id = ? AND type = 'WALLET' AND reference_id = 'LOW_WALLET_BALANCE'`,
                         [user_id]
                       );
                     }

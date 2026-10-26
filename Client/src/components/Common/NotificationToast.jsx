@@ -47,14 +47,16 @@ export const playNotificationChime = () => {
   }
 };
 
-const getNotificationConfig = (type) => {
+const getNotificationConfig = (type, notification) => {
   const norm = String(type || "").toUpperCase();
+  const refId = String(notification?.reference_id || "").toUpperCase();
   if (norm === "NDR_ALERT") {
     return {
       label: "NDR Action Required",
       badgeClass: "bg-rose-50 text-rose-700 border-rose-200/80 dark:bg-rose-950/60 dark:text-rose-400 dark:border-rose-900/60",
       iconBg: "bg-rose-100 text-rose-600 dark:bg-rose-900/40 dark:text-rose-400",
       barColor: "bg-rose-500",
+      actionText: "Click to take action",
       icon: (
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
           <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
@@ -70,6 +72,7 @@ const getNotificationConfig = (type) => {
       badgeClass: "bg-sky-50 text-[#008dd2] border-sky-200/80 dark:bg-sky-950/60 dark:text-[#38bdf8] dark:border-sky-900/60",
       iconBg: "bg-sky-100 text-[#008dd2] dark:bg-sky-900/40 dark:text-sky-300",
       barColor: "bg-[#008dd2]",
+      actionText: "Click to view reply",
       icon: (
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
@@ -78,11 +81,27 @@ const getNotificationConfig = (type) => {
     };
   }
   if (norm === "WALLET") {
+    const isLow = refId === "LOW_WALLET_BALANCE";
+    if (isLow) {
+      return {
+        label: "Low Balance",
+        badgeClass: "bg-rose-50 text-rose-700 border-rose-200/80 dark:bg-rose-950/60 dark:text-rose-400 dark:border-rose-900/60",
+        iconBg: "bg-rose-100 text-rose-600 dark:bg-rose-900/40 dark:text-rose-400",
+        barColor: "bg-rose-500",
+        actionText: "Click to Recharge Now",
+        icon: (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+            <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+        ),
+      };
+    }
     return {
-      label: "Wallet Balance",
+      label: "Wallet Credited",
       badgeClass: "bg-emerald-50 text-emerald-700 border-emerald-200/80 dark:bg-emerald-950/60 dark:text-emerald-400 dark:border-emerald-900/60",
       iconBg: "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400",
       barColor: "bg-emerald-500",
+      actionText: "Click to view details",
       icon: (
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M20 7V6a2 2 0 0 0-2-2H5a3 3 0 0 0 0 6h15v8a2 2 0 0 1-2 2H5a3 3 0 0 1-3-3V7" />
@@ -221,7 +240,7 @@ export default function NotificationToast({
 
   if (!notification) return null;
 
-  const config = getNotificationConfig(notification.type);
+  const config = getNotificationConfig(notification.type, notification);
 
   return (
     <div
@@ -301,7 +320,7 @@ export default function NotificationToast({
 
               <div className="mt-2.5 flex items-center justify-between text-[11px]">
                 <span className="font-semibold text-[#008dd2] dark:text-[#38bdf8] flex items-center gap-1 group-hover:underline">
-                  Click to view details <HiArrowRight size={12} className="transition-transform group-hover:translate-x-0.5" />
+                  {config.actionText || "Click to view details"} <HiArrowRight size={12} className="transition-transform group-hover:translate-x-0.5" />
                 </span>
                 <span className="text-[10px] text-slate-400 dark:text-slate-500">
                   Dismiss = Save in Bell

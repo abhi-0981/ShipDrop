@@ -1,6 +1,6 @@
   import { useEffect, useRef, useState } from "react";
   import { toast } from "react-hot-toast";
-  import { Link, useNavigate } from "react-router-dom";
+  import { Link, useNavigate, useLocation } from "react-router-dom";
   import { FiMenu, FiSearch, FiCommand } from "react-icons/fi";
   import api from "../../services/api";
   import { notifyOrderChange } from "../../services/orderEvents";
@@ -74,6 +74,7 @@
 
   function TopNavbar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
     const navigate = useNavigate();
+    const location = useLocation();
 
     const [isCollapsed, setIsCollapsed] = useState(() => {
       if (propCollapsed !== undefined) return propCollapsed;
@@ -89,6 +90,23 @@
       }
     });
     const [showRecharge, setShowRecharge] = useState(false);
+
+    // Deep link or custom event to open recharge modal
+    useEffect(() => {
+      try {
+        const params = new URLSearchParams(location.search);
+        if (params.get("open_recharge") === "true") {
+          setShowRecharge(true);
+        }
+      } catch (err) {}
+    }, [location.search]);
+
+    useEffect(() => {
+      const handleOpenRechargeEvent = () => setShowRecharge(true);
+      window.addEventListener("shipdrop:openRechargeModal", handleOpenRechargeEvent);
+      return () => window.removeEventListener("shipdrop:openRechargeModal", handleOpenRechargeEvent);
+    }, []);
+
     const [showProfile, setShowProfile] = useState(false);
     const profileRef = useRef(null);
 
@@ -318,14 +336,22 @@
 
       // 4. Instantly navigate to exact target location
       const type = String(notif.type || "").toUpperCase();
+      const refId = String(notif.reference_id || "").toUpperCase();
+      const refUrl = String(notif.reference_url || "");
+
       if (type === "TICKET_REPLY" && notif.reference_id) {
         navigate(`/tickets?ticket_id=${notif.reference_id}`, {
           state: { ticketId: Number(notif.reference_id) },
         });
       } else if (type === "NDR_ALERT") {
         navigate("/pending");
-      } else if (type === "WALLET") {
-        navigate("/wallet");
+      } else if (type === "WALLET" || refId === "LOW_WALLET_BALANCE") {
+        if (refId === "LOW_WALLET_BALANCE" || refUrl.includes("open_recharge") || refUrl.includes("recharge")) {
+          // Open Recharge Modal directly instead of wallet history
+          setShowRecharge(true);
+        } else {
+          navigate("/wallet");
+        }
       } else if (type === "COD_REMITTANCE") {
         navigate("/cod-remittance");
       } else if (type === "WEIGHT_DISCREPANCY") {
@@ -1137,18 +1163,34 @@
                             </svg>
                           );
                         } else if (notifType === "WALLET") {
-                          badgeBg = "bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-900/50";
-                          dotColor = "bg-amber-500";
-                          itemBg = "hover:bg-amber-50/40 dark:hover:bg-amber-950/30 bg-amber-50/20 dark:bg-amber-950/10";
-                          tagLabel = "Wallet";
-                          tagStyle = "bg-amber-100 text-amber-800";
-                          iconSvg = (
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                              <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" />
-                              <path d="M3 5v14a2 2 0 0 0 2 2h16v-5" />
-                              <path d="M18 12a2 2 0 0 0 0 4h4v-4z" />
-                            </svg>
-                          );
+                          const isLowBal = String(notif.reference_id || "").toUpperCase() === "LOW_WALLET_BALANCE";
+                          if (isLowBal) {
+                            badgeBg = "bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-900/50";
+                            dotColor = "bg-rose-500";
+                            itemBg = "hover:bg-rose-50/40 dark:hover:bg-rose-950/30 bg-rose-50/20 dark:bg-rose-950/10";
+                            tagLabel = "Low Balance";
+                            tagStyle = "bg-rose-100 text-rose-700";
+                            iconSvg = (
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                                <circle cx="12" cy="12" r="10" />
+                                <line x1="12" y1="8" x2="12" y2="12" />
+                                <line x1="12" y1="16" x2="12.01" y2="16" />
+                              </svg>
+                            );
+                          } else {
+                            badgeBg = "bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-900/50";
+                            dotColor = "bg-amber-500";
+                            itemBg = "hover:bg-amber-50/40 dark:hover:bg-amber-950/30 bg-amber-50/20 dark:bg-amber-950/10";
+                            tagLabel = "Wallet";
+                            tagStyle = "bg-amber-100 text-amber-800";
+                            iconSvg = (
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                                <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" />
+                                <path d="M3 5v14a2 2 0 0 0 2 2h16v-5" />
+                                <path d="M18 12a2 2 0 0 0 0 4h4v-4z" />
+                              </svg>
+                            );
+                          }
                         } else if (notifType === "COD_REMITTANCE") {
                           badgeBg = "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900/50";
                           dotColor = "bg-emerald-500";
