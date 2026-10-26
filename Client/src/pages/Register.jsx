@@ -478,10 +478,10 @@ function Register() {
           <div className="mb-7 text-center">
             <Link
               to="/"
-              className="inline-flex justify-center transition-transform hover:scale-[1.03] active:scale-95"
+              className="inline-flex justify-center transition-transform hover:scale-[1.02] active:scale-95"
               title="ParcelDrop"
             >
-              <ParcelDropLogo className="h-[52px] sm:h-[60px]" />
+              <ParcelDropLogo height={42} />
             </Link>
 
             <h1 className="mt-5 text-2xl font-bold text-slate-800">

@@ -71,7 +71,7 @@ function Login() {
           {/* LOGO */}
           <div className="flex flex-col items-center mb-7">
             <div className="flex items-center gap-2.5">
-              <ParcelDropLogo className="h-[50px] sm:h-[56px]" />
+              <ParcelDropLogo height={44} />
               <span className="rounded-full bg-[#008dd2]/10 border border-[#008dd2]/20 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-[#008dd2]">
                 Admin
               </span>

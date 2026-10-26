@@ -125,13 +125,13 @@ function Login() {
         <div className="shrink-0 rounded-3xl border border-slate-100 bg-white p-6 shadow-xl shadow-slate-200/60 sm:p-7">
           {/* HEADER */}
 
-          <div className="mb-6 text-center">
+          <div className="mb-5 text-center">
             <Link
               to="/"
-              className="inline-flex justify-center transition-transform hover:scale-[1.03] active:scale-95"
+              className="inline-flex justify-center transition-transform hover:scale-[1.02] active:scale-95"
               title="ParcelDrop"
             >
-              <ParcelDropLogo className="h-[52px] sm:h-[60px]" />
+              <ParcelDropLogo height={42} />
             </Link>
 
             <h1 className="mt-3 text-2xl font-bold text-slate-800">
