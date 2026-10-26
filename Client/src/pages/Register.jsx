@@ -481,10 +481,10 @@ function Register() {
               className="inline-flex justify-center transition-transform hover:scale-[1.02] active:scale-95"
               title="ParcelDrop"
             >
-              <ParcelDropLogo height={42} />
+              <ParcelDropLogo height={40} />
             </Link>
 
-            <h1 className="mt-5 text-2xl font-bold text-slate-800">
+            <h1 className="-mt-1.5 text-2xl font-bold text-slate-800">
               Create Your Account
             </h1>
 
