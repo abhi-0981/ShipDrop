@@ -285,12 +285,12 @@ const getWeightDiscrepancyReportController = async (req, res) => {
     const params = [userId];
     let whereClauses = ["wc.user_id = ?"];
 
-    // Date range filter
+    // Date range filter (checks settled_at or created_at)
     if (start_date) {
       const formattedStart = start_date.includes(" ") || start_date.includes("T")
         ? start_date
         : `${start_date} 00:00:00`;
-      whereClauses.push("wc.created_at >= ?");
+      whereClauses.push("COALESCE(wc.settled_at, wc.created_at) >= ?");
       params.push(formattedStart);
     }
 
@@ -298,7 +298,7 @@ const getWeightDiscrepancyReportController = async (req, res) => {
       const formattedEnd = end_date.includes(" ") || end_date.includes("T")
         ? end_date
         : `${end_date} 23:59:59`;
-      whereClauses.push("wc.created_at <= ?");
+      whereClauses.push("COALESCE(wc.settled_at, wc.created_at) <= ?");
       params.push(formattedEnd);
     }
 
@@ -314,6 +314,8 @@ const getWeightDiscrepancyReportController = async (req, res) => {
       whereClauses.push("(wc.awb LIKE ? OR wc.order_id LIKE ?)");
       params.push(q, q);
     }
+
+    const whereSql = whereClauses.length > 0 ? whereClauses.join(" AND ") : "1=1";
 
     let rows = [];
     try {
@@ -339,7 +341,7 @@ const getWeightDiscrepancyReportController = async (req, res) => {
           wc.settled_at
         FROM weight_checkings wc
         WHERE ${whereSql}
-        ORDER BY wc.created_at DESC
+        ORDER BY COALESCE(wc.settled_at, wc.created_at) DESC
         LIMIT 2500
         `,
         params
