@@ -448,25 +448,11 @@ html.dark .orders-scrollbar::-webkit-scrollbar-thumb:hover {
     transform: translateY(0);
   }
   50% {
-    transform: translateY(-4px);
-  }
-}
-
-@keyframes logoPinShadow {
-  0%, 100% {
-    transform: scale(1);
-    opacity: 0.6;
-  }
-  50% {
-    transform: scale(0.65);
-    opacity: 0.25;
+    transform: translateY(-3.5px);
   }
 }
 
 .animate-logo-pin-float {
-  animation: logoPinFloat 2.4s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
-}
-
-.animate-logo-pin-shadow {
-  animation: logoPinShadow 2.4s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+  animation: logoPinFloat 2.2s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+  will-change: transform;
 }

@@ -1,57 +1,171 @@
-import React from "react";
+import React, { useEffect, useState, useRef } from "react";
+import shipdropLogo from "../../assets/images/shipdrop-logo.png";
+
+// Module-level cache so slices are calculated only once across the entire app
+let cachedSlices = null;
 
 /**
- * ParcelDrop Animated Brand Logo
- * Features a smooth, elegant floating map-pin "o" in "Drop"
+ * ParcelDropLogo with Smooth Floating 'o' Pin
+ * Slices the authentic shipdrop-logo.png directly in memory so:
+ * 1. Font weight is 100% identical to the original image
+ * 2. 'o' size is 100% identical to the original image
+ * 3. Color combination is 100% identical to the original image
+ * 4. Only the 'o' letter smoothly hovers up and down
  */
-export default function ParcelDropLogo({ className = "", animated = true }) {
+export default function ParcelDropLogo({ className = "" }) {
+  const [slices, setSlices] = useState(() => cachedSlices);
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    if (cachedSlices) {
+      setSlices(cachedSlices);
+      return;
+    }
+
+    const img = new Image();
+    img.src = shipdropLogo;
+    img.onload = () => {
+      try {
+        const width = img.naturalWidth;
+        const height = img.naturalHeight;
+
+        if (!width || !height) return;
+
+        // Offscreen canvas to scan columns
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d", { willReadFrequently: true });
+        ctx.drawImage(img, 0, 0);
+
+        const imgData = ctx.getImageData(0, 0, width, height);
+        const pixels = imgData.data;
+
+        // Detect non-empty columns (non-white, non-transparent)
+        const colHasContent = new Array(width).fill(false);
+        for (let x = 0; x < width; x++) {
+          for (let y = 0; y < height; y++) {
+            const idx = (y * width + x) * 4;
+            const a = pixels[idx + 3];
+            const r = pixels[idx];
+            const g = pixels[idx + 1];
+            const b = pixels[idx + 2];
+            if (a > 30 && !(r > 242 && g > 242 && b > 242)) {
+              colHasContent[x] = true;
+              break;
+            }
+          }
+        }
+
+        // Scan from right to find:
+        // 1. 'p' (last letter)
+        // 2. 'o' (second-to-last letter, the pin)
+        let p_end = width - 1;
+        while (p_end >= 0 && !colHasContent[p_end]) p_end--;
+
+        let p_start = p_end;
+        while (p_start >= 0 && colHasContent[p_start]) p_start--;
+        p_start++;
+
+        let o_end = p_start - 1;
+        while (o_end >= 0 && !colHasContent[o_end]) o_end--;
+
+        let o_start = o_end;
+        while (o_start >= 0 && colHasContent[o_start]) o_start--;
+        o_start++;
+
+        // Safety fallback if detection fails
+        if (o_start <= 0 || o_end <= o_start || p_start <= o_end) {
+          return;
+        }
+
+        // Slicing boundaries with 1px breathing margin
+        const leftCut = Math.max(0, o_start);
+        const rightCut = Math.min(width, o_end + 1);
+
+        // Helper to crop a slice and make white background transparent
+        const createSlice = (startX, sliceWidth) => {
+          const c = document.createElement("canvas");
+          c.width = sliceWidth;
+          c.height = height;
+          const cCtx = c.getContext("2d");
+          cCtx.drawImage(img, startX, 0, sliceWidth, height, 0, 0, sliceWidth, height);
+
+          // Make white background transparent so it floats cleanly in light & dark mode
+          const sliceData = cCtx.getImageData(0, 0, sliceWidth, height);
+          const sPix = sliceData.data;
+          for (let i = 0; i < sPix.length; i += 4) {
+            const r = sPix[i];
+            const g = sPix[i + 1];
+            const b = sPix[i + 2];
+            if (r > 242 && g > 242 && b > 242) {
+              sPix[i + 3] = 0; // transparent
+            }
+          }
+          cCtx.putImageData(sliceData, 0, 0);
+          return c.toDataURL("image/png");
+        };
+
+        const leftUrl = createSlice(0, leftCut);
+        const oUrl = createSlice(leftCut, rightCut - leftCut);
+        const rightUrl = createSlice(rightCut, width - rightCut);
+
+        const result = {
+          left: leftUrl,
+          pin: oUrl,
+          right: rightUrl,
+          leftWidthRatio: leftCut / height,
+          pinWidthRatio: (rightCut - leftCut) / height,
+          rightWidthRatio: (width - rightCut) / height,
+        };
+
+        cachedSlices = result;
+        setSlices(result);
+      } catch (err) {
+        console.warn("Logo slice fallback notice:", err.message);
+      }
+    };
+  }, []);
+
+  // While calculating or if fallback needed, render original image directly
+  if (!slices) {
+    return (
+      <img
+        src={shipdropLogo}
+        alt="ParcelDrop"
+        className={`h-[42px] sm:h-[44px] w-auto object-contain object-left ${className}`}
+      />
+    );
+  }
+
   return (
     <div
-      className={`group inline-flex items-baseline select-none font-sans ${className}`}
+      ref={containerRef}
+      className={`inline-flex items-center select-none leading-none h-[42px] sm:h-[44px] ${className}`}
       title="ParcelDrop"
     >
-      {/* "Parcel" */}
-      <span className="font-extrabold text-[24px] sm:text-[26px] tracking-[-0.04em] text-[#042d64] dark:text-white leading-none transition-colors duration-200">
-        Parcel
+      {/* 1. "ParcelDr" - Exact original font, weight, color & resolution */}
+      <img
+        src={slices.left}
+        alt="ParcelDr"
+        className="h-full w-auto object-contain object-left block pointer-events-none"
+      />
+
+      {/* 2. "o" (Location Pin) - Exact original size & color with smooth float */}
+      <span className="inline-block h-full animate-logo-pin-float pointer-events-none">
+        <img
+          src={slices.pin}
+          alt="o"
+          className="h-full w-auto object-contain block"
+        />
       </span>
 
-      {/* "Dr" */}
-      <span className="font-extrabold text-[24px] sm:text-[26px] tracking-[-0.04em] text-[#008dd2] leading-none ml-[0.5px]">
-        Dr
-      </span>
-
-      {/* Floating Map Pin "o" */}
-      <span className="relative inline-flex flex-col items-center justify-center mx-[1px] translate-y-[1px]">
-        <span
-          className={`inline-block ${
-            animated ? "animate-logo-pin-float" : ""
-          } transition-transform duration-200 group-hover:-translate-y-1`}
-        >
-          <svg
-            className="w-[19px] h-[25px] sm:w-[20.5px] sm:h-[27px] text-[#008dd2] fill-current drop-shadow-[0_1px_2px_rgba(0,141,210,0.25)]"
-            viewBox="0 0 24 32"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              fillRule="evenodd"
-              clipRule="evenodd"
-              d="M12 0C5.373 0 0 5.373 0 12c0 5.5 4.6 12.3 10.6 18.8.8.8 2 .8 2.8 0C19.4 24.3 24 17.5 24 12 24 5.373 18.627 0 12 0zm0 17.5a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11z"
-              fill="currentColor"
-            />
-          </svg>
-        </span>
-
-        {/* Subtle Ground Pin Shadow */}
-        {animated && (
-          <span className="animate-logo-pin-shadow absolute -bottom-[1.5px] h-[2.5px] w-2.5 rounded-full bg-[#008dd2]/30 blur-[0.6px]" />
-        )}
-      </span>
-
-      {/* "p" */}
-      <span className="font-extrabold text-[24px] sm:text-[26px] tracking-[-0.04em] text-[#008dd2] leading-none ml-[0.5px]">
-        p
-      </span>
+      {/* 3. "p" - Exact original font, weight & color */}
+      <img
+        src={slices.right}
+        alt="p"
+        className="h-full w-auto object-contain object-left block pointer-events-none"
+      />
     </div>
   );
 }
