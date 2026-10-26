@@ -31,6 +31,8 @@ const getAdminPickupAddresses = async (req, res) => {
         w.return_country,
         w.delhivery_registered,
         w.status,
+        w.is_deleted,
+        w.deleted_at,
         w.created_at,
         w.updated_at,
         u.full_name AS user_name,
@@ -54,10 +56,14 @@ const getAdminPickupAddresses = async (req, res) => {
     }
 
     if (status && status !== "ALL") {
-      if (status === "REGISTERED") {
-        query += ` AND (w.delhivery_registered = 1 OR LOWER(w.status) = 'active')`;
+      if (status === "DELETED") {
+        query += ` AND w.is_deleted = 1`;
+      } else if (status === "ACTIVE_ONLY") {
+        query += ` AND (w.is_deleted = 0 OR w.is_deleted IS NULL)`;
+      } else if (status === "REGISTERED") {
+        query += ` AND (w.delhivery_registered = 1 OR LOWER(w.status) = 'active') AND (w.is_deleted = 0 OR w.is_deleted IS NULL)`;
       } else if (status === "UNREGISTERED") {
-        query += ` AND (w.delhivery_registered = 0 OR w.delhivery_registered IS NULL)`;
+        query += ` AND (w.delhivery_registered = 0 OR w.delhivery_registered IS NULL) AND (w.is_deleted = 0 OR w.is_deleted IS NULL)`;
       }
     }
 
@@ -91,6 +97,8 @@ const getAdminPickupAddresses = async (req, res) => {
       total_addresses: 0,
       total_users: 0,
       registered_count: 0,
+      deleted_count: 0,
+      active_count: 0,
       total_states: 0,
     };
 
@@ -99,7 +107,9 @@ const getAdminPickupAddresses = async (req, res) => {
         SELECT
           COUNT(*) AS total_addresses,
           COUNT(DISTINCT user_id) AS total_users,
-          SUM(CASE WHEN delhivery_registered = 1 OR LOWER(status) = 'active' THEN 1 ELSE 0 END) AS registered_count,
+          SUM(CASE WHEN is_deleted = 1 THEN 1 ELSE 0 END) AS deleted_count,
+          SUM(CASE WHEN is_deleted = 0 OR is_deleted IS NULL THEN 1 ELSE 0 END) AS active_count,
+          SUM(CASE WHEN (delhivery_registered = 1 OR LOWER(status) = 'active') AND (is_deleted = 0 OR is_deleted IS NULL) THEN 1 ELSE 0 END) AS registered_count,
           COUNT(DISTINCT state) AS total_states
         FROM warehouses
       `);
@@ -108,6 +118,8 @@ const getAdminPickupAddresses = async (req, res) => {
           total_addresses: Number(statsResult[0].total_addresses || 0),
           total_users: Number(statsResult[0].total_users || 0),
           registered_count: Number(statsResult[0].registered_count || 0),
+          deleted_count: Number(statsResult[0].deleted_count || 0),
+          active_count: Number(statsResult[0].active_count || 0),
           total_states: Number(statsResult[0].total_states || 0),
         };
       }

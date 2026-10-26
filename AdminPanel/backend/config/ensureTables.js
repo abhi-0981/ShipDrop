@@ -132,13 +132,49 @@ async function ensureTables() {
         gst_no VARCHAR(50) NULL,
         phone_no VARCHAR(25) NULL,
         address TEXT NULL,
+        is_deleted TINYINT(1) NOT NULL DEFAULT 0,
+        deleted_at DATETIME NULL DEFAULT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         INDEX idx_party_identities_user_id (user_id)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
 
-    console.log("AdminPanel: Impersonation audit, tickets, announcements, and party tables verified successfully.");
+    // Ensure is_deleted and deleted_at columns on party_identities
+    const partyCols = [
+      { name: "is_deleted", type: "TINYINT(1) NOT NULL DEFAULT 0" },
+      { name: "deleted_at", type: "DATETIME NULL DEFAULT NULL" },
+    ];
+    for (const col of partyCols) {
+      try {
+        const [existing] = await db.query(
+          `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'party_identities' AND COLUMN_NAME = ?`,
+          [col.name]
+        );
+        if (!existing || existing.length === 0) {
+          await db.query(`ALTER TABLE party_identities ADD COLUMN ${col.name} ${col.type}`);
+        }
+      } catch (err) {}
+    }
+
+    // Ensure is_deleted and deleted_at columns on warehouses
+    const warehouseCols = [
+      { name: "is_deleted", type: "TINYINT(1) NOT NULL DEFAULT 0" },
+      { name: "deleted_at", type: "DATETIME NULL DEFAULT NULL" },
+    ];
+    for (const col of warehouseCols) {
+      try {
+        const [existing] = await db.query(
+          `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'warehouses' AND COLUMN_NAME = ?`,
+          [col.name]
+        );
+        if (!existing || existing.length === 0) {
+          await db.query(`ALTER TABLE warehouses ADD COLUMN ${col.name} ${col.type}`);
+        }
+      } catch (err) {}
+    }
+
+    console.log("AdminPanel: Impersonation audit, tickets, announcements, warehouses, and party tables verified successfully.");
   } catch (error) {
     console.warn("AdminPanel ensureTables notice:", error.message);
   }

@@ -16,6 +16,7 @@ import {
   HiOutlineBadgeCheck,
   HiOutlineExternalLink,
   HiOutlineDownload,
+  HiOutlineTrash,
   HiChevronLeft,
   HiChevronRight,
 } from "react-icons/hi";
@@ -31,6 +32,8 @@ export default function PickupAddresses() {
     total_users: 0,
     registered_count: 0,
     total_states: 0,
+    deleted_count: 0,
+    active_count: 0,
   });
 
   const [loading, setLoading] = useState(true);
@@ -173,6 +176,8 @@ export default function PickupAddresses() {
       "Pincode",
       "Delhivery Registered",
       "Status",
+      "Deleted by User",
+      "Deleted At",
       "Created At",
     ];
 
@@ -194,6 +199,8 @@ export default function PickupAddresses() {
       a.pincode || "",
       a.delhivery_registered ? "Yes" : "No",
       a.status || "Active",
+      Number(a.is_deleted) === 1 ? "Yes" : "No",
+      a.deleted_at || "",
       a.created_at || "",
     ]);
 
@@ -269,7 +276,7 @@ export default function PickupAddresses() {
       </div>
 
       {/* STATS OVERVIEW CARDS */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5 sm:gap-4">
         {/* Card 1: Total Locations */}
         <div className="rounded-2xl border border-slate-200/90 bg-white p-4 sm:p-5 shadow-2xs hover:shadow-xs transition">
           <div className="flex items-center justify-between">
@@ -298,7 +305,21 @@ export default function PickupAddresses() {
           <p className="text-[11px] text-slate-400 mt-0.5">Verified pickup hubs</p>
         </div>
 
-        {/* Card 3: Merchants with Locations */}
+        {/* Card 3: Deleted by User */}
+        <div className="rounded-2xl border border-rose-200 bg-rose-50/30 p-4 sm:p-5 shadow-2xs hover:shadow-xs transition">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-rose-700">Deleted by User</span>
+            <div className="h-8 w-8 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center">
+              <HiOutlineTrash size={18} />
+            </div>
+          </div>
+          <p className="mt-3 text-2xl sm:text-3xl font-bold text-rose-600">
+            {stats.deleted_count || 0}
+          </p>
+          <p className="text-[11px] text-rose-500/80 mt-0.5">Preserved for audit/orders</p>
+        </div>
+
+        {/* Card 4: Merchants with Locations */}
         <div className="rounded-2xl border border-slate-200/90 bg-white p-4 sm:p-5 shadow-2xs hover:shadow-xs transition">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500">Merchants</span>
@@ -312,8 +333,8 @@ export default function PickupAddresses() {
           <p className="text-[11px] text-slate-400 mt-0.5">Distinct merchants with hubs</p>
         </div>
 
-        {/* Card 4: States Covered */}
-        <div className="rounded-2xl border border-slate-200/90 bg-white p-4 sm:p-5 shadow-2xs hover:shadow-xs transition">
+        {/* Card 5: States Covered */}
+        <div className="rounded-2xl border border-slate-200/90 bg-white p-4 sm:p-5 shadow-2xs hover:shadow-xs transition col-span-2 md:col-span-1">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500">States Covered</span>
             <div className="h-8 w-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
@@ -394,6 +415,8 @@ export default function PickupAddresses() {
                 className="w-full appearance-none pl-3 pr-8 py-2.5 text-xs font-medium text-slate-700 bg-slate-50/70 border border-slate-200 rounded-xl outline-none transition focus:bg-white focus:border-[#008dd2] cursor-pointer"
               >
                 <option value="ALL">All Status</option>
+                <option value="ACTIVE_ONLY">Active Hubs Only</option>
+                <option value="DELETED">Deleted by User</option>
                 <option value="REGISTERED">Delhivery Registered</option>
                 <option value="UNREGISTERED">Pending / Unregistered</option>
               </select>
@@ -496,6 +519,7 @@ export default function PickupAddresses() {
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs">
                 {paginatedAddresses.map((addr) => {
+                  const isDeleted = Number(addr.is_deleted) === 1;
                   const isRegistered =
                     Number(addr.delhivery_registered) === 1 ||
                     String(addr.status || "").toLowerCase() === "active";
@@ -503,7 +527,11 @@ export default function PickupAddresses() {
                   return (
                     <tr
                       key={addr.id}
-                      className="hover:bg-slate-50/70 transition-colors group"
+                      className={`transition-colors group ${
+                        isDeleted
+                          ? "bg-rose-50/50 hover:bg-rose-50/80 border-l-4 border-l-rose-500"
+                          : "hover:bg-slate-50/70"
+                      }`}
                     >
                       {/* MERCHANT INFO */}
                       <td className="py-3.5 px-4 align-top">
@@ -534,10 +562,16 @@ export default function PickupAddresses() {
                       {/* LOCATION NAME */}
                       <td className="py-3.5 px-4 align-top">
                         <div className="space-y-1">
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-semibold text-slate-800">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className={`font-semibold ${isDeleted ? "text-rose-950 font-bold" : "text-slate-800"}`}>
                               {addr.warehouse_name || "Unnamed Hub"}
                             </span>
+                            {isDeleted && (
+                              <span className="inline-flex items-center gap-1 rounded-full border border-rose-300 bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-700 shadow-2xs">
+                                <HiOutlineTrash size={11} className="text-rose-600" />
+                                Deleted by User
+                              </span>
+                            )}
                           </div>
                           {(addr.landmark || addr.floor_no) && (
                             <p className="text-[11px] text-slate-500">
@@ -546,9 +580,16 @@ export default function PickupAddresses() {
                               {addr.landmark ? `Near ${addr.landmark}` : ""}
                             </p>
                           )}
-                          <span className="inline-block text-[10px] text-slate-400">
-                            Added: {formatDate(addr.created_at)}
-                          </span>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="inline-block text-[10px] text-slate-400">
+                              Added: {formatDate(addr.created_at)}
+                            </span>
+                            {isDeleted && addr.deleted_at && (
+                              <span className="inline-block text-[10px] text-rose-600 font-semibold bg-rose-100/70 px-1.5 py-0.2 rounded border border-rose-200">
+                                Deleted: {formatDate(addr.deleted_at)}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </td>
 
@@ -640,7 +681,19 @@ export default function PickupAddresses() {
 
                       {/* STATUS */}
                       <td className="py-3.5 px-4 align-top text-center">
-                        {isRegistered ? (
+                        {isDeleted ? (
+                          <div className="flex flex-col items-center gap-1">
+                            <span className="inline-flex items-center gap-1 rounded-full border border-rose-300 bg-rose-100 px-2.5 py-0.5 text-[10px] font-bold text-rose-700 shadow-2xs">
+                              <span className="h-1.5 w-1.5 rounded-full bg-rose-600" />
+                              Deleted by User
+                            </span>
+                            {addr.deleted_at && (
+                              <span className="text-[10px] text-rose-600 font-medium">
+                                {formatDate(addr.deleted_at)}
+                              </span>
+                            )}
+                          </div>
+                        ) : isRegistered ? (
                           <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[10px] font-bold text-emerald-700 shadow-2xs">
                             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                             Registered
@@ -746,6 +799,28 @@ export default function PickupAddresses() {
 
             {/* MODAL BODY */}
             <div className="p-6 space-y-4 overflow-y-auto">
+              {/* DELETED BANNER */}
+              {Number(viewingAddress.is_deleted) === 1 && (
+                <div className="rounded-xl border border-rose-200 bg-rose-50/90 p-3.5 flex items-start gap-3 text-rose-800">
+                  <div className="h-7 w-7 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center shrink-0 mt-0.5">
+                    <HiOutlineTrash size={16} />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-rose-900 flex items-center gap-2">
+                      <span>Deleted by Merchant</span>
+                      {viewingAddress.deleted_at && (
+                        <span className="text-[10px] font-semibold text-rose-700 bg-rose-100 px-1.5 py-0.5 rounded border border-rose-200">
+                          {formatDate(viewingAddress.deleted_at)}
+                        </span>
+                      )}
+                    </p>
+                    <p className="text-[11px] text-rose-700 mt-1 leading-relaxed">
+                      The merchant removed this pickup warehouse from their account dashboard. It will never be removed from the Admin Panel to safeguard historical order references, manifest history, and audit compliance.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* SECTION: MERCHANT OWNER */}
               <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
                 <div className="flex items-center justify-between mb-2">

@@ -5,7 +5,7 @@ const db = require("../config/db");
 // ========================================================
 const getAdminParties = async (req, res) => {
   try {
-    const { user_id, search, gst_filter } = req.query || {};
+    const { user_id, search, gst_filter, status } = req.query || {};
 
     let query = `
       SELECT
@@ -17,6 +17,8 @@ const getAdminParties = async (req, res) => {
         pi.gst_no,
         pi.phone_no,
         pi.address,
+        pi.is_deleted,
+        pi.deleted_at,
         pi.created_at,
         pi.updated_at,
         u.full_name AS user_name,
@@ -34,6 +36,14 @@ const getAdminParties = async (req, res) => {
     if (user_id && user_id !== "ALL") {
       query += ` AND pi.user_id = ?`;
       params.push(Number(user_id));
+    }
+
+    if (status && status !== "ALL") {
+      if (status === "DELETED") {
+        query += ` AND pi.is_deleted = 1`;
+      } else if (status === "ACTIVE_ONLY") {
+        query += ` AND (pi.is_deleted = 0 OR pi.is_deleted IS NULL)`;
+      }
     }
 
     if (gst_filter && gst_filter !== "ALL") {
@@ -62,7 +72,7 @@ const getAdminParties = async (req, res) => {
     }
 
     query += `
-      GROUP BY pi.id, pi.user_id, pi.name, pi.reference_name, pi.company_name, pi.gst_no, pi.phone_no, pi.address, pi.created_at, pi.updated_at, u.full_name, u.company_name, u.email, u.phone_no
+      GROUP BY pi.id, pi.user_id, pi.name, pi.reference_name, pi.company_name, pi.gst_no, pi.phone_no, pi.address, pi.is_deleted, pi.deleted_at, pi.created_at, pi.updated_at, u.full_name, u.company_name, u.email, u.phone_no
       ORDER BY pi.id DESC
     `;
 
@@ -72,6 +82,8 @@ const getAdminParties = async (req, res) => {
     let stats = {
       total_parties: 0,
       total_users: 0,
+      active_count: 0,
+      deleted_count: 0,
       gst_registered: 0,
       non_gst: 0,
     };
@@ -81,6 +93,8 @@ const getAdminParties = async (req, res) => {
         SELECT
           COUNT(*) AS total_parties,
           COUNT(DISTINCT user_id) AS total_users,
+          SUM(CASE WHEN is_deleted = 1 THEN 1 ELSE 0 END) AS deleted_count,
+          SUM(CASE WHEN is_deleted = 0 OR is_deleted IS NULL THEN 1 ELSE 0 END) AS active_count,
           SUM(CASE WHEN gst_no IS NOT NULL AND TRIM(gst_no) != '' THEN 1 ELSE 0 END) AS gst_registered,
           SUM(CASE WHEN gst_no IS NULL OR TRIM(gst_no) = '' THEN 1 ELSE 0 END) AS non_gst
         FROM party_identities
@@ -89,6 +103,8 @@ const getAdminParties = async (req, res) => {
         stats = {
           total_parties: Number(statsResult[0].total_parties || 0),
           total_users: Number(statsResult[0].total_users || 0),
+          active_count: Number(statsResult[0].active_count || 0),
+          deleted_count: Number(statsResult[0].deleted_count || 0),
           gst_registered: Number(statsResult[0].gst_registered || 0),
           non_gst: Number(statsResult[0].non_gst || 0),
         };

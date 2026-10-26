@@ -88,6 +88,8 @@ async function ensureTables() {
       { name: "gst_no", type: "VARCHAR(50) NULL AFTER company_name" },
       { name: "phone_no", type: "VARCHAR(25) NULL AFTER gst_no" },
       { name: "address", type: "TEXT NULL AFTER phone_no" },
+      { name: "is_deleted", type: "TINYINT(1) NOT NULL DEFAULT 0 AFTER address" },
+      { name: "deleted_at", type: "DATETIME NULL DEFAULT NULL AFTER is_deleted" },
     ];
 
     for (const col of partyColumns) {
@@ -104,6 +106,29 @@ async function ensureTables() {
         }
       } catch (colErr) {
         console.warn(`Column check/add notice for ${col.name}:`, colErr.message);
+      }
+    }
+
+    // Ensure is_deleted and deleted_at exist on warehouses
+    const warehouseSoftDeleteColumns = [
+      { name: "is_deleted", type: "TINYINT(1) NOT NULL DEFAULT 0" },
+      { name: "deleted_at", type: "DATETIME NULL DEFAULT NULL" },
+    ];
+
+    for (const col of warehouseSoftDeleteColumns) {
+      try {
+        const [existing] = await promiseDb.query(
+          `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'warehouses' AND COLUMN_NAME = ?`,
+          [col.name]
+        );
+        if (!existing || existing.length === 0) {
+          await promiseDb.query(
+            `ALTER TABLE warehouses ADD COLUMN ${col.name} ${col.type}`
+          );
+          console.log(`Added column ${col.name} to warehouses.`);
+        }
+      } catch (colErr) {
+        console.warn(`Column check/add notice for warehouses.${col.name}:`, colErr.message);
       }
     }
 

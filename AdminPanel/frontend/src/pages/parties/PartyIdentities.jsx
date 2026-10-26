@@ -16,6 +16,7 @@ import {
   HiOutlineExternalLink,
   HiOutlineDownload,
   HiOutlineCube,
+  HiOutlineTrash,
   HiChevronLeft,
   HiChevronRight,
 } from "react-icons/hi";
@@ -39,6 +40,8 @@ export default function PartyIdentities() {
     total_users: 0,
     gst_registered: 0,
     non_gst: 0,
+    deleted_count: 0,
+    active_count: 0,
   });
 
   const [loading, setLoading] = useState(true);
@@ -54,6 +57,7 @@ export default function PartyIdentities() {
       return "ALL";
     }
   });
+  const [statusFilter, setStatusFilter] = useState("ALL");
   const [gstFilter, setGstFilter] = useState("ALL");
 
   // Pagination
@@ -93,6 +97,7 @@ export default function PartyIdentities() {
 
       const params = new URLSearchParams();
       if (selectedUser !== "ALL") params.append("user_id", selectedUser);
+      if (statusFilter !== "ALL") params.append("status", statusFilter);
       if (gstFilter !== "ALL") params.append("gst_filter", gstFilter);
       if (search.trim()) params.append("search", search.trim());
 
@@ -121,7 +126,7 @@ export default function PartyIdentities() {
   useEffect(() => {
     fetchParties();
     setCurrentPage(1);
-  }, [selectedUser, gstFilter]);
+  }, [selectedUser, statusFilter, gstFilter]);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -132,12 +137,16 @@ export default function PartyIdentities() {
   const handleResetFilters = () => {
     setSearch("");
     setSelectedUser("ALL");
+    setStatusFilter("ALL");
     setGstFilter("ALL");
     setCurrentPage(1);
   };
 
   const hasActiveFilters =
-    search.trim() !== "" || selectedUser !== "ALL" || gstFilter !== "ALL";
+    search.trim() !== "" ||
+    selectedUser !== "ALL" ||
+    statusFilter !== "ALL" ||
+    gstFilter !== "ALL";
 
   // Pagination calculation
   const totalPages = Math.ceil(parties.length / pageSize) || 1;
@@ -165,6 +174,8 @@ export default function PartyIdentities() {
       "Phone",
       "Address",
       "Linked Orders Count",
+      "Deleted by User",
+      "Deleted At",
       "Created At",
     ];
 
@@ -181,6 +192,8 @@ export default function PartyIdentities() {
       p.phone_no || "",
       `"${(p.address || "").replace(/"/g, '""')}"`,
       p.linked_orders_count || 0,
+      Number(p.is_deleted) === 1 ? "Yes" : "No",
+      p.deleted_at || "",
       p.created_at || "",
     ]);
 
@@ -256,7 +269,7 @@ export default function PartyIdentities() {
       </div>
 
       {/* STATS OVERVIEW CARDS */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5 sm:gap-4">
         {/* Card 1: Total Parties */}
         <div className="rounded-2xl border border-slate-200/90 bg-white p-4 sm:p-5 shadow-2xs hover:shadow-xs transition">
           <div className="flex items-center justify-between">
@@ -282,10 +295,24 @@ export default function PartyIdentities() {
           <p className="mt-3 text-2xl sm:text-3xl font-bold text-emerald-600">
             {stats.gst_registered || 0}
           </p>
-          <p className="text-[11px] text-slate-400 mt-0.5">With valid GSTIN tax number</p>
+          <p className="text-[11px] text-slate-400 mt-0.5">With valid GSTIN number</p>
         </div>
 
-        {/* Card 3: Non-GST Parties */}
+        {/* Card 3: Deleted by User */}
+        <div className="rounded-2xl border border-rose-200 bg-rose-50/30 p-4 sm:p-5 shadow-2xs hover:shadow-xs transition">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-rose-700">Deleted by User</span>
+            <div className="h-8 w-8 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center">
+              <HiOutlineTrash size={18} />
+            </div>
+          </div>
+          <p className="mt-3 text-2xl sm:text-3xl font-bold text-rose-600">
+            {stats.deleted_count || 0}
+          </p>
+          <p className="text-[11px] text-rose-500/80 mt-0.5">Preserved for invoices/audit</p>
+        </div>
+
+        {/* Card 4: Non-GST Parties */}
         <div className="rounded-2xl border border-slate-200/90 bg-white p-4 sm:p-5 shadow-2xs hover:shadow-xs transition">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500">Non-GST Entities</span>
@@ -296,11 +323,11 @@ export default function PartyIdentities() {
           <p className="mt-3 text-2xl sm:text-3xl font-bold text-slate-900">
             {stats.non_gst || 0}
           </p>
-          <p className="text-[11px] text-slate-400 mt-0.5">Unregistered business profiles</p>
+          <p className="text-[11px] text-slate-400 mt-0.5">Unregistered profiles</p>
         </div>
 
-        {/* Card 4: Merchants */}
-        <div className="rounded-2xl border border-slate-200/90 bg-white p-4 sm:p-5 shadow-2xs hover:shadow-xs transition">
+        {/* Card 5: Merchants */}
+        <div className="rounded-2xl border border-slate-200/90 bg-white p-4 sm:p-5 shadow-2xs hover:shadow-xs transition col-span-2 md:col-span-1">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500">Merchants</span>
             <div className="h-8 w-8 rounded-lg bg-sky-50 text-[#008dd2] flex items-center justify-center">
@@ -332,9 +359,9 @@ export default function PartyIdentities() {
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
             {/* USER / MERCHANT FILTER */}
-            <div className="relative sm:w-64">
+            <div className="relative">
               <select
                 value={selectedUser}
                 onChange={(e) => setSelectedUser(e.target.value)}
@@ -353,8 +380,25 @@ export default function PartyIdentities() {
               />
             </div>
 
+            {/* STATUS FILTER */}
+            <div className="relative">
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="w-full appearance-none pl-3 pr-8 py-2.5 text-xs font-medium text-slate-700 bg-slate-50/70 border border-slate-200 rounded-xl outline-none transition focus:bg-white focus:border-[#008dd2] cursor-pointer"
+              >
+                <option value="ALL">All Status</option>
+                <option value="ACTIVE_ONLY">Active Profiles</option>
+                <option value="DELETED">Deleted by User</option>
+              </select>
+              <HiOutlineFilter
+                size={14}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+              />
+            </div>
+
             {/* GST STATUS FILTER */}
-            <div className="relative sm:w-48">
+            <div className="relative">
               <select
                 value={gstFilter}
                 onChange={(e) => setGstFilter(e.target.value)}
@@ -463,12 +507,17 @@ export default function PartyIdentities() {
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs">
                 {paginatedParties.map((party) => {
+                  const isDeleted = Number(party.is_deleted) === 1;
                   const hasGst = Boolean(party.gst_no && String(party.gst_no).trim());
 
                   return (
                     <tr
                       key={party.id}
-                      className="hover:bg-slate-50/70 transition-colors group"
+                      className={`transition-colors group ${
+                        isDeleted
+                          ? "bg-rose-50/50 hover:bg-rose-50/80 border-l-4 border-l-rose-500"
+                          : "hover:bg-slate-50/70"
+                      }`}
                     >
                       {/* MERCHANT INFO */}
                       <td className="py-3.5 px-4 align-top">
@@ -499,21 +548,40 @@ export default function PartyIdentities() {
                       {/* PARTY IDENTITY */}
                       <td className="py-3.5 px-4 align-top">
                         <div className="flex items-start gap-2.5">
-                          <div className="h-8 w-8 rounded-lg bg-purple-100 text-purple-700 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">
+                          <div className={`h-8 w-8 rounded-lg font-bold text-xs flex items-center justify-center shrink-0 mt-0.5 ${
+                            isDeleted
+                              ? "bg-rose-100 text-rose-700"
+                              : "bg-purple-100 text-purple-700"
+                          }`}>
                             {getInitials(party.name)}
                           </div>
                           <div className="space-y-0.5">
-                            <span className="font-semibold text-slate-900 block">
-                              {party.name}
-                            </span>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className={`font-semibold block ${isDeleted ? "text-rose-950 font-bold" : "text-slate-900"}`}>
+                                {party.name}
+                              </span>
+                              {isDeleted && (
+                                <span className="inline-flex items-center gap-1 rounded-full border border-rose-300 bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-700 shadow-2xs">
+                                  <HiOutlineTrash size={11} className="text-rose-600" />
+                                  Deleted by User
+                                </span>
+                              )}
+                            </div>
                             {party.reference_name && (
                               <span className="text-[11px] text-slate-500 block">
                                 Ref: {party.reference_name}
                               </span>
                             )}
-                            <span className="text-[10px] text-slate-400 block">
-                              Created: {formatDate(party.created_at)}
-                            </span>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-[10px] text-slate-400 block">
+                                Created: {formatDate(party.created_at)}
+                              </span>
+                              {isDeleted && party.deleted_at && (
+                                <span className="inline-block text-[10px] text-rose-600 font-semibold bg-rose-100/70 px-1.5 py-0.2 rounded border border-rose-200">
+                                  Deleted: {formatDate(party.deleted_at)}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </td>
@@ -682,6 +750,28 @@ export default function PartyIdentities() {
 
             {/* MODAL BODY */}
             <div className="p-6 space-y-4 overflow-y-auto">
+              {/* DELETED BANNER */}
+              {Number(viewingParty.is_deleted) === 1 && (
+                <div className="rounded-xl border border-rose-200 bg-rose-50/90 p-3.5 flex items-start gap-3 text-rose-800">
+                  <div className="h-7 w-7 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center shrink-0 mt-0.5">
+                    <HiOutlineTrash size={16} />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-rose-900 flex items-center gap-2">
+                      <span>Deleted by Merchant</span>
+                      {viewingParty.deleted_at && (
+                        <span className="text-[10px] font-semibold text-rose-700 bg-rose-100 px-1.5 py-0.5 rounded border border-rose-200">
+                          {formatDate(viewingParty.deleted_at)}
+                        </span>
+                      )}
+                    </p>
+                    <p className="text-[11px] text-rose-700 mt-1 leading-relaxed">
+                      The merchant removed this party identity profile from their account dashboard. It will never be removed from the Admin Panel to maintain order billing history, GST compliance, and audit tracking.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* SECTION: MERCHANT OWNER */}
               <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
                 <div className="flex items-center justify-between mb-2">

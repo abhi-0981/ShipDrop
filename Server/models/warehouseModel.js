@@ -33,6 +33,7 @@ const getWarehousesByUser = (userId, callback) => {
       updated_at
     FROM warehouses
     WHERE user_id = ?
+      AND (is_deleted = 0 OR is_deleted IS NULL)
     ORDER BY id DESC
   `;
 
@@ -82,6 +83,7 @@ const getWarehouseById = (
     FROM warehouses
     WHERE id = ?
       AND user_id = ?
+      AND (is_deleted = 0 OR is_deleted IS NULL)
     LIMIT 1
   `;
 
@@ -306,7 +308,10 @@ const deleteWarehouse = (
   callback
 ) => {
   const query = `
-    DELETE FROM warehouses
+    UPDATE warehouses
+    SET
+      is_deleted = 1,
+      deleted_at = NOW()
     WHERE id = ?
       AND user_id = ?
   `;
@@ -317,7 +322,21 @@ const deleteWarehouse = (
       warehouseId,
       userId
     ],
-    callback
+    (err, result) => {
+      if (err) return callback(err);
+
+      // If user default warehouse was this deleted warehouse, safely unassign default
+      const clearDefaultQuery = `
+        UPDATE users
+        SET default_warehouse_id = NULL
+        WHERE id = ?
+          AND default_warehouse_id = ?
+      `;
+
+      db.query(clearDefaultQuery, [userId, warehouseId], () => {
+        callback(null, result);
+      });
+    }
   );
 };
 
@@ -335,6 +354,7 @@ const setDefaultWarehouse = (userId, warehouseId, callback) => {
         FROM warehouses
         WHERE warehouses.id = ?
           AND warehouses.user_id = users.id
+          AND (warehouses.is_deleted = 0 OR warehouses.is_deleted IS NULL)
           AND UPPER(TRIM(warehouses.status)) = 'ACTIVE'
       )
   `;

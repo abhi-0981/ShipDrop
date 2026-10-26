@@ -286,7 +286,7 @@ dangerous_good: nestedOrderData.dangerous_good === true ||
       }
 
       const [partyRows] = await db.promise().query(
-        "SELECT id FROM party_identities WHERE id = ? AND user_id = ? LIMIT 1",
+        "SELECT id FROM party_identities WHERE id = ? AND user_id = ? AND (is_deleted = 0 OR is_deleted IS NULL) LIMIT 1",
         [parsedPid, user_id]
       );
 
@@ -307,7 +307,7 @@ dangerous_good: nestedOrderData.dangerous_good === true ||
     // ==================================================
     if (finalOrderData.warehouse_id) {
       const [warehouseRows] = await db.promise().query(
-        "SELECT id FROM warehouses WHERE id = ? AND user_id = ? LIMIT 1",
+        "SELECT id FROM warehouses WHERE id = ? AND user_id = ? AND (is_deleted = 0 OR is_deleted IS NULL) LIMIT 1",
         [Number(finalOrderData.warehouse_id), user_id]
       );
       if (!warehouseRows || warehouseRows.length === 0) {
@@ -1100,7 +1100,7 @@ const updateOrderController = async (req, res) => {
       }
 
       const [partyRows] = await db.promise().query(
-        "SELECT id FROM party_identities WHERE id = ? AND user_id = ? LIMIT 1",
+        "SELECT id FROM party_identities WHERE id = ? AND user_id = ? AND (is_deleted = 0 OR is_deleted IS NULL) LIMIT 1",
         [parsedPid, userId]
       );
 
