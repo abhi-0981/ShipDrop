@@ -75,7 +75,7 @@ export default function WeightDiscrepancyReport() {
   const [searchTerm, setSearchTerm] = useState("");
 
   // Data
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [reportData, setReportData] = useState({ summary: {}, discrepancies: [] });
 
@@ -442,14 +442,51 @@ export default function WeightDiscrepancyReport() {
               </thead>
               <tbody className="divide-y divide-slate-100 text-[12px] text-slate-700">
                 {loading ? (
-                  <tr>
-                    <td colSpan="8" className="py-14 text-center">
-                      <div className="flex flex-col items-center justify-center gap-2">
-                        <div className="h-7 w-7 border-2 border-[#008dd2] border-t-transparent rounded-full animate-spin"></div>
-                        <span className="text-[12px] font-medium text-slate-400">Loading weight discrepancy reports...</span>
-                      </div>
-                    </td>
-                  </tr>
+                  Array.from({ length: 6 }).map((_, i) => (
+                    <tr key={i} className="border-b border-slate-100 last:border-b-0" style={{ opacity: 1 - i * 0.12 }}>
+                      {/* Order ID & AWB */}
+                      <td className="py-3 px-4 space-y-1.5">
+                        <div className="h-3.5 w-24 rounded bg-slate-200 skeleton-shimmer" />
+                        <div className="h-2.5 w-28 rounded bg-slate-100 skeleton-shimmer" />
+                      </td>
+
+                      {/* Date Flagged */}
+                      <td className="py-3 px-4 space-y-1.5">
+                        <div className="h-3.5 w-20 rounded bg-slate-200 skeleton-shimmer" />
+                        <div className="h-2.5 w-14 rounded bg-slate-100 skeleton-shimmer" />
+                      </td>
+
+                      {/* Declared Wt */}
+                      <td className="py-3 px-4">
+                        <div className="h-4 w-16 rounded bg-slate-200 skeleton-shimmer" />
+                      </td>
+
+                      {/* Billed Wt */}
+                      <td className="py-3 px-4">
+                        <div className="h-4 w-16 rounded bg-slate-200 skeleton-shimmer" />
+                      </td>
+
+                      {/* Excess Wt */}
+                      <td className="py-3 px-4">
+                        <div className="h-4 w-16 rounded bg-slate-200 skeleton-shimmer" />
+                      </td>
+
+                      {/* Original (₹) */}
+                      <td className="py-3 px-4 text-right">
+                        <div className="h-4 w-14 rounded bg-slate-200 skeleton-shimmer ml-auto" />
+                      </td>
+
+                      {/* Extra Debit (₹) */}
+                      <td className="py-3 px-4 text-right">
+                        <div className="h-4 w-16 rounded bg-slate-200 skeleton-shimmer ml-auto" />
+                      </td>
+
+                      {/* Dispute Status */}
+                      <td className="py-3 px-4 text-center">
+                        <div className="h-5 w-20 rounded-full bg-slate-200 skeleton-shimmer mx-auto" />
+                      </td>
+                    </tr>
+                  ))
                 ) : currentDiscrepancies.length === 0 ? (
                   <tr>
                     <td colSpan="8" className="py-14 text-center">

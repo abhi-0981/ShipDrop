@@ -78,7 +78,7 @@ export default function ShipmentLifecycleReport() {
   const [searchTerm, setSearchTerm] = useState("");
 
   // Data
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [reportData, setReportData] = useState({ summary: {}, orders: [] });
 
@@ -451,12 +451,20 @@ export default function ShipmentLifecycleReport() {
                 <p className="text-[12px] font-medium text-slate-500 truncate">
                   Total Booked
                 </p>
-                <p className="mt-1 text-[22px] font-bold tracking-tight text-slate-800 truncate">
-                  {totalOrders}
-                </p>
-                <p className="mt-0.5 text-[11px] text-slate-400 truncate">
-                  Freight: ₹{totalShipping.toLocaleString("en-IN")}
-                </p>
+                {loading ? (
+                  <div className="mt-1.5 h-6 w-20 rounded-md bg-slate-200 skeleton-shimmer" />
+                ) : (
+                  <p className="mt-1 text-[22px] font-bold tracking-tight text-slate-800 truncate">
+                    {totalOrders}
+                  </p>
+                )}
+                {loading ? (
+                  <div className="mt-1 h-3.5 w-28 rounded bg-slate-100 skeleton-shimmer" />
+                ) : (
+                  <p className="mt-0.5 text-[11px] text-slate-400 truncate">
+                    Freight: ₹{totalShipping.toLocaleString("en-IN")}
+                  </p>
+                )}
               </div>
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-sky-50 text-[#008dd2]">
                 <HiOutlineCube className="text-lg" />
@@ -471,12 +479,20 @@ export default function ShipmentLifecycleReport() {
                 <p className="text-[12px] font-medium text-emerald-600 truncate">
                   Delivered ({deliveredPercent}%)
                 </p>
-                <p className="mt-1 text-[22px] font-bold tracking-tight text-emerald-600 truncate">
-                  {deliveredCount}
-                </p>
-                <p className="mt-0.5 text-[11px] text-slate-400 truncate">
-                  Successful delivery rate
-                </p>
+                {loading ? (
+                  <div className="mt-1.5 h-6 w-20 rounded-md bg-slate-200 skeleton-shimmer" />
+                ) : (
+                  <p className="mt-1 text-[22px] font-bold tracking-tight text-emerald-600 truncate">
+                    {deliveredCount}
+                  </p>
+                )}
+                {loading ? (
+                  <div className="mt-1 h-3.5 w-24 rounded bg-slate-100 skeleton-shimmer" />
+                ) : (
+                  <p className="mt-0.5 text-[11px] text-slate-400 truncate">
+                    Successful delivery rate
+                  </p>
+                )}
               </div>
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
                 <HiOutlineCheckCircle className="text-lg" />
@@ -491,12 +507,20 @@ export default function ShipmentLifecycleReport() {
                 <p className="text-[12px] font-medium text-rose-500 truncate">
                   RTO Returns ({rtoPercent}%)
                 </p>
-                <p className="mt-1 text-[22px] font-bold tracking-tight text-rose-600 truncate">
-                  {totalRto}
-                </p>
-                <p className="mt-0.5 text-[11px] text-slate-400 truncate">
-                  Delivered: {rtoDeliveredCount} • Transit: {rtoInTransitCount}
-                </p>
+                {loading ? (
+                  <div className="mt-1.5 h-6 w-20 rounded-md bg-slate-200 skeleton-shimmer" />
+                ) : (
+                  <p className="mt-1 text-[22px] font-bold tracking-tight text-rose-600 truncate">
+                    {totalRto}
+                  </p>
+                )}
+                {loading ? (
+                  <div className="mt-1 h-3.5 w-32 rounded bg-slate-100 skeleton-shimmer" />
+                ) : (
+                  <p className="mt-0.5 text-[11px] text-slate-400 truncate">
+                    Delivered: {rtoDeliveredCount} • Transit: {rtoInTransitCount}
+                  </p>
+                )}
               </div>
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-rose-50 text-rose-600">
                 <HiOutlineExclamationCircle className="text-lg" />
@@ -511,12 +535,20 @@ export default function ShipmentLifecycleReport() {
                 <p className="text-[12px] font-medium text-amber-600 truncate">
                   Active In-Transit
                 </p>
-                <p className="mt-1 text-[22px] font-bold tracking-tight text-slate-800 truncate">
-                  {inTransitCount}
-                </p>
-                <p className="mt-0.5 text-[11px] text-slate-400 truncate">
-                  Out for Delivery: {outForDeliveryCount}
-                </p>
+                {loading ? (
+                  <div className="mt-1.5 h-6 w-20 rounded-md bg-slate-200 skeleton-shimmer" />
+                ) : (
+                  <p className="mt-1 text-[22px] font-bold tracking-tight text-slate-800 truncate">
+                    {inTransitCount}
+                  </p>
+                )}
+                {loading ? (
+                  <div className="mt-1 h-3.5 w-28 rounded bg-slate-100 skeleton-shimmer" />
+                ) : (
+                  <p className="mt-0.5 text-[11px] text-slate-400 truncate">
+                    Out for Delivery: {outForDeliveryCount}
+                  </p>
+                )}
               </div>
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
                 <HiOutlineTruck className="text-lg" />
@@ -530,7 +562,11 @@ export default function ShipmentLifecycleReport() {
           <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-[0_1px_2px_rgba(15,23,42,0.02)] flex items-center justify-between">
             <div>
               <div className="text-[11px] font-semibold text-purple-600 uppercase tracking-wider">NDR / Pending</div>
-              <div className="text-[18px] font-bold text-slate-800 mt-0.5">{ndrPendingCount}</div>
+              {loading ? (
+                <div className="h-5 w-12 rounded bg-slate-200 skeleton-shimmer mt-1" />
+              ) : (
+                <div className="text-[18px] font-bold text-slate-800 mt-0.5">{ndrPendingCount}</div>
+              )}
             </div>
             <div className="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center text-sm font-bold">
               !
@@ -540,7 +576,11 @@ export default function ShipmentLifecycleReport() {
           <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-[0_1px_2px_rgba(15,23,42,0.02)] flex items-center justify-between">
             <div>
               <div className="text-[11px] font-semibold text-indigo-600 uppercase tracking-wider">Manifested / Pickup</div>
-              <div className="text-[18px] font-bold text-slate-800 mt-0.5">{manifestedCount}</div>
+              {loading ? (
+                <div className="h-5 w-12 rounded bg-slate-200 skeleton-shimmer mt-1" />
+              ) : (
+                <div className="text-[18px] font-bold text-slate-800 mt-0.5">{manifestedCount}</div>
+              )}
             </div>
             <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-sm font-bold">
               <HiOutlineClock />
@@ -550,7 +590,11 @@ export default function ShipmentLifecycleReport() {
           <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-[0_1px_2px_rgba(15,23,42,0.02)] flex items-center justify-between">
             <div>
               <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Cancelled Orders</div>
-              <div className="text-[18px] font-bold text-slate-800 mt-0.5">{cancelledCount}</div>
+              {loading ? (
+                <div className="h-5 w-12 rounded bg-slate-200 skeleton-shimmer mt-1" />
+              ) : (
+                <div className="text-[18px] font-bold text-slate-800 mt-0.5">{cancelledCount}</div>
+              )}
             </div>
             <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center text-sm font-bold">
               ✕
@@ -560,9 +604,13 @@ export default function ShipmentLifecycleReport() {
           <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-[0_1px_2px_rgba(15,23,42,0.02)] flex items-center justify-between">
             <div>
               <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Payment Mix</div>
-              <div className="text-[12px] font-semibold text-slate-700 mt-0.5">
-                COD: <span className="text-[#008dd2]">{summary.cod_orders_count || 0}</span> | Prepaid: <span className="text-emerald-600">{summary.prepaid_orders_count || 0}</span>
-              </div>
+              {loading ? (
+                <div className="h-4 w-32 rounded bg-slate-200 skeleton-shimmer mt-1.5" />
+              ) : (
+                <div className="text-[12px] font-semibold text-slate-700 mt-0.5">
+                  COD: <span className="text-[#008dd2]">{summary.cod_orders_count || 0}</span> | Prepaid: <span className="text-emerald-600">{summary.prepaid_orders_count || 0}</span>
+                </div>
+              )}
             </div>
             <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-sm font-bold">
               ₹
@@ -665,14 +713,48 @@ export default function ShipmentLifecycleReport() {
               </thead>
               <tbody className="divide-y divide-slate-100 text-[12px] text-slate-700">
                 {loading ? (
-                  <tr>
-                    <td colSpan="7" className="py-14 text-center">
-                      <div className="flex flex-col items-center justify-center gap-2">
-                        <div className="h-7 w-7 border-2 border-[#008dd2] border-t-transparent rounded-full animate-spin"></div>
-                        <span className="text-[12px] font-medium text-slate-400">Loading lifecycle reports...</span>
-                      </div>
-                    </td>
-                  </tr>
+                  Array.from({ length: 6 }).map((_, i) => (
+                    <tr key={i} className="border-b border-slate-100 last:border-b-0" style={{ opacity: 1 - i * 0.12 }}>
+                      {/* Order ID & AWB */}
+                      <td className="py-3 px-4 space-y-1.5">
+                        <div className="h-3.5 w-24 rounded bg-slate-200 skeleton-shimmer" />
+                        <div className="h-2.5 w-28 rounded bg-slate-100 skeleton-shimmer" />
+                      </td>
+
+                      {/* Booking Date */}
+                      <td className="py-3 px-4 space-y-1.5">
+                        <div className="h-3.5 w-20 rounded bg-slate-200 skeleton-shimmer" />
+                        <div className="h-2.5 w-14 rounded bg-slate-100 skeleton-shimmer" />
+                      </td>
+
+                      {/* Consignee & Destination */}
+                      <td className="py-3 px-4 space-y-1.5">
+                        <div className="h-3.5 w-32 rounded bg-slate-200 skeleton-shimmer" />
+                        <div className="h-2.5 w-28 rounded bg-slate-100 skeleton-shimmer" />
+                      </td>
+
+                      {/* Carrier & Mode */}
+                      <td className="py-3 px-4 space-y-1.5">
+                        <div className="h-5 w-20 rounded-md bg-slate-200 skeleton-shimmer" />
+                        <div className="h-3.5 w-12 rounded bg-slate-100 skeleton-shimmer" />
+                      </td>
+
+                      {/* Lifecycle Status */}
+                      <td className="py-3 px-4 text-center">
+                        <div className="h-6 w-24 rounded-full bg-slate-200 skeleton-shimmer mx-auto" />
+                      </td>
+
+                      {/* Weight */}
+                      <td className="py-3 px-4 text-right">
+                        <div className="h-4 w-14 rounded bg-slate-200 skeleton-shimmer ml-auto" />
+                      </td>
+
+                      {/* Freight */}
+                      <td className="py-3 px-4 text-right">
+                        <div className="h-4 w-16 rounded bg-slate-200 skeleton-shimmer ml-auto" />
+                      </td>
+                    </tr>
+                  ))
                 ) : currentOrders.length === 0 ? (
                   <tr>
                     <td colSpan="7" className="py-14 text-center">

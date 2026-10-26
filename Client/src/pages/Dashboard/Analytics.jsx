@@ -389,18 +389,26 @@ export default function Analytics() {
               <HiOutlineTruck size={15} />
             </div>
           </div>
-          <p className="mt-2 text-[20px] font-bold tracking-tight text-slate-900">
-            {formatCount(kpis.totalOrders)}
-          </p>
-          <div className="mt-1 flex items-center gap-1.5 text-[10px] font-semibold text-slate-500">
-            <span className="text-emerald-600 font-bold">
-              {kpis.deliveredOrders} Delivered
-            </span>
-            <span>•</span>
-            <span className="text-amber-600 font-bold">
-              {kpis.inTransitOrders} Active
-            </span>
-          </div>
+          {loading && !refreshing ? (
+            <div className="mt-2 h-6 w-16 rounded bg-slate-200 skeleton-shimmer" />
+          ) : (
+            <p className="mt-2 text-[20px] font-bold tracking-tight text-slate-900">
+              {formatCount(kpis.totalOrders)}
+            </p>
+          )}
+          {loading && !refreshing ? (
+            <div className="mt-1 h-3 w-28 rounded bg-slate-100 skeleton-shimmer" />
+          ) : (
+            <div className="mt-1 flex items-center gap-1.5 text-[10px] font-semibold text-slate-500">
+              <span className="text-emerald-600 font-bold">
+                {kpis.deliveredOrders} Delivered
+              </span>
+              <span>•</span>
+              <span className="text-amber-600 font-bold">
+                {kpis.inTransitOrders} Active
+              </span>
+            </div>
+          )}
         </div>
 
         {/* TOTAL FREIGHT SPENT */}
@@ -413,12 +421,20 @@ export default function Analytics() {
               <HiOutlineCash size={15} />
             </div>
           </div>
-          <p className="mt-2 text-[20px] font-bold tracking-tight text-slate-900">
-            {formatMoney(kpis.totalFreight)}
-          </p>
-          <p className="mt-1 text-[10px] font-semibold text-slate-500 truncate">
-            Avg {formatMoney(kpis.avgFreightPerOrder)} / order
-          </p>
+          {loading && !refreshing ? (
+            <div className="mt-2 h-6 w-24 rounded bg-slate-200 skeleton-shimmer" />
+          ) : (
+            <p className="mt-2 text-[20px] font-bold tracking-tight text-slate-900">
+              {formatMoney(kpis.totalFreight)}
+            </p>
+          )}
+          {loading && !refreshing ? (
+            <div className="mt-1 h-3 w-24 rounded bg-slate-100 skeleton-shimmer" />
+          ) : (
+            <p className="mt-1 text-[10px] font-semibold text-slate-500 truncate">
+              Avg {formatMoney(kpis.avgFreightPerOrder)} / order
+            </p>
+          )}
         </div>
 
         {/* DELIVERY SUCCESS RATE */}
@@ -431,9 +447,13 @@ export default function Analytics() {
               <HiOutlineCheckCircle size={15} />
             </div>
           </div>
-          <p className="mt-2 text-[20px] font-bold tracking-tight text-emerald-600">
-            {kpis.deliverySuccessRate}%
-          </p>
+          {loading && !refreshing ? (
+            <div className="mt-2 h-6 w-16 rounded bg-slate-200 skeleton-shimmer" />
+          ) : (
+            <p className="mt-2 text-[20px] font-bold tracking-tight text-emerald-600">
+              {kpis.deliverySuccessRate}%
+            </p>
+          )}
           <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
             <div
               className="h-full rounded-full bg-emerald-500 transition-all duration-500"
@@ -452,12 +472,20 @@ export default function Analytics() {
               <HiOutlineExclamationCircle size={15} />
             </div>
           </div>
-          <p className="mt-2 text-[20px] font-bold tracking-tight text-rose-600">
-            {kpis.rtoRate}%
-          </p>
-          <p className="mt-1 text-[10px] font-semibold text-slate-500">
-            {kpis.rtoOrders} Returns recorded
-          </p>
+          {loading && !refreshing ? (
+            <div className="mt-2 h-6 w-16 rounded bg-slate-200 skeleton-shimmer" />
+          ) : (
+            <p className="mt-2 text-[20px] font-bold tracking-tight text-rose-600">
+              {kpis.rtoRate}%
+            </p>
+          )}
+          {loading && !refreshing ? (
+            <div className="mt-1 h-3 w-24 rounded bg-slate-100 skeleton-shimmer" />
+          ) : (
+            <p className="mt-1 text-[10px] font-semibold text-slate-500">
+              {kpis.rtoOrders} Returns recorded
+            </p>
+          )}
         </div>
 
         {/* COD ORDERS & VALUE */}
@@ -470,12 +498,20 @@ export default function Analytics() {
               <HiOutlineCash size={15} />
             </div>
           </div>
-          <p className="mt-2 text-[20px] font-bold tracking-tight text-violet-700 truncate">
-            {formatMoney(kpis.codTotalValue)}
-          </p>
-          <p className="mt-1 text-[10px] font-semibold text-slate-500">
-            {kpis.codOrders} COD / {kpis.prepaidOrders} Prepaid
-          </p>
+          {loading && !refreshing ? (
+            <div className="mt-2 h-6 w-24 rounded bg-slate-200 skeleton-shimmer" />
+          ) : (
+            <p className="mt-2 text-[20px] font-bold tracking-tight text-violet-700 truncate">
+              {formatMoney(kpis.codTotalValue)}
+            </p>
+          )}
+          {loading && !refreshing ? (
+            <div className="mt-1 h-3 w-28 rounded bg-slate-100 skeleton-shimmer" />
+          ) : (
+            <p className="mt-1 text-[10px] font-semibold text-slate-500">
+              {kpis.codOrders} COD / {kpis.prepaidOrders} Prepaid
+            </p>
+          )}
         </div>
 
         {/* LIVE IN-TRANSIT PIPELINE */}
@@ -488,12 +524,20 @@ export default function Analytics() {
               <HiOutlineClock size={15} />
             </div>
           </div>
-          <p className="mt-2 text-[20px] font-bold tracking-tight text-indigo-600">
-            {kpis.inTransitOrders}
-          </p>
-          <p className="mt-1 text-[10px] font-semibold text-slate-500">
-            {kpis.pendingOrders} NDR / Pending
-          </p>
+          {loading && !refreshing ? (
+            <div className="mt-2 h-6 w-16 rounded bg-slate-200 skeleton-shimmer" />
+          ) : (
+            <p className="mt-2 text-[20px] font-bold tracking-tight text-indigo-600">
+              {kpis.inTransitOrders}
+            </p>
+          )}
+          {loading && !refreshing ? (
+            <div className="mt-1 h-3 w-24 rounded bg-slate-100 skeleton-shimmer" />
+          ) : (
+            <p className="mt-1 text-[10px] font-semibold text-slate-500">
+              {kpis.pendingOrders} NDR / Pending
+            </p>
+          )}
         </div>
       </div>
 
