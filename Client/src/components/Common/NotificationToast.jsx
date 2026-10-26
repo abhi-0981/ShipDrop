@@ -5,7 +5,13 @@ import { HiX, HiArrowRight } from "react-icons/hi";
  * Modern Harmonic Sound Chime via Web Audio API
  * Plays a pleasant, gentle 2-tone chime without external audio files / 404 risk.
  */
+let lastChimeTime = 0;
+
 export const playNotificationChime = () => {
+  const now = Date.now();
+  if (now - lastChimeTime < 150) return;
+  lastChimeTime = now;
+
   try {
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     if (!AudioContext) return;
@@ -247,7 +253,7 @@ export default function NotificationToast({
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onClick={handleClickOpen}
-      className={`fixed top-18 right-4 sm:right-6 z-[99999] w-[calc(100vw-2rem)] sm:w-[380px] md:w-[410px] cursor-pointer select-none transition-all duration-300 ease-out transform ${
+      className={`w-full cursor-pointer select-none transition-all duration-300 ease-out transform ${
         isClosing
           ? "opacity-0 translate-x-8 scale-95"
           : "opacity-100 translate-x-0 scale-100"
