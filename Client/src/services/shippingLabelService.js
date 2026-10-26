@@ -940,7 +940,7 @@ const build3x2LabelHtml = (
           <div>
             <span>PAYMENT</span>
             <b>${payment}</b>
-            <div style="padding-top: 1px;"></div>
+            <div style="height: 1mm; padding-top: 1px;"></div>
           </div>
 
           ${
@@ -949,7 +949,7 @@ const build3x2LabelHtml = (
                 <div>
                   <span>ORDER ID</span>
                   <b>${esc(getOrderId(order))}</b>
-                  <div style="padding-top: 1px;"></div>
+                  <div style="height: 1mm; padding-top: 1px;"></div>
                 </div>
               `
               : ""
@@ -958,7 +958,7 @@ const build3x2LabelHtml = (
           <div>
             <span>SERVICE</span>
             <b>${getServiceType(order)}</b>
-            <div style="padding-top: 1px;"></div>
+            <div style="height: 1mm; padding-top: 1px;"></div>
           </div>
 
           ${
@@ -967,7 +967,7 @@ const build3x2LabelHtml = (
                 <div>
                   <span>WEIGHT</span>
                   <b>${getWeight(order).toFixed(2)} KG</b>
-                  <div style="padding-top: 1px;"></div>
+                  <div style="height: 1mm; padding-top: 1px;"></div>
                 </div>
               `
               : ""
@@ -1299,10 +1299,22 @@ const buildLabelHtml = (
         .map(
           (product) => `
             <tr>
-              <td class="product-name">${esc(product.name)}<div style="padding-top: 1px;"></div></td>
-              <td>${product.rate.toFixed(2)}<div style="padding-top: 1px;"></div></td>
-              <td>${product.qty}<div style="padding-top: 1px;"></div></td>
-              <td>${product.total.toFixed(2)}<div style="padding-top: 1px;"></div></td>
+              <td class="product-name">
+                <div>${esc(product.name)}</div>
+                <div style="height: 1.5mm; padding-top: 1px;"></div>
+              </td>
+              <td>
+                <div>${product.rate.toFixed(2)}</div>
+                <div style="height: 1.5mm; padding-top: 1px;"></div>
+              </td>
+              <td>
+                <div>${product.qty}</div>
+                <div style="height: 1.5mm; padding-top: 1px;"></div>
+              </td>
+              <td>
+                <div>${product.total.toFixed(2)}</div>
+                <div style="height: 1.5mm; padding-top: 1px;"></div>
+              </td>
             </tr>
           `
         )
@@ -1408,7 +1420,7 @@ const buildLabelHtml = (
   <div>
     <span>PAYMENT</span>
     <b>${payment}</b>
-    <div style="padding-top: 1px;"></div>
+    <div style="height: 1.5mm; padding-top: 1px;"></div>
   </div>
 
   ${
@@ -1417,7 +1429,7 @@ const buildLabelHtml = (
         <div>
           <span>ORDER ID</span>
           <b>${esc(getOrderId(order))}</b>
-          <div style="padding-top: 1px;"></div>
+          <div style="height: 1.5mm; padding-top: 1px;"></div>
         </div>
       `
       : ""
@@ -1426,7 +1438,7 @@ const buildLabelHtml = (
   <div>
     <span>SERVICE</span>
     <b>${getServiceType(order)}</b>
-    <div style="padding-top: 1px;"></div>
+    <div style="height: 1.5mm; padding-top: 1px;"></div>
   </div>
 
   ${
@@ -1435,7 +1447,7 @@ const buildLabelHtml = (
         <div>
           <span>WEIGHT</span>
           <b>${getWeight(order).toFixed(2)} KG</b>
-          <div style="padding-top: 1px;"></div>
+          <div style="height: 1.5mm; padding-top: 1px;"></div>
         </div>
       `
       : ""
@@ -1470,7 +1482,7 @@ const buildLabelHtml = (
 
     <tbody>${productRows}</tbody>
   </table>
-  <div style="padding-top: 1px;"></div>
+  <div style="height: 1.5mm; padding-top: 1px;"></div>
 </section>
             `
             : ""
@@ -1698,6 +1710,7 @@ const buildLabelHtml = (
       .summary > div {
         min-width: 0;
         padding: ${compact ? "1mm" : isA4 ? "3mm" : "2mm"};
+        padding-bottom: ${compact ? "1.5mm" : "2.5mm"};
         overflow-wrap: anywhere;
       }
 
@@ -1719,6 +1732,7 @@ const buildLabelHtml = (
         display: block;
         font-size: ${compact ? "5.5pt" : isA4 ? "13pt" : "8.5pt"};
         font-weight: 600;
+        line-height: 1.2;
       }
 
       .order-info {
@@ -1786,10 +1800,13 @@ td {
   width: 25%;
   border: 1px solid #9ca3af;
   padding: ${compact ? "1mm" : "1.5mm"};
+  padding-bottom: ${compact ? "1.5mm" : "2.5mm"};
+  vertical-align: middle;
   text-align: center;
   overflow-wrap: anywhere;
-font-size: ${compact ? "5.5pt" : isA4 ? "13pt" : "8.5pt"};
+  font-size: ${compact ? "5.5pt" : isA4 ? "13pt" : "8.5pt"};
   font-weight: 600;
+  line-height: 1.2;
 }
 
       th {
