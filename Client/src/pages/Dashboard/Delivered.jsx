@@ -1059,11 +1059,7 @@ function Delivered() {
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <div
-                className="flex h-10 w-10 items-center justify-center rounded-lg"
-                style={{
-                  background: "#edf8ff",
-                  color: PRIMARY,
-                }}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-50 dark:bg-sky-500/10 text-[#008dd2] dark:text-[#38bdf8] border border-sky-100 dark:border-sky-500/20 shadow-2xs"
               >
                 <Icon name="box" size={20} />
               </div>

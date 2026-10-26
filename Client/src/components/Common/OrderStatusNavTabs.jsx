@@ -232,7 +232,7 @@ function OrderStatusNavTabs({ className = "" }) {
               className={`inline-flex shrink-0 items-center justify-center rounded-full px-3 py-1.5 sm:px-3.5 sm:py-1.5 text-[12px] sm:text-[12.5px] transition-all duration-150 active:scale-95 ${
                 isActive
                   ? "bg-[#008dd2] text-white shadow-sm font-semibold border border-[#008dd2]"
-                  : "bg-white dark:bg-[#121620] text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-[#171b26] border border-slate-200/90 dark:border-[#1f2535] font-medium shadow-[0_1px_2px_rgba(15,23,42,0.02)]"
+                  : "bg-slate-100/90 dark:bg-[#121620] text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/80 dark:hover:bg-[#171b26] border border-slate-200/80 dark:border-[#1f2535] font-medium shadow-[0_1px_2px_rgba(15,23,42,0.02)]"
               }`}
             >
               <span>{tab.name}</span>

@@ -530,6 +530,27 @@ html.dark .text-teal-700 {
   color: #2dd4bf !important;
 }
 
+/* Header Page Title Box Icons (#edf8ff & #fff1f2) */
+html.dark .bg-\[\#edf8ff\],
+html.dark [style*="#edf8ff"],
+html.dark [style*="rgb(237, 248, 255)"],
+html.dark [style*="background: #edf8ff"],
+html.dark [style*="background:#edf8ff"] {
+  background: rgba(14, 165, 233, 0.12) !important;
+  color: #38bdf8 !important;
+  border: 1px solid rgba(14, 165, 233, 0.25) !important;
+}
+
+html.dark .bg-\[\#fff1f2\],
+html.dark [style*="#fff1f2"],
+html.dark [style*="rgb(255, 241, 242)"],
+html.dark [style*="background: #fff1f2"],
+html.dark [style*="background:#fff1f2"] {
+  background: rgba(244, 63, 94, 0.12) !important;
+  color: #fb7185 !important;
+  border: 1px solid rgba(244, 63, 94, 0.25) !important;
+}
+
 /* Inputs, Textareas, Selects & Form Controls */
 html.dark input:not([type="checkbox"]):not([type="radio"]),
 html.dark select,
