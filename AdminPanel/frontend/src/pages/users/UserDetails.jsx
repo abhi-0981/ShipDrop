@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, Link } from "react-router-dom";
 import {
   HiOutlineArrowLeft,
   HiOutlineUserCircle,
@@ -17,6 +17,8 @@ import {
   HiOutlineExclamation,
   HiOutlineExternalLink,
   HiOutlineCheckCircle,
+  HiOutlineLocationMarker,
+  HiOutlineIdentification,
 } from "react-icons/hi";
 import toast from "react-hot-toast";
 import { API_BASE_URL } from "../../config/api";
@@ -539,6 +541,31 @@ function UserDetails() {
                   {user.rate_card_name || "Default / Unassigned"}
                 </span>
               </div>
+            </div>
+
+            {/* QUICK SHORTCUTS TO USER'S PICKUP HUBS & PARTIES */}
+            <div className="pt-3 border-t border-slate-100 flex flex-col gap-2">
+              <Link
+                to={`/pickup-addresses?user_id=${user.id}`}
+                className="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-50 hover:bg-sky-50 text-slate-700 hover:text-[#008dd2] border border-slate-200/80 transition text-xs font-semibold group/link"
+              >
+                <div className="flex items-center gap-2">
+                  <HiOutlineLocationMarker size={15} className="text-[#008dd2]" />
+                  <span>Pickup Locations</span>
+                </div>
+                <HiOutlineExternalLink size={13} className="text-slate-400 group-hover/link:text-[#008dd2]" />
+              </Link>
+
+              <Link
+                to={`/parties?user_id=${user.id}`}
+                className="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-50 hover:bg-purple-50 text-slate-700 hover:text-purple-600 border border-slate-200/80 transition text-xs font-semibold group/link"
+              >
+                <div className="flex items-center gap-2">
+                  <HiOutlineIdentification size={15} className="text-purple-600" />
+                  <span>Parties Info</span>
+                </div>
+                <HiOutlineExternalLink size={13} className="text-slate-400 group-hover/link:text-purple-600" />
+              </Link>
             </div>
           </div>
         </div>

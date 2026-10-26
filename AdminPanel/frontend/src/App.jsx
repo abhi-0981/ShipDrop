@@ -34,6 +34,10 @@ import WeightChecking from "./pages/weightcheck/WeightChecking";
 
 import Announcements from "./pages/announcements/Announcements";
 
+import PickupAddresses from "./pages/pickup/PickupAddresses";
+
+import PartyIdentities from "./pages/parties/PartyIdentities";
+
 
 // =====================================================
 // PROTECTED ROUTE
@@ -228,6 +232,35 @@ function App() {
           element={
             <AdminPage>
               <Announcements />
+            </AdminPage>
+          }
+        />
+
+        {/* PICKUP ADDRESSES (ALL MERCHANTS) */}
+        <Route
+          path="/pickup-addresses"
+          element={
+            <AdminPage>
+              <PickupAddresses />
+            </AdminPage>
+          }
+        />
+
+        {/* PARTY IDENTITIES (ALL MERCHANTS) */}
+        <Route
+          path="/parties"
+          element={
+            <AdminPage>
+              <PartyIdentities />
+            </AdminPage>
+          }
+        />
+
+        <Route
+          path="/party-identities"
+          element={
+            <AdminPage>
+              <PartyIdentities />
             </AdminPage>
           }
         />

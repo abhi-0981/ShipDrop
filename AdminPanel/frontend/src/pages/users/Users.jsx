@@ -17,6 +17,8 @@ import {
   HiOutlineExclamation,
   HiOutlineExternalLink,
   HiOutlineCheckCircle,
+  HiOutlineLocationMarker,
+  HiOutlineIdentification,
 } from "react-icons/hi";
 import toast from "react-hot-toast";
 import { API_BASE_URL } from "../../config/api";
@@ -364,6 +366,28 @@ function Users() {
                           type="button"
                           onClick={() => {
                             setOpenMenuId(null);
+                            navigate(`/pickup-addresses?user_id=${user.id}`);
+                          }}
+                          className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-[#008dd2]"
+                        >
+                          <HiOutlineLocationMarker size={15} className="text-slate-400" />
+                          Pickup Locations
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setOpenMenuId(null);
+                            navigate(`/parties?user_id=${user.id}`);
+                          }}
+                          className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-[#008dd2]"
+                        >
+                          <HiOutlineIdentification size={15} className="text-slate-400" />
+                          Parties Info
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setOpenMenuId(null);
                             handleOpenImpersonateModal(user);
                           }}
                           className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-[#008dd2] hover:bg-[#008dd2]/10"
@@ -553,6 +577,30 @@ function Users() {
                             >
                               <HiOutlineEye size={15} className="text-slate-400" />
                               View Profile
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setOpenMenuId(null);
+                                navigate(`/pickup-addresses?user_id=${user.id}`);
+                              }}
+                              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-[#008dd2]"
+                            >
+                              <HiOutlineLocationMarker size={15} className="text-slate-400" />
+                              Pickup Locations
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setOpenMenuId(null);
+                                navigate(`/parties?user_id=${user.id}`);
+                              }}
+                              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-[#008dd2]"
+                            >
+                              <HiOutlineIdentification size={15} className="text-slate-400" />
+                              Parties Info
                             </button>
 
                             <button

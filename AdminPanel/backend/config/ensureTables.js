@@ -121,7 +121,24 @@ async function ensureTables() {
       console.warn("Notice checking target_user_ids column:", colErr.message);
     }
 
-    console.log("AdminPanel: Impersonation audit, tickets, and announcements tables verified successfully.");
+    // 7. Ensure party_identities table exists
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS party_identities (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        name VARCHAR(150) NOT NULL,
+        reference_name VARCHAR(150) NULL,
+        company_name VARCHAR(255) NULL,
+        gst_no VARCHAR(50) NULL,
+        phone_no VARCHAR(25) NULL,
+        address TEXT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_party_identities_user_id (user_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
+    console.log("AdminPanel: Impersonation audit, tickets, announcements, and party tables verified successfully.");
   } catch (error) {
     console.warn("AdminPanel ensureTables notice:", error.message);
   }

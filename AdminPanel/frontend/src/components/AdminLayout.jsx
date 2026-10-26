@@ -12,6 +12,8 @@ import {
   HiOutlineCurrencyRupee,
   HiOutlinePresentationChartLine,
   HiOutlineSpeakerphone,
+  HiOutlineLocationMarker,
+  HiOutlineIdentification,
   HiOutlineX,
   HiX,
 } from "react-icons/hi";
@@ -120,6 +122,16 @@ function AdminLayout({ children }) {
         path: "/announcements",
         icon: HiOutlineSpeakerphone,
       },
+      {
+        name: "Pickup Addresses",
+        path: "/pickup-addresses",
+        icon: HiOutlineLocationMarker,
+      },
+      {
+        name: "Parties Info",
+        path: "/parties",
+        icon: HiOutlineIdentification,
+      },
     ],
     []
   );
@@ -129,6 +141,10 @@ function AdminLayout({ children }) {
       ...menuItems,
       { name: "Users", path: "/users", icon: HiOutlineUsers },
       { name: "All Users", path: "/users", icon: HiOutlineUsers },
+      { name: "Pickup Addresses", path: "/pickup-addresses", icon: HiOutlineLocationMarker },
+      { name: "Pickup Locations", path: "/pickup-addresses", icon: HiOutlineLocationMarker },
+      { name: "Parties Information", path: "/parties", icon: HiOutlineIdentification },
+      { name: "Party Identities", path: "/parties", icon: HiOutlineIdentification },
     ],
     [menuItems]
   );
@@ -142,10 +158,18 @@ function AdminLayout({ children }) {
   }, [sidebarSearch, allSearchableItems]);
 
   const activeClass = (path) => {
-    const isMatch =
-      path === "/orders"
-        ? location.pathname === "/orders" || location.pathname.startsWith("/orders/")
-        : location.pathname === path;
+    let isMatch = location.pathname === path;
+    if (path === "/orders") {
+      isMatch =
+        location.pathname === "/orders" ||
+        location.pathname.startsWith("/orders/");
+    } else if (path === "/parties") {
+      isMatch =
+        location.pathname === "/parties" ||
+        location.pathname.startsWith("/party-identities");
+    } else if (path === "/pickup-addresses") {
+      isMatch = location.pathname.startsWith("/pickup-addresses");
+    }
     return isMatch
       ? "bg-[#008dd2] text-white shadow-sm font-medium"
       : "text-slate-600 hover:bg-slate-100 active:scale-[0.98]";
@@ -540,6 +564,34 @@ function AdminLayout({ children }) {
                     }`}
                   >
                     All Users
+                  </Link>
+
+                  <Link
+                    to="/pickup-addresses"
+                    onClick={() => {
+                      if (window.innerWidth < 1024) setCollapsed(true);
+                    }}
+                    className={`flex items-center rounded-lg px-3 py-2 text-[13px] transition ${
+                      location.pathname === "/pickup-addresses"
+                        ? "bg-sky-50 text-[#008dd2] font-semibold"
+                        : "text-slate-600 hover:bg-slate-100 hover:text-[#008dd2]"
+                    }`}
+                  >
+                    Pickup Addresses
+                  </Link>
+
+                  <Link
+                    to="/parties"
+                    onClick={() => {
+                      if (window.innerWidth < 1024) setCollapsed(true);
+                    }}
+                    className={`flex items-center rounded-lg px-3 py-2 text-[13px] transition ${
+                      location.pathname === "/parties" || location.pathname === "/party-identities"
+                        ? "bg-sky-50 text-[#008dd2] font-semibold"
+                        : "text-slate-600 hover:bg-slate-100 hover:text-[#008dd2]"
+                    }`}
+                  >
+                    Parties Info
                   </Link>
                 </div>
               </div>
