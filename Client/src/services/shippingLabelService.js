@@ -1201,11 +1201,11 @@ const build3x2LabelHtml = (
 
       .label-3x2 .mini-seller b {
         display: block;
-        font-size: 5pt;
+        font-size: 5.4pt;
         font-weight: 600;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        white-space: normal;
+        overflow-wrap: break-word;
+        word-break: break-word;
       }
     </style>
   `;
@@ -1717,13 +1717,20 @@ const buildLabelHtml = (
       }
 
       .summary span,
-      .info-cell span,
+      .info-cell span {
+        display: block;
+        font-size: ${compact ? "4.3pt" : isA4 ? "8pt" : "5.8pt"};
+        font-weight: 600;
+        line-height: 1;
+        margin-bottom: 0.5mm;
+      }
+
       .seller span {
-          display: block;
-  font-size: ${compact ? "4.3pt" : isA4 ? "8pt" : "5.8pt"};
-  font-weight: 600;
-  line-height: 1;
-  margin-bottom: 0.5mm;
+        display: block;
+        font-size: ${compact ? "4.8pt" : isA4 ? "8.8pt" : "6.6pt"};
+        font-weight: 600;
+        line-height: 1;
+        margin-bottom: 0.5mm;
       }
 
       .summary b {
@@ -1844,14 +1851,14 @@ td:first-child {
 
 .seller b {
   display: block;
-  font-size: ${compact ? "4.8pt" : isA4 ? "9.5pt" : "6pt"};
+  font-size: ${compact ? "5.4pt" : isA4 ? "10.5pt" : "7.2pt"};
   font-weight: 600;
-  line-height: 1.2;
+  line-height: 1.25;
   margin-top: 0.8mm;
 
-  white-space: nowrap;
-  overflow: visible;
-  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-break: break-word;
 
   height: auto;
   min-height: 0;
