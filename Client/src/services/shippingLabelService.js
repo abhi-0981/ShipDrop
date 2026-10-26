@@ -1152,9 +1152,11 @@ const build3x2LabelHtml = (
 
       .label-3x2 .mini-summary > div {
         min-width: 0;
-          padding: 0.7mm;
-
+        padding: 0.8mm 0.7mm;
         overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
       }
 
       .label-3x2 .mini-summary > div + div {
@@ -1166,13 +1168,15 @@ const build3x2LabelHtml = (
         display: block;
         font-size: 4.5pt;
         font-weight: 700;
-        margin-bottom: 0.4mm;
+        margin-bottom: 0.3mm;
+        line-height: 1.1;
       }
 
       .label-3x2 .mini-summary b {
         display: block;
         font-size: 6.2pt;
         font-weight: 700;
+        line-height: 1.1;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -1187,8 +1191,11 @@ const build3x2LabelHtml = (
 
       .label-3x2 .mini-seller > div {
         min-width: 0;
-  padding: 0.6mm 0.7mm;
+        padding: 0.8mm 0.7mm;
         overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
       }
 
       .label-3x2 .mini-seller > div + div {
@@ -1199,6 +1206,7 @@ const build3x2LabelHtml = (
         display: block;
         font-size: 5pt;
         font-weight: 600;
+        line-height: 1.1;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -1357,8 +1365,6 @@ const buildLabelHtml = (
                       ? `<div class="phone">☎ ${esc(fromMobileValue)}</div>`
                       : ""
                   }
-                          <div style="height: 1mm;"></div>
-
                 </div>
               `
               : ""
@@ -1383,8 +1389,7 @@ const buildLabelHtml = (
         <!-- AWB AND BARCODE -->
 
         <section class="awb">
-          <div class="eyebrow">AWB NUMBER - ${esc(awb)}</div>
-          <div class="awb-number"> </div>
+          <div class="awb-title">AWB NUMBER - ${esc(awb)}</div>
           <div class="barcode">${createBarcode(awb, compact)}</div>
         </section>
 
@@ -1603,8 +1608,9 @@ const buildLabelHtml = (
 
       .address-block {
         min-width: 0;
-        padding: ${compact ? "0.5mm" : isA4 ? "3mm" : "1mm"};
+        padding: ${compact ? "0.8mm" : isA4 ? "3mm" : "1.8mm 2mm"};
         overflow-wrap: anywhere;
+        box-sizing: border-box;
       }
 
       .address-block + .address-block {
@@ -1617,55 +1623,63 @@ const buildLabelHtml = (
       }
 
       .eyebrow {
-        font-size: ${compact ? "4.5pt" : isA4 ? "9pt" : "9pt"};
-        font-weight: 600;
+        font-size: ${compact ? "4.5pt" : isA4 ? "8.5pt" : "6.5pt"};
+        font-weight: 700;
         letter-spacing: .2px;
         color: #374151;
+        line-height: 1.1;
+        margin-bottom: 0.8mm;
       }
 
-     .person {
-  display: block;
-  font-size: ${compact ? "5.5pt" : isA4 ? "13pt" : "8.5pt"};
-  line-height: 1.2;
-  margin-top: 1mm;
-  font-weight: 600;
-  overflow-wrap: anywhere;
-}
-
-     .address {
-  font-size: ${compact ? "4.8pt" : isA4 ? "10pt" : "8pt"};
-  line-height: 1.35;
-  margin-top: 1mm;
-  overflow-wrap: anywhere;
-  font-weight: 400;
-}
-
-      .phone {
-        font-size: ${compact ? "4.8pt" : isA4 ? "9pt" : "6.5pt"};
-        font-weight: 600;
-        margin-top: 1mm;
+      .person {
+        display: block;
+        font-size: ${compact ? "5.5pt" : isA4 ? "12pt" : "8.5pt"};
+        line-height: 1.2;
+        margin-bottom: 0.8mm;
+        font-weight: 700;
         overflow-wrap: anywhere;
       }
 
-    .awb {
-  flex: 0 0 auto;
-  text-align: center;
-  padding: ${compact ? "1.5mm" : isA4 ? "5mm" : "3mm"};
-  border-bottom: 1px solid #111827;
-}
+      .address {
+        font-size: ${compact ? "4.8pt" : isA4 ? "10pt" : "7.2pt"};
+        line-height: 1.3;
+        margin-bottom: 0.8mm;
+        overflow-wrap: anywhere;
+        font-weight: 400;
+      }
 
-    .awb-number {
-  font-size: ${compact ? "7pt" : isA4 ? "17pt" : "15pt"};
-  font-weight: 700;
-  letter-spacing: .4px;
-  margin: 1mm 0 2mm;
-  overflow-wrap: anywhere;
-}
+      .phone {
+        font-size: ${compact ? "4.8pt" : isA4 ? "9pt" : "6.8pt"};
+        font-weight: 600;
+        line-height: 1.2;
+        margin-top: 0.4mm;
+        overflow-wrap: anywhere;
+      }
+
+      .awb {
+        flex: 0 0 auto;
+        text-align: center;
+        padding: ${compact ? "1mm" : isA4 ? "3.5mm 3mm" : "2mm 2mm 2.5mm"};
+        border-bottom: 1px solid #111827;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .awb-title {
+        font-size: ${compact ? "5.5pt" : isA4 ? "12pt" : "8.5pt"};
+        font-weight: 700;
+        letter-spacing: .4px;
+        margin-bottom: 1.2mm;
+        line-height: 1.1;
+        overflow-wrap: anywhere;
+      }
 
       .barcode svg {
         display: block;
-        max-width: 100%;
-       max-height: ${compact ? "4mm" : isA4 ? "14mm" : "12mm"};
+        max-width: 95%;
+        max-height: ${compact ? "4mm" : isA4 ? "14mm" : "11mm"};
         height: auto;
         margin: 0 auto;
       }
@@ -1690,8 +1704,12 @@ const buildLabelHtml = (
 
       .summary > div {
         min-width: 0;
-        padding: ${compact ? "1mm" : isA4 ? "3mm" : "2mm"};
+        padding: ${compact ? "0.8mm 1mm" : isA4 ? "2.5mm 3mm" : "1.8mm 2mm"};
         overflow-wrap: anywhere;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
       }
 
       .summary > div + div {
@@ -1701,17 +1719,21 @@ const buildLabelHtml = (
       .summary span,
       .info-cell span,
       .seller span {
-          display: block;
-  font-size: ${compact ? "4.3pt" : isA4 ? "8pt" : "5.8pt"};
-  font-weight: 600;
-  line-height: 1;
-  margin-bottom: 0.5mm;
+        display: block;
+        font-size: ${compact ? "4.3pt" : isA4 ? "8pt" : "5.8pt"};
+        font-weight: 600;
+        line-height: 1.1;
+        margin-bottom: 0.6mm;
+        color: #374151;
       }
 
       .summary b {
         display: block;
-        font-size: ${compact ? "5.5pt" : isA4 ? "13pt" : "8.5pt"};
-        font-weight: 600;
+        font-size: ${compact ? "5.5pt" : isA4 ? "12pt" : "8.2pt"};
+        font-weight: 700;
+        line-height: 1.1;
+        margin: 0;
+        color: #111827;
       }
 
       .order-info {
@@ -1722,8 +1744,12 @@ const buildLabelHtml = (
 
       .info-cell {
         min-width: 0;
-        padding: ${compact ? "1mm" : "2mm"};
+        padding: ${compact ? "0.8mm 1mm" : "1.8mm 2mm"};
         overflow-wrap: anywhere;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
       }
 
       .info-cell + .info-cell {
@@ -1733,6 +1759,8 @@ const buildLabelHtml = (
       .info-cell b {
         display: block;
         font-size: ${compact ? "5pt" : "7.5pt"};
+        line-height: 1.1;
+        margin: 0;
       }
 
       .cod {
@@ -1741,16 +1769,19 @@ const buildLabelHtml = (
         align-items: center;
         justify-content: space-between;
         gap: 2mm;
-        padding: ${compact ? "1mm" : "2mm"};
+        padding: ${compact ? "1mm 1.5mm" : "1.8mm 2mm"};
         border-bottom: 1px solid #111827;
+        box-sizing: border-box;
       }
 
       .cod b {
         font-size: ${compact ? "5pt" : "7.5pt"};
+        line-height: 1.2;
       }
 
       .cod strong {
         font-size: ${compact ? "5.5pt" : "9pt"};
+        line-height: 1.2;
       }
 .products {
   flex: 0 0 auto;
@@ -1774,90 +1805,102 @@ table {
   font-size: ${compact ? "4.5pt" : isA4 ? "9pt" : "6.5pt"};
 }
 
-th,
-td {
-  width: 25%;
-  border: 1px solid #9ca3af;
-  padding: ${compact ? "1mm" : "1.5mm"};
-  text-align: center;
-  overflow-wrap: anywhere;
-font-size: ${compact ? "5.5pt" : isA4 ? "13pt" : "8.5pt"};
-  font-weight: 600;
-}
-
-      th {
+      th,
+      td {
+        width: 25%;
+        border: 1px solid #9ca3af;
+        padding: ${compact ? "0.8mm 1mm" : isA4 ? "2.5mm 2mm" : "1.8mm 1.5mm"};
+        text-align: center;
+        vertical-align: middle;
+        line-height: 1.15;
+        overflow-wrap: anywhere;
+        font-size: ${compact ? "5.5pt" : isA4 ? "12pt" : "8pt"};
         font-weight: 600;
-        background: #f3f4f6;
+        box-sizing: border-box;
       }
 
-     th:first-child,
-td:first-child {
-  text-align: left;
-  width: 25%;
-}
-.seller {
-  flex: 0 0 auto;
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr 1fr;
-  border-bottom: 1px solid #111827;
-  min-height: 10mm;
-  align-items: start;
-}
+      th {
+        font-weight: 700;
+        background: #f3f4f6;
+        color: #374151;
+        font-size: ${compact ? "4.5pt" : isA4 ? "9pt" : "6.5pt"};
+        padding: ${compact ? "0.8mm 1mm" : isA4 ? "2mm 2mm" : "1.5mm 1.5mm"};
+      }
 
-.seller > div {
-  min-width: 0;
-  padding: ${compact ? "1mm" : "1.2mm"} ${compact ? "1mm" : "1.5mm"};
-  overflow-wrap: anywhere;
-  min-height: ${compact ? "7mm" : "9mm"};
-  box-sizing: border-box;
-}
+      th:first-child,
+      td:first-child {
+        text-align: left;
+        width: 25%;
+      }
 
+      .seller {
+        flex: 0 0 auto;
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr 1fr;
+        border-bottom: 1px solid #111827;
+      }
+
+      .seller > div {
+        min-width: 0;
+        padding: ${compact ? "0.8mm 1mm" : isA4 ? "2.5mm 3mm" : "1.8mm 2mm"};
+        overflow-wrap: anywhere;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
 
       .seller > div + div {
         border-left: 1px solid #9ca3af;
       }
 
-.seller b {
-  display: block;
-  font-size: ${compact ? "4.8pt" : isA4 ? "9.5pt" : "6pt"};
-  font-weight: 600;
-  line-height: 1.2;
-  margin-top: 0.8mm;
+      .seller span {
+        display: block;
+        font-size: ${compact ? "4.3pt" : isA4 ? "8pt" : "5.8pt"};
+        font-weight: 600;
+        line-height: 1.1;
+        margin-bottom: 0.6mm;
+        color: #374151;
+      }
 
-  white-space: nowrap;
-  overflow: visible;
-  text-overflow: clip;
+      .seller b {
+        display: block;
+        font-size: ${compact ? "4.8pt" : isA4 ? "9.5pt" : "6.2pt"};
+        font-weight: 600;
+        line-height: 1.15;
+        margin: 0;
+        color: #111827;
+        white-space: nowrap;
+        overflow: visible;
+        text-overflow: clip;
+      }
 
-  height: auto;
-  min-height: 0;
-}
+      .return {
+        margin-top: auto;
+        padding: ${compact ? "1mm" : isA4 ? "2.5mm" : "1.8mm 2mm"};
+        border-top: none;
+        border-bottom: 1px solid #111827;
+        font-size: ${compact ? "5.5pt" : isA4 ? "11pt" : "7.5pt"};
+        line-height: 1.25;
+        overflow-wrap: anywhere;
+      }
 
-.return {
-  margin-top: auto;
-  padding: ${compact ? "1mm" : isA4 ? "2.5mm" : "1.5mm"};
-  border-top: none;
-  border-bottom: 1px solid #111827;
-  font-size: ${compact ? "5.5pt" : isA4 ? "11pt" : "8pt"};
-  line-height: 1.2;
-  overflow-wrap: anywhere;
-}
+      .return b {
+        display: block;
+        font-size: ${compact ? "5.5pt" : isA4 ? "11pt" : "7.5pt"};
+        font-weight: 700;
+        margin-bottom: 0.8mm;
+      }
 
-     .return b {
-  display: block;
-  font-size: ${compact ? "5.5pt" : isA4 ? "11pt" : "8pt"};
-  font-weight: 600;
-  margin-bottom: 1mm;
-}
-
-.contact {
-  flex: 0 0 auto;
-  margin-top: 0;
-  padding: ${compact ? "1mm" : isA4 ? "2.5mm" : "1.5mm"};
-  font-size: ${compact ? "5.5pt" : isA4 ? "10pt" : "8pt"};
-  line-height: 1.15;
-  text-align: center;
-  font-weight: 600;
-}
+      .contact {
+        flex: 0 0 auto;
+        margin-top: 0;
+        padding: ${compact ? "1mm" : isA4 ? "2.5mm" : "1.8mm 1.5mm"};
+        font-size: ${compact ? "5.5pt" : isA4 ? "10pt" : "7.5pt"};
+        line-height: 1.2;
+        text-align: center;
+        font-weight: 600;
+      }
     </style>
   `;
 };
@@ -1896,9 +1939,10 @@ export const generateShippingLabelsPdf = async (orders) => {
   } = prepareLabels(orders);
 
   // Use a completely isolated off-screen iframe so zero CSS leaks into the parent dashboard
+  const totalHeightIn = (size.heightIn * detailedOrders.length) + 1;
   const iframe = document.createElement("iframe");
   iframe.style.cssText =
-    `position:fixed;top:0;left:-10000px;width:${size.widthIn}in;height:1200px;border:none;opacity:1;pointer-events:none;z-index:-99999;`;
+    `position:fixed;top:0;left:-10000px;width:${size.widthIn}in;height:${totalHeightIn}in;border:none;opacity:1;pointer-events:none;z-index:-99999;`;
   document.body.appendChild(iframe);
 
   try {
@@ -1947,8 +1991,12 @@ export const generateShippingLabelsPdf = async (orders) => {
       })
     );
 
+    if (iframeDoc.fonts && iframeDoc.fonts.ready) {
+      await iframeDoc.fonts.ready;
+    }
+
     // Microtask wait for layout
-    await new Promise((resolve) => setTimeout(resolve, 15));
+    await new Promise((resolve) => setTimeout(resolve, 20));
 
     const labelsFlow = iframeDoc.getElementById("labels-flow");
     const labelElements = Array.from(iframeDoc.querySelectorAll(".shipping-label"));
@@ -1957,9 +2005,9 @@ export const generateShippingLabelsPdf = async (orders) => {
       throw new Error("No shipping labels could be generated");
     }
 
-    // High-speed single pass capture of the clean isolated iframe DOM (takes ~150-250ms for 20 labels)
+    // High-resolution capture (scale 2.0 = ~200+ DPI crisp vector-like text & barcodes)
     const bigCanvas = await html2canvas(labelsFlow, {
-      scale: 1.3,
+      scale: 2.0,
       backgroundColor: "#ffffff",
       useCORS: true,
       logging: false,
@@ -2015,8 +2063,8 @@ export const generateShippingLabelsPdf = async (orders) => {
         );
       }
 
-      // Compact JPEG compression ~18KB per page (20 labels ~360KB)
-      const imgData = pageCanvas.toDataURL("image/jpeg", 0.70);
+      // High-quality JPEG (0.92 = crisp font edges & barcode lines, zero ringing noise, ultra-compact ~35KB per label)
+      const imgData = pageCanvas.toDataURL("image/jpeg", 0.92);
 
       pdf.addImage(
         imgData,
