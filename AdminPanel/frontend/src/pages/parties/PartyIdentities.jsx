@@ -299,17 +299,17 @@ export default function PartyIdentities() {
         </div>
 
         {/* Card 3: Deleted by User */}
-        <div className="rounded-2xl border border-rose-200 bg-rose-50/30 p-4 sm:p-5 shadow-2xs hover:shadow-xs transition">
+        <div className="rounded-2xl border border-slate-200/90 bg-white p-4 sm:p-5 shadow-2xs hover:shadow-xs transition">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-rose-700">Deleted by User</span>
-            <div className="h-8 w-8 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center">
+            <span className="text-xs font-semibold text-slate-500">Deleted Parties</span>
+            <div className="h-8 w-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center">
               <HiOutlineTrash size={18} />
             </div>
           </div>
           <p className="mt-3 text-2xl sm:text-3xl font-bold text-rose-600">
             {stats.deleted_count || 0}
           </p>
-          <p className="text-[11px] text-rose-500/80 mt-0.5">Preserved for invoices/audit</p>
+          <p className="text-[11px] text-slate-400 mt-0.5">Removed by merchants</p>
         </div>
 
         {/* Card 4: Non-GST Parties */}
@@ -501,6 +501,7 @@ export default function PartyIdentities() {
                   <th className="py-3 px-4">Company / Brand</th>
                   <th className="py-3 px-4">GSTIN & Phone</th>
                   <th className="py-3 px-4">Registered Address</th>
+                  <th className="py-3 px-4 text-center">Status</th>
                   <th className="py-3 px-4 text-center">Linked Orders</th>
                   <th className="py-3 px-4 text-right">Actions</th>
                 </tr>
@@ -515,12 +516,12 @@ export default function PartyIdentities() {
                       key={party.id}
                       className={`transition-colors group ${
                         isDeleted
-                          ? "bg-rose-50/50 hover:bg-rose-50/80 border-l-4 border-l-rose-500"
+                          ? "bg-rose-50/20 hover:bg-rose-50/40"
                           : "hover:bg-slate-50/70"
                       }`}
                     >
                       {/* MERCHANT INFO */}
-                      <td className="py-3.5 px-4 align-top">
+                      <td className="py-3 px-4 align-top">
                         <div className="space-y-0.5">
                           <Link
                             to={`/users/${party.user_id}`}
@@ -538,7 +539,7 @@ export default function PartyIdentities() {
                               {party.user_company}
                             </p>
                           )}
-                          <div className="text-[10px] text-slate-400 flex items-center gap-1.5 pt-0.5">
+                          <div className="text-[10px] text-slate-400 flex items-center gap-1.5 pt-0.5 whitespace-nowrap">
                             <span>UID: #{party.user_id}</span>
                             {party.user_phone && <span>• {party.user_phone}</span>}
                           </div>
@@ -546,48 +547,33 @@ export default function PartyIdentities() {
                       </td>
 
                       {/* PARTY IDENTITY */}
-                      <td className="py-3.5 px-4 align-top">
+                      <td className="py-3 px-4 align-top">
                         <div className="flex items-start gap-2.5">
                           <div className={`h-8 w-8 rounded-lg font-bold text-xs flex items-center justify-center shrink-0 mt-0.5 ${
                             isDeleted
-                              ? "bg-rose-100 text-rose-700"
+                              ? "bg-rose-50 text-rose-600 border border-rose-200/60"
                               : "bg-purple-100 text-purple-700"
                           }`}>
                             {getInitials(party.name)}
                           </div>
                           <div className="space-y-0.5">
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className={`font-semibold block ${isDeleted ? "text-rose-950 font-bold" : "text-slate-900"}`}>
-                                {party.name}
-                              </span>
-                              {isDeleted && (
-                                <span className="inline-flex items-center gap-1 rounded-full border border-rose-300 bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-700 shadow-2xs">
-                                  <HiOutlineTrash size={11} className="text-rose-600" />
-                                  Deleted by User
-                                </span>
-                              )}
-                            </div>
+                            <span className="font-semibold text-slate-900 block">
+                              {party.name}
+                            </span>
                             {party.reference_name && (
                               <span className="text-[11px] text-slate-500 block">
                                 Ref: {party.reference_name}
                               </span>
                             )}
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="text-[10px] text-slate-400 block">
-                                Created: {formatDate(party.created_at)}
-                              </span>
-                              {isDeleted && party.deleted_at && (
-                                <span className="inline-block text-[10px] text-rose-600 font-semibold bg-rose-100/70 px-1.5 py-0.2 rounded border border-rose-200">
-                                  Deleted: {formatDate(party.deleted_at)}
-                                </span>
-                              )}
-                            </div>
+                            <span className="text-[10px] text-slate-400 block">
+                              Created: {formatDate(party.created_at)}
+                            </span>
                           </div>
                         </div>
                       </td>
 
                       {/* COMPANY / BRAND */}
-                      <td className="py-3.5 px-4 align-top">
+                      <td className="py-3 px-4 align-top">
                         <div className="space-y-0.5">
                           <span className="font-medium text-slate-800 block">
                             {party.company_name || "—"}
@@ -596,7 +582,7 @@ export default function PartyIdentities() {
                       </td>
 
                       {/* GSTIN & PHONE */}
-                      <td className="py-3.5 px-4 align-top whitespace-nowrap">
+                      <td className="py-3 px-4 align-top whitespace-nowrap">
                         <div className="space-y-1">
                           {hasGst ? (
                             <div className="flex items-center gap-1">
@@ -643,14 +629,36 @@ export default function PartyIdentities() {
                       </td>
 
                       {/* ADDRESS */}
-                      <td className="py-3.5 px-4 align-top max-w-[280px]">
+                      <td className="py-3 px-4 align-top max-w-[280px]">
                         <p className="text-slate-700 leading-snug font-medium line-clamp-2">
                           {party.address || "—"}
                         </p>
                       </td>
 
+                      {/* STATUS */}
+                      <td className="py-3 px-4 align-top text-center">
+                        {isDeleted ? (
+                          <div className="inline-flex flex-col items-center">
+                            <span className="inline-flex items-center gap-1 rounded-full border border-rose-200 bg-rose-50 px-2.5 py-0.5 text-[10px] font-semibold text-rose-600">
+                              <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
+                              Deleted by User
+                            </span>
+                            {party.deleted_at && (
+                              <span className="text-[10px] text-slate-400 mt-0.5 font-normal">
+                                {formatDate(party.deleted_at)}
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[10px] font-bold text-emerald-700 shadow-2xs">
+                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                            Active
+                          </span>
+                        )}
+                      </td>
+
                       {/* LINKED ORDERS */}
-                      <td className="py-3.5 px-4 align-top text-center">
+                      <td className="py-3 px-4 align-top text-center">
                         <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 border border-slate-200/80 px-2.5 py-0.5 text-[11px] font-bold text-slate-700">
                           <HiOutlineCube size={12} className="text-slate-400" />
                           <span>{party.linked_orders_count || 0}</span>
@@ -658,7 +666,7 @@ export default function PartyIdentities() {
                       </td>
 
                       {/* ACTIONS */}
-                      <td className="py-3.5 px-4 align-top text-right whitespace-nowrap">
+                      <td className="py-3 px-4 align-top text-right whitespace-nowrap">
                         <button
                           type="button"
                           onClick={() => setViewingParty(party)}

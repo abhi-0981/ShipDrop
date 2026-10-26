@@ -306,17 +306,17 @@ export default function PickupAddresses() {
         </div>
 
         {/* Card 3: Deleted by User */}
-        <div className="rounded-2xl border border-rose-200 bg-rose-50/30 p-4 sm:p-5 shadow-2xs hover:shadow-xs transition">
+        <div className="rounded-2xl border border-slate-200/90 bg-white p-4 sm:p-5 shadow-2xs hover:shadow-xs transition">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-rose-700">Deleted by User</span>
-            <div className="h-8 w-8 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center">
+            <span className="text-xs font-semibold text-slate-500">Deleted Locations</span>
+            <div className="h-8 w-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center">
               <HiOutlineTrash size={18} />
             </div>
           </div>
           <p className="mt-3 text-2xl sm:text-3xl font-bold text-rose-600">
             {stats.deleted_count || 0}
           </p>
-          <p className="text-[11px] text-rose-500/80 mt-0.5">Preserved for audit/orders</p>
+          <p className="text-[11px] text-slate-400 mt-0.5">Removed by merchants</p>
         </div>
 
         {/* Card 4: Merchants with Locations */}
@@ -529,12 +529,12 @@ export default function PickupAddresses() {
                       key={addr.id}
                       className={`transition-colors group ${
                         isDeleted
-                          ? "bg-rose-50/50 hover:bg-rose-50/80 border-l-4 border-l-rose-500"
+                          ? "bg-rose-50/20 hover:bg-rose-50/40"
                           : "hover:bg-slate-50/70"
                       }`}
                     >
                       {/* MERCHANT INFO */}
-                      <td className="py-3.5 px-4 align-top">
+                      <td className="py-3 px-4 align-top">
                         <div className="space-y-0.5">
                           <Link
                             to={`/users/${addr.user_id}`}
@@ -552,7 +552,7 @@ export default function PickupAddresses() {
                               {addr.user_company}
                             </p>
                           )}
-                          <div className="text-[10px] text-slate-400 flex items-center gap-1.5 pt-0.5">
+                          <div className="text-[10px] text-slate-400 flex items-center gap-1.5 pt-0.5 whitespace-nowrap">
                             <span>UID: #{addr.user_id}</span>
                             {addr.user_phone && <span>• {addr.user_phone}</span>}
                           </div>
@@ -560,19 +560,11 @@ export default function PickupAddresses() {
                       </td>
 
                       {/* LOCATION NAME */}
-                      <td className="py-3.5 px-4 align-top">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className={`font-semibold ${isDeleted ? "text-rose-950 font-bold" : "text-slate-800"}`}>
-                              {addr.warehouse_name || "Unnamed Hub"}
-                            </span>
-                            {isDeleted && (
-                              <span className="inline-flex items-center gap-1 rounded-full border border-rose-300 bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-700 shadow-2xs">
-                                <HiOutlineTrash size={11} className="text-rose-600" />
-                                Deleted by User
-                              </span>
-                            )}
-                          </div>
+                      <td className="py-3 px-4 align-top">
+                        <div className="space-y-0.5">
+                          <span className="font-semibold text-slate-800">
+                            {addr.warehouse_name || "Unnamed Hub"}
+                          </span>
                           {(addr.landmark || addr.floor_no) && (
                             <p className="text-[11px] text-slate-500">
                               {addr.floor_no ? `Floor ${addr.floor_no}` : ""}
@@ -580,21 +572,14 @@ export default function PickupAddresses() {
                               {addr.landmark ? `Near ${addr.landmark}` : ""}
                             </p>
                           )}
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="inline-block text-[10px] text-slate-400">
-                              Added: {formatDate(addr.created_at)}
-                            </span>
-                            {isDeleted && addr.deleted_at && (
-                              <span className="inline-block text-[10px] text-rose-600 font-semibold bg-rose-100/70 px-1.5 py-0.2 rounded border border-rose-200">
-                                Deleted: {formatDate(addr.deleted_at)}
-                              </span>
-                            )}
-                          </div>
+                          <span className="block text-[10px] text-slate-400">
+                            Added: {formatDate(addr.created_at)}
+                          </span>
                         </div>
                       </td>
 
                       {/* CONTACT PERSON */}
-                      <td className="py-3.5 px-4 align-top">
+                      <td className="py-3 px-4 align-top">
                         <div className="space-y-0.5">
                           <p className="font-medium text-slate-800">
                             {addr.contact_name || "—"}
@@ -627,7 +612,7 @@ export default function PickupAddresses() {
                       </td>
 
                       {/* ADDRESS & PINCODE */}
-                      <td className="py-3.5 px-4 align-top max-w-[280px]">
+                      <td className="py-3 px-4 align-top max-w-[280px]">
                         <div className="space-y-1">
                           <p className="text-slate-700 leading-snug font-medium line-clamp-2">
                             {[addr.address_line1, addr.address_line2].filter(Boolean).join(", ") ||
@@ -659,7 +644,7 @@ export default function PickupAddresses() {
                       </td>
 
                       {/* GSTIN */}
-                      <td className="py-3.5 px-4 align-top whitespace-nowrap">
+                      <td className="py-3 px-4 align-top whitespace-nowrap">
                         {addr.gstin ? (
                           <button
                             type="button"
@@ -680,15 +665,15 @@ export default function PickupAddresses() {
                       </td>
 
                       {/* STATUS */}
-                      <td className="py-3.5 px-4 align-top text-center">
+                      <td className="py-3 px-4 align-top text-center">
                         {isDeleted ? (
-                          <div className="flex flex-col items-center gap-1">
-                            <span className="inline-flex items-center gap-1 rounded-full border border-rose-300 bg-rose-100 px-2.5 py-0.5 text-[10px] font-bold text-rose-700 shadow-2xs">
-                              <span className="h-1.5 w-1.5 rounded-full bg-rose-600" />
+                          <div className="inline-flex flex-col items-center">
+                            <span className="inline-flex items-center gap-1 rounded-full border border-rose-200 bg-rose-50 px-2.5 py-0.5 text-[10px] font-semibold text-rose-600">
+                              <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
                               Deleted by User
                             </span>
                             {addr.deleted_at && (
-                              <span className="text-[10px] text-rose-600 font-medium">
+                              <span className="text-[10px] text-slate-400 mt-0.5 font-normal">
                                 {formatDate(addr.deleted_at)}
                               </span>
                             )}
@@ -707,7 +692,7 @@ export default function PickupAddresses() {
                       </td>
 
                       {/* ACTIONS */}
-                      <td className="py-3.5 px-4 align-top text-right whitespace-nowrap">
+                      <td className="py-3 px-4 align-top text-right whitespace-nowrap">
                         <button
                           type="button"
                           onClick={() => setViewingAddress(addr)}
