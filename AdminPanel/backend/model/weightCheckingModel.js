@@ -1152,6 +1152,36 @@ const settleWeightCheckings = async (
       }
 
       // ==================================================
+      // NOTIFY MERCHANT OF SETTLED WEIGHT DISCREPANCY
+      // ==================================================
+
+      try {
+        const notifTitle = `Weight Discrepancy: AWB ${record.awb}`;
+        const diffKg = Number(record.weight_difference || 0);
+        const extraChargeNum = Number(extraCharge || 0);
+        let notifMsg = `Courier flagged +${diffKg.toFixed(2)} kg excess weight on AWB ${record.awb} (Extra Debit: ₹${extraChargeNum.toFixed(2)}).`;
+        if (extraChargeNum < 0) {
+          notifMsg = `Weight discrepancy on AWB ${record.awb} settled with refund of ₹${Math.abs(extraChargeNum).toFixed(2)} credited to your wallet.`;
+        }
+
+        await connection.query(
+          `
+            INSERT INTO notifications (user_id, type, title, message, reference_id, reference_url, message_count, is_read, created_at)
+            VALUES (?, 'WEIGHT_DISCREPANCY', ?, ?, ?, '/reports/weight-discrepancy', 1, 0, NOW())
+            ON DUPLICATE KEY UPDATE message = VALUES(message), is_read = 0, updated_at = NOW()
+          `,
+          [
+            record.user_id,
+            notifTitle,
+            notifMsg,
+            `WEIGHT_SETTLED_${record.id}`,
+          ]
+        );
+      } catch (notifErr) {
+        console.warn("Settlement notification notice:", notifErr.message);
+      }
+
+      // ==================================================
       // VERIFY SETTLEMENT
       // ==================================================
 

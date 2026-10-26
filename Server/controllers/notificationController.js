@@ -353,30 +353,38 @@ const syncCodRemittanceAlerts = async (userId) => {
 
 /**
  * Auto-sync Weight Discrepancy Alerts:
- * Informs the merchant when a carrier has claimed extra weight or when a dispute is resolved.
+ * Informs the merchant ONLY when admin has SETTLED the weight discrepancy.
+ * Does not show notifications while dispute is pending/unsettled.
  */
 const syncWeightDiscrepancyAlerts = async (userId) => {
   try {
     const [tableCheck] = await promiseDb.query(`SHOW TABLES LIKE 'weight_checkings'`);
     if (!tableCheck || tableCheck.length === 0) return;
 
+    // Clean up any premature pending notifications that were created before admin settlement
+    await promiseDb.query(
+      `DELETE FROM notifications WHERE user_id = ? AND type = 'WEIGHT_DISCREPANCY' AND reference_id LIKE 'WEIGHT_FLAG_%'`,
+      [userId]
+    ).catch(() => {});
+
+    // ONLY select records that have been SETTLED or WAIVED by admin
     const [discrepancies] = await promiseDb.query(
       `
       SELECT id, awb, order_id, weight_difference, extra_charge, status, created_at, settled_at
       FROM weight_checkings
       WHERE user_id = ?
-        AND created_at >= DATE_SUB(NOW(), INTERVAL 14 DAY)
-      ORDER BY id DESC
-      LIMIT 5
+        AND UPPER(COALESCE(status, '')) IN ('SETTLED', 'WAIVED')
+        AND (settled_at >= DATE_SUB(NOW(), INTERVAL 14 DAY) OR created_at >= DATE_SUB(NOW(), INTERVAL 14 DAY))
+      ORDER BY settled_at DESC, id DESC
+      LIMIT 10
       `,
       [userId]
     );
 
     if (discrepancies && discrepancies.length > 0) {
       for (const d of discrepancies) {
-        const isSettled = String(d.status || "").toLowerCase() === "settled";
         const isWaived = String(d.status || "").toLowerCase() === "waived";
-        const refId = isSettled || isWaived ? `WEIGHT_RESOLVED_${d.id}` : `WEIGHT_FLAG_${d.id}`;
+        const refId = `WEIGHT_SETTLED_${d.id}`;
 
         const [existing] = await promiseDb.query(
           `SELECT 1 FROM notifications WHERE user_id = ? AND type = 'WEIGHT_DISCREPANCY' AND reference_id = ? LIMIT 1`,
@@ -384,15 +392,18 @@ const syncWeightDiscrepancyAlerts = async (userId) => {
         );
 
         if (!existing || existing.length === 0) {
-          let title = `Weight Discrepancy: AWB ${d.awb}`;
-          let msg = `Courier flagged +${Number(d.weight_difference || 0).toFixed(2)} kg excess weight on AWB ${d.awb} (Extra Debit: ₹${Number(d.extra_charge || 0).toFixed(2)}).`;
+          const extraChargeNum = Number(d.extra_charge || 0);
+          const diffKg = Number(d.weight_difference || 0);
 
-          if (isSettled) {
-            title = `Dispute Resolved: AWB ${d.awb}`;
-            msg = `Weight discrepancy dispute for AWB ${d.awb} has been resolved in your favor.`;
-          } else if (isWaived) {
+          let title = `Weight Discrepancy: AWB ${d.awb}`;
+          let msg = `Courier flagged +${diffKg.toFixed(2)} kg excess weight on AWB ${d.awb} (Extra Debit: ₹${extraChargeNum.toFixed(2)}).`;
+
+          if (isWaived) {
             title = `Charge Waived: AWB ${d.awb}`;
             msg = `Excess weight charges for AWB ${d.awb} have been waived and adjusted.`;
+          } else if (extraChargeNum < 0) {
+            title = `Weight Refund Settled: AWB ${d.awb}`;
+            msg = `Weight discrepancy on AWB ${d.awb} settled with refund of ₹${Math.abs(extraChargeNum).toFixed(2)} credited to your wallet.`;
           }
 
           await promiseDb.query(
@@ -405,7 +416,7 @@ const syncWeightDiscrepancyAlerts = async (userId) => {
               title,
               msg,
               refId,
-              isSettled || isWaived ? (d.settled_at || new Date()) : (d.created_at || new Date()),
+              d.settled_at || new Date(),
             ]
           );
         }
