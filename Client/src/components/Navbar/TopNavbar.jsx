@@ -245,8 +245,9 @@
       try {
         const response = await api.get(`/notifications?user_id=${savedUser.id}`);
         if (response.data?.success) {
-          const list = Array.isArray(response.data.notifications) ? response.data.notifications : [];
-          setUnreadNotifCount(Number(response.data.unread_count || 0));
+          const rawList = Array.isArray(response.data.notifications) ? response.data.notifications : [];
+          const list = rawList.filter((n) => n.type !== "WEIGHT_DISCREPANCY");
+          setUnreadNotifCount(list.length);
           setNotifications(list);
 
           // Detect genuinely NEW incoming unread notifications OR updates to existing notifications (like another ticket reply)

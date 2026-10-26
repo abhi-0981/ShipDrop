@@ -166,15 +166,7 @@ export default function WeightDiscrepancyReport() {
     return filteredDiscrepancies.slice(start, start + rowsPerPage);
   }, [filteredDiscrepancies, currentPage, rowsPerPage]);
 
-  // KPI Summary
-  const summary = reportData.summary || {};
-  const totalCount = summary.total_discrepancies || 0;
-  const totalExtraCharges = summary.total_extra_charges || 0;
-  const totalWeightDiff = summary.total_weight_diff_kg || 0;
-  const pendingCount = summary.pending_count || 0;
-  const pendingAmount = summary.pending_amount || 0;
-  const settledCount = summary.settled_count || 0;
-  const settledAmount = summary.settled_amount || 0;
+
 
   // Status Badge
   const getDisputeStatusBadge = (status) => {
@@ -370,90 +362,7 @@ export default function WeightDiscrepancyReport() {
           </div>
         </div>
 
-        {/* ==================================================
-            3. KPI SUMMARY CARDS (Dashboard StatCard Design)
-        ================================================== */}
-        <div className="mb-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
-          {/* Card 1: Total Discrepancies */}
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-3.5 sm:p-4 shadow-[0_1px_4px_rgba(15,23,42,0.03)] transition-all">
-            <div className="flex items-start justify-between">
-              <div className="min-w-0 flex-1 pr-2">
-                <p className="text-[12px] font-medium text-slate-500 truncate">
-                  Total Discrepancies
-                </p>
-                <p className="mt-1 text-[22px] font-bold tracking-tight text-slate-800 truncate">
-                  {totalCount}
-                </p>
-                <p className="mt-0.5 text-[11px] text-slate-400 truncate">
-                  Flagged parcels
-                </p>
-              </div>
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-sky-50 text-[#008dd2]">
-                <HiOutlineScale className="text-lg" />
-              </div>
-            </div>
-          </div>
 
-          {/* Card 2: Extra Billed */}
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-3.5 sm:p-4 shadow-[0_1px_4px_rgba(15,23,42,0.03)] transition-all">
-            <div className="flex items-start justify-between">
-              <div className="min-w-0 flex-1 pr-2">
-                <p className="text-[12px] font-medium text-rose-500 truncate">
-                  Extra Billed (₹)
-                </p>
-                <p className="mt-1 text-[22px] font-bold tracking-tight text-rose-600 truncate">
-                  ₹{Number(totalExtraCharges || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </p>
-                <p className="mt-0.5 text-[11px] text-slate-400 truncate">
-                  Total carrier debits
-                </p>
-              </div>
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-rose-50 text-rose-600">
-                <HiOutlineCurrencyRupee className="text-lg" />
-              </div>
-            </div>
-          </div>
-
-          {/* Card 3: Excess Weight */}
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-3.5 sm:p-4 shadow-[0_1px_4px_rgba(15,23,42,0.03)] transition-all">
-            <div className="flex items-start justify-between">
-              <div className="min-w-0 flex-1 pr-2">
-                <p className="text-[12px] font-medium text-amber-600 truncate">
-                  Excess Weight
-                </p>
-                <p className="mt-1 text-[22px] font-bold tracking-tight text-slate-800 truncate">
-                  {Number(totalWeightDiff || 0).toFixed(3)} kg
-                </p>
-                <p className="mt-0.5 text-[11px] text-slate-400 truncate">
-                  Cumulative difference
-                </p>
-              </div>
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
-                <HiOutlineExclamationCircle className="text-lg" />
-              </div>
-            </div>
-          </div>
-
-          {/* Card 4: Settled in Favor */}
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-3.5 sm:p-4 shadow-[0_1px_4px_rgba(15,23,42,0.03)] transition-all">
-            <div className="flex items-start justify-between">
-              <div className="min-w-0 flex-1 pr-2">
-                <p className="text-[12px] font-medium text-emerald-600 truncate">
-                  Settled in Favor
-                </p>
-                <p className="mt-1 text-[22px] font-bold tracking-tight text-emerald-600 truncate">
-                  {settledCount}
-                </p>
-                <p className="mt-0.5 text-[11px] text-slate-400 truncate">
-                  ₹{Number(settledAmount || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} adjusted
-                </p>
-              </div>
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
-                <HiOutlineCheckCircle className="text-lg" />
-              </div>
-            </div>
-          </div>
-        </div>
 
         {/* ==================================================
             4. FILTER BAR
