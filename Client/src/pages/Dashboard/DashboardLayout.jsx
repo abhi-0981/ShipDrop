@@ -34,7 +34,7 @@ function DashboardLayout() {
   }, []);
 
   return (
-    <div className="relative min-h-screen bg-[#f6f8fb] dark:bg-[#0b0f19] text-slate-800 dark:text-slate-100 transition-colors duration-200">
+    <div className="relative min-h-screen bg-[#f6f8fb] dark:bg-[#090b10] text-slate-800 dark:text-slate-100 transition-colors duration-200">
       {/* GLOBAL POPUP ANNOUNCEMENT FROM ADMIN */}
       <AnnouncementModal />
 
