@@ -5,7 +5,6 @@ import api from "../../services/api";
 import { notifyOrderChange, subscribeToOrderUpdates } from "../../services/orderEvents";
 import { RouteSkeleton } from "../../components/Common/TableSkeleton";
 import OrderStatusNavTabs from "../../components/Common/OrderStatusNavTabs";
-import ShipmentBookingAnimationModal from "../../components/Common/ShipmentBookingAnimationModal";
 
 // ======================================================
 // ICON
@@ -125,16 +124,6 @@ function ProcessingOrders() {
 
   // ROAD = DEFAULT
   const [shippingType, setShippingType] = useState("ROAD");
-
-  const [bookingAnimation, setBookingAnimation] = useState({
-    isOpen: false,
-    stage: "booking",
-    orderCount: 1,
-    serviceType: "ROAD",
-    amount: 0,
-    errorMessage: "",
-  });
-  const completedShipDataRef = useRef(null);
 
   // ====================================================
   // DELETE
@@ -965,49 +954,53 @@ function ProcessingOrders() {
 
     if (previewLoading) {
       showToast("Please wait while shipping charges are calculated.", "error");
+
       return;
     }
 
     if (previewTotal <= 0) {
       showToast("Shipping charge could not be calculated.", "error");
+
       return;
     }
 
-    const storedUser = localStorage.getItem("user");
-    let user = {};
     try {
-      user = storedUser ? JSON.parse(storedUser) : {};
-    } catch (error) {
-      console.log("User parse error:", error);
-    }
+      setShipping(true);
 
-    const userId = user.id || user.user_id || user.userId;
-    if (!userId) {
-      showToast("User session not found. Please login again.", "error");
-      return;
-    }
+      const storedUser = localStorage.getItem("user");
 
-    setShipping(true);
-    setBookingAnimation({
-      isOpen: true,
-      stage: "booking",
-      orderCount: selectedOrders.length,
-      serviceType: shippingType,
-      amount: previewTotal,
-      errorMessage: "",
-    });
+      let user = {};
 
-    const startTime = Date.now();
+      try {
+        user = storedUser ? JSON.parse(storedUser) : {};
+      } catch (error) {
+        console.log("User parse error:", error);
+      }
 
-    try {
+      const userId = user.id || user.user_id || user.userId;
+
+      if (!userId) {
+        showToast("User session not found. Please login again.", "error");
+
+        return;
+      }
+
+      // ==========================================
+      // BULK SHIP
+      // ==========================================
+
       const response = await api.post("/shipments/bulk-confirm", {
         user_id: userId,
+
         order_ids: selectedOrders,
+
         service_type: shippingType,
+
         total_shipping_charge: previewTotal,
       });
 
       const result = response.data;
+
       if (!result || result.success !== true) {
         throw new Error(result?.message || "Unable to ship selected orders");
       }
@@ -1016,55 +1009,49 @@ function ProcessingOrders() {
         result.total_orders ??
         result.shipped_orders?.length ??
         selectedOrders.length;
+
       const chargedAmount = Number(result.total_charge ?? previewTotal);
 
-      completedShipDataRef.current = { shippedCount, chargedAmount };
+      // ==========================================
+      // RESET
+      // ==========================================
 
-      // Ensure truck animation displays for at least 1.3s for smooth visual feedback
-      const elapsed = Date.now() - startTime;
-      if (elapsed < 1300) {
-        await new Promise((resolve) => setTimeout(resolve, 1300 - elapsed));
-      }
+      setShowShipPopup(false);
 
-      setBookingAnimation((prev) => ({
-        ...prev,
-        stage: "success",
-      }));
-    } catch (error) {
-      console.log("Bulk ship error:", error);
-      const errMsg =
-        error.response?.data?.message ||
-        error.message ||
-        "Unable to ship selected orders";
+      setPreviewRates({});
 
-      setBookingAnimation((prev) => ({
-        ...prev,
-        stage: "error",
-        errorMessage: errMsg,
-      }));
-      showToast(errMsg, "error");
-    } finally {
-      setShipping(false);
-    }
-  };
+      setPreviewTotal(0);
 
-  const handleBookingAnimationComplete = async () => {
-    setBookingAnimation((prev) => ({ ...prev, isOpen: false }));
-    setShowShipPopup(false);
-    setPreviewRates({});
-    setPreviewTotal(0);
-    rateCacheRef.current.clear();
-    setSelectedOrders([]);
-    setShippingType("ROAD");
+      rateCacheRef.current.clear();
 
-    await fetchOrders(false);
+      setSelectedOrders([]);
 
-    window.dispatchEvent(new Event("walletBalanceUpdated"));
-    window.dispatchEvent(new Event("walletUpdated"));
-    notifyOrderChange({ type: "status_changed", action: "shipped" });
+      setShippingType("ROAD");
 
-    if (completedShipDataRef.current) {
-      const { shippedCount, chargedAmount } = completedShipDataRef.current;
+      // ==========================================
+      // REFRESH
+      // ==========================================
+
+      await fetchOrders(false);
+
+      // ==========================================
+      // NOTIFY ORDER STATUS UPDATE
+      // ==========================================
+
+      notifyOrderChange({ type: "status_changed", action: "shipped" });
+
+      // ==========================================
+      // WALLET EVENTS
+      // ==========================================
+
+      window.dispatchEvent(new Event("walletBalanceUpdated"));
+
+      window.dispatchEvent(new Event("walletUpdated"));
+
+      // ==========================================
+      // SUCCESS
+      // ==========================================
+
       showToast(
         `${shippedCount} order${
           shippedCount > 1 ? "s" : ""
@@ -1073,7 +1060,17 @@ function ProcessingOrders() {
         )} deducted from wallet.`,
         "success",
       );
-      completedShipDataRef.current = null;
+    } catch (error) {
+      console.log("Bulk ship error:", error);
+
+      showToast(
+        error.response?.data?.message ||
+          error.message ||
+          "Unable to ship selected orders",
+        "error",
+      );
+    } finally {
+      setShipping(false);
     }
   };
 
@@ -1851,20 +1848,6 @@ function ProcessingOrders() {
           </div>
         </div>
       )}
-
-      {/* SHIPMENT BOOKING ANIMATION MODAL */}
-      <ShipmentBookingAnimationModal
-        isOpen={bookingAnimation.isOpen}
-        stage={bookingAnimation.stage}
-        orderCount={bookingAnimation.orderCount}
-        serviceType={bookingAnimation.serviceType}
-        amount={bookingAnimation.amount}
-        errorMessage={bookingAnimation.errorMessage}
-        onComplete={handleBookingAnimationComplete}
-        onClose={() =>
-          setBookingAnimation((prev) => ({ ...prev, isOpen: false }))
-        }
-      />
     </div>
   );
 }

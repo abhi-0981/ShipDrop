@@ -5,7 +5,6 @@ import api from "../../services/api";
 import { notifyOrderChange, subscribeToOrderUpdates } from "../../services/orderEvents";
 import { RouteSkeleton } from "../../components/Common/TableSkeleton";
 import OrderStatusNavTabs from "../../components/Common/OrderStatusNavTabs";
-import ShipmentBookingAnimationModal from "../../components/Common/ShipmentBookingAnimationModal";
 
 const Icon = ({ name, size = 16 }) => {
   const common = {
@@ -113,16 +112,6 @@ function ProcessingOrders() {
   const rateCacheRef = useRef(new Map());
   const previewRequestRef = useRef(0);
   const [shippingType, setShippingType] = useState("ROAD");
-
-  const [bookingAnimation, setBookingAnimation] = useState({
-    isOpen: false,
-    stage: "booking",
-    orderCount: 1,
-    serviceType: "ROAD",
-    amount: 0,
-    errorMessage: "",
-  });
-  const completedShipDataRef = useRef(null);
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteIds, setDeleteIds] = useState([]);
@@ -727,33 +716,22 @@ function ProcessingOrders() {
       return;
     }
 
-    const storedUser = localStorage.getItem("user");
-    let user = {};
     try {
-      user = storedUser ? JSON.parse(storedUser) : {};
-    } catch (error) {
-      // console.log("User parse error:", error);
-    }
+      setShipping(true);
+      const storedUser = localStorage.getItem("user");
+      let user = {};
+      try {
+        user = storedUser ? JSON.parse(storedUser) : {};
+      } catch (error) {
+        // console.log("User parse error:", error);
+      }
 
-    const userId = user.id || user.user_id || user.userId;
-    if (!userId) {
-      showToast("User session not found.", "error");
-      return;
-    }
+      const userId = user.id || user.user_id || user.userId;
+      if (!userId) {
+        showToast("User session not found.", "error");
+        return;
+      }
 
-    setShipping(true);
-    setBookingAnimation({
-      isOpen: true,
-      stage: "booking",
-      orderCount: selectedOrders.length,
-      serviceType: shippingType,
-      amount: previewTotal,
-      errorMessage: "",
-    });
-
-    const startTime = Date.now();
-
-    try {
       const response = await api.post("/shipments/bulk-confirm", {
         user_id: userId,
         order_ids: selectedOrders,
@@ -772,59 +750,34 @@ function ProcessingOrders() {
         selectedOrders.length;
       const chargedAmount = Number(result.total_charge ?? previewTotal);
 
-      completedShipDataRef.current = { shippedCount, chargedAmount };
+      setShowShipPopup(false);
+      setPreviewRates({});
+      setPreviewTotal(0);
+      rateCacheRef.current.clear();
+      setSelectedOrders([]);
+      setShippingType("ROAD");
 
-      // Ensure truck animation displays for at least 1.3s for smooth visuals
-      const elapsed = Date.now() - startTime;
-      if (elapsed < 1300) {
-        await new Promise((resolve) => setTimeout(resolve, 1300 - elapsed));
-      }
+      await fetchOrders(false);
 
-      setBookingAnimation((prev) => ({
-        ...prev,
-        stage: "success",
-      }));
-    } catch (error) {
-      const errMsg =
-        error.response?.data?.message ||
-        error.message ||
-        "Unable to ship selected orders";
+      window.dispatchEvent(new Event("walletBalanceUpdated"));
+      window.dispatchEvent(new Event("walletUpdated"));
+      notifyOrderChange({ type: "status_changed", action: "shipped" });
 
-      setBookingAnimation((prev) => ({
-        ...prev,
-        stage: "error",
-        errorMessage: errMsg,
-      }));
-      showToast(errMsg, "error");
-    } finally {
-      setShipping(false);
-    }
-  };
-
-  const handleBookingAnimationComplete = async () => {
-    setBookingAnimation((prev) => ({ ...prev, isOpen: false }));
-    setShowShipPopup(false);
-    setPreviewRates({});
-    setPreviewTotal(0);
-    rateCacheRef.current.clear();
-    setSelectedOrders([]);
-    setShippingType("ROAD");
-
-    await fetchOrders(false);
-
-    window.dispatchEvent(new Event("walletBalanceUpdated"));
-    window.dispatchEvent(new Event("walletUpdated"));
-    notifyOrderChange({ type: "status_changed", action: "shipped" });
-
-    if (completedShipDataRef.current) {
-      const { shippedCount, chargedAmount } = completedShipDataRef.current;
       showToast(
         `${shippedCount} order${
           shippedCount > 1 ? "s" : ""
         } shipped! ₹${chargedAmount.toFixed(2)} deducted from wallet.`,
         "success"
       );
-      completedShipDataRef.current = null;
+    } catch (error) {
+      showToast(
+        error.response?.data?.message ||
+          error.message ||
+          "Unable to ship selected orders",
+        "error"
+      );
+    } finally {
+      setShipping(false);
     }
   };
 
@@ -1583,18 +1536,6 @@ function ProcessingOrders() {
           </div>
         </div>
       )}
-
-      {/* SHIPMENT BOOKING ANIMATION MODAL */}
-      <ShipmentBookingAnimationModal
-        isOpen={bookingAnimation.isOpen}
-        stage={bookingAnimation.stage}
-        orderCount={bookingAnimation.orderCount}
-        serviceType={bookingAnimation.serviceType}
-        amount={bookingAnimation.amount}
-        errorMessage={bookingAnimation.errorMessage}
-        onComplete={handleBookingAnimationComplete}
-        onClose={() => setBookingAnimation((prev) => ({ ...prev, isOpen: false }))}
-      />
     </div>
   );
 }
