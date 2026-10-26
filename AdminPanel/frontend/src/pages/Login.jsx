@@ -9,6 +9,7 @@ import {
   HiOutlineArrowRight,
 } from "react-icons/hi";
 import { API_BASE_URL } from "../config/api";
+import ParcelDropLogo from "../components/ParcelDropLogo";
 
 function Login() {
   const navigate = useNavigate();
@@ -69,23 +70,13 @@ function Login() {
         <div className="rounded-3xl border border-slate-200/90 bg-white/95 p-8 sm:p-9 shadow-[0_20px_50px_rgba(15,23,42,0.06)] backdrop-blur-md">
           {/* LOGO */}
           <div className="flex flex-col items-center mb-7">
-            <img
-              src="/logo.png"
-              alt="ParcelDrop"
-              className="h-11 w-auto object-contain"
-              onError={(e) => {
-                e.currentTarget.style.display = "none";
-              }}
-            />
-            <div className="mt-3 flex items-center gap-2">
-              <span className="text-xl font-black tracking-tight text-[#008dd2]">
-                ParcelDrop
-              </span>
-              <span className="rounded-full bg-[#008dd2]/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#008dd2]">
+            <div className="flex items-center gap-2.5">
+              <ParcelDropLogo height={44} />
+              <span className="rounded-full bg-[#008dd2]/10 border border-[#008dd2]/20 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-[#008dd2]">
                 Admin
               </span>
             </div>
-            <p className="mt-1 text-xs text-slate-400 text-center">
+            <p className="mt-2.5 text-xs text-slate-400 text-center">
               Sign in to manage logistics, merchants & operations
             </p>
           </div>

@@ -12,7 +12,7 @@ let cachedSlices = null;
  * 3. Color combination is 100% identical to the original image
  * 4. Only the 'o' letter smoothly hovers up and down
  */
-export default function ParcelDropLogo({ className = "" }) {
+export default function ParcelDropLogo({ className = "", style = {}, height }) {
   const [slices, setSlices] = useState(() => cachedSlices);
   const containerRef = useRef(null);
 
@@ -128,12 +128,20 @@ export default function ParcelDropLogo({ className = "" }) {
   }, []);
 
   // While calculating or if fallback needed, render original image directly
+  const hasCustomHeight = className.includes("h-") || height !== undefined;
+  const defaultHeightClass = hasCustomHeight ? "" : "h-[42px] sm:h-[44px]";
+  const resolvedStyle =
+    height !== undefined
+      ? { height: typeof height === "number" ? `${height}px` : height, ...style }
+      : style;
+
   if (!slices) {
     return (
       <img
         src={shipdropLogo}
         alt="ParcelDrop"
-        className={`h-[42px] sm:h-[44px] w-auto object-contain object-left ${className}`}
+        className={`w-auto object-contain object-left ${defaultHeightClass} ${className}`}
+        style={resolvedStyle}
       />
     );
   }
@@ -141,8 +149,9 @@ export default function ParcelDropLogo({ className = "" }) {
   return (
     <div
       ref={containerRef}
-      className={`inline-flex items-center select-none leading-none h-[42px] sm:h-[44px] ${className}`}
+      className={`inline-flex items-center select-none leading-none ${defaultHeightClass} ${className}`}
       title="ParcelDrop"
+      style={resolvedStyle}
     >
       {/* 1. "ParcelDr" - Exact original font, weight, color & resolution */}
       <img

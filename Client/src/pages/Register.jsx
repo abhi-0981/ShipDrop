@@ -12,6 +12,7 @@ import {
 } from "react-icons/fi";
 import toast from "react-hot-toast";
 import api from "../services/api";
+import ParcelDropLogo from "../components/Common/ParcelDropLogo";
 
 function Register() {
   const navigate = useNavigate();
@@ -477,12 +478,10 @@ function Register() {
           <div className="mb-7 text-center">
             <Link
               to="/"
-              className="inline-block text-3xl font-extrabold tracking-tight text-[#008dd2]"
+              className="inline-flex justify-center transition-transform hover:scale-[1.02] active:scale-95"
+              title="ParcelDrop"
             >
-              Parcel
-              <span className="text-slate-800">
-                Drop
-              </span>
+              <ParcelDropLogo height={42} />
             </Link>
 
             <h1 className="mt-5 text-2xl font-bold text-slate-800">

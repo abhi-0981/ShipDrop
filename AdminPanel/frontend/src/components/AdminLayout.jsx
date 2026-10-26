@@ -19,6 +19,7 @@ import {
 } from "react-icons/hi";
 import { FiMenu, FiSearch } from "react-icons/fi";
 import shipdropLogo from "../assets/shipdrop-logo.png";
+import ParcelDropLogo from "./ParcelDropLogo";
 
 // Public tracking is served by the CLIENT backend, not the AdminPanel backend.
 const CLIENT_API_BASE_URL =
@@ -436,11 +437,7 @@ function AdminLayout({ children }) {
             className="flex items-center transition hover:opacity-90 active:scale-95"
             title="ParcelDrop"
           >
-            <img
-              src={shipdropLogo}
-              alt="ParcelDrop"
-              className="h-[44px] sm:h-[46px] mt-1 pl-1 w-auto max-w-[170px] sm:max-w-[180px] object-contain object-left translate-y-[3px]"
-            />
+            <ParcelDropLogo className="mt-1 pl-1 translate-y-[3px]" height={44} />
           </Link>
 
           <button
@@ -643,11 +640,7 @@ function AdminLayout({ children }) {
                 className="flex items-center transition hover:opacity-90 active:scale-95"
                 title="ParcelDrop"
               >
-                <img
-                  src={shipdropLogo}
-                  alt="ParcelDrop"
-                  className="h-8 sm:h-[40px] mt-1 w-auto max-w-[140px] sm:max-w-[160px] object-contain translate-y-[2px]"
-                />
+                <ParcelDropLogo className="mt-1 translate-y-[2px]" height={38} />
               </Link>
             )}
           </div>

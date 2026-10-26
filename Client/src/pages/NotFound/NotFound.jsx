@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import ParcelDropLogo from "../../components/Common/ParcelDropLogo";
 
 export default function NotFound() {
   const navigate = useNavigate();
@@ -27,28 +28,10 @@ export default function NotFound() {
           {/* Logo */}
           <Link
             to={isLoggedIn ? "/dashboard" : "/"}
-            className="group flex items-center gap-2.5 transition-transform hover:scale-[1.01]"
+            className="group flex items-center transition-transform hover:scale-[1.02] active:scale-95"
+            title="ParcelDrop"
           >
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#008dd2] text-white shadow-sm shadow-[#008dd2]/30">
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="m21 8-9 5-9-5" />
-                <path d="M3 8l9-5 9 5v9l-9 5-9-5V8Z" />
-                <path d="M12 13v9" />
-              </svg>
-            </div>
-            <div className="flex items-center text-[22px] leading-none tracking-tight">
-              <span className="font-extrabold text-[#008dd2]">Parcel</span>
-              <span className="font-bold text-slate-900">Drop</span>
-            </div>
+            <ParcelDropLogo height={38} />
           </Link>
 
           {/* Right link */}
