@@ -6,6 +6,7 @@
   import { notifyOrderChange } from "../../services/orderEvents";
   import shipdropLogo from "../../assets/images/shipdrop-logo.png";
   import NotificationToast from "../Common/NotificationToast";
+  import ParcelDropLogo from "../Common/ParcelDropLogo";
 
 
 
@@ -1027,14 +1028,10 @@
             {(isCollapsed || (typeof window !== "undefined" && window.innerWidth < 1024)) && (
               <Link
                 to="/dashboard"
-                className="flex items-center transition hover:opacity-90 active:scale-95"
+                className="flex items-center transition hover:opacity-90 active:scale-95 py-1"
                 title="ParcelDrop"
               >
-                <img
-                  src={shipdropLogo}
-                  alt="ParcelDrop"
-                  className="h-9 sm:h-[42px] mt-1.5 w-auto max-w-[150px] sm:max-w-[170px] object-contain translate-y-[2.5px]"
-                />
+                <ParcelDropLogo />
               </Link>
             )}
 

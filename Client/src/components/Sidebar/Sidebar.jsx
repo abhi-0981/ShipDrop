@@ -25,6 +25,7 @@ import { FiMenu, FiTool } from "react-icons/fi";
 import api from "../../services/api";
 import { fetchOrderStatusCounts } from "../../services/orderEvents";
 import shipdropLogo from "../../assets/images/shipdrop-logo.png";
+import ParcelDropLogo from "../Common/ParcelDropLogo";
 
 // Dynamic route prefetcher for instant 0ms tab switching
 const prefetchRoute = (path) => {
@@ -518,14 +519,10 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
         <div className="flex h-[64px] shrink-0 items-center justify-between border-b border-slate-100 px-4">
           <Link
             to="/dashboard"
-            className="flex items-center transition hover:opacity-90 active:scale-95"
+            className="flex items-center transition hover:opacity-90 active:scale-95 py-1 pl-1"
             title="ParcelDrop"
           >
-            <img
-              src={shipdropLogo}
-              alt="ParcelDrop"
-              className="h-[44px] sm:h-[46px] mt-1 pl-1 w-auto max-w-[170px] sm:max-w-[180px] object-contain object-left translate-y-[3px]"
-            />
+            <ParcelDropLogo />
           </Link>
 
           <button
