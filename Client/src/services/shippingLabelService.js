@@ -980,12 +980,12 @@ const build3x2LabelHtml = (
 
           <div>
             <span>SELLER</span>
-            <b>${esc(getSellerName(order))}</b>
+            <b class="seller-name">${esc(getSellerName(order))}</b>
           </div>
 
           <div>
             <span>GSTIN</span>
-            <b>${esc(getSellerGstin(order) || "")}</b>
+            <b class="seller-gstin">${esc(getSellerGstin(order) || "")}</b>
           </div>
 
           <div>
@@ -1201,11 +1201,19 @@ const build3x2LabelHtml = (
 
       .label-3x2 .mini-seller b {
         display: block;
-        font-size: 5.4pt;
+        font-size: 5pt;
         font-weight: 600;
+        line-height: 1.2;
+      }
+
+      .label-3x2 .mini-seller .seller-name {
         white-space: normal;
         overflow-wrap: break-word;
         word-break: break-word;
+      }
+
+      .label-3x2 .mini-seller .seller-gstin {
+        white-space: nowrap;
       }
     </style>
   `;
@@ -1490,12 +1498,12 @@ const buildLabelHtml = (
         <section class="seller">
           <div>
             <span>SELLER : </span>
-            <b>${esc(getSellerName(order))}</b>
+            <b class="seller-name">${esc(getSellerName(order))}</b>
           </div>
 
           <div>
             <span>GSTIN : </span>
-            <b>${esc(getSellerGstin(order) || " ")}</b>
+            <b class="seller-gstin">${esc(getSellerGstin(order) || " ")}</b>
           </div>
 
           <div>
@@ -1727,7 +1735,7 @@ const buildLabelHtml = (
 
       .seller span {
         display: block;
-        font-size: ${compact ? "4.8pt" : isA4 ? "8.8pt" : "6.6pt"};
+        font-size: ${compact ? "4.5pt" : isA4 ? "8.2pt" : "6pt"};
         font-weight: 600;
         line-height: 1;
         margin-bottom: 0.5mm;
@@ -1824,44 +1832,56 @@ table tr:last-child td {
 
      th:first-child,
 td:first-child {
+  border-left: none;
   text-align: left;
   width: 25%;
 }
+
+th:last-child,
+td:last-child {
+  border-right: none;
+}
+
 .seller {
   flex: 0 0 auto;
   display: grid;
   grid-template-columns: 1fr 1fr 1fr 1fr;
   border-bottom: 1px solid #111827;
   min-height: 10mm;
-  align-items: start;
+  align-items: stretch;
 }
 
 .seller > div {
   min-width: 0;
+  height: 100%;
   padding: ${compact ? "1mm" : "1.2mm"} ${compact ? "1mm" : "1.5mm"};
   overflow-wrap: anywhere;
   min-height: ${compact ? "7mm" : "9mm"};
   box-sizing: border-box;
 }
 
-
-      .seller > div + div {
-        border-left: 1px solid #9ca3af;
-      }
+.seller > div + div {
+  border-left: 1px solid #9ca3af;
+}
 
 .seller b {
   display: block;
-  font-size: ${compact ? "5.4pt" : isA4 ? "10.5pt" : "7.2pt"};
+  font-size: ${compact ? "5pt" : isA4 ? "9.5pt" : "6.2pt"};
   font-weight: 600;
   line-height: 1.25;
   margin-top: 0.8mm;
+  height: auto;
+  min-height: 0;
+}
 
+.seller .seller-name {
   white-space: normal;
   overflow-wrap: break-word;
   word-break: break-word;
+}
 
-  height: auto;
-  min-height: 0;
+.seller .seller-gstin {
+  white-space: nowrap;
 }
 
 .return {
