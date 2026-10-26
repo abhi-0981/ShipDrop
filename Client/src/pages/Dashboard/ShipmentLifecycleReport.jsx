@@ -323,7 +323,7 @@ export default function ShipmentLifecycleReport() {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      toast.success("Shipment lifecycle report exported successfully!");
+      toast.success("Shipment report exported successfully!");
     } catch (err) {
       console.error("Export error:", err);
       toast.error("Failed to export report");
@@ -347,7 +347,7 @@ export default function ShipmentLifecycleReport() {
 
               <div>
                 <h1 className="text-[17px] font-semibold tracking-[-0.2px] text-slate-900">
-                  Shipment Status & Lifecycle Report
+                  Shipment Report
                 </h1>
                 <p className="mt-0.5 text-[12px] text-slate-400">
                   Track parcel transitions, delivery success ratios, RTO volumes, and logistics freight expenditure
@@ -570,70 +570,6 @@ export default function ShipmentLifecycleReport() {
           </div>
         </div>
 
-        {/* Visual Status Breakdown Bar */}
-        {totalOrders > 0 && (
-          <div className="mb-3 rounded-xl border border-slate-200 bg-white p-3.5 shadow-[0_1px_2px_rgba(15,23,42,0.02)]">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
-                Lifecycle Volume Distribution
-              </h3>
-              <span className="text-[11px] text-slate-400 font-medium">{totalOrders} Total Parcels Analyzed</span>
-            </div>
-
-            {/* Stacked Progress Bar */}
-            <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden flex">
-              <div
-                style={{ width: `${deliveredPercent}%` }}
-                title={`Delivered: ${deliveredCount} (${deliveredPercent}%)`}
-                className="h-full bg-emerald-500 transition-all duration-500"
-              />
-              <div
-                style={{ width: `${rtoPercent}%` }}
-                title={`Total RTO: ${totalRto} (${rtoPercent}%)`}
-                className="h-full bg-rose-500 transition-all duration-500"
-              />
-              <div
-                style={{ width: `${totalOrders > 0 ? ((inTransitCount / totalOrders) * 100).toFixed(1) : 0}%` }}
-                title={`In Transit: ${inTransitCount}`}
-                className="h-full bg-sky-500 transition-all duration-500"
-              />
-              <div
-                style={{ width: `${totalOrders > 0 ? ((ndrPendingCount / totalOrders) * 100).toFixed(1) : 0}%` }}
-                title={`NDR / Pending: ${ndrPendingCount}`}
-                className="h-full bg-purple-500 transition-all duration-500"
-              />
-              <div
-                style={{ width: `${totalOrders > 0 ? ((manifestedCount / totalOrders) * 100).toFixed(1) : 0}%` }}
-                title={`Manifested: ${manifestedCount}`}
-                className="h-full bg-indigo-500 transition-all duration-500"
-              />
-            </div>
-
-            {/* Legend */}
-            <div className="flex items-center gap-4 mt-2.5 flex-wrap text-[11px] text-slate-600">
-              <div className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                <span>Delivered ({deliveredPercent}%)</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-rose-500"></span>
-                <span>RTO Return ({rtoPercent}%)</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-sky-500"></span>
-                <span>In Transit ({totalOrders > 0 ? ((inTransitCount / totalOrders) * 100).toFixed(1) : 0}%)</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-purple-500"></span>
-                <span>NDR / Pending ({totalOrders > 0 ? ((ndrPendingCount / totalOrders) * 100).toFixed(1) : 0}%)</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
-                <span>Manifested ({totalOrders > 0 ? ((manifestedCount / totalOrders) * 100).toFixed(1) : 0}%)</span>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* ==================================================
             4. FILTER BAR

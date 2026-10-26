@@ -236,7 +236,7 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
     { name: "Wallet", path: "/wallet" },
     { name: "Tickets", path: "/tickets" },
     { name: "Reports", path: "/reports" },
-    { name: "Shipment Lifecycle Report", path: "/reports/shipment-lifecycle" },
+    { name: "Shipment Report", path: "/reports/shipment-lifecycle" },
     { name: "Weight Discrepancy Report", path: "/reports/weight-discrepancy" },
     { name: "Pickup Address", path: "/settings/pickup-address" },
     { name: "Return Addresses", path: "/settings/return-addresses" },
@@ -895,7 +895,7 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
                     )}`}
                   >
                     <HiOutlineCube size={15} />
-                    <span>Shipment Lifecycle</span>
+                    <span>Shipment Report</span>
                   </Link>
 
                   <Link
