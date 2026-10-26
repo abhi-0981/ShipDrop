@@ -7,8 +7,8 @@ const PRIMARY = "#008dd2";
 // 10 MOST FREQUENTLY USED QUICK ACTION BOXES
 const QUICK_ACTION_CARDS = [
   {
-    id: "add-order",
-    title: "Add an Order",
+    id: "create-order",
+    title: "Create Order",
     path: "/create-order",
     category: "Shipping",
     circleStyle: "bg-indigo-50/80 text-indigo-600 border border-indigo-100/90",
@@ -89,15 +89,16 @@ const QUICK_ACTION_CARDS = [
     ),
   },
   {
-    id: "processing-orders",
-    title: "Ready to Ship",
-    path: "/processing-orders",
-    category: "Processing",
+    id: "analytics",
+    title: "Business Analytics",
+    path: "/analytics",
+    category: "Reports",
     circleStyle: "bg-amber-50/80 text-amber-600 border border-amber-100/90",
     renderIcon: () => (
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="12" r="10" />
-        <polyline points="12 6 12 12 16 14" />
+        <line x1="18" y1="20" x2="18" y2="10" />
+        <line x1="12" y1="20" x2="12" y2="4" />
+        <line x1="6" y1="20" x2="6" y2="14" />
       </svg>
     ),
   },
@@ -115,32 +116,33 @@ const QUICK_ACTION_CARDS = [
     ),
   },
   {
-    id: "manifested",
-    title: "Manifested Shipments",
-    path: "/manifested",
-    category: "Orders",
+    id: "pickup-address",
+    title: "Pickup Addresses",
+    path: "/settings/pickup-address",
+    category: "Settings",
     circleStyle: "bg-cyan-50/80 text-cyan-600 border border-cyan-100/90",
     renderIcon: () => (
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2" />
-        <path d="M15 18H9" />
-        <path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.62l-3.48-4.35A1 1 0 0 0 17.52 8H14v10Z" />
-        <circle cx="17" cy="18.5" r="2.5" />
-        <circle cx="7" cy="18.5" r="2.5" />
+        <path d="M3 21h18" />
+        <path d="M5 21V7l8-4v18" />
+        <path d="M19 21V11l-6-3" />
+        <path d="M9 9v.01" />
+        <path d="M9 12v.01" />
+        <path d="M9 15v.01" />
+        <path d="M9 18v.01" />
       </svg>
     ),
   },
   {
-    id: "pending-ndr",
-    title: "NDR & Undelivered",
-    path: "/pending",
-    category: "Action Needed",
+    id: "tickets",
+    title: "Support Tickets",
+    path: "/tickets",
+    category: "Support",
     circleStyle: "bg-rose-50/80 text-rose-600 border border-rose-100/90",
     renderIcon: () => (
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
-        <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
-        <line x1="12" y1="9" x2="12" y2="13" />
-        <line x1="12" y1="17" x2="12.01" y2="17" />
+        <path d="M3 18v-6a9 9 0 0 1 18 0v6" />
+        <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
       </svg>
     ),
   },
