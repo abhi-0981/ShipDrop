@@ -87,7 +87,14 @@ const getUserRateCard = async (userId) => {
   const user = result[0];
 
   if (!user.rate_card_id) {
-    throw new Error("No rate card assigned to this user");
+    const defaultCards = await query(
+      `SELECT id FROM admin_rate_cards WHERE is_active = 1 ORDER BY id ASC LIMIT 1`
+    );
+    if (defaultCards && defaultCards.length > 0) {
+      user.rate_card_id = defaultCards[0].id;
+    } else {
+      throw new Error("No rate card assigned to this user");
+    }
   }
 
   return user;
@@ -644,18 +651,28 @@ const calculateShippingRate = async (
   weight,
   serviceType = "ROAD",
   paymentType = "Pre-paid",
-  productValue = 0
+  productValue = 0,
+  options = {}
 ) => {
   if (!userId) {
     throw new Error("User ID is required");
   }
 
-  if (!/^\d{6}$/.test(String(pickup_pincode || "").trim())) {
-    throw new Error("Valid 6-digit pickup pincode is required");
-  }
+  const knownZone = options?.knownZone
+    ? String(options.knownZone).trim().toUpperCase()
+    : null;
 
-  if (!/^\d{6}$/.test(String(delivery_pincode || "").trim())) {
-    throw new Error("Valid 6-digit delivery pincode is required");
+  const cleanPickupPin = String(pickup_pincode || "").trim();
+  const cleanDeliveryPin = String(delivery_pincode || "").trim();
+
+  if (!knownZone) {
+    if (!/^\d{6}$/.test(cleanPickupPin)) {
+      throw new Error("Valid 6-digit pickup pincode is required");
+    }
+
+    if (!/^\d{6}$/.test(cleanDeliveryPin)) {
+      throw new Error("Valid 6-digit delivery pincode is required");
+    }
   }
 
   const numericWeight = Number(weight);
@@ -669,23 +686,30 @@ const calculateShippingRate = async (
   }
 
   const user = await getUserRateCard(userId);
+  const rateCardId = options?.rateCardId || user.rate_card_id;
+
   const rateCardService = await getAdminRateCardService(
-    user.rate_card_id,
+    rateCardId,
     normalizedService
   );
 
-  const zoneResult = await calculateZone(pickup_pincode, delivery_pincode);
-  let finalZone = zoneResult.zone;
+  let finalZone = knownZone;
+  let zoneResult = { zone: knownZone };
 
-  const pickupCity = String(zoneResult.pickup?.city || "")
-    .trim()
-    .toLowerCase();
-  const deliveryCity = String(zoneResult.delivery?.city || "")
-    .trim()
-    .toLowerCase();
+  if (!finalZone) {
+    zoneResult = await calculateZone(cleanPickupPin, cleanDeliveryPin);
+    finalZone = zoneResult.zone;
 
-  if (pickupCity && deliveryCity && pickupCity === deliveryCity) {
-    finalZone = "A";
+    const pickupCity = String(zoneResult.pickup?.city || "")
+      .trim()
+      .toLowerCase();
+    const deliveryCity = String(zoneResult.delivery?.city || "")
+      .trim()
+      .toLowerCase();
+
+    if (pickupCity && deliveryCity && pickupCity === deliveryCity) {
+      finalZone = "A";
+    }
   }
 
   const useApi = Number(rateCardService.use_shipping_charge_api) === 1;
@@ -694,8 +718,8 @@ const calculateShippingRate = async (
 
   if (useApi) {
     const apiResult = await calculateDelhiveryRate({
-      pickupPincode: pickup_pincode,
-      deliveryPincode: delivery_pincode,
+      pickupPincode: cleanPickupPin || cleanDeliveryPin,
+      deliveryPincode: cleanDeliveryPin,
       weight: numericWeight,
       serviceType: normalizedService,
       paymentType: paymentType,

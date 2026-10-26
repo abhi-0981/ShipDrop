@@ -449,11 +449,19 @@ const WeightChecking = () => {
         toast.success(
           `${imported} weight record${imported === 1 ? "" : "s"} imported successfully`
         );
+      } else if (errors > 0) {
+        const firstErrorMessage =
+          data?.errors?.[0]?.message || "Failed to process weight records";
+        toast.error(`Import failed: ${firstErrorMessage}`);
+      } else if (skipped > 0) {
+        const firstSkippedReason =
+          data?.skipped?.[0]?.reason || "Record was skipped";
+        toast.error(`Skipped: ${firstSkippedReason}`);
       } else {
-        toast.success("Weight file processed successfully");
+        toast.info("No records to process in file");
       }
 
-      if (skipped > 0 || errors > 0) {
+      if (imported > 0 && (skipped > 0 || errors > 0)) {
         toast(`${skipped} skipped, ${errors} error${errors === 1 ? "" : "s"}`, {
           icon: "ℹ️",
         });
