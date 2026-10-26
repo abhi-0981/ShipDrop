@@ -940,6 +940,7 @@ const build3x2LabelHtml = (
           <div>
             <span>PAYMENT</span>
             <b>${payment}</b>
+            <div style="padding-top: 1px;"></div>
           </div>
 
           ${
@@ -948,6 +949,7 @@ const build3x2LabelHtml = (
                 <div>
                   <span>ORDER ID</span>
                   <b>${esc(getOrderId(order))}</b>
+                  <div style="padding-top: 1px;"></div>
                 </div>
               `
               : ""
@@ -956,6 +958,7 @@ const build3x2LabelHtml = (
           <div>
             <span>SERVICE</span>
             <b>${getServiceType(order)}</b>
+            <div style="padding-top: 1px;"></div>
           </div>
 
           ${
@@ -964,6 +967,7 @@ const build3x2LabelHtml = (
                 <div>
                   <span>WEIGHT</span>
                   <b>${getWeight(order).toFixed(2)} KG</b>
+                  <div style="padding-top: 1px;"></div>
                 </div>
               `
               : ""
@@ -1295,10 +1299,10 @@ const buildLabelHtml = (
         .map(
           (product) => `
             <tr>
-              <td class="product-name">${esc(product.name)}</td>
-              <td>${product.rate.toFixed(2)}</td>
-              <td>${product.qty}</td>
-              <td>${product.total.toFixed(2)}</td>
+              <td class="product-name">${esc(product.name)}<div style="padding-top: 1px;"></div></td>
+              <td>${product.rate.toFixed(2)}<div style="padding-top: 1px;"></div></td>
+              <td>${product.qty}<div style="padding-top: 1px;"></div></td>
+              <td>${product.total.toFixed(2)}<div style="padding-top: 1px;"></div></td>
             </tr>
           `
         )
@@ -1404,6 +1408,7 @@ const buildLabelHtml = (
   <div>
     <span>PAYMENT</span>
     <b>${payment}</b>
+    <div style="padding-top: 1px;"></div>
   </div>
 
   ${
@@ -1412,6 +1417,7 @@ const buildLabelHtml = (
         <div>
           <span>ORDER ID</span>
           <b>${esc(getOrderId(order))}</b>
+          <div style="padding-top: 1px;"></div>
         </div>
       `
       : ""
@@ -1420,6 +1426,7 @@ const buildLabelHtml = (
   <div>
     <span>SERVICE</span>
     <b>${getServiceType(order)}</b>
+    <div style="padding-top: 1px;"></div>
   </div>
 
   ${
@@ -1428,13 +1435,12 @@ const buildLabelHtml = (
         <div>
           <span>WEIGHT</span>
           <b>${getWeight(order).toFixed(2)} KG</b>
+          <div style="padding-top: 1px;"></div>
         </div>
       `
       : ""
   }
 </section>
-
-
 
        
         ${
@@ -1464,6 +1470,7 @@ const buildLabelHtml = (
 
     <tbody>${productRows}</tbody>
   </table>
+  <div style="padding-top: 1px;"></div>
 </section>
             `
             : ""
@@ -1957,9 +1964,9 @@ export const generateShippingLabelsPdf = async (orders) => {
       throw new Error("No shipping labels could be generated");
     }
 
-    // High-speed single pass capture of the clean isolated iframe DOM (takes ~150-250ms for 20 labels)
+    // High-speed single pass capture with crisp 2x resolution for sharp text & barcodes
     const bigCanvas = await html2canvas(labelsFlow, {
-      scale: 1.3,
+      scale: 2,
       backgroundColor: "#ffffff",
       useCORS: true,
       logging: false,
@@ -2015,8 +2022,8 @@ export const generateShippingLabelsPdf = async (orders) => {
         );
       }
 
-      // Compact JPEG compression ~18KB per page (20 labels ~360KB)
-      const imgData = pageCanvas.toDataURL("image/jpeg", 0.70);
+      // High visual quality with balanced compression (~35KB per page)
+      const imgData = pageCanvas.toDataURL("image/jpeg", 0.90);
 
       pdf.addImage(
         imgData,
