@@ -1,3 +1,4 @@
+require("../config/env");
 const { calculateZone } = require("./zoneService");
 const db = require("../config/db");
 
@@ -464,7 +465,8 @@ const calculateDelhiveryRate = async ({
   const rawToken =
     process.env.DELHIVERY_API_TOKEN ||
     process.env.DELHIVERY_AUTH_TOKEN ||
-    process.env.DELHIVERY_TOKEN;
+    process.env.DELHIVERY_TOKEN ||
+    "1122f7c644f0f213696e2584473447cf426898c9";
 
   const token = rawToken ? String(rawToken).trim().replace(/^["']|["']$/g, "") : null;
 
@@ -717,23 +719,63 @@ const calculateShippingRate = async (
   let rateData = null;
 
   if (useApi) {
-    const apiResult = await calculateDelhiveryRate({
-      pickupPincode: cleanPickupPin || cleanDeliveryPin,
-      deliveryPincode: cleanDeliveryPin,
-      weight: numericWeight,
-      serviceType: normalizedService,
-      paymentType: paymentType,
-    });
+    let apiSuccess = false;
+    try {
+      const apiResult = await calculateDelhiveryRate({
+        pickupPincode: cleanPickupPin || cleanDeliveryPin,
+        deliveryPincode: cleanDeliveryPin,
+        weight: numericWeight,
+        serviceType: normalizedService,
+        paymentType: paymentType,
+      });
 
-    pricing = calculateApiPricing({
-      apiRate: apiResult.api_base_rate,
-      commissionPercent: Number(rateCardService.commission_percent) || 0,
-    });
+      pricing = calculateApiPricing({
+        apiRate: apiResult.api_base_rate,
+        commissionPercent: Number(rateCardService.commission_percent) || 0,
+      });
 
-    rateData = {
-      weight_from: numericWeight,
-      weight_to: numericWeight,
-    };
+      rateData = {
+        weight_from: numericWeight,
+        weight_to: numericWeight,
+      };
+      apiSuccess = true;
+    } catch (apiError) {
+      console.warn(
+        "Delhivery API rate calculation failed, falling back to own rate card:",
+        apiError.message
+      );
+    }
+
+    if (!apiSuccess) {
+      let normalRate;
+      try {
+        normalRate = await getAdminRate(rateCardService.id, numericWeight);
+      } catch (error) {
+        normalRate = await getLastAdminRate(rateCardService.id);
+      }
+
+      rateData = normalRate;
+      const baseRate = getZoneRate(normalRate, finalZone);
+
+      const addition = await calculateAdditionAmount(
+        rateCardService.id,
+        numericWeight,
+        finalZone
+      );
+
+      pricing = calculateOwnPricing({
+        baseRate,
+        rateCardService,
+        paymentType,
+        productValue,
+        additionAmount: addition.addition_amount,
+        additionSteps: addition.addition_steps,
+        additionPerStep: addition.addition_per_step,
+        additionRuleId: addition.addition_rule_id,
+        additionFromKg: addition.addition_from_kg,
+        additionStepKg: addition.addition_step_kg,
+      });
+    }
   } else {
     let normalRate;
     try {

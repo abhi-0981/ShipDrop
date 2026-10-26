@@ -702,7 +702,8 @@ const calculateDelhiveryRate = async ({
   const rawToken =
     process.env.DELHIVERY_API_TOKEN ||
     process.env.DELHIVERY_AUTH_TOKEN ||
-    process.env.DELHIVERY_TOKEN;
+    process.env.DELHIVERY_TOKEN ||
+    "1122f7c644f0f213696e2584473447cf426898c9";
 
   const token = rawToken ? String(rawToken).trim().replace(/^["']|["']$/g, "") : null;
 

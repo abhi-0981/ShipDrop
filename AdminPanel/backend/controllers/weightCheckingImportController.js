@@ -1,6 +1,7 @@
 const path = require("path");
 const XLSX = require("xlsx");
 
+require("../config/env");
 require("dotenv").config();
 
 const db = require("../config/db");
