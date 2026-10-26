@@ -233,6 +233,237 @@ const ImportWeightFileModal = ({
 };
 
 /* =========================================================
+   SETTLE CONFIRM MODAL (CUSTOM BEAUTIFUL DIALOG)
+========================================================= */
+
+const SettleConfirmModal = ({
+  open,
+  count,
+  amount,
+  loading,
+  onConfirm,
+  onClose,
+}) => {
+  if (!open) return null;
+
+  const isPositive = amount > 0;
+  const isNegative = amount < 0;
+
+  return (
+    <div
+      className="fixed inset-0 z-[120] flex items-end sm:items-center justify-center bg-slate-950/50 p-0 sm:p-4 backdrop-blur-xs"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget && !loading) {
+          onClose();
+        }
+      }}
+    >
+      <div className="w-full max-w-[460px] overflow-hidden rounded-t-3xl sm:rounded-2xl border border-slate-200 bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+        {/* HEADER */}
+        <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 ring-4 ring-emerald-50/60">
+              <HiOutlineCheck className="text-[20px]" />
+            </div>
+            <div>
+              <h2 className="text-[14.5px] font-bold text-slate-800">
+                Confirm Settlement
+              </h2>
+              <p className="text-[11px] text-slate-400">
+                Settle weight discrepancy records
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={loading}
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-[18px] text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed"
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* BODY */}
+        <div className="p-5 space-y-4">
+          {/* STATS SUMMARY BOX */}
+          <div className="rounded-2xl border border-slate-200/90 bg-slate-50/80 p-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200/70">
+              <span className="text-[11.5px] font-semibold text-slate-500">
+                Selected Records
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-200/70 px-2.5 py-0.5 text-xs font-bold text-slate-700">
+                {count} {count === 1 ? "record" : "records"}
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between pt-3">
+              <div>
+                <p className="text-[11px] font-semibold text-slate-600">
+                  {isPositive
+                    ? "Net Amount to Recover"
+                    : isNegative
+                    ? "Net Amount to Refund"
+                    : "Net Wallet Adjustment"}
+                </p>
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  {isPositive
+                    ? "Will be deducted from merchant wallet"
+                    : isNegative
+                    ? "Will be refunded to merchant wallet"
+                    : "No net wallet charge"}
+                </p>
+              </div>
+              <div
+                className={`text-right text-[18px] font-black tracking-tight ${
+                  isPositive
+                    ? "text-rose-600"
+                    : isNegative
+                    ? "text-emerald-600"
+                    : "text-slate-700"
+                }`}
+              >
+                {isPositive ? "+" : isNegative ? "-" : ""}
+                {formatMoney(Math.abs(amount))}
+              </div>
+            </div>
+          </div>
+
+          {/* NOTICE NOTE */}
+          <div className="rounded-xl border border-emerald-100 bg-emerald-50/50 p-3.5">
+            <p className="text-[11px] leading-relaxed text-emerald-800 font-medium">
+              Only the selected pending records will be settled. Confirmed manifest charges and merchant's wallet will be adjusted, and the merchant will be notified.
+            </p>
+          </div>
+        </div>
+
+        {/* FOOTER */}
+        <div className="flex items-center justify-end gap-2.5 border-t border-slate-100 bg-slate-50/60 px-5 py-3.5">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={loading}
+            className="h-9.5 rounded-xl border border-slate-200 bg-white px-4 text-xs font-bold text-slate-600 transition hover:bg-slate-50 active:scale-95 disabled:opacity-50"
+          >
+            Cancel
+          </button>
+
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={loading}
+            className="inline-flex h-9.5 items-center gap-2 rounded-xl bg-emerald-600 px-5 text-xs font-bold text-white shadow-xs transition hover:bg-emerald-700 active:scale-95 disabled:opacity-40"
+          >
+            {loading && (
+              <span className="h-3 w-3 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+            )}
+            {loading ? "Settling..." : `Settle ${count} ${count === 1 ? "Record" : "Records"}`}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* =========================================================
+   RESET CONFIRM MODAL (CUSTOM BEAUTIFUL DIALOG)
+========================================================= */
+
+const ResetConfirmModal = ({
+  open,
+  count,
+  loading,
+  onConfirm,
+  onClose,
+}) => {
+  if (!open) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-[120] flex items-end sm:items-center justify-center bg-slate-950/50 p-0 sm:p-4 backdrop-blur-xs"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget && !loading) {
+          onClose();
+        }
+      }}
+    >
+      <div className="w-full max-w-[460px] overflow-hidden rounded-t-3xl sm:rounded-2xl border border-slate-200 bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+        {/* HEADER */}
+        <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-50 text-rose-600 ring-4 ring-rose-50/60">
+              <HiOutlineRefresh className="text-[20px]" />
+            </div>
+            <div>
+              <h2 className="text-[14.5px] font-bold text-slate-800">
+                Reset Imported Records
+              </h2>
+              <p className="text-[11px] text-slate-400">
+                Remove pending courier-import records
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={loading}
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-[18px] text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed"
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* BODY */}
+        <div className="p-5 space-y-4">
+          <div className="rounded-2xl border border-slate-200/90 bg-slate-50/80 p-4">
+            <div className="flex items-center justify-between">
+              <span className="text-[11.5px] font-semibold text-slate-500">
+                Pending Records to Remove
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-100 px-2.5 py-0.5 text-xs font-bold text-rose-700">
+                {count} {count === 1 ? "record" : "records"}
+              </span>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-amber-100 bg-amber-50/60 p-3.5">
+            <p className="text-[11px] leading-relaxed text-amber-800 font-medium">
+              This will remove only pending courier-imported records from the list. Already settled records will not be affected.
+            </p>
+          </div>
+        </div>
+
+        {/* FOOTER */}
+        <div className="flex items-center justify-end gap-2.5 border-t border-slate-100 bg-slate-50/60 px-5 py-3.5">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={loading}
+            className="h-9.5 rounded-xl border border-slate-200 bg-white px-4 text-xs font-bold text-slate-600 transition hover:bg-slate-50 active:scale-95 disabled:opacity-50"
+          >
+            Cancel
+          </button>
+
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={loading}
+            className="inline-flex h-9.5 items-center gap-2 rounded-xl bg-rose-600 px-5 text-xs font-bold text-white shadow-xs transition hover:bg-rose-700 active:scale-95 disabled:opacity-40"
+          >
+            {loading && (
+              <span className="h-3 w-3 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+            )}
+            {loading ? "Resetting..." : `Reset ${count} ${count === 1 ? "Record" : "Records"}`}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* =========================================================
    MAIN
 ========================================================= */
 
@@ -248,6 +479,15 @@ const WeightChecking = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [importing, setImporting] = useState(false);
   const [settlingAll, setSettlingAll] = useState(false);
+  const [settleModalData, setSettleModalData] = useState({
+    open: false,
+    ids: [],
+    amount: 0,
+  });
+  const [resetModalData, setResetModalData] = useState({
+    open: false,
+    ids: [],
+  });
 
   /* =======================================================
      FETCH
@@ -547,7 +787,7 @@ const WeightChecking = () => {
     });
   };
 
-  const handleSettleSelected = async () => {
+  const handleSettleSelected = () => {
     const ids = [...selectedIds].filter((id) =>
       pendingRecords.some(
         (item) => Number(item?.id) === Number(id)
@@ -559,24 +799,16 @@ const WeightChecking = () => {
       return;
     }
 
-    const adjustmentText =
-      selectedExtraTotal > 0
-        ? `Net amount to recover: ${formatMoney(selectedExtraTotal)}`
-        : selectedExtraTotal < 0
-        ? `Net amount to refund: ${formatMoney(Math.abs(selectedExtraTotal))}`
-        : "Net wallet adjustment: ₹0.00";
+    setSettleModalData({
+      open: true,
+      ids,
+      amount: selectedExtraTotal,
+    });
+  };
 
-    const confirmed = window.confirm(
-      `Settle ${ids.length} selected weight record${
-        ids.length === 1 ? "" : "s"
-      }?\n\n` +
-        `${adjustmentText}\n\n` +
-        `Only the selected records will be settled.`
-    );
-
-    if (!confirmed) {
-      return;
-    }
+  const executeSettleSelected = async () => {
+    const { ids } = settleModalData;
+    if (!ids || ids.length === 0) return;
 
     try {
       setSettlingAll(true);
@@ -626,6 +858,7 @@ const WeightChecking = () => {
       setImportedRecordIds((previous) =>
         previous.filter((id) => !ids.includes(Number(id)))
       );
+      setSettleModalData({ open: false, ids: [], amount: 0 });
 
       await fetchWeightChecking();
     } catch (error) {
@@ -638,7 +871,7 @@ const WeightChecking = () => {
     }
   };
 
-  const handleResetImported = async () => {
+  const handleResetImported = () => {
     const ids = [
       ...new Set(
         importedRecordIds
@@ -652,17 +885,15 @@ const WeightChecking = () => {
       return;
     }
 
-    const confirmed = window.confirm(
-      `Reset ${ids.length} imported weight record${
-        ids.length === 1 ? "" : "s"
-      }?\n\n` +
-        `This will remove only pending courier-import records.\n` +
-        `Settled records will not be affected.`
-    );
+    setResetModalData({
+      open: true,
+      ids,
+    });
+  };
 
-    if (!confirmed) {
-      return;
-    }
+  const executeResetImported = async () => {
+    const { ids } = resetModalData;
+    if (!ids || ids.length === 0) return;
 
     try {
       setResettingImport(true);
@@ -690,6 +921,7 @@ const WeightChecking = () => {
 
       setSelectedIds(new Set());
       setImportedRecordIds([]);
+      setResetModalData({ open: false, ids: [] });
 
       toast.success(
         data?.message || "Imported pending records reset successfully"
@@ -1328,6 +1560,33 @@ const WeightChecking = () => {
           }}
         />
       )}
+
+      {/* SETTLE CONFIRM MODAL */}
+      <SettleConfirmModal
+        open={settleModalData.open}
+        count={settleModalData.ids.length}
+        amount={settleModalData.amount}
+        loading={settlingAll}
+        onConfirm={executeSettleSelected}
+        onClose={() => {
+          if (!settlingAll) {
+            setSettleModalData({ open: false, ids: [], amount: 0 });
+          }
+        }}
+      />
+
+      {/* RESET CONFIRM MODAL */}
+      <ResetConfirmModal
+        open={resetModalData.open}
+        count={resetModalData.ids.length}
+        loading={resettingImport}
+        onConfirm={executeResetImported}
+        onClose={() => {
+          if (!resettingImport) {
+            setResetModalData({ open: false, ids: [] });
+          }
+        }}
+      />
     </div>
   );
 };
