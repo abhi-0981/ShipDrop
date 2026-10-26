@@ -218,25 +218,44 @@ const StatCard = ({
   iconClass,
   onClick,
   isWide = false,
+  valueClassName,
 }) => {
+  const isCurrency = typeof value === "string" && value.includes("₹");
+  const valueLength = String(value || "").length;
+
+  const fontClass = valueClassName || (
+    isCurrency
+      ? valueLength > 11
+        ? "text-[14.5px] sm:text-[15.5px] xl:text-[16.5px]"
+        : "text-[15.5px] sm:text-[17px] xl:text-[18px]"
+      : valueLength > 6
+        ? "text-[17px] sm:text-[19px] xl:text-[20px]"
+        : "text-[19px] sm:text-[22px]"
+  );
+
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={!onClick}
-      className={`w-full text-left rounded-2xl border border-slate-200/80 bg-white p-3.5 sm:p-4 shadow-[0_1px_4px_rgba(15,23,42,0.03)] transition-all duration-200 active:scale-[0.98] ${isWide ? "col-span-2 sm:col-span-1" : ""
-        } ${onClick
+      className={`w-full text-left rounded-2xl border border-slate-200/80 bg-white p-3.5 sm:p-4 shadow-[0_1px_4px_rgba(15,23,42,0.03)] transition-all duration-200 active:scale-[0.98] ${
+        isWide ? "col-span-2 sm:col-span-1" : ""
+      } ${
+        onClick
           ? "cursor-pointer hover:border-slate-300 hover:shadow-[0_4px_12px_rgba(15,23,42,0.06)]"
           : "cursor-default"
-        }`}
+      }`}
     >
       <div className="flex items-start justify-between">
-        <div className="min-w-0 flex-1 pr-2">
+        <div className="min-w-0 flex-1 pr-1.5 sm:pr-2">
           <p className="text-[11px] sm:text-[12px] font-medium text-slate-400 truncate">
             {title}
           </p>
 
-          <p className="mt-1 text-[19px] sm:text-[22px] font-bold tracking-tight text-slate-800 truncate">
+          <p
+            className={`mt-1 font-bold tracking-tight text-slate-800 truncate ${fontClass}`}
+            title={typeof value === "string" ? value : undefined}
+          >
             {value}
           </p>
 
