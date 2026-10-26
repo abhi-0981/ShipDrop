@@ -225,11 +225,9 @@ const StatCard = ({
 
   const fontClass = valueClassName || (
     isCurrency
-      ? valueLength > 11
-        ? "text-[14.5px] sm:text-[15.5px] xl:text-[16.5px]"
-        : "text-[15.5px] sm:text-[17px] xl:text-[18px]"
+      ? "text-[18px]"
       : valueLength > 6
-        ? "text-[17px] sm:text-[19px] xl:text-[20px]"
+        ? "text-[18px] sm:text-[20px]"
         : "text-[19px] sm:text-[22px]"
   );
 
@@ -809,6 +807,7 @@ function Dashboard() {
           iconClass="bg-violet-50 text-violet-600"
           onClick={() => navigate("/wallet")}
           isWide={true}
+          valueClassName="text-[18px]"
         />
       </div>
 
