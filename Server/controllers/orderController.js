@@ -1022,6 +1022,7 @@ const getOrderByIdController = async (req, res) => {
 const updateOrderController = async (req, res) => {
   try {
     const orderId = Number(req.params.id);
+    const body = req.body || {};
 
     const {
       user_id,
@@ -1030,10 +1031,11 @@ const updateOrderController = async (req, res) => {
       pickup_address,
       pickup_pincode,
       pickup_city,
+      party_identity_id,
       orderData,
       products,
       packages,
-    } = req.body;
+    } = body;
 
     const userId = Number(req.user?.id || user_id);
 

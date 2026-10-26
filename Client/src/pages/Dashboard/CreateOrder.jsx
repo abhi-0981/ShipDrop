@@ -1883,6 +1883,7 @@ function CreateOrder() {
           pickup_pincode: formData.pickup_pincode,
           pickup_city: formData.pickup_city,
           warehouse_id: selectedWarehouse?.id || null,
+          party_identity_id: selectedPartyIdentityId ? Number(selectedPartyIdentityId) : null,
           orderData: { ...baseOrderData, id: orderId },
           products: productData,
           packages: packageData,
