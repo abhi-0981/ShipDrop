@@ -114,7 +114,9 @@
     const [notifications, setNotifications] = useState([]);
     const [unreadNotifCount, setUnreadNotifCount] = useState(0);
     const notifRef = useRef(null);
-    const [activeToastNotifications, setActiveToastNotifications] = useState([]);
+    const [currentToast, setCurrentToast] = useState(null);
+    const toastQueueRef = useRef([]);
+    const isToastActiveRef = useRef(false);
     const knownNotifMapRef = useRef(new Map());
     const isInitialNotifFetchRef = useRef(true);
     const [amount, setAmount] = useState("");
@@ -292,16 +294,7 @@
             });
 
             if (incomingUpdates.length > 0) {
-              const newToastItems = incomingUpdates.slice(0, 4).map((item, idx) => ({
-                ...item,
-                toastInstanceKey: `${item.id}_${Date.now()}_${idx}`,
-              }));
-
-              setActiveToastNotifications((prev) => {
-                const existingIds = new Set(prev.map((p) => p.id));
-                const toAdd = newToastItems.filter((item) => !existingIds.has(item.id));
-                return [...prev, ...toAdd].slice(0, 4);
-              });
+              enqueueToasts(incomingUpdates);
             }
           }
         }
@@ -310,19 +303,54 @@
       }
     };
 
-    const handleToastOpen = (notif) => {
-      if (!notif) return;
-      setActiveToastNotifications((prev) =>
-        prev.filter((n) => (n.toastInstanceKey || n.id) !== (notif.toastInstanceKey || notif.id))
-      );
-      handleNotificationClick(notif);
+    const showNextToast = () => {
+      if (toastQueueRef.current.length === 0) {
+        isToastActiveRef.current = false;
+        setCurrentToast(null);
+        return;
+      }
+
+      isToastActiveRef.current = true;
+      const next = toastQueueRef.current.shift();
+      setCurrentToast(next);
     };
 
-    const handleToastDismiss = (notif) => {
-      if (!notif) return;
-      setActiveToastNotifications((prev) =>
-        prev.filter((n) => (n.toastInstanceKey || n.id) !== (notif.toastInstanceKey || notif.id))
-      );
+    const enqueueToasts = (newNotifs) => {
+      const list = Array.isArray(newNotifs) ? newNotifs : [newNotifs];
+      if (list.length === 0) return;
+
+      const queuedIds = new Set(toastQueueRef.current.map((n) => n.id));
+      if (currentToast?.id) queuedIds.add(currentToast.id);
+
+      const itemsToAdd = list
+        .filter((n) => n && !queuedIds.has(n.id))
+        .map((item, idx) => ({
+          ...item,
+          toastInstanceKey: `${item.id}_${Date.now()}_${idx}`,
+        }));
+
+      if (itemsToAdd.length === 0) return;
+
+      toastQueueRef.current.push(...itemsToAdd);
+
+      if (!isToastActiveRef.current) {
+        showNextToast();
+      }
+    };
+
+    const handleToastOpen = (notif) => {
+      setCurrentToast(null);
+      handleNotificationClick(notif);
+      setTimeout(() => {
+        showNextToast();
+      }, 350);
+    };
+
+    const handleToastDismiss = () => {
+      setCurrentToast(null);
+      setTimeout(() => {
+        showNextToast();
+      }, 350);
     };
 
     const handleNotificationClick = (notif) => {
@@ -393,6 +421,9 @@
       // Immediately clear notification box so it's empty
       setNotifications([]);
       setUnreadNotifCount(0);
+      toastQueueRef.current = [];
+      isToastActiveRef.current = false;
+      setCurrentToast(null);
       try {
         await api.post("/notifications/mark-read", {
           user_id: savedUser.id,
@@ -442,15 +473,7 @@
             message: detail.message,
           });
 
-          const newToast = {
-            ...detail,
-            toastInstanceKey: `${detail.id}_${Date.now()}_${Math.random()}`,
-          };
-
-          setActiveToastNotifications((prev) => {
-            const filtered = prev.filter((p) => p.id !== detail.id);
-            return [...filtered, newToast].slice(0, 4);
-          });
+          enqueueToasts(detail);
           loadNotifications(true);
         }
       };
@@ -1729,19 +1752,16 @@
             </div>
           </div>
         )}
-        {/* SLIDE-IN DESKTOP / MOBILE PUSH NOTIFICATION TOASTS STACK */}
-        {activeToastNotifications.length > 0 && (
-          <div className="fixed top-18 right-4 sm:right-6 z-[99999] flex flex-col gap-2.5 pointer-events-none w-[calc(100vw-2rem)] sm:w-[380px] md:w-[410px]">
-            {activeToastNotifications.map((notif) => (
-              <div key={notif.toastInstanceKey || notif.id} className="pointer-events-auto">
-                <NotificationToast
-                  notification={notif}
-                  onOpen={handleToastOpen}
-                  onDismiss={handleToastDismiss}
-                  duration={6500}
-                />
-              </div>
-            ))}
+        {/* SLIDE-IN DESKTOP / MOBILE PUSH NOTIFICATION TOAST (ONE-BY-ONE QUEUE) */}
+        {currentToast && (
+          <div className="fixed top-18 right-4 sm:right-6 z-[99999] w-[calc(100vw-2rem)] sm:w-[380px] md:w-[410px]">
+            <NotificationToast
+              key={currentToast.toastInstanceKey || currentToast.id}
+              notification={currentToast}
+              onOpen={handleToastOpen}
+              onDismiss={handleToastDismiss}
+              duration={5500}
+            />
           </div>
         )}
       </>
