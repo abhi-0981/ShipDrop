@@ -1553,9 +1553,9 @@ function OutForDelivery() {
 
         <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
 
-          <div className="max-h-[calc(100vh-180px)] overflow-x-hidden overflow-y-auto">
+          <div className="max-h-[calc(100vh-180px)] overflow-x-auto overflow-y-auto">
 
-            <table className="w-full table-fixed border-collapse">
+            <table className="w-full table-fixed min-w-[950px] border-collapse">
 
               {/* TABLE HEADER */}
 

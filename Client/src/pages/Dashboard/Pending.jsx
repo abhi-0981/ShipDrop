@@ -959,8 +959,8 @@ const triggerTracking = (awb) => {
       ================================================= */}
 
       <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
-        <div className="w-full overflow-hidden">
-          <table className="w-full table-fixed border-collapse">
+        <div className="w-full overflow-x-auto">
+          <table className="w-full table-fixed min-w-[950px] border-collapse">
             <thead>
               <tr className="border-b border-slate-200 bg-white">
                 <th className="w-[4%] px-3 py-3 text-left">

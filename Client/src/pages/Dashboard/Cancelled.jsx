@@ -1621,7 +1621,7 @@ function Cancelled() {
 
           <div className="max-h-[calc(100vh-180px)] overflow-auto">
 
-            <table className="w-full table-fixed border-collapse">
+            <table className="w-full table-fixed min-w-[950px] border-collapse">
 
               {/* TABLE HEADER */}
 

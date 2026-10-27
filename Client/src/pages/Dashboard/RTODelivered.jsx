@@ -1177,8 +1177,8 @@ function RTODelivered() {
             TABLE
         ================================================== */}
         <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
-          <div className="max-h-[calc(100vh-180px)] overflow-y-auto overflow-x-hidden">
-            <table className="w-full table-fixed border-collapse">
+          <div className="max-h-[calc(100vh-180px)] overflow-y-auto overflow-x-auto">
+            <table className="w-full table-fixed min-w-[950px] border-collapse">
               {/* TABLE HEADER */}
               <thead className="sticky top-0 z-20 bg-white">
                 <tr className="border-b border-slate-200 bg-white">

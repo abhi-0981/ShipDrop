@@ -381,7 +381,8 @@ export default function PartyIdentities() {
           <>
             {/* DESKTOP TABLE */}
             <div className="hidden sm:block overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
-              <table className="w-full table-fixed border-collapse">
+              <div className="w-full overflow-x-auto">
+                <table className="w-full table-fixed min-w-[850px] border-collapse">
                 <thead>
                   <tr className="border-b border-slate-200 bg-slate-50/70">
                     <th className="w-[6%] px-3.5 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-500">
@@ -507,6 +508,7 @@ export default function PartyIdentities() {
                 </tbody>
               </table>
             </div>
+          </div>
 
             {/* MOBILE CARDS */}
             <div className="space-y-2.5 sm:hidden">

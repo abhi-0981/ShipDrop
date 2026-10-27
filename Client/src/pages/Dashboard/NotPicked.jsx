@@ -1283,13 +1283,13 @@ function NotPicked() {
         ================================================== */}
         <div className="hidden sm:block overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xs">
           <div
-            className="orders-scrollbar max-h-[calc(100vh-180px)] overflow-y-auto overflow-x-hidden"
+            className="orders-scrollbar max-h-[calc(100vh-180px)] overflow-y-auto overflow-x-auto"
             style={{
               scrollbarWidth: "thin",
               scrollbarColor: "#cbd5e1 transparent",
             }}
           >
-            <table className="w-full table-fixed border-collapse">
+            <table className="w-full table-fixed min-w-[950px] border-collapse">
               <thead className="sticky top-0 z-20 bg-white">
                 <tr className="border-b border-slate-200 bg-white">
                   <th className="sticky top-0 z-20 w-[4%] bg-white px-2 py-3 text-left">

@@ -683,7 +683,7 @@ export default function CODRemittance() {
 
           {/* 2. TABLET & DESKTOP TABLE VIEW */}
           <div className="hidden sm:block overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full min-w-[880px] text-left border-collapse">
               <thead>
                 <tr className="border-b border-slate-200 bg-white text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-800/40 dark:text-slate-400">
                   <th className="px-4 py-3 text-left">Order ID</th>

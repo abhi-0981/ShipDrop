@@ -1097,7 +1097,7 @@ function ProcessingOrders() {
                     <button
                       type="button"
                       onClick={() => handleDelete([id])}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg  text-white hover:bg-[#0079b5] active:scale-90 transition"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-500 text-white hover:bg-rose-600 active:scale-90 transition"
                       title="Delete Order"
                     >
                       <Icon name="trash" size={13} />
@@ -1121,8 +1121,8 @@ function ProcessingOrders() {
 
       {/* TABLET & DESKTOP: TABLE VIEW */}
       <div className="hidden lg:block overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_4px_rgba(15,23,42,0.03)]">
-        <div className="w-full">
-          <table className="w-full table-fixed text-left border-collapse">
+        <div className="w-full overflow-x-auto">
+          <table className="w-full table-fixed min-w-[950px] text-left border-collapse">
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50/70 text-[11px] font-bold uppercase tracking-wider text-slate-400">
                 <th className="py-2.5 px-2 w-9 text-center">

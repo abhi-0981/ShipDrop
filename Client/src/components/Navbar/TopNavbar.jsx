@@ -108,6 +108,13 @@
       return () => window.removeEventListener("shipdrop:openRechargeModal", handleOpenRechargeEvent);
     }, []);
 
+    // Auto-close popovers on route change
+    useEffect(() => {
+      setShowProfile(false);
+      setShowNotifications(false);
+      setShowTrackingDetails(false);
+    }, [location.pathname]);
+
     const [showProfile, setShowProfile] = useState(false);
     const profileRef = useRef(null);
 

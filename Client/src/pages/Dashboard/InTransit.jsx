@@ -565,8 +565,6 @@ function InTransit() {
   const [viewingOrder, setViewingOrder] =
     useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
-  const [openActionMenuId, setOpenActionMenuId] = useState(null);
-  const actionMenuRef = useRef(null);
 
   // ====================================================
   // FETCH ALL ORDERS
@@ -634,15 +632,6 @@ function InTransit() {
     }
   };
 
-  useEffect(() => {
-    const handleOutsideClick = (event) => {
-      if (actionMenuRef.current && !actionMenuRef.current.contains(event.target)) {
-        setOpenActionMenuId(null);
-      }
-    };
-    document.addEventListener("mousedown", handleOutsideClick);
-    return () => document.removeEventListener("mousedown", handleOutsideClick);
-  }, []);
 
   // ====================================================
   // INITIAL LOAD
@@ -1657,9 +1646,9 @@ function InTransit() {
 
         <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
 
-          <div className="max-h-[calc(100vh-180px)] overflow-y-auto overflow-x-hidden">
+          <div className="max-h-[calc(100vh-180px)] overflow-y-auto overflow-x-auto">
 
-            <table className="w-full table-fixed border-collapse">
+            <table className="w-full table-fixed min-w-[1000px] border-collapse">
 
               {/* TABLE HEADER */}
 
