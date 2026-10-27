@@ -572,6 +572,8 @@ function AllOrders() {
   const [viewingOrder, setViewingOrder] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [openActionMenuId, setOpenActionMenuId] = useState(null);
+  const [menuPosition, setMenuPosition] = useState(null);
+  const [selectedMenuOrder, setSelectedMenuOrder] = useState(null);
   const actionMenuRef = useRef(null);
 
   // Mobile Touch tracking reference
@@ -712,13 +714,25 @@ useEffect(() => {
       !actionMenuRef.current.contains(event.target)
     ) {
       setOpenActionMenuId(null);
+      setMenuPosition(null);
+      setSelectedMenuOrder(null);
     }
   };
 
+  const handleScrollOrResize = () => {
+    setOpenActionMenuId(null);
+    setMenuPosition(null);
+    setSelectedMenuOrder(null);
+  };
+
   document.addEventListener("mousedown", handleOutsideClick);
+  window.addEventListener("scroll", handleScrollOrResize, true);
+  window.addEventListener("resize", handleScrollOrResize);
 
   return () => {
     document.removeEventListener("mousedown", handleOutsideClick);
+    window.removeEventListener("scroll", handleScrollOrResize, true);
+    window.removeEventListener("resize", handleScrollOrResize);
   };
 }, []);
 
@@ -1873,15 +1887,27 @@ useEffect(() => {
                             </button>
 
     {/* More Actions */}
-<div
-      ref={actionMenuRef}
-      className="relative"
-      onMouseDown={(event) => event.stopPropagation()}
-    >      <button
+    <div className="relative">
+      <button
         type="button"
-        onClick={() =>
-          setOpenActionMenuId((prev) => (prev === id ? null : id))
-        }
+        onClick={(e) => {
+          e.stopPropagation();
+          if (openActionMenuId === id) {
+            setOpenActionMenuId(null);
+            setMenuPosition(null);
+            setSelectedMenuOrder(null);
+          } else {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const openUpward = rect.top >= 95;
+            setMenuPosition({
+              top: openUpward ? undefined : rect.bottom + 6,
+              bottom: openUpward ? window.innerHeight - rect.top + 6 : undefined,
+              right: window.innerWidth - rect.right,
+            });
+            setOpenActionMenuId(id);
+            setSelectedMenuOrder(order);
+          }
+        }}
         title="More Actions"
         aria-label="More Actions"
         aria-expanded={openActionMenuId === id}
@@ -1893,34 +1919,6 @@ useEffect(() => {
       >
         <Icon name="more" size={16} />
       </button>
-
-      {openActionMenuId === id && (
-        <div className="absolute right-0 top-full z-50 mt-1 w-44 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
-          <button
-            type="button"
-            onClick={() => {
-              setOpenActionMenuId(null);
-              handleView(order);
-            }}
-            className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-xs font-medium text-slate-700 transition hover:bg-slate-50"
-          >
-            <Icon name="eye" size={15} />
-            Details
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              setOpenActionMenuId(null);
-              handleDuplicate(order);
-            }}
-            className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-xs font-medium text-slate-700 transition hover:bg-slate-50"
-          >
-            <Icon name="copy" size={15} />
-            Duplicate Order
-          </button>
-        </div>
-      )}
     </div>
   </div>
 </td>
@@ -1991,6 +1989,51 @@ useEffect(() => {
           </div>
         </div>
       </div>
+
+      {/* FLOATING ACTION MENU: OPENS UPWARDS, NO SCROLLBAR, NEVER CLIPPED */}
+      {openActionMenuId && menuPosition && selectedMenuOrder && (
+        <div
+          ref={actionMenuRef}
+          style={{
+            position: "fixed",
+            top: menuPosition.top,
+            bottom: menuPosition.bottom,
+            right: menuPosition.right,
+            zIndex: 9999,
+          }}
+          className="w-44 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 text-left shadow-xl animate-in fade-in zoom-in-95 duration-100"
+        >
+          <button
+            type="button"
+            onClick={() => {
+              const o = selectedMenuOrder;
+              setOpenActionMenuId(null);
+              setMenuPosition(null);
+              setSelectedMenuOrder(null);
+              handleView(o);
+            }}
+            className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-xs font-medium text-slate-700 transition hover:bg-slate-50"
+          >
+            <Icon name="eye" size={15} />
+            Details
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              const o = selectedMenuOrder;
+              setOpenActionMenuId(null);
+              setMenuPosition(null);
+              setSelectedMenuOrder(null);
+              handleDuplicate(o);
+            }}
+            className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-xs font-medium text-slate-700 transition hover:bg-slate-50"
+          >
+            <Icon name="copy" size={15} />
+            Duplicate Order
+          </button>
+        </div>
+      )}
 
       <OrderDetailsModal
         order={viewingOrder}
