@@ -1162,7 +1162,7 @@ const setAsDefault = async (warehouseId) => {
 
   return (
 
-    <div className="min-h-screen bg-[#F8FAFC] px-4 py-5 sm:px-6 lg:px-7">
+    <div className="min-h-screen bg-[#f6f8fb] dark:bg-[#090b10] px-4 py-5 sm:px-6 lg:px-7 text-slate-900 dark:text-slate-100 transition-colors duration-200">
 
       <div className="mx-auto w-full max-w-[1450px]">
 
@@ -1175,7 +1175,7 @@ const setAsDefault = async (warehouseId) => {
 
           <div className="min-w-0">
 
-            <h1 className="text-[23px] font-bold tracking-tight text-slate-900">
+            <h1 className="text-[23px] font-bold tracking-tight text-slate-900 dark:text-white">
               Pickup Address
             </h1>
 
@@ -1204,33 +1204,46 @@ const setAsDefault = async (warehouseId) => {
         {/* TABLE */}
         {/* ================================================= */}
 
-        <div className="w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className="w-full overflow-hidden rounded-xl border border-slate-200 dark:border-[#1f2535] bg-white dark:bg-[#121620] shadow-sm">
 
           {loading ? (
 
-            <div className="flex min-h-[220px] items-center justify-center">
-
-              <div className="text-center">
-
-                <div className="mx-auto h-7 w-7 animate-spin rounded-full border-2 border-slate-200 border-t-[#008dd2]" />
-
-                <p className="mt-3 text-xs text-slate-500">
-                  Loading pickup addresses...
-                </p>
-
-              </div>
-
+            <div className="divide-y divide-slate-100 dark:divide-[#1f2535] p-2">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="flex items-center justify-between p-3.5 gap-4"
+                  style={{ opacity: 1 - i * 0.2 }}
+                >
+                  <div className="space-y-1.5 w-1/4">
+                    <div className="h-4 w-32 rounded bg-slate-200 dark:bg-[#1c2130] skeleton-shimmer" />
+                    <div className="h-3 w-20 rounded bg-slate-100 dark:bg-[#171b26] skeleton-shimmer" />
+                  </div>
+                  <div className="space-y-1.5 w-1/4">
+                    <div className="h-3.5 w-28 rounded bg-slate-200 dark:bg-[#1c2130] skeleton-shimmer" />
+                    <div className="h-2.5 w-24 rounded bg-slate-100 dark:bg-[#171b26] skeleton-shimmer" />
+                  </div>
+                  <div className="space-y-1.5 w-1/3">
+                    <div className="h-3.5 w-full rounded bg-slate-200 dark:bg-[#1c2130] skeleton-shimmer" />
+                    <div className="h-2.5 w-4/5 rounded bg-slate-100 dark:bg-[#171b26] skeleton-shimmer" />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="h-7 w-7 rounded-lg bg-slate-200 dark:bg-[#1c2130] skeleton-shimmer" />
+                    <div className="h-7 w-7 rounded-lg bg-slate-200 dark:bg-[#1c2130] skeleton-shimmer" />
+                  </div>
+                </div>
+              ))}
             </div>
 
           ) : warehouses.length === 0 ? (
 
             <div className="px-6 py-14 text-center">
 
-              <h2 className="text-base font-semibold text-slate-800">
+              <h2 className="text-base font-semibold text-slate-800 dark:text-white">
                 No pickup addresses
               </h2>
 
-              <p className="mt-1 text-xs text-slate-500">
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                 Add your first warehouse to start shipping.
               </p>
 
@@ -1256,33 +1269,33 @@ const setAsDefault = async (warehouseId) => {
 
                 <thead>
 
-                  <tr className="border-b border-slate-200 bg-slate-50/70">
+                  <tr className="border-b border-slate-200 dark:border-[#1f2535] bg-slate-50/70 dark:bg-[#171b26]">
 
-                    <th className="w-[16%] px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                    <th className="w-[16%] px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                       Warehouse
                     </th>
 
-                    <th className="w-[14%] px-3 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                    <th className="w-[14%] px-3 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                       Contact
                     </th>
 
-                    <th className="w-[30%] px-3 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                    <th className="w-[30%] px-3 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                       Address
                     </th>
 
-                    <th className="w-[10%] px-3 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                    <th className="w-[10%] px-3 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                       Pincode
                     </th>
 
-                    <th className="w-[13%] px-3 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                    <th className="w-[13%] px-3 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                       Status
                     </th>
 
-                    <th className="w-[10%] px-3 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                    <th className="w-[10%] px-3 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                       Default
                     </th>
 
-                    <th className="w-[7%] px-4 py-3 text-right text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                    <th className="w-[7%] px-4 py-3 text-right text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                       Actions
                     </th>
 
@@ -1315,14 +1328,14 @@ const setAsDefault = async (warehouseId) => {
                           key={
                             warehouse.id
                           }
-                          className="border-b border-slate-100 transition hover:bg-slate-50/60"
+                          className="border-b border-slate-100 dark:border-[#1f2535] transition hover:bg-slate-50/60 dark:hover:bg-[#171b26]"
                         >
 
                           {/* WAREHOUSE */}
 
                           <td className="px-4 py-3">
 
-                            <p className="truncate text-sm font-semibold text-slate-800">
+                            <p className="truncate text-sm font-semibold text-slate-800 dark:text-slate-100">
                               {
                                 warehouse.warehouse_name
                               }
@@ -1335,14 +1348,14 @@ const setAsDefault = async (warehouseId) => {
 
                           <td className="px-3 py-3">
 
-                            <p className="truncate text-xs font-medium text-slate-700">
+                            <p className="truncate text-xs font-medium text-slate-700 dark:text-slate-200">
                               {
                                 warehouse.contact_name ||
                                 "—"
                               }
                             </p>
 
-                            <p className="mt-0.5 truncate text-[11px] text-slate-500">
+                            <p className="mt-0.5 truncate text-[11px] text-slate-500 dark:text-slate-400">
                               {
                                 warehouse.phone ||
                                 "—"
@@ -1362,7 +1375,7 @@ const setAsDefault = async (warehouseId) => {
                                   warehouse
                                 )
                               }
-                              className="line-clamp-2 text-xs leading-5 text-slate-600"
+                              className="line-clamp-2 text-xs leading-5 text-slate-600 dark:text-slate-300"
                             >
                               {
                                 getAddress(
@@ -1378,7 +1391,7 @@ const setAsDefault = async (warehouseId) => {
 
                           <td className="px-3 py-3">
 
-                            <span className="text-xs font-medium text-slate-700">
+                            <span className="text-xs font-medium text-slate-700 dark:text-slate-300">
                               {
                                 warehouse.pincode
                               }
@@ -1413,7 +1426,7 @@ const setAsDefault = async (warehouseId) => {
                                   String(warehouse.status || "ACTIVE").toUpperCase() ===
                                   "ACTIVE"
                                     ? "bg-emerald-500"
-                                    : "bg-slate-300"
+                                    : "bg-slate-300 dark:bg-slate-700"
                                 }`}
                               >
 
@@ -1432,8 +1445,8 @@ const setAsDefault = async (warehouseId) => {
                                 className={`inline-flex rounded-full px-2 py-1 text-[9px] font-bold ${
                                   String(warehouse.status || "ACTIVE").toUpperCase() ===
                                   "ACTIVE"
-                                    ? "bg-emerald-50 text-emerald-600"
-                                    : "bg-slate-100 text-slate-500"
+                                    ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                                    : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400"
                                 }`}
                               >
                                 {
@@ -1455,7 +1468,7 @@ const setAsDefault = async (warehouseId) => {
 
                             {isDefault ? (
 
-                              <span className="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-[9px] font-bold text-emerald-600">
+                              <span className="inline-flex rounded-full bg-emerald-50 dark:bg-emerald-500/10 px-2.5 py-1 text-[9px] font-bold text-emerald-600 dark:text-emerald-400">
                                 Default
                               </span>
 
@@ -1468,7 +1481,7 @@ const setAsDefault = async (warehouseId) => {
                                     warehouse.id
                                   )
                                 }
-                                className="whitespace-nowrap rounded-md border border-slate-300 px-2.5 py-1.5 text-[9px] font-semibold text-slate-600 transition hover:border-[#008dd2] hover:text-[#008dd2]"
+                                className="whitespace-nowrap rounded-md border border-slate-300 dark:border-slate-700 px-2.5 py-1.5 text-[9px] font-semibold text-slate-600 dark:text-slate-300 transition hover:border-[#008dd2] hover:text-[#008dd2] dark:hover:border-[#008dd2] dark:hover:text-[#008dd2]"
                               >
                                 Set Default
                               </button>
@@ -1494,7 +1507,7 @@ const setAsDefault = async (warehouseId) => {
                                   )
                                 }
                                 title="Edit"
-                                className="flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 text-slate-400 transition hover:border-[#008dd2]/40 hover:bg-[#008dd2]/5 hover:text-[#008dd2]"
+                                className="flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 dark:border-[#1f2535] text-slate-400 dark:text-slate-400 transition hover:border-[#008dd2]/40 hover:bg-[#008dd2]/5 hover:text-[#008dd2]"
                               >
 
                                 <svg
@@ -1522,7 +1535,7 @@ const setAsDefault = async (warehouseId) => {
                                   )
                                 }
                                 title="Delete"
-                                className="flex h-7 w-7 items-center justify-center rounded-md border border-red-100 text-red-400 transition hover:border-red-200 hover:bg-red-50 hover:text-red-500"
+                                className="flex h-7 w-7 items-center justify-center rounded-md border border-red-100 dark:border-red-900/30 text-red-400 transition hover:border-red-200 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-500"
                               >
 
                                 <svg
@@ -1567,7 +1580,7 @@ const setAsDefault = async (warehouseId) => {
 
                     <td
                       colSpan="7"
-                      className="px-4 py-2.5 text-[10px] text-slate-400"
+                      className="px-4 py-2.5 text-[10px] text-slate-400 dark:text-slate-500 border-t border-slate-100 dark:border-[#1f2535]"
                     >
 
                       {warehouses.length} pickup address
@@ -1598,17 +1611,17 @@ const setAsDefault = async (warehouseId) => {
 
       {showModal && (
 
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-[2px]">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 dark:bg-black/70 p-4 backdrop-blur-xs">
 
-          <div className="w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl">
+          <div className="w-full max-w-3xl overflow-hidden rounded-2xl bg-white dark:bg-[#121620] border border-slate-200 dark:border-[#1f2535] shadow-2xl">
 
             {/* HEADER */}
 
-            <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-[#1f2535] px-6 py-4">
 
               <div>
 
-                <h2 className="text-lg font-bold text-slate-900">
+                <h2 className="text-lg font-bold text-slate-900 dark:text-white">
 
                   {editingWarehouse
                     ? "Edit Pickup Address"
@@ -1616,7 +1629,7 @@ const setAsDefault = async (warehouseId) => {
 
                 </h2>
 
-                <p className="mt-1 text-xs text-slate-500">
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
 
                   {editingWarehouse
                     ? "Update your pickup warehouse details"
@@ -1630,7 +1643,7 @@ const setAsDefault = async (warehouseId) => {
               <button
                 type="button"
                 onClick={closeModal}
-                className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-[#1c2130] hover:text-slate-700 dark:hover:text-slate-200 transition"
               >
 
                 <svg
@@ -1972,7 +1985,7 @@ const setAsDefault = async (warehouseId) => {
                   <input
                     value="India"
                     readOnly
-                    className="h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-500"
+                    className="h-11 w-full rounded-lg border border-slate-200 dark:border-[#252b3c] bg-slate-50 dark:bg-[#151924] px-3 text-sm text-slate-500 dark:text-slate-400"
                   />
 
                 </div>
@@ -1984,13 +1997,13 @@ const setAsDefault = async (warehouseId) => {
               {/* FOOTER */}
               {/* ================================================= */}
 
-              <div className="flex items-center justify-end gap-3 border-t border-slate-100 px-6 py-4">
+              <div className="flex items-center justify-end gap-3 border-t border-slate-100 dark:border-[#1f2535] px-6 py-4">
 
                 <button
                   type="button"
                   onClick={closeModal}
                   disabled={saving}
-                  className="h-10 rounded-lg border border-slate-300 px-5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+                  className="h-10 rounded-lg border border-slate-300 dark:border-[#252b3c] bg-transparent px-5 text-xs font-semibold text-slate-700 dark:text-slate-300 transition hover:bg-slate-50 dark:hover:bg-[#171b26] disabled:opacity-50"
                 >
                   Cancel
                 </button>

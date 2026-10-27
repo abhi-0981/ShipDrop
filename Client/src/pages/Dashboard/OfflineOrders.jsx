@@ -296,7 +296,7 @@ export default function OfflineOrders() {
       {/* ==================================================
           PAGE HEADER (MATCHES ALL ORDERS & MANIFESTED)
       ================================================== */}
-      <div className="mb-3 rounded-2xl border border-slate-200 bg-white px-4 sm:px-5 py-3.5 sm:py-4 shadow-[0_1px_2px_rgba(15,23,42,0.02)]">
+      <div className="mb-3 rounded-2xl border border-slate-200 dark:border-[#1f2535] bg-white dark:bg-[#121620] px-4 sm:px-5 py-3.5 sm:py-4 shadow-[0_1px_2px_rgba(15,23,42,0.02)]">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
             <div
@@ -323,7 +323,7 @@ export default function OfflineOrders() {
             </div>
 
             <div>
-              <h1 className="text-base sm:text-[17px] font-semibold tracking-[-0.2px] text-slate-900">
+              <h1 className="text-base sm:text-[17px] font-semibold tracking-[-0.2px] text-slate-900 dark:text-white">
                 Offline Orders
               </h1>
               <p className="mt-0.5 text-xs text-slate-400">

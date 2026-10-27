@@ -455,14 +455,14 @@ function Register() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 px-4 py-8">
+    <div className="min-h-screen bg-slate-100 dark:bg-[#090b10] text-slate-800 dark:text-slate-100 px-4 py-8 transition-colors duration-200">
       <div className="mx-auto w-full max-w-3xl">
 
         {/* BACK TO HOME */}
 
         <Link
           to="/"
-          className="mb-5 inline-flex items-center gap-2 text-sm font-medium text-slate-600 transition hover:text-[#008dd2]"
+          className="mb-5 inline-flex items-center gap-2 text-sm font-medium text-slate-600 dark:text-slate-400 transition hover:text-[#008dd2]"
         >
           <FiArrowLeft size={17} />
           Back to Home
@@ -470,7 +470,7 @@ function Register() {
 
         {/* CARD */}
 
-        <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-xl shadow-slate-200/60 sm:p-8">
+        <div className="rounded-3xl border border-slate-100 dark:border-[#1f2535] bg-white dark:bg-[#121620] p-6 shadow-xl shadow-slate-200/60 dark:shadow-black/40 sm:p-8">
 
           {/* HEADER */}
 
@@ -480,12 +480,12 @@ function Register() {
               className="inline-block text-3xl font-extrabold tracking-tight text-[#008dd2]"
             >
               Parcel
-              <span className="text-slate-800">
+              <span className="text-slate-800 dark:text-white">
                 Drop
               </span>
             </Link>
 
-            <h1 className="mt-5 text-2xl font-bold text-slate-800">
+            <h1 className="mt-5 text-2xl font-bold text-slate-800 dark:text-white">
               Create Your Account
             </h1>
 

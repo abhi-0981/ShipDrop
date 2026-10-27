@@ -260,7 +260,7 @@ export default function WeightDiscrepancyReport() {
         {/* ==================================================
             1. TOP HEADER
         ================================================== */}
-        <div className="mb-3 rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-[0_1px_2px_rgba(15,23,42,0.02)]">
+        <div className="mb-3 rounded-xl border border-slate-200 dark:border-[#1f2535] bg-white dark:bg-[#121620] px-5 py-4 shadow-[0_1px_2px_rgba(15,23,42,0.02)]">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#edf8ff] text-[#008dd2]">
@@ -268,7 +268,7 @@ export default function WeightDiscrepancyReport() {
               </div>
 
               <div>
-                <h1 className="text-[17px] font-semibold tracking-[-0.2px] text-slate-900">
+                <h1 className="text-[17px] font-semibold tracking-[-0.2px] text-slate-900 dark:text-white">
                   Weight Discrepancy & Dispute Report
                 </h1>
                 <p className="mt-0.5 text-[12px] text-slate-400">

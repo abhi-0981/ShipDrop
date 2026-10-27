@@ -833,7 +833,7 @@ function ReturnAddresses() {
 
   return (
 
-    <div className="min-h-screen bg-[#F8FAFC] px-4 py-5 sm:px-6 lg:px-7">
+    <div className="min-h-screen bg-[#f6f8fb] dark:bg-[#090b10] px-4 py-5 sm:px-6 lg:px-7 text-slate-900 dark:text-slate-100 transition-colors duration-200">
 
       <div className="mx-auto w-full max-w-[1450px]">
 
@@ -846,11 +846,11 @@ function ReturnAddresses() {
 
           <div className="min-w-0">
 
-            <h1 className="text-[23px] font-bold tracking-tight text-slate-900">
+            <h1 className="text-[23px] font-bold tracking-tight text-slate-900 dark:text-white">
               Return Addresses
             </h1>
 
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
               Manage addresses used for returned shipments
             </p>
 
@@ -878,25 +878,38 @@ function ReturnAddresses() {
         {/* ADDRESS LIST */}
         {/* ================================================= */}
 
-        <div className="w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className="w-full overflow-hidden rounded-xl border border-slate-200 dark:border-[#1f2535] bg-white dark:bg-[#121620] shadow-sm">
 
 
           {/* LOADING */}
 
           {loading ? (
 
-            <div className="flex min-h-[220px] items-center justify-center">
-
-              <div className="text-center">
-
-                <div className="mx-auto h-7 w-7 animate-spin rounded-full border-2 border-slate-200 border-t-[#008dd2]" />
-
-                <p className="mt-3 text-xs text-slate-500">
-                  Loading return addresses...
-                </p>
-
-              </div>
-
+            <div className="divide-y divide-slate-100 dark:divide-[#1f2535] p-2">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="flex items-center justify-between p-3.5 gap-4"
+                  style={{ opacity: 1 - i * 0.2 }}
+                >
+                  <div className="space-y-1.5 w-1/4">
+                    <div className="h-4 w-32 rounded bg-slate-200 dark:bg-[#1c2130] skeleton-shimmer" />
+                    <div className="h-3 w-20 rounded bg-slate-100 dark:bg-[#171b26] skeleton-shimmer" />
+                  </div>
+                  <div className="space-y-1.5 w-1/4">
+                    <div className="h-3.5 w-28 rounded bg-slate-200 dark:bg-[#1c2130] skeleton-shimmer" />
+                    <div className="h-2.5 w-24 rounded bg-slate-100 dark:bg-[#171b26] skeleton-shimmer" />
+                  </div>
+                  <div className="space-y-1.5 w-1/3">
+                    <div className="h-3.5 w-full rounded bg-slate-200 dark:bg-[#1c2130] skeleton-shimmer" />
+                    <div className="h-2.5 w-4/5 rounded bg-slate-100 dark:bg-[#171b26] skeleton-shimmer" />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="h-7 w-7 rounded-lg bg-slate-200 dark:bg-[#1c2130] skeleton-shimmer" />
+                    <div className="h-7 w-7 rounded-lg bg-slate-200 dark:bg-[#1c2130] skeleton-shimmer" />
+                  </div>
+                </div>
+              ))}
             </div>
 
           )
@@ -908,7 +921,7 @@ function ReturnAddresses() {
 
             <div className="px-6 py-16 text-center">
 
-              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-sky-50 text-[#008dd2]">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-sky-50 dark:bg-sky-500/10 text-[#008dd2]">
 
                 <svg
                   viewBox="0 0 24 24"
@@ -929,12 +942,12 @@ function ReturnAddresses() {
               </div>
 
 
-              <h2 className="mt-4 text-base font-semibold text-slate-800">
+              <h2 className="mt-4 text-base font-semibold text-slate-800 dark:text-white">
                 No return addresses
               </h2>
 
 
-              <p className="mt-1 text-xs text-slate-500">
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                 Add a return address to use for returned shipments.
               </p>
 
@@ -960,25 +973,25 @@ function ReturnAddresses() {
 
               {/* TABLE HEADER */}
 
-              <div className="hidden grid-cols-[18%_17%_35%_12%_18%] border-b border-slate-200 bg-slate-50/70 px-4 py-3 md:grid">
+              <div className="hidden grid-cols-[18%_17%_35%_12%_18%] border-b border-slate-200 dark:border-[#1f2535] bg-slate-50/70 dark:bg-[#171b26] px-4 py-3 md:grid">
 
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                   Name
                 </span>
 
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                   Contact
                 </span>
 
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                   Address
                 </span>
 
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                   Default
                 </span>
 
-                <span className="text-right text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                <span className="text-right text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                   Actions
                 </span>
 
@@ -1001,7 +1014,7 @@ function ReturnAddresses() {
 
                     <div
                       key={address.id}
-                      className="border-b border-slate-100 px-4 py-4 transition last:border-b-0 hover:bg-slate-50/50 md:grid md:grid-cols-[18%_17%_35%_12%_18%] md:items-center"
+                      className="border-b border-slate-100 dark:border-[#1f2535] px-4 py-4 transition last:border-b-0 hover:bg-slate-50/50 dark:hover:bg-[#171b26] md:grid md:grid-cols-[18%_17%_35%_12%_18%] md:items-center"
                     >
 
 
@@ -1011,13 +1024,13 @@ function ReturnAddresses() {
 
                         <div className="flex items-center gap-2">
 
-                          <p className="truncate text-sm font-semibold text-slate-800">
+                          <p className="truncate text-sm font-semibold text-slate-800 dark:text-slate-100">
                             {address.name}
                           </p>
 
                           {isDefault && (
 
-                            <span className="shrink-0 rounded-full bg-emerald-50 px-2 py-1 text-[9px] font-bold text-emerald-600">
+                            <span className="shrink-0 rounded-full bg-emerald-50 dark:bg-emerald-500/10 px-2 py-1 text-[9px] font-bold text-emerald-600 dark:text-emerald-400">
                               Default
                             </span>
 
@@ -1025,7 +1038,7 @@ function ReturnAddresses() {
 
                         </div>
 
-                        <p className="mt-1 text-[11px] text-slate-400">
+                        <p className="mt-1 text-[11px] text-slate-400 dark:text-slate-500">
                           Return Address #{address.id}
                         </p>
 
@@ -1036,13 +1049,13 @@ function ReturnAddresses() {
 
                       <div className="mt-3 md:mt-0">
 
-                        <p className="text-xs font-medium text-slate-700">
+                        <p className="text-xs font-medium text-slate-700 dark:text-slate-200">
                           {address.phone || "—"}
                         </p>
 
                         {address.email && (
 
-                          <p className="mt-0.5 truncate text-[11px] text-slate-400">
+                          <p className="mt-0.5 truncate text-[11px] text-slate-400 dark:text-slate-500">
                             {address.email}
                           </p>
 
@@ -1057,7 +1070,7 @@ function ReturnAddresses() {
 
                         <p
                           title={getAddress(address)}
-                          className="line-clamp-2 text-xs leading-5 text-slate-600"
+                          className="line-clamp-2 text-xs leading-5 text-slate-600 dark:text-slate-300"
                         >
                           {getAddress(address)}
                         </p>
@@ -1071,7 +1084,7 @@ function ReturnAddresses() {
 
                         {isDefault ? (
 
-                          <span className="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-[9px] font-bold text-emerald-600">
+                          <span className="inline-flex rounded-full bg-emerald-50 dark:bg-emerald-500/10 px-2.5 py-1 text-[9px] font-bold text-emerald-600 dark:text-emerald-400">
                             Default
                           </span>
 
@@ -1084,7 +1097,7 @@ function ReturnAddresses() {
                                 address.id
                               )
                             }
-                            className="whitespace-nowrap rounded-md border border-slate-300 px-2.5 py-1.5 text-[9px] font-semibold text-slate-600 transition hover:border-[#008dd2] hover:text-[#008dd2]"
+                            className="whitespace-nowrap rounded-md border border-slate-300 dark:border-slate-700 px-2.5 py-1.5 text-[9px] font-semibold text-slate-600 dark:text-slate-300 transition hover:border-[#008dd2] hover:text-[#008dd2] dark:hover:border-[#008dd2] dark:hover:text-[#008dd2]"
                           >
                             Set Default
                           </button>
@@ -1110,7 +1123,7 @@ function ReturnAddresses() {
                               )
                             }
                             title="Edit"
-                            className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 text-slate-400 transition hover:border-[#008dd2]/40 hover:bg-[#008dd2]/5 hover:text-[#008dd2]"
+                            className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 dark:border-[#1f2535] text-slate-400 dark:text-slate-400 transition hover:border-[#008dd2]/40 hover:bg-[#008dd2]/5 hover:text-[#008dd2]"
                           >
 
                             <svg
@@ -1142,7 +1155,7 @@ function ReturnAddresses() {
                               )
                             }
                             title="Delete"
-                            className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 text-slate-400 transition hover:border-red-200 hover:bg-red-50 hover:text-red-500"
+                            className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 dark:border-[#1f2535] text-slate-400 dark:text-slate-400 transition hover:border-red-200 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-500"
                           >
 
                             <svg
@@ -1184,7 +1197,7 @@ function ReturnAddresses() {
 
               {/* FOOTER */}
 
-              <div className="border-t border-slate-100 px-4 py-2.5 text-[10px] text-slate-400">
+              <div className="border-t border-slate-100 dark:border-[#1f2535] px-4 py-2.5 text-[10px] text-slate-400 dark:text-slate-500">
 
                 {addresses.length} return address
                 {addresses.length !== 1 ? "es" : ""}
@@ -1206,18 +1219,18 @@ function ReturnAddresses() {
 
       {showModal && (
 
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-[2px]">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 dark:bg-black/70 p-4 backdrop-blur-xs">
 
-          <div className="w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl">
+          <div className="w-full max-w-3xl overflow-hidden rounded-2xl bg-white dark:bg-[#121620] border border-slate-200 dark:border-[#1f2535] shadow-2xl">
 
 
             {/* HEADER */}
 
-            <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-[#1f2535] px-6 py-4">
 
               <div>
 
-                <h2 className="text-lg font-bold text-slate-900">
+                <h2 className="text-lg font-bold text-slate-900 dark:text-white">
 
                   {editingAddress
                     ? "Edit Return Address"
@@ -1225,7 +1238,7 @@ function ReturnAddresses() {
 
                 </h2>
 
-                <p className="mt-1 text-xs text-slate-500">
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
 
                   {editingAddress
                     ? "Update your return address details"
@@ -1239,7 +1252,7 @@ function ReturnAddresses() {
               <button
                 type="button"
                 onClick={closeModal}
-                className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-[#1c2130] hover:text-slate-700 dark:hover:text-slate-200 transition"
               >
 
                 <svg
@@ -1501,13 +1514,13 @@ function ReturnAddresses() {
               {/* FOOTER */}
               {/* ================================================= */}
 
-              <div className="flex items-center justify-end gap-3 border-t border-slate-100 px-6 py-4">
+              <div className="flex items-center justify-end gap-3 border-t border-slate-100 dark:border-[#1f2535] px-6 py-4">
 
                 <button
                   type="button"
                   onClick={closeModal}
                   disabled={saving}
-                  className="h-10 rounded-lg border border-slate-300 px-5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+                  className="h-10 rounded-lg border border-slate-300 dark:border-[#252b3c] bg-transparent px-5 text-xs font-semibold text-slate-700 dark:text-slate-300 transition hover:bg-slate-50 dark:hover:bg-[#171b26] disabled:opacity-50"
                 >
                   Cancel
                 </button>

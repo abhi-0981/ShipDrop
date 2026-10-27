@@ -1746,12 +1746,12 @@ const handleRequiredFieldEnter = (e) => {
   };
 
   return (
-    <div className="min-h-full w-full bg-[#f6f8fb] p-3.5 sm:p-5 md:p-6 pb-16 lg:pb-8">
+    <div className="min-h-full w-full bg-[#f6f8fb] dark:bg-[#090b10] text-slate-800 dark:text-slate-100 p-3.5 sm:p-5 md:p-6 pb-16 lg:pb-8 transition-colors duration-200">
       <div className="mx-auto max-w-5xl">
         {/* HEADER */}
         <div className="mb-4 sm:mb-6 flex items-center justify-between gap-3">
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
               {isEditMode
                 ? `Edit Order #${editingOrderId}`
                 : "Create New Order"}

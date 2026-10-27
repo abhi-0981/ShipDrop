@@ -1200,7 +1200,8 @@ function RateCard() {
       <div
         className="
           min-h-screen
-          bg-[#F5F8FC]
+          bg-[#f6f8fb]
+          dark:bg-[#090b10]
           p-6
         "
       >
@@ -1215,7 +1216,9 @@ function RateCard() {
               rounded-2xl
               border
               border-slate-200
+              dark:border-[#1f2535]
               bg-white
+              dark:bg-[#121620]
               p-10
               text-center
               shadow-sm
@@ -1230,6 +1233,7 @@ function RateCard() {
                 rounded-full
                 border-4
                 border-slate-200
+                dark:border-[#1f2535]
                 border-t-[#008dd2]
               "
             />
@@ -1240,6 +1244,7 @@ function RateCard() {
                 text-sm
                 font-semibold
                 text-slate-500
+                dark:text-slate-400
               "
             >
               Loading shipping rates...
@@ -1258,9 +1263,14 @@ function RateCard() {
     <div
       className="
         min-h-screen
-        bg-[#F5F8FC]
+        bg-[#f6f8fb]
+        dark:bg-[#090b10]
+        text-slate-800
+        dark:text-slate-100
         p-4
         md:p-6
+        transition-colors
+        duration-200
       "
     >
       <Toast toast={toast} onClose={() => setToast(null)} />
@@ -1289,6 +1299,7 @@ function RateCard() {
                 text-2xl
                 font-bold
                 text-slate-900
+                dark:text-white
               "
             >
               Rate Card

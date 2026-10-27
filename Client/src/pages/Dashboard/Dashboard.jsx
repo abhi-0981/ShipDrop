@@ -668,13 +668,13 @@ if (pageLoading && !orders.length) {
 }
 
   return (
-    <div className="min-h-full w-full overflow-x-hidden bg-[#f6f8fb] p-3.5 sm:p-5 md:p-6 pb-24 lg:pb-8">
+    <div className="min-h-full w-full overflow-x-hidden bg-[#f6f8fb] dark:bg-[#090b10] text-slate-800 dark:text-slate-100 p-3.5 sm:p-5 md:p-6 pb-24 lg:pb-8 transition-colors duration-200">
       {/* ==================================================
           HEADER
       ================================================== */}
       <div className="mb-4 flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="text-[19px] sm:text-[22px] font-bold tracking-tight text-slate-900 truncate">
+          <h1 className="text-[19px] sm:text-[22px] font-bold tracking-tight text-slate-900 dark:text-white truncate">
             Dashboard
           </h1>
           <p className="mt-0.5 text-[11px] sm:text-[13px] text-slate-500 truncate">

@@ -89,13 +89,13 @@ function Login() {
   };
 
   return (
-    <div className="h-dvh overflow-hidden bg-slate-100 px-4">
+    <div className="h-dvh overflow-hidden bg-slate-100 dark:bg-[#090b10] text-slate-800 dark:text-slate-100 px-4 transition-colors duration-200">
       <div className="mx-auto flex h-full w-full max-w-md flex-col justify-center">
         {/* BACK */}
 
         <Link
           to="/"
-          className="mb-3 inline-flex shrink-0 items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-[#008dd2]"
+          className="mb-3 inline-flex shrink-0 items-center gap-1.5 text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-[#008dd2]"
         >
           <FiArrowLeft size={15} />
           Back to Home
@@ -103,7 +103,7 @@ function Login() {
 
         {/* CARD */}
 
-        <div className="shrink-0 rounded-3xl border border-slate-100 bg-white p-6 shadow-xl shadow-slate-200/60 sm:p-7">
+        <div className="shrink-0 rounded-3xl border border-slate-100 dark:border-[#1f2535] bg-white dark:bg-[#121620] p-6 shadow-xl shadow-slate-200/60 dark:shadow-black/40 sm:p-7">
           {/* HEADER */}
 
           <div className="mb-5 text-center">
@@ -111,10 +111,10 @@ function Login() {
               to="/"
               className="inline-block text-3xl font-extrabold tracking-tight text-[#008dd2]"
             >
-              Parcel<span className="text-slate-800">Drop</span>
+              Parcel<span className="text-slate-800 dark:text-white">Drop</span>
             </Link>
 
-            <h1 className="mt-3 text-2xl font-bold text-slate-800">
+            <h1 className="mt-3 text-2xl font-bold text-slate-800 dark:text-white">
               Welcome Back
             </h1>
 

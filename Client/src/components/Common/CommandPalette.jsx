@@ -259,13 +259,13 @@ export default function CommandPalette() {
       }}
     >
       <div
-        className="w-full max-w-4xl overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-2xl transition-all flex flex-col"
+        className="w-full max-w-4xl overflow-hidden rounded-3xl border border-slate-200/90 dark:border-[#1f2535] bg-white dark:bg-[#121620] shadow-2xl transition-all flex flex-col"
         style={{ maxHeight: "calc(100vh - 60px)" }}
       >
         {/* ======================================================== */}
         {/* 1. TOP HEADER WITH TITLE & CLOSE */}
         {/* ======================================================== */}
-        <div className="flex items-center justify-between border-b border-slate-100 bg-[#fafbfc] px-5 sm:px-6 py-3.5">
+        <div className="flex items-center justify-between border-b border-slate-100 dark:border-[#1f2535] bg-[#fafbfc] dark:bg-[#171b26] px-5 sm:px-6 py-3.5">
           <div className="flex items-center gap-2.5 sm:gap-3">
             <div className="flex h-8 w-8 sm:h-8.5 sm:w-8.5 items-center justify-center rounded-xl bg-gradient-to-br from-[#008dd2] to-[#0072aa] text-white shadow-xs">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -273,7 +273,7 @@ export default function CommandPalette() {
               </svg>
             </div>
             <div>
-              <h3 className="text-sm sm:text-[15px] font-bold text-slate-800 leading-tight">
+              <h3 className="text-sm sm:text-[15px] font-bold text-slate-800 dark:text-white leading-tight">
                 Quick Actions
               </h3>
               <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5 leading-none">
@@ -343,7 +343,7 @@ export default function CommandPalette() {
         {/* ======================================================== */}
         {/* 3. FOOTER HINTS */}
         {/* ======================================================== */}
-        <div className="flex items-center justify-between border-t border-slate-100 bg-[#fafbfc] px-5 sm:px-6 py-2.5 text-[11px] text-slate-400">
+        <div className="flex items-center justify-between border-t border-slate-100 dark:border-[#1f2535] bg-[#fafbfc] dark:bg-[#171b26] px-5 sm:px-6 py-2.5 text-[11px] text-slate-400">
           <div className="flex items-center gap-3">
             <span>
               <kbd className="rounded border border-slate-200 bg-white px-1.5 py-0.5 font-mono text-[9px] text-slate-500 shadow-2xs">←</kbd>

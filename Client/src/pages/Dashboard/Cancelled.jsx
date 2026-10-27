@@ -1209,21 +1209,21 @@ function Cancelled() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#f5f8fc] px-4 py-5">
+      <div className="min-h-screen bg-[#f5f8fc] dark:bg-[#090b10] px-4 py-5">
         <div className="mx-auto max-w-[1450px]">
 
-          <div className="mb-3 h-[92px] animate-pulse rounded-xl border border-slate-200 bg-white" />
+          <div className="mb-3 h-[92px] animate-pulse rounded-xl border border-slate-200 dark:border-[#1f2535] bg-white dark:bg-[#121620]" />
 
-          <div className="mb-3 h-[62px] animate-pulse rounded-xl border border-slate-200 bg-white" />
+          <div className="mb-3 h-[62px] animate-pulse rounded-xl border border-slate-200 dark:border-[#1f2535] bg-white dark:bg-[#121620]" />
 
-          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-            <div className="h-12 animate-pulse bg-slate-50" />
+          <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-[#1f2535] bg-white dark:bg-[#121620]">
+            <div className="h-12 animate-pulse bg-slate-50 dark:bg-[#171b26]" />
 
             {[1, 2, 3, 4].map(
               (item) => (
                 <div
                   key={item}
-                  className="h-[86px] animate-pulse border-t border-slate-100"
+                  className="h-[86px] animate-pulse border-t border-slate-100 dark:border-[#1f2535]"
                 />
               )
             )}
@@ -1239,7 +1239,7 @@ function Cancelled() {
   // ====================================================
 
   return (
-    <div className="min-h-screen bg-[#f5f8fc] px-4 py-5">
+    <div className="min-h-screen bg-[#f5f8fc] dark:bg-[#090b10] text-slate-800 dark:text-slate-100 px-4 py-5 transition-colors duration-200">
 
       <div className="mx-auto max-w-[1450px]">
 
@@ -1247,7 +1247,7 @@ function Cancelled() {
             TOP HEADER
         ================================================== */}
 
-        <div className="mb-3 rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-[0_1px_2px_rgba(15,23,42,0.02)]">
+        <div className="mb-3 rounded-xl border border-slate-200 dark:border-[#1f2535] bg-white dark:bg-[#121620] px-5 py-4 shadow-[0_1px_2px_rgba(15,23,42,0.02)]">
 
           <div className="flex flex-wrap items-center justify-between gap-4">
 
@@ -1270,7 +1270,7 @@ function Cancelled() {
 
               <div>
 
-                <h1 className="text-[17px] font-semibold tracking-[-0.2px] text-slate-900">
+                <h1 className="text-[17px] font-semibold tracking-[-0.2px] text-slate-900 dark:text-white">
                   {pageTitle || "Cancelled"}
                 </h1>
 

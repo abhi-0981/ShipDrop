@@ -669,15 +669,15 @@ function Tickets() {
       selectedTicket.awb;
 
     return (
-      <div className="fixed inset-x-0 top-[64px] bottom-16 lg:bottom-0 z-20 flex flex-col bg-[#f6f8fb] text-slate-800 overflow-hidden lg:pl-[250px]">
+      <div className="fixed inset-x-0 top-[64px] bottom-16 lg:bottom-0 z-20 flex flex-col bg-[#f6f8fb] dark:bg-[#090b10] text-slate-800 dark:text-slate-100 overflow-hidden lg:pl-[250px] transition-colors duration-200">
         {/* ULTRA-COMPACT SLIM HEADER */}
-        <div className="shrink-0 border-b border-slate-200 bg-white px-3 sm:px-6 py-2 shadow-xs">
+        <div className="shrink-0 border-b border-slate-200 dark:border-[#1f2535] bg-white dark:bg-[#121620] px-3 sm:px-6 py-2 shadow-xs">
           <div className="flex items-center justify-between gap-2 max-w-[1500px] mx-auto">
             <div className="min-w-0 flex-1 flex items-center gap-2">
               <button
                 type="button"
                 onClick={goBack}
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-[#008dd2] hover:bg-sky-50 active:scale-95 shrink-0"
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-[#008dd2] hover:bg-sky-50 dark:hover:bg-sky-500/10 active:scale-95 shrink-0"
                 title="Back to Tickets"
               >
                 <Icon name="arrow-left" size={17} />
@@ -690,7 +690,7 @@ function Tickets() {
                   </span>
                   <StatusBadge status={selectedTicket.status} />
                 </div>
-                <h1 className="truncate text-xs sm:text-sm font-bold text-slate-900 leading-tight">
+                <h1 className="truncate text-xs sm:text-sm font-bold text-slate-900 dark:text-white leading-tight">
                   {selectedTicket.subject}
                 </h1>
               </div>
@@ -971,15 +971,15 @@ function Tickets() {
   ========================================================= */
 
   return (
-    <div className="min-h-full w-full bg-[#f6f8fb] p-3 sm:p-5 md:p-6 pb-20 lg:pb-8">
+    <div className="min-h-full w-full bg-[#f6f8fb] dark:bg-[#090b10] text-slate-800 dark:text-slate-100 p-3 sm:p-5 md:p-6 pb-20 lg:pb-8 transition-colors duration-200">
       {/* HEADER */}
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between max-w-[1500px] mx-auto">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-[#008dd2]">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 dark:bg-sky-500/10 text-[#008dd2]">
             <Icon name="ticket" size={18} />
           </div>
           <div>
-            <h1 className="text-lg sm:text-xl font-bold tracking-tight text-slate-900">
+            <h1 className="text-lg sm:text-xl font-bold tracking-tight text-slate-900 dark:text-white">
               Support Tickets
             </h1>
             <p className="text-[11px] text-slate-400">

@@ -204,9 +204,14 @@ html, body {
 }
 
 /* Base Body & Canvas Containers in Dark Mode */
+html.dark,
 html.dark body,
 html.dark #root,
-html.dark main,
+html.dark main {
+  background-color: #090b10 !important;
+  color: #f1f5f9 !important;
+}
+
 html.dark [class*="bg-[#f6f8fb]"],
 html.dark [class*="bg-[#F6F8FB]"],
 html.dark [class*="bg-[#f5f8fc]"],
@@ -222,25 +227,11 @@ html.dark [class*="bg-[#F5F8FD]"],
 html.dark [class*="bg-[#f4f6fb]"],
 html.dark [class*="bg-[#F4F6FB]"],
 html.dark [class*="bg-[#fbfcfd]"],
+html.dark [class*="bg-[#FBFCFD]"],
 html.dark [class*="bg-[#fcfdff]"],
+html.dark [class*="bg-[#FCFDFF]"],
 html.dark [class*="bg-[#f8fcff]"],
-html.dark .bg-\[\#f6f8fb\],
-html.dark .bg-\[\#F6F8FB\],
-html.dark .bg-\[\#f5f8fc\],
-html.dark .bg-\[\#F5F8FC\],
-html.dark .bg-\[\#f7f8fb\],
-html.dark .bg-\[\#F7F8FB\],
-html.dark .bg-\[\#f8fafc\],
-html.dark .bg-\[\#F8FAFC\],
-html.dark .bg-\[\#f5f7fb\],
-html.dark .bg-\[\#F5F7FB\],
-html.dark .bg-\[\#f5f8fd\],
-html.dark .bg-\[\#F5F8FD\],
-html.dark .bg-\[\#f4f6fb\],
-html.dark .bg-\[\#F4F6FB\],
-html.dark .bg-\[\#fbfcfd\],
-html.dark .bg-\[\#fcfdff\],
-html.dark .bg-\[\#f8fcff\] {
+html.dark [class*="bg-[#F8FCFF]"] {
   background-color: #090b10 !important;
   color: #f1f5f9;
 }
@@ -276,9 +267,10 @@ html.dark .bg-slate-50\/70,
 html.dark .bg-slate-50\/80,
 html.dark .bg-slate-50\/90,
 html.dark .bg-slate-50\/60,
-html.dark .bg-slate-50\/50,
 html.dark .bg-\[\#fafbfc\],
-html.dark .bg-\[\#FAFBFC\] {
+html.dark .bg-\[\#FAFBFC\],
+html.dark [class*="bg-[#fafbfc]"],
+html.dark [class*="bg-[#FAFBFC]"] {
   background-color: #171b26 !important;
 }
 

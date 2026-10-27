@@ -23,7 +23,7 @@ function DashboardLayout() {
   }, []);
 
   return (
-    <div className="relative min-h-screen bg-[#f6f8fb]">
+    <div className="relative min-h-screen bg-[#f6f8fb] dark:bg-[#090b10] text-slate-800 dark:text-slate-100 transition-colors duration-200">
       {/* FIXED TOP NAVBAR */}
       <TopNavbar collapsed={collapsed} setCollapsed={setCollapsed} />
 
@@ -32,7 +32,7 @@ function DashboardLayout() {
 
       {/* MAIN CONTENT WRAPPER */}
       <main
-        className={`min-h-screen pt-[64px] transition-all duration-300 ${
+        className={`min-h-screen pt-[64px] bg-[#f6f8fb] dark:bg-[#090b10] transition-all duration-300 ${
           collapsed ? "pl-0" : "pl-0 lg:pl-[250px]"
         }`}
       >

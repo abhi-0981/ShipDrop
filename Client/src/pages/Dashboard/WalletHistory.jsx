@@ -375,7 +375,7 @@ const WalletHistory = () => {
   };
 
   return (
-    <div className="min-h-full w-full overflow-x-hidden bg-[#f6f8fb] p-3.5 sm:p-5 md:p-6 pb-20 lg:pb-8">
+    <div className="min-h-full w-full overflow-x-hidden bg-[#f6f8fb] dark:bg-[#090b10] text-slate-800 dark:text-slate-100 p-3.5 sm:p-5 md:p-6 pb-20 lg:pb-8 transition-colors duration-200">
       {/* =====================================================
           PAGE HEADER
       ====================================================== */}
@@ -387,7 +387,7 @@ const WalletHistory = () => {
             </div>
 
             <div>
-              <h1 className="text-base sm:text-lg font-bold tracking-tight text-slate-900">
+              <h1 className="text-base sm:text-lg font-bold tracking-tight text-slate-900 dark:text-white">
                 Wallet History
               </h1>
               <p className="mt-0.5 text-xs text-slate-400">
