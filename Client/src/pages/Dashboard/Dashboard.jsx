@@ -236,13 +236,11 @@ const StatCard = ({
       type="button"
       onClick={onClick}
       disabled={!onClick}
-      className={`w-full text-left rounded-2xl border border-slate-200/80 bg-white p-3.5 sm:p-4 shadow-[0_1px_4px_rgba(15,23,42,0.03)] transition-all duration-200 active:scale-[0.98] ${
-        isWide ? "col-span-2 sm:col-span-1" : ""
-      } ${
-        onClick
+      className={`w-full text-left rounded-2xl border border-slate-200/80 bg-white p-3.5 sm:p-4 shadow-[0_1px_4px_rgba(15,23,42,0.03)] transition-all duration-200 active:scale-[0.98] ${isWide ? "col-span-2 sm:col-span-1" : ""
+        } ${onClick
           ? "cursor-pointer hover:border-slate-300 hover:shadow-[0_4px_12px_rgba(15,23,42,0.06)]"
           : "cursor-default"
-      }`}
+        }`}
     >
       <div className="flex items-start justify-between">
         <div className="min-w-0 flex-1 pr-1.5 sm:pr-2">
@@ -388,7 +386,7 @@ function Dashboard() {
           sessionStorage.setItem("shipdrop_dash_orders", JSON.stringify(orderList));
           sessionStorage.setItem("shipdrop_dash_counts", JSON.stringify(counts));
           sessionStorage.setItem("shipdrop_dash_wallet", String(balance));
-        } catch {}
+        } catch { }
       } else {
         // Fallback: Parallelize fast status counts, recent 6 orders, and wallet balance
         const [ordersResponse, countsResponse, walletResponse] = await Promise.all([
@@ -427,7 +425,7 @@ function Dashboard() {
           sessionStorage.setItem("shipdrop_dash_orders", JSON.stringify(orderList));
           sessionStorage.setItem("shipdrop_dash_counts", JSON.stringify(countsData));
           sessionStorage.setItem("shipdrop_dash_wallet", String(balance));
-        } catch {}
+        } catch { }
       }
     } catch (error) {
       console.error("Dashboard loading error:", error);
@@ -719,7 +717,7 @@ function Dashboard() {
       <div className="mb-4 flex items-center justify-between gap-3">
         <div className="min-w-0">
           <h1 className="text-[19px] sm:text-[22px] font-bold tracking-tight text-slate-900 truncate">
-            Dashboardddd
+            Dashboard
           </h1>
           <p className="mt-0.5 text-[11px] sm:text-[13px] text-slate-500 truncate">
             Overview of shipments and wallet activity.
@@ -919,11 +917,10 @@ function Dashboard() {
                             {customer}
                           </span>
                           <span
-                            className={`rounded-md px-2 py-0.5 text-[10px] font-bold border ${
-                              payment === "COD"
+                            className={`rounded-md px-2 py-0.5 text-[10px] font-bold border ${payment === "COD"
                                 ? "border-violet-200 bg-violet-50 text-violet-700"
                                 : "border-sky-200 bg-sky-50 text-sky-700"
-                            }`}
+                              }`}
                           >
                             {payment}
                           </span>
@@ -1037,11 +1034,10 @@ function Dashboard() {
                             </td>
                             <td className="px-2 py-2.5 text-center">
                               <span
-                                className={`inline-flex items-center justify-center rounded-md border px-2 py-0.5 text-[10px] font-bold tracking-wide uppercase ${
-                                  payment === "COD"
+                                className={`inline-flex items-center justify-center rounded-md border px-2 py-0.5 text-[10px] font-bold tracking-wide uppercase ${payment === "COD"
                                     ? "border-violet-200 bg-violet-50 text-violet-700"
                                     : "border-sky-200 bg-sky-50 text-sky-700"
-                                }`}
+                                  }`}
                               >
                                 {payment}
                               </span>
