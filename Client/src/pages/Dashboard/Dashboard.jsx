@@ -719,7 +719,7 @@ function Dashboard() {
       <div className="mb-4 flex items-center justify-between gap-3">
         <div className="min-w-0">
           <h1 className="text-[19px] sm:text-[22px] font-bold tracking-tight text-slate-900 truncate">
-            Dashboard
+            Dashboardddd
           </h1>
           <p className="mt-0.5 text-[11px] sm:text-[13px] text-slate-500 truncate">
             Overview of shipments and wallet activity.
