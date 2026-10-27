@@ -793,11 +793,11 @@ function ProcessingOrders() {
 
   if (loading) {
     return (
-      <div className="min-h-full bg-[#f6f8fb] dark:bg-[#090b10] text-slate-800 dark:text-slate-100 p-4 sm:p-6 transition-colors duration-200">
-        <div className="flex min-h-[60vh] items-center justify-center rounded-2xl border border-slate-200/80 dark:border-[#1f2535] bg-white dark:bg-[#121620]">
+      <div className="min-h-full bg-[#f6f8fb] p-4 sm:p-6">
+        <div className="flex min-h-[60vh] items-center justify-center rounded-2xl border border-slate-200/80 bg-white">
           <div className="text-center">
-            <div className="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-3 border-slate-200 dark:border-[#1f2535] border-t-[#7451ff]" />
-            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+            <div className="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-3 border-slate-200 border-t-[#7451ff]" />
+            <p className="text-xs font-semibold text-slate-500">
               Loading processing orders...
             </p>
           </div>
@@ -809,7 +809,7 @@ function ProcessingOrders() {
   const selectedOrderObjects = getSelectedOrderObjects();
 
   return (
-    <div className="min-h-full w-full bg-[#f6f8fb] dark:bg-[#090b10] text-slate-800 dark:text-slate-100 p-3 sm:p-5 md:p-6 pb-20 lg:pb-8 transition-colors duration-200">
+    <div className="min-h-full w-full bg-[#f6f8fb] p-3 sm:p-5 md:p-6 pb-20 lg:pb-8">
       {/* TOAST */}
       {toast && (
         <div className="fixed right-4 top-4 z-[11000] max-w-[90vw]">
@@ -840,7 +840,7 @@ function ProcessingOrders() {
               <Icon name="truck" size={18} />
             </div>
             <div>
-              <h1 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white tracking-tight">
+              <h1 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
                 Processing Orders
               </h1>
               <p className="text-[11px] text-slate-400">

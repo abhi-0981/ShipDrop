@@ -220,7 +220,7 @@ const CODRemittance = () => {
   const hasFilters = search.trim() !== "" || statusFilter !== "ALL";
 
   return (
-    <div className="min-h-full w-full max-w-full overflow-x-hidden bg-[#f6f8fb] dark:bg-[#090b10] text-slate-800 dark:text-slate-100 px-3 py-4 sm:px-4 lg:px-5 transition-colors duration-200">
+    <div className="min-h-full w-full max-w-full overflow-x-hidden bg-[#f6f8fb] px-3 py-4 sm:px-4 lg:px-5">
       {/* =====================================================
 
           PAGE HEADER
@@ -245,7 +245,7 @@ const CODRemittance = () => {
           </div>
 
           <div className="min-w-0">
-            <h1 className="truncate text-[17px] font-bold tracking-tight text-slate-900 dark:text-white">
+            <h1 className="truncate text-[17px] font-bold tracking-tight text-slate-900">
               COD Remittance
             </h1>
 

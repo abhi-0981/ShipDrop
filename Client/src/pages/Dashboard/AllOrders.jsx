@@ -857,16 +857,16 @@ function AllOrders() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#f5f8fc] dark:bg-[#090b10] px-3.5 sm:px-4 py-4 sm:py-5">
+      <div className="min-h-screen bg-[#f5f8fc] px-3.5 sm:px-4 py-4 sm:py-5">
         <div className="mx-auto max-w-[1450px]">
-          <div className="mb-3 h-[92px] animate-pulse rounded-2xl border border-slate-200 dark:border-[#1f2535] bg-white dark:bg-[#121620]" />
-          <div className="mb-3 h-[62px] animate-pulse rounded-2xl border border-slate-200 dark:border-[#1f2535] bg-white dark:bg-[#121620]" />
-          <div className="overflow-hidden rounded-2xl border border-slate-200 dark:border-[#1f2535] bg-white dark:bg-[#121620]">
-            <div className="h-12 animate-pulse bg-slate-50 dark:bg-[#171b26]" />
+          <div className="mb-3 h-[92px] animate-pulse rounded-2xl border border-slate-200 bg-white" />
+          <div className="mb-3 h-[62px] animate-pulse rounded-2xl border border-slate-200 bg-white" />
+          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+            <div className="h-12 animate-pulse bg-slate-50" />
             {[1, 2, 3, 4].map((item) => (
               <div
                 key={item}
-                className="h-[86px] animate-pulse border-t border-slate-100 dark:border-[#1f2535]"
+                className="h-[86px] animate-pulse border-t border-slate-100"
               />
             ))}
           </div>
@@ -876,12 +876,12 @@ function AllOrders() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f5f8fc] dark:bg-[#090b10] text-slate-800 dark:text-slate-100 px-3 sm:px-4 py-4 sm:py-5 pb-24 lg:pb-8 transition-colors duration-200">
+    <div className="min-h-screen bg-[#f5f8fc] px-3 sm:px-4 py-4 sm:py-5 pb-24 lg:pb-8">
       <div className="mx-auto max-w-[1450px]">
         {/* ==================================================
             TOP HEADER
         ================================================== */}
-        <div className="mb-3 rounded-2xl border border-slate-200 dark:border-[#1f2535] bg-white dark:bg-[#121620] px-4 sm:px-5 py-3.5 sm:py-4 shadow-[0_1px_2px_rgba(15,23,42,0.02)]">
+        <div className="mb-3 rounded-2xl border border-slate-200 bg-white px-4 sm:px-5 py-3.5 sm:py-4 shadow-[0_1px_2px_rgba(15,23,42,0.02)]">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
               <div
@@ -895,7 +895,7 @@ function AllOrders() {
               </div>
 
               <div>
-                <h1 className="text-base sm:text-[17px] font-semibold tracking-[-0.2px] text-slate-900 dark:text-white">
+                <h1 className="text-base sm:text-[17px] font-semibold tracking-[-0.2px] text-slate-900">
                   All Orders
                 </h1>
                 <p className="mt-0.5 text-xs text-slate-400">

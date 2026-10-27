@@ -259,19 +259,19 @@ export default function PartyIdentities() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f6f8fb] dark:bg-[#090b10] text-slate-800 dark:text-slate-100 px-3 sm:px-4 py-4 sm:py-5 pb-24 lg:pb-8 transition-colors duration-200">
+    <div className="min-h-screen bg-[#f6f8fb] dark:bg-[#090b10] px-3 sm:px-4 py-4 sm:py-5 pb-24 lg:pb-8">
       <div className="mx-auto max-w-[1450px]">
         {/* ==================================================
             TOP HEADER
         ================================================== */}
-        <div className="mb-3 rounded-2xl border border-slate-200 dark:border-[#1f2535] bg-white dark:bg-[#121620] px-4 sm:px-5 py-3.5 sm:py-4 shadow-[0_1px_2px_rgba(15,23,42,0.02)]">
+        <div className="mb-3 rounded-2xl border border-slate-200 bg-white px-4 sm:px-5 py-3.5 sm:py-4 shadow-[0_1px_2px_rgba(15,23,42,0.02)]">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-50 text-[#008dd2]">
                 <HiOutlineIdentification size={22} />
               </div>
               <div>
-                <h1 className="text-lg sm:text-xl font-bold tracking-tight text-slate-800 dark:text-white">
+                <h1 className="text-lg sm:text-xl font-bold tracking-tight text-slate-800">
                   Party Identities
                 </h1>
                 <p className="text-xs text-slate-400">

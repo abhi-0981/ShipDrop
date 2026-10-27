@@ -323,11 +323,11 @@ export default function ImportOrderModal({ isOpen, onClose }) {
         }
       }}
     >
-      <div className="flex max-h-[86vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white dark:bg-[#121620] border border-slate-200 dark:border-[#1f2535] shadow-2xl">
+      <div className="flex max-h-[86vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
         {/* HEADER */}
-        <div className="flex items-center justify-between border-b border-slate-100 dark:border-[#1f2535] px-5 py-4 sm:px-6">
+        <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4 sm:px-6">
           <div>
-            <h2 className="text-base font-bold text-slate-800 dark:text-white sm:text-lg">
+            <h2 className="text-base font-bold text-slate-800 sm:text-lg">
               Import Orders
             </h2>
             <p className="mt-0.5 text-[11px] text-slate-400 sm:text-xs">

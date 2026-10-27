@@ -219,7 +219,7 @@ export default function CreateOfflineOrder() {
             </div>
 
             <div>
-              <h1 className="text-base sm:text-lg font-bold tracking-tight text-slate-900 dark:text-white">
+              <h1 className="text-base sm:text-lg font-bold tracking-tight text-slate-900">
                 Create Offline Order
               </h1>
               <p className="mt-0.5 text-xs text-slate-400">

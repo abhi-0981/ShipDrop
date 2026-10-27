@@ -289,15 +289,15 @@ export default function OfflineOrderModal({
 
   return (
     <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center bg-slate-900/50 backdrop-blur-xs p-0 sm:p-4">
-      <div className="w-full max-w-3xl max-h-[92vh] flex flex-col rounded-t-3xl sm:rounded-2xl bg-white dark:bg-[#121620] border border-slate-200 dark:border-[#1f2535] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      <div className="w-full max-w-3xl max-h-[92vh] flex flex-col rounded-t-3xl sm:rounded-2xl bg-white shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         {/* MODAL HEADER */}
-        <div className="flex items-center justify-between border-b border-slate-100 dark:border-[#1f2535] px-5 py-3.5 bg-gradient-to-r from-sky-50/50 to-white dark:from-[#171b26] dark:to-[#121620]">
+        <div className="flex items-center justify-between border-b border-slate-100 px-5 py-3.5 bg-gradient-to-r from-sky-50/50 to-white">
           <div className="flex items-center gap-2.5">
             <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#008dd2] text-white text-xs font-bold shadow-xs">
               ✦
             </span>
             <div>
-              <h2 className="text-sm sm:text-base font-bold text-slate-800 dark:text-white">
+              <h2 className="text-sm sm:text-base font-bold text-slate-800">
                 {isEdit
                   ? `Edit Offline Order #${orderToEdit.id}`
                   : "Create Offline Order"}

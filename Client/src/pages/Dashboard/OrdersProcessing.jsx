@@ -1193,12 +1193,12 @@ window.dispatchEvent(new Event("orderStatusUpdated"));
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#f6f8fb] dark:bg-[#090b10] text-slate-800 dark:text-slate-100 p-4 transition-colors duration-200">
-        <div className="flex min-h-[300px] items-center justify-center rounded-xl border border-slate-200 dark:border-[#1f2535] bg-white dark:bg-[#121620]">
+      <div className="min-h-screen bg-[#f5f7fb] p-4">
+        <div className="flex min-h-[300px] items-center justify-center rounded-xl border border-slate-200 bg-white">
           <div className="text-center">
-            <div className="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-4 border-slate-200 dark:border-[#1f2535] border-t-[#7451ff]" />
+            <div className="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-[#7451ff]" />
 
-            <p className="text-sm text-slate-500 dark:text-slate-400">
+            <p className="text-sm text-slate-500">
               Loading processing orders...
             </p>
           </div>
@@ -1214,7 +1214,7 @@ window.dispatchEvent(new Event("orderStatusUpdated"));
   // ====================================================
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-[#f6f8fb] dark:bg-[#090b10] text-slate-800 dark:text-slate-100 p-4 transition-colors duration-200">
+    <div className="min-h-screen overflow-x-hidden bg-[#f5f7fb] p-4">
       {/* ==================================================
           TOAST
       ================================================== */}
@@ -1261,7 +1261,7 @@ window.dispatchEvent(new Event("orderStatusUpdated"));
                 <Icon name="truck" size={20} />
               </div>
               <div>
-                <h1 className="text-[17px] font-medium tracking-[-0.2px] text-slate-900 dark:text-white">
+                <h1 className="text-[17px] font-medium tracking-[-0.2px] text-slate-900">
                   Processing Orders
                 </h1>
                 <p className="mt-0.5 text-[11px] text-slate-500">

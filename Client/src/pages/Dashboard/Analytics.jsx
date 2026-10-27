@@ -252,7 +252,7 @@ export default function Analytics() {
       <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-[20px] sm:text-[24px] font-bold tracking-tight text-slate-900 dark:text-white">
+            <h1 className="text-[20px] sm:text-[24px] font-bold tracking-tight text-slate-900">
               Business Analytics
             </h1>
             <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[10px] font-bold text-emerald-700">

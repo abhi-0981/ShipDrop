@@ -65,11 +65,11 @@ export default function OrderDetailsModal({ order, loading = false, onClose, onT
             if (event.target === event.currentTarget) onClose();
           }}
         >
-          <div className="flex max-h-[94vh] w-full max-w-[980px] flex-col overflow-hidden rounded-2xl border border-slate-200 dark:border-[#1f2535] bg-white dark:bg-[#121620] shadow-2xl">
+          <div className="flex max-h-[94vh] w-full max-w-[980px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
             {/* Header */}
-            <div className="flex shrink-0 items-center justify-between border-b border-slate-100 dark:border-[#1f2535] px-4 py-3 sm:px-5">
+            <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-4 py-3 sm:px-5">
               <div className="min-w-0">
-                <h2 className="text-[15px] font-semibold text-slate-900 dark:text-white sm:text-base">
+                <h2 className="text-[15px] font-semibold text-slate-900 sm:text-base">
                   Order Details{" "}
                   {isManualCarrierOrder(order) ? (
                     <span className="ml-2 inline-block rounded bg-indigo-50 border border-indigo-200 px-2 py-0.5 text-xs font-bold text-indigo-700 uppercase">

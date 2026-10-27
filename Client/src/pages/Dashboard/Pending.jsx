@@ -1651,7 +1651,7 @@ function Pending() {
   ======================================================= */
 
   return (
-    <div className="min-h-full bg-[#f6f8fb] dark:bg-[#090b10] text-slate-800 dark:text-slate-100 p-5 transition-colors duration-200">
+    <div className="min-h-full bg-[#f8fafc] p-5">
 
       {/* =================================================
           HEADER
@@ -1663,7 +1663,7 @@ function Pending() {
 
           <div className="flex items-center gap-2">
 
-            <h1 className="text-[21px] font-semibold tracking-[-0.02em] text-slate-800 dark:text-white">
+            <h1 className="text-[21px] font-semibold tracking-[-0.02em] text-slate-800">
               NDR & Pending
             </h1>
 

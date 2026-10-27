@@ -426,7 +426,7 @@ function RateCalculator() {
   // ====================================================
 
   return (
-    <div className="min-h-full w-full bg-[#f6f8fb] dark:bg-[#090b10] text-slate-800 dark:text-slate-100 p-5 md:p-6 transition-colors duration-200">
+    <div className="min-h-full w-full bg-[#f6f8fb] p-5 md:p-6">
 
       {/* ==================================================
           HEADER
@@ -443,7 +443,7 @@ function RateCalculator() {
             </div>
 
             <div>
-              <h1 className="text-[21px] font-semibold tracking-tight text-slate-900 dark:text-white">
+              <h1 className="text-[21px] font-semibold tracking-tight text-slate-900">
                 Rate Calculator
               </h1>
 

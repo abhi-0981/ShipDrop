@@ -1172,7 +1172,7 @@ function Manifested() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#f6f8fb] dark:bg-[#090b10] text-slate-800 dark:text-slate-100 px-4 py-4 transition-colors duration-200">
+      <div className="min-h-screen bg-[#f7f8fb] px-4 py-4">
         <div className="mx-auto max-w-[1450px]">
           <div className="mb-3 h-[74px] animate-pulse rounded-xl border border-slate-200 bg-white" />
 
@@ -1198,7 +1198,7 @@ function Manifested() {
      ========================================================== */
 
   return (
-    <div className="min-h-screen bg-[#f6f8fb] dark:bg-[#090b10] text-slate-800 dark:text-slate-100 px-4 py-4 transition-colors duration-200">
+    <div className="min-h-screen bg-[#f7f8fb] px-4 py-4">
       <div className="mx-auto max-w-[1450px]">
         {/* =====================================================
             HEADER
@@ -1217,7 +1217,7 @@ function Manifested() {
               </div>
 
               <div>
-                <h1 className="text-[17px] font-semibold tracking-[-0.2px] text-slate-900 dark:text-white">
+                <h1 className="text-[17px] font-semibold tracking-[-0.2px] text-slate-900">
                   Manifested Shipments
                 </h1>
 

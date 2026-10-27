@@ -19,7 +19,7 @@ export default function NotFound() {
   }, []);
 
   return (
-    <div className="min-h-screen w-full bg-[#f6f8fb] dark:bg-[#090b10] text-slate-800 dark:text-slate-100 flex flex-col justify-between selection:bg-[#008dd2] selection:text-white transition-colors duration-200">
+    <div className="min-h-screen w-full bg-[#f6f8fb] text-slate-800 flex flex-col justify-between selection:bg-[#008dd2] selection:text-white">
       {/* =========================================================
           TOP HEADER
       ========================================================= */}

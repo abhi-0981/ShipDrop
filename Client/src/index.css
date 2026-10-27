@@ -212,26 +212,16 @@ html.dark main {
   color: #f1f5f9 !important;
 }
 
-html.dark [class*="bg-[#f6f8fb]"],
-html.dark [class*="bg-[#F6F8FB]"],
-html.dark [class*="bg-[#f5f8fc]"],
-html.dark [class*="bg-[#F5F8FC]"],
-html.dark [class*="bg-[#f7f8fb]"],
-html.dark [class*="bg-[#F7F8FB]"],
-html.dark [class*="bg-[#f8fafc]"],
-html.dark [class*="bg-[#F8FAFC]"],
-html.dark [class*="bg-[#f5f7fb]"],
-html.dark [class*="bg-[#F5F7FB]"],
-html.dark [class*="bg-[#f5f8fd]"],
-html.dark [class*="bg-[#F5F8FD]"],
-html.dark [class*="bg-[#f4f6fb]"],
-html.dark [class*="bg-[#F4F6FB]"],
-html.dark [class*="bg-[#fbfcfd]"],
-html.dark [class*="bg-[#FBFCFD]"],
-html.dark [class*="bg-[#fcfdff]"],
-html.dark [class*="bg-[#FCFDFF]"],
-html.dark [class*="bg-[#f8fcff]"],
-html.dark [class*="bg-[#F8FCFF]"] {
+html.dark [class*="bg-[#f6f8fb]" i],
+html.dark [class*="bg-[#f5f8fc]" i],
+html.dark [class*="bg-[#f7f8fb]" i],
+html.dark [class*="bg-[#f8fafc]" i],
+html.dark [class*="bg-[#f5f7fb]" i],
+html.dark [class*="bg-[#f5f8fd]" i],
+html.dark [class*="bg-[#f4f6fb]" i],
+html.dark [class*="bg-[#fbfcfd]" i],
+html.dark [class*="bg-[#fcfdff]" i],
+html.dark [class*="bg-[#f8fcff]" i] {
   background-color: #090b10 !important;
   color: #f1f5f9;
 }
@@ -267,10 +257,9 @@ html.dark .bg-slate-50\/70,
 html.dark .bg-slate-50\/80,
 html.dark .bg-slate-50\/90,
 html.dark .bg-slate-50\/60,
+html.dark .bg-slate-50\/50,
 html.dark .bg-\[\#fafbfc\],
-html.dark .bg-\[\#FAFBFC\],
-html.dark [class*="bg-[#fafbfc]"],
-html.dark [class*="bg-[#FAFBFC]"] {
+html.dark .bg-\[\#FAFBFC\] {
   background-color: #171b26 !important;
 }
 
