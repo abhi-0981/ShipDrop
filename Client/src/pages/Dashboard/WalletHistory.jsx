@@ -183,12 +183,12 @@ const WalletHistory = () => {
       paymentId
     ) {
       return {
-        category: "Top-Up",
-        title: "Online Wallet Top-Up",
+        category: "Recharge",
+        title: "Wallet Recharge",
         subtitle: paymentId
-          ? `Top-up successful via Razorpay (Payment Ref: ${paymentId})`
-          : "Prepaid wallet balance recharged successfully",
-        badge: "Recharge Success",
+          ? `Money added to wallet (${paymentId})`
+          : "Money added to wallet balance",
+        badge: "Recharge",
         badgeClass: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800",
         icon: "recharge",
         iconClass: "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400",
