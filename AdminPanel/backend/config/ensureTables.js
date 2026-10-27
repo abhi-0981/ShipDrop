@@ -1,0 +1,183 @@
+const db = require("./db");
+
+/**
+ * Automatically and idempotently ensures all required tables for
+ * secure impersonation sessions and audit logs exist in MySQL.
+ */
+async function ensureTables() {
+  try {
+    // 0. Ensure user_sessions table exists
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS user_sessions (
+        session_id VARCHAR(64) PRIMARY KEY,
+        user_id VARCHAR(64) NOT NULL,
+        expires_at DATETIME NOT NULL,
+        revoked_at DATETIME NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_user_sessions_user_id (user_id),
+        INDEX idx_user_sessions_expiry (expires_at)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
+    // 1. Audit log table
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS admin_impersonation_logs (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        admin_id INT NOT NULL,
+        admin_username VARCHAR(100) NOT NULL,
+        target_user_id INT NOT NULL,
+        target_user_name VARCHAR(255) NULL,
+        target_user_email VARCHAR(255) NULL,
+        session_id VARCHAR(64) NOT NULL,
+        reason VARCHAR(255) DEFAULT 'Customer Support / Troubleshooting',
+        status ENUM('ACTIVE', 'ENDED', 'EXPIRED') DEFAULT 'ACTIVE',
+        ip_address VARCHAR(45) NULL,
+        user_agent TEXT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        expires_at TIMESTAMP NULL,
+        ended_at TIMESTAMP NULL,
+        INDEX idx_impersonation_session (session_id),
+        INDEX idx_impersonation_target (target_user_id),
+        INDEX idx_impersonation_admin (admin_id),
+        INDEX idx_impersonation_status (status)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
+    // 2. Single-use exchange tickets table
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS impersonation_tickets (
+        ticket_id VARCHAR(64) PRIMARY KEY,
+        admin_id INT NOT NULL,
+        admin_username VARCHAR(100) NOT NULL,
+        target_user_id INT NOT NULL,
+        session_id VARCHAR(64) NOT NULL,
+        user_token TEXT NOT NULL,
+        user_data TEXT NOT NULL,
+        admin_return_url VARCHAR(255) NOT NULL,
+        used TINYINT(1) DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        expires_at TIMESTAMP NOT NULL,
+        INDEX idx_ticket_expiry (expires_at, used)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
+    // 3. Ensure announcements table exists
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS announcements (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        description TEXT NOT NULL,
+        type VARCHAR(50) DEFAULT 'INFO',
+        is_active TINYINT(1) DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_announcements_active (is_active),
+        INDEX idx_announcements_created (created_at)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
+    // 4. Ensure announcement_reads table exists
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS announcement_reads (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        announcement_id INT NOT NULL,
+        user_id INT NOT NULL,
+        read_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_user_announcement (user_id, announcement_id),
+        INDEX idx_announcement_reads_user (user_id),
+        INDEX idx_announcement_reads_announcement (announcement_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
+    // 5. Ensure announcement_recipients table exists (for targeted announcements)
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS announcement_recipients (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        announcement_id INT NOT NULL,
+        user_id INT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_announcement_user (announcement_id, user_id),
+        INDEX idx_recipients_user (user_id),
+        INDEX idx_recipients_announcement (announcement_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
+    // 6. Ensure target_type and target_user_ids columns exist on announcements table
+    try {
+      const [colTargetType] = await db.query(`SHOW COLUMNS FROM announcements LIKE 'target_type'`);
+      if (!colTargetType || colTargetType.length === 0) {
+        await db.query(`ALTER TABLE announcements ADD COLUMN target_type VARCHAR(20) DEFAULT 'ALL'`);
+      }
+    } catch (colErr) {
+      console.warn("Notice checking target_type column:", colErr.message);
+    }
+
+    try {
+      const [colTargetUserIds] = await db.query(`SHOW COLUMNS FROM announcements LIKE 'target_user_ids'`);
+      if (!colTargetUserIds || colTargetUserIds.length === 0) {
+        await db.query(`ALTER TABLE announcements ADD COLUMN target_user_ids TEXT DEFAULT NULL`);
+      }
+    } catch (colErr) {
+      console.warn("Notice checking target_user_ids column:", colErr.message);
+    }
+
+    // 7. Ensure party_identities table exists
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS party_identities (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        name VARCHAR(150) NOT NULL,
+        reference_name VARCHAR(150) NULL,
+        company_name VARCHAR(255) NULL,
+        gst_no VARCHAR(50) NULL,
+        phone_no VARCHAR(25) NULL,
+        address TEXT NULL,
+        is_deleted TINYINT(1) NOT NULL DEFAULT 0,
+        deleted_at DATETIME NULL DEFAULT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_party_identities_user_id (user_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
+    // Ensure is_deleted and deleted_at columns on party_identities
+    const partyCols = [
+      { name: "is_deleted", type: "TINYINT(1) NOT NULL DEFAULT 0" },
+      { name: "deleted_at", type: "DATETIME NULL DEFAULT NULL" },
+    ];
+    for (const col of partyCols) {
+      try {
+        const [existing] = await db.query(
+          `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'party_identities' AND COLUMN_NAME = ?`,
+          [col.name]
+        );
+        if (!existing || existing.length === 0) {
+          await db.query(`ALTER TABLE party_identities ADD COLUMN ${col.name} ${col.type}`);
+        }
+      } catch (err) {}
+    }
+
+    // Ensure is_deleted and deleted_at columns on warehouses
+    const warehouseCols = [
+      { name: "is_deleted", type: "TINYINT(1) NOT NULL DEFAULT 0" },
+      { name: "deleted_at", type: "DATETIME NULL DEFAULT NULL" },
+    ];
+    for (const col of warehouseCols) {
+      try {
+        const [existing] = await db.query(
+          `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'warehouses' AND COLUMN_NAME = ?`,
+          [col.name]
+        );
+        if (!existing || existing.length === 0) {
+          await db.query(`ALTER TABLE warehouses ADD COLUMN ${col.name} ${col.type}`);
+        }
+      } catch (err) {}
+    }
+
+    console.log("AdminPanel: Impersonation audit, tickets, announcements, warehouses, and party tables verified successfully.");
+  } catch (error) {
+    console.warn("AdminPanel ensureTables notice:", error.message);
+  }
+}
+
+module.exports = { ensureTables };

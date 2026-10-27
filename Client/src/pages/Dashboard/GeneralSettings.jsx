@@ -268,12 +268,12 @@ function GeneralSettings() {
   // ========================================
 
   return (
-    <div className="min-h-screen bg-slate-100">
+    <div className="min-h-screen bg-[#f6f8fb] dark:bg-[#090b10]">
 
       {/* PAGE HEADER */}
 
       <div className="mb-5">
-        <h1 className="text-xl font-medium text-slate-800">
+        <h1 className="text-xl font-medium text-slate-800 dark:text-white">
           General Details
         </h1>
 

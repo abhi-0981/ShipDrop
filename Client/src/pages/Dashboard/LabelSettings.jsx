@@ -363,13 +363,13 @@ function LabelSettings() {
   const isBusy = loading || saving;
 
   return (
-    <div className="min-h-full w-full bg-white px-3 pb-20 pt-4 sm:px-6 sm:pt-5">
+    <div className="min-h-full w-full bg-[#f6f8fb] dark:bg-[#090b10] px-3 pb-20 pt-4 sm:px-6 sm:pt-5">
       <div className="mx-auto max-w-4xl">
 
         {/* Header */}
         <div className="mb-5 flex items-center justify-between gap-3">
           <div>
-            <h1 className="text-xl font-semibold text-slate-900">
+            <h1 className="text-xl font-semibold text-slate-900 dark:text-white">
               Label Settings
             </h1>
 

@@ -344,12 +344,12 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
   const activeClass = (path) =>
     location.pathname === path
       ? "bg-[#008dd2] text-white shadow-sm font-medium"
-      : "text-slate-600 hover:bg-slate-100 active:scale-[0.98]";
+      : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#171b26] active:scale-[0.98]";
 
   const subActiveClass = (path) =>
     location.pathname === path
-      ? "bg-sky-50 text-[#008dd2] font-semibold"
-      : "text-slate-600 hover:bg-slate-100 hover:text-[#008dd2]";
+      ? "bg-sky-50 dark:bg-sky-500/15 text-[#008dd2] dark:text-[#38bdf8] font-semibold"
+      : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#171b26] hover:text-[#008dd2] dark:hover:text-[#38bdf8]";
 
   return (
     <>
@@ -365,14 +365,14 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
 
       {/* SIDEBAR ASIDE: Closes completely off-screen on toggle */}
       <aside
-        className={`fixed top-0 left-0 z-50 flex h-full w-[250px] flex-col border-r border-slate-200 bg-white transition-transform duration-300 ease-in-out ${
+        className={`fixed top-0 left-0 z-50 flex h-full w-[250px] flex-col border-r border-slate-200 dark:border-[#1f2535] bg-white dark:bg-[#0c0e14] transition-transform duration-300 ease-in-out ${
           collapsed
             ? "-translate-x-full"
             : "translate-x-0 shadow-2xl lg:shadow-none"
         }`}
       >
         {/* HEADER: LOGO + TOGGLE / CLOSE BUTTON */}
-        <div className="flex h-[64px] shrink-0 items-center justify-between border-b border-slate-100 px-4">
+        <div className="flex h-[64px] shrink-0 items-center justify-between border-b border-slate-100 dark:border-[#1f2535] px-4">
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#008dd2] text-white font-bold text-base shadow-sm">
               S

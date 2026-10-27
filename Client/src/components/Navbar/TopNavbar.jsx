@@ -1052,7 +1052,7 @@
     return (
       <>
         <header
-          className={`fixed top-0 right-0 z-30 flex h-[64px] items-center justify-between border-b border-slate-200 bg-white px-2.5 sm:px-6 transition-all duration-300 ${
+          className={`fixed top-0 right-0 z-30 flex h-[64px] items-center justify-between border-b border-slate-200 dark:border-[#1f2535] bg-white dark:bg-[#0c0e14] px-2.5 sm:px-6 transition-all duration-300 ${
             isCollapsed ? "left-0" : "left-0 lg:left-[250px]"
           }`}
         >

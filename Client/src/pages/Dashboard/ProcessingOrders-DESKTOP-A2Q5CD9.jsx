@@ -1,0 +1,1548 @@
+import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "react-hot-toast";
+import api from "../../services/api";
+import { notifyOrderChange, subscribeToOrderUpdates } from "../../services/orderEvents";
+import { RouteSkeleton } from "../../components/Common/TableSkeleton";
+import OrderStatusNavTabs from "../../components/Common/OrderStatusNavTabs";
+import ShippingTruckLoader from "../../components/Common/ShippingTruckLoader";
+
+const Icon = ({ name, size = 16 }) => {
+  const common = {
+    width: size,
+    height: size,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 1.8,
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
+  };
+
+  if (name === "search") {
+    return (
+      <svg {...common}>
+        <circle cx="11" cy="11" r="7" />
+        <path d="m20 20-4-4" />
+      </svg>
+    );
+  }
+
+  if (name === "truck") {
+    return (
+      <svg {...common}>
+        <path d="M3 6h11v10H3z" />
+        <path d="M14 10h4l3 3v3h-7z" />
+        <circle cx="7" cy="18" r="2" />
+        <circle cx="18" cy="18" r="2" />
+      </svg>
+    );
+  }
+
+  if (name === "trash") {
+    return (
+      <svg {...common}>
+        <path d="M4 7h16" />
+        <path d="M10 11v6" />
+        <path d="M14 11v6" />
+        <path d="M6 7l1 14h10l1-14" />
+        <path d="M9 7V4h6v3" />
+      </svg>
+    );
+  }
+
+  if (name === "edit") {
+    return (
+      <svg {...common}>
+        <path d="M12 20h9" />
+        <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z" />
+      </svg>
+    );
+  }
+
+  if (name === "file") {
+    return (
+      <svg {...common}>
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+        <path d="M14 2v6h6" />
+        <path d="M8 13h8" />
+        <path d="M8 17h6" />
+      </svg>
+    );
+  }
+
+  if (name === "copy") {
+    return (
+      <svg {...common}>
+        <rect x="9" y="9" width="10" height="10" rx="2" />
+        <path d="M15 9V7a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2" />
+      </svg>
+    );
+  }
+
+  return null;
+};
+
+function ProcessingOrders() {
+  const [orders, setOrders] = useState(() => {
+    try {
+      const cached = sessionStorage.getItem("shipdrop_processing_orders_cache");
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [loading, setLoading] = useState(() => {
+    try {
+      return !sessionStorage.getItem("shipdrop_processing_orders_cache");
+    } catch {
+      return true;
+    }
+  });
+  const navigate = useNavigate();
+
+  const [selectedOrders, setSelectedOrders] = useState([]);
+  const [search, setSearch] = useState("");
+
+  const [showShipPopup, setShowShipPopup] = useState(false);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [shipping, setShipping] = useState(false);
+  const [previewRates, setPreviewRates] = useState({});
+  const [previewTotal, setPreviewTotal] = useState(0);
+
+  const rateCacheRef = useRef(new Map());
+  const previewRequestRef = useRef(0);
+  const [shippingType, setShippingType] = useState("ROAD");
+
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteIds, setDeleteIds] = useState([]);
+  const [deleting, setDeleting] = useState(false);
+
+  const [editingOrder, setEditingOrder] = useState(false);
+
+  const showToast = (message, type = "success") => {
+    if (type === "error") {
+      toast.error(message);
+    } else {
+      toast.success(message);
+    }
+  };
+
+  const fetchOrders = async (showLoader = true) => {
+    try {
+      if (showLoader) setLoading(true);
+
+      const storedUser = localStorage.getItem("user");
+      let user = {};
+      try {
+        user = storedUser ? JSON.parse(storedUser) : {};
+      } catch (error) {
+        // console.log("User parse error:", error);
+      }
+
+      const userId = user.id || user.user_id || user.userId;
+      if (!userId) {
+        throw new Error("User session not found. Please login again.");
+      }
+
+      const response = await api.get(`/orders/processing?user_id=${userId}`);
+      const data = response.data?.orders ?? response.data ?? [];
+
+      rateCacheRef.current.clear();
+      const list = Array.isArray(data) ? data : [];
+      setOrders(list);
+      try {
+        sessionStorage.setItem("shipdrop_processing_orders_cache", JSON.stringify(list));
+      } catch {}
+    } catch (error) {
+      // console.log("Processing orders error:", error);
+      setOrders([]);
+    } finally {
+      if (showLoader) setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchOrders();
+  }, []);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToOrderUpdates(() => {
+      fetchOrders(false);
+    });
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+
+  const getId = (order, index = 0) => order.id ?? order.order_id ?? index;
+  const getParty = (order) =>
+    order.party_reference_name || order.party_name || order.party_identity_name || order.party || "—";
+  const getCustomer = (order) =>
+    order.consignee_name || order.customer_name || order.name || "—";
+  const getMobile = (order) =>
+    order.mobile ||
+    order.consignee_mobile ||
+    order.phone ||
+    order.mobile_number ||
+    "—";
+  const getPickupCity = (order) =>
+    order.pickup_city ||
+    order.pickupCity ||
+    order.pickup?.city ||
+    order.pickup_address_data?.city ||
+    "—";
+  const getPickupPincode = (order) =>
+    order.pickup_pincode ||
+    order.pickupPincode ||
+    order.pickup?.pincode ||
+    order.pickup_address_data?.pincode ||
+    "—";
+  const getDeliveryCity = (order) =>
+    order.city || order.delivery_city || order.deliveryCity || "—";
+  const getDeliveryPincode = (order) =>
+    order.pincode || order.delivery_pincode || order.deliveryPincode || "—";
+
+  const getProduct = (order) => {
+    if (order.product_name) return order.product_name;
+    if (order.product) return order.product;
+    if (Array.isArray(order.products) && order.products.length) {
+      return (
+        order.products[0]?.product_name ||
+        order.products[0]?.product_title ||
+        order.products[0]?.product ||
+        "—"
+      );
+    }
+    return "—";
+  };
+
+  const getQty = (order) => {
+    if (order.qty != null) return order.qty;
+    if (order.quantity != null) return order.quantity;
+    if (Array.isArray(order.products) && order.products.length) {
+      return order.products[0]?.qty ?? order.products[0]?.quantity ?? 1;
+    }
+    return 1;
+  };
+
+  const getWeightNumber = (order) => {
+    if (order.total_weight != null) return Number(order.total_weight) || 0;
+    if (order.weight != null) return Number(order.weight) || 0;
+    if (order.dead_weight != null) return Number(order.dead_weight) || 0;
+    if (Array.isArray(order.packages) && order.packages.length) {
+      return order.packages.reduce((total, pkg) => {
+        const weight = Number(pkg?.weight) || 0;
+        const count = Number(pkg?.package_count) || 1;
+        return total + weight * count;
+      }, 0);
+    }
+    return 0;
+  };
+
+  const getTotalWeight = (order) => {
+    const weight = getWeightNumber(order);
+    if (weight <= 0) return "—";
+    return `${Number(weight.toFixed(2))} kg`;
+  };
+
+  // Read volumetric weight from existing data, or calculate it from package dimensions.
+  const getVolumetricWeight = (order) => {
+    const directValue = order.volumetric_weight ?? order.volumetricWeight ?? order.total_volumetric_weight ?? order.totalVolumetricWeight;
+    if (directValue !== null && directValue !== undefined && directValue !== "") {
+      const value = Number(directValue);
+      return Number.isFinite(value) && value > 0 ? `${value.toFixed(2)} kg` : "—";
+    }
+    if (!Array.isArray(order.packages) || order.packages.length === 0) return "—";
+    let total = 0;
+    let foundDimensions = false;
+    for (const pkg of order.packages) {
+      const length = Number(pkg?.length ?? pkg?.length_cm ?? pkg?.lengthCm ?? pkg?.l);
+      const width = Number(pkg?.width ?? pkg?.breadth ?? pkg?.width_cm ?? pkg?.widthCm ?? pkg?.w);
+      const height = Number(pkg?.height ?? pkg?.height_cm ?? pkg?.heightCm ?? pkg?.h);
+      const count = Number(pkg?.package_count ?? pkg?.count ?? 1) || 1;
+      if (Number.isFinite(length) && length > 0 && Number.isFinite(width) && width > 0 && Number.isFinite(height) && height > 0) {
+        foundDimensions = true;
+        total += (length * width * height * count) / 5000;
+      }
+    }
+    return foundDimensions ? `${total.toFixed(2)} kg` : "—";
+  };
+
+  const getBoxCount = (order) => {
+    if (Array.isArray(order.packages) && order.packages.length) {
+      const total = order.packages.reduce(
+        (sum, pkg) => sum + Number(pkg?.package_count ?? pkg?.count ?? 1),
+        0
+      );
+      return total || 1;
+    }
+    return order.package_count ?? order.count ?? 1;
+  };
+
+  const getPayment = (order) => {
+    const payment = (order.payment_type || order.payment_method || "PREPAID")
+      .toString()
+      .toUpperCase();
+    return payment === "COD" ? "COD" : "PREPAID";
+  };
+
+  const getProductValue = (order) => {
+    const candidates = [
+      order.product_value,
+      order.productValue,
+      order.order_value,
+      order.orderValue,
+      order.total_amount,
+      order.totalAmount,
+      order.cod_amount,
+      order.codAmount,
+      order.invoice_value,
+      order.invoiceValue,
+      order.amount,
+    ];
+
+    for (const value of candidates) {
+      const numericValue = Number(value);
+      if (Number.isFinite(numericValue) && numericValue >= 0) {
+        return numericValue;
+      }
+    }
+
+    if (Array.isArray(order.products) && order.products.length) {
+      const total = order.products.reduce((sum, product) => {
+        const qty = Number(product?.qty ?? product?.quantity ?? 1) || 1;
+        const price =
+          Number(
+            product?.price ??
+              product?.selling_price ??
+              product?.sellingPrice ??
+              product?.amount ??
+              0
+          ) || 0;
+        return sum + price * qty;
+      }, 0);
+      if (total >= 0) return total;
+    }
+    return 0;
+  };
+
+  const getDate = (order) => {
+    const raw = order.created_at || order.createdAt || order.order_date;
+    if (!raw) return "—";
+    const date = new Date(raw);
+    if (Number.isNaN(date.getTime())) return "—";
+    return date.toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
+  const getStatus = (order) => order.status || "PROCESSING";
+
+  // ========================================
+  // EDIT ORDER
+  // ========================================
+  const handleEdit = async (order) => {
+    const orderId = getId(order);
+    if (!orderId) {
+      showToast("Invalid order ID.", "error");
+      return;
+    }
+
+    try {
+      setEditingOrder(true);
+      const storedUser = localStorage.getItem("user");
+      let user = {};
+      try {
+        user = storedUser ? JSON.parse(storedUser) : {};
+      } catch (error) {
+        // console.log("User parse error:", error);
+      }
+
+      const userId = user.id || user.user_id || user.userId;
+      if (!userId) {
+        throw new Error("User session not found. Please login again.");
+      }
+
+      const response = await api.get(`/orders/${orderId}?user_id=${userId}`);
+      const result = response.data;
+
+      if (!result?.success || !result?.order) {
+        throw new Error(result?.message || "Unable to load order details");
+      }
+
+      sessionStorage.setItem(
+        "editingProcessingOrder",
+        JSON.stringify(result.order)
+      );
+      navigate("/create-order");
+    } catch (error) {
+      showToast(
+        error.response?.data?.message ||
+          error.message ||
+          "Unable to open order for editing",
+        "error"
+      );
+      setEditingOrder(false);
+    }
+  };
+
+  // ========================================
+  // DUPLICATE ORDER
+  // ========================================
+  const handleDuplicate = async (order) => {
+    const orderId = getId(order);
+
+    let user = {};
+    try {
+      const storedUser = localStorage.getItem("user");
+      user = storedUser ? JSON.parse(storedUser) : {};
+    } catch (error) {
+      // console.log("User parse error:", error);
+    }
+
+    const userId = user.id || user.user_id || user.userId;
+
+    if (!orderId || !userId) {
+      showToast("Unable to duplicate this order.", "error");
+      return;
+    }
+
+    try {
+      const response = await api.get(`/orders/${orderId}?user_id=${userId}`);
+      const result = response?.data;
+
+      if (!result?.success || !result?.order) {
+        throw new Error(result?.message || "Unable to load order details");
+      }
+
+      const source = result.order;
+      const warehouseId = Number(source.warehouse_id || order.warehouse_id);
+
+      if (!warehouseId) {
+        throw new Error("Pickup warehouse is missing");
+      }
+
+      const payload = {
+        user_id: Number(userId),
+        pickup_address: source.pickup_address || order.pickup_address || null,
+        pickup_pincode: source.pickup_pincode || order.pickup_pincode || null,
+        pickup_city: source.pickup_city || order.pickup_city || null,
+        warehouse_id: warehouseId,
+        party_identity_id: source.party_identity_id || order.party_identity_id || null,
+        pickup_address_id: source.pickup_address_id || order.pickup_address_id || null,
+        orderData: {
+          consignee_name: source.consignee_name,
+          mobile: source.mobile,
+          alternate_mobile: source.alternate_mobile || null,
+          email: source.email || null,
+          gstin: source.gstin || null,
+          company_name: source.company_name || null,
+          floor_no: source.floor_no || null,
+          landmark: source.landmark || null,
+          address_line1: source.address_line1,
+          address_line2: source.address_line2 || null,
+          pincode: source.pincode,
+          city: source.city,
+          state: source.state,
+          country: source.country || "India",
+          payment_type: source.payment_type || "Prepaid",
+          risk_type: source.risk_type || "Owner Risk",
+          warehouse_id: warehouseId,
+          party_identity_id: source.party_identity_id || order.party_identity_id || null,
+        },
+        products: Array.isArray(source.products) ? source.products : [],
+        packages: Array.isArray(source.packages) ? source.packages : [],
+      };
+
+      const createResponse = await api.post("/orders/create", payload);
+      const createResult = createResponse?.data;
+
+      if (!createResult?.success || !createResult?.order_id) {
+        throw new Error(createResult?.message || "Unable to duplicate order");
+      }
+
+      showToast(
+        `Order duplicated successfully. New order #${createResult.order_id} is in Processing.`,
+        "success"
+      );
+      await fetchOrders(false);
+      notifyOrderChange({ type: "created", orderId: createResult.order_id });
+    } catch (error) {
+      showToast(
+        error?.response?.data?.message || error?.message || "Unable to duplicate order",
+        "error"
+      );
+    }
+  };
+
+  const searchText = search.trim().toLowerCase();
+  const filteredOrders = orders.filter((order) => {
+    if (!searchText) return true;
+    const searchableText = [
+      getId(order),
+      getParty(order),
+      getCustomer(order),
+      getMobile(order),
+      getPickupCity(order),
+      getPickupPincode(order),
+      getDeliveryCity(order),
+      getDeliveryPincode(order),
+      getProduct(order),
+      getPayment(order),
+      getStatus(order),
+      order.awb,
+    ]
+      .map((value) => String(value ?? "").toLowerCase())
+      .join(" ");
+
+    return searchableText.includes(searchText);
+  });
+
+  const visibleIds = filteredOrders.map((order, index) => getId(order, index));
+  const allSelected =
+    visibleIds.length > 0 &&
+    visibleIds.every((id) => selectedOrders.includes(id));
+
+  const toggleAll = () => {
+    if (allSelected) {
+      setSelectedOrders((prev) =>
+        prev.filter((id) => !visibleIds.includes(id))
+      );
+      return;
+    }
+    setSelectedOrders((prev) => [...new Set([...prev, ...visibleIds])]);
+  };
+
+  const toggleOrder = (id) => {
+    setSelectedOrders((prev) => {
+      if (prev.includes(id)) return prev.filter((item) => item !== id);
+      return [...prev, id];
+    });
+  };
+
+  const getSelectedOrderObjects = () => {
+    return orders.filter((order, index) =>
+      selectedOrders.includes(getId(order, index))
+    );
+  };
+
+  const calculatePreview = async (orderList, serviceType = shippingType) => {
+    const currentRequest = ++previewRequestRef.current;
+    if (!Array.isArray(orderList) || orderList.length === 0) {
+      setPreviewLoading(false);
+      setPreviewRates({});
+      setPreviewTotal(0);
+      return;
+    }
+
+    const normalizedService = String(serviceType || "ROAD")
+      .trim()
+      .toUpperCase();
+
+    const getRateCacheKey = (order) => {
+      const id = getId(order);
+      const pickup = getPickupPincode(order);
+      const delivery = getDeliveryPincode(order);
+      const weight = getWeightNumber(order);
+      const paymentType = getPayment(order);
+      const productValue = getProductValue(order);
+      return `${id}|${normalizedService}|${pickup}|${delivery}|${weight}|${paymentType}|${productValue}`;
+    };
+
+    const rateMap = {};
+    const missingOrders = [];
+
+    orderList.forEach((order) => {
+      const cacheKey = getRateCacheKey(order);
+      const cachedRate = rateCacheRef.current.get(cacheKey);
+      if (cachedRate) {
+        rateMap[cachedRate.id] = cachedRate;
+      } else {
+        missingOrders.push({ order, cacheKey });
+      }
+    });
+
+    if (missingOrders.length === 0) {
+      let total = 0;
+      orderList.forEach((order) => {
+        total += Number(rateMap[getId(order)]?.charge) || 0;
+      });
+      setPreviewRates(rateMap);
+      setPreviewTotal(Number(total.toFixed(2)));
+      setPreviewLoading(false);
+      return;
+    }
+
+    setPreviewLoading(true);
+
+    try {
+      const freshResults = await Promise.all(
+        missingOrders.map(async ({ order, cacheKey }) => {
+          const pickupPincode = getPickupPincode(order);
+          const deliveryPincode = getDeliveryPincode(order);
+          const weight = getWeightNumber(order);
+
+          if (!/^\d{6}$/.test(String(pickupPincode))) {
+            throw new Error(`Pickup pincode missing for Order #${order.id}`);
+          }
+          if (!/^\d{6}$/.test(String(deliveryPincode))) {
+            throw new Error(`Delivery pincode missing for Order #${order.id}`);
+          }
+          if (weight <= 0) {
+            throw new Error(`Package weight missing for Order #${order.id}`);
+          }
+
+          const storedUser = localStorage.getItem("user");
+          let user = {};
+          try {
+            user = storedUser ? JSON.parse(storedUser) : {};
+          } catch (error) {
+            // console.log("User parse error:", error);
+          }
+
+          const userId = user.id || user.user_id || user.userId;
+          if (!userId) {
+            throw new Error("User session not found. Please login again.");
+          }
+
+          const response = await api.post("/rate/calculate", {
+            user_id: userId,
+            pickup_pincode: pickupPincode,
+            delivery_pincode: deliveryPincode,
+            weight,
+            service_type: normalizedService,
+            payment_type: getPayment(order),
+            product_value: getProductValue(order),
+          });
+
+          const result = response.data;
+          if (!result?.success) {
+            throw new Error(
+              result?.message ||
+                `Unable to calculate rate for Order #${order.id}`
+            );
+          }
+
+          const item = {
+            id: getId(order),
+            charge: Number(result.shipping_charge) || 0,
+            zone: result.zone,
+            distance_km: result.distance_km,
+            weight,
+          };
+
+          rateCacheRef.current.set(cacheKey, item);
+          return item;
+        })
+      );
+
+      if (currentRequest !== previewRequestRef.current) return;
+
+      freshResults.forEach((item) => {
+        rateMap[item.id] = item;
+      });
+
+      let total = 0;
+      orderList.forEach((order) => {
+        total += Number(rateMap[getId(order)]?.charge) || 0;
+      });
+
+      setPreviewRates(rateMap);
+      setPreviewTotal(Number(total.toFixed(2)));
+    } catch (error) {
+      if (currentRequest !== previewRequestRef.current) return;
+      setPreviewRates(rateMap);
+      showToast(
+        error.response?.data?.message ||
+          error.message ||
+          "Unable to calculate shipping charges",
+        "error"
+      );
+    } finally {
+      if (currentRequest === previewRequestRef.current) {
+        setPreviewLoading(false);
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (selectedOrders.length === 0) return;
+    const selected = getSelectedOrderObjects();
+    if (selected.length === 0) return;
+    calculatePreview(selected, "ROAD");
+  }, [selectedOrders]);
+
+  const handleShippingTypeChange = async (event) => {
+    const newType = event.target.value;
+    setShippingType(newType);
+    if (selectedOrders.length === 0) return;
+    const selected = getSelectedOrderObjects();
+    await calculatePreview(selected, newType);
+  };
+
+  const openShipPopup = (ids) => {
+    const selected = orders.filter((order, index) =>
+      ids.includes(getId(order, index))
+    );
+
+    if (selected.length === 0) {
+      showToast("Please select at least one order.", "error");
+      return;
+    }
+
+    setSelectedOrders(ids);
+    setShippingType("ROAD");
+    setShowShipPopup(true);
+  };
+
+  const handleShip = () => {
+    if (selectedOrders.length === 0) {
+      showToast("Please select at least one order.", "error");
+      return;
+    }
+    openShipPopup(selectedOrders);
+  };
+
+  const confirmShipNow = async () => {
+    if (selectedOrders.length === 0) return;
+    if (previewLoading) {
+      showToast("Please wait while charges are calculated.", "error");
+      return;
+    }
+    if (previewTotal <= 0) {
+      showToast("Shipping charge could not be calculated.", "error");
+      return;
+    }
+
+    try {
+      setShipping(true);
+      const storedUser = localStorage.getItem("user");
+      let user = {};
+      try {
+        user = storedUser ? JSON.parse(storedUser) : {};
+      } catch (error) {
+        // console.log("User parse error:", error);
+      }
+
+      const userId = user.id || user.user_id || user.userId;
+      if (!userId) {
+        showToast("User session not found.", "error");
+        return;
+      }
+
+      const response = await api.post("/shipments/bulk-confirm", {
+        user_id: userId,
+        order_ids: selectedOrders,
+        service_type: shippingType,
+        total_shipping_charge: previewTotal,
+      });
+
+      const result = response.data;
+      if (!result || result.success !== true) {
+        throw new Error(result?.message || "Unable to ship selected orders");
+      }
+
+      const shippedCount =
+        result.total_orders ??
+        result.shipped_orders?.length ??
+        selectedOrders.length;
+      const chargedAmount = Number(result.total_charge ?? previewTotal);
+
+      setShowShipPopup(false);
+      setPreviewRates({});
+      setPreviewTotal(0);
+      rateCacheRef.current.clear();
+      setSelectedOrders([]);
+      setShippingType("ROAD");
+
+      await fetchOrders(false);
+
+      window.dispatchEvent(new Event("walletBalanceUpdated"));
+      window.dispatchEvent(new Event("walletUpdated"));
+      notifyOrderChange({ type: "status_changed", action: "shipped" });
+
+      showToast(
+        `${shippedCount} order${
+          shippedCount > 1 ? "s" : ""
+        } shipped! ₹${chargedAmount.toFixed(2)} deducted from wallet.`,
+        "success"
+      );
+    } catch (error) {
+      showToast(
+        error.response?.data?.message ||
+          error.message ||
+          "Unable to ship selected orders",
+        "error"
+      );
+    } finally {
+      setShipping(false);
+    }
+  };
+
+  const handleDelete = (ids) => {
+    if (!Array.isArray(ids)) ids = selectedOrders;
+    if (!ids || ids.length === 0) {
+      showToast("Please select at least one order.", "error");
+      return;
+    }
+    setDeleteIds(ids);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteIds.length) {
+      setShowDeleteConfirm(false);
+      return;
+    }
+
+    try {
+      setDeleting(true);
+      const storedUser = localStorage.getItem("user");
+      let user = {};
+      try {
+        user = storedUser ? JSON.parse(storedUser) : {};
+      } catch (error) {
+        // console.log("User parse error:", error);
+      }
+
+      const userId = user.id || user.user_id || user.userId;
+      if (!userId) {
+        showToast("User session not found.", "error");
+        return;
+      }
+
+      const response = await api.post("/orders/delete", {
+        user_id: userId,
+        order_ids: deleteIds,
+      });
+
+      const result = response.data;
+      if (!result?.success) throw new Error("Unable to delete orders");
+
+      const deletedCount = result.deleted_count ?? deleteIds.length;
+      setShowDeleteConfirm(false);
+      setDeleteIds([]);
+      setSelectedOrders([]);
+      rateCacheRef.current.clear();
+
+      await fetchOrders(false);
+      notifyOrderChange({ type: "deleted", orderIds: deleteIds });
+      showToast(`${deletedCount} order(s) deleted successfully.`, "success");
+    } catch (error) {
+      showToast(error.message || "Failed to delete orders", "error");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  if (loading) {
+    return <RouteSkeleton />;
+  }
+
+  const selectedOrderObjects = getSelectedOrderObjects();
+
+  return (
+    <div className="min-h-full w-full bg-[#f6f8fb] p-3 sm:p-5 md:p-6 pb-20 lg:pb-8">
+
+
+      {/* HEADER & CONTROLS */}
+      <div className="mb-3.5 rounded-2xl border border-slate-200/80 bg-white p-3.5 sm:p-4 shadow-[0_1px_4px_rgba(15,23,42,0.03)] space-y-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#e8f6fc] text-[#008dd2]">
+              <Icon name="truck" size={18} />
+            </div>
+            <div>
+              <h1 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
+                Ready To Ship
+              </h1>
+              <p className="text-[11px] text-slate-400">
+                {filteredOrders.length} of {orders.length} orders
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {/* SEARCH */}
+            <div className="relative flex-1 sm:w-64">
+              <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                <Icon name="search" size={14} />
+              </div>
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search orders, customers..."
+                className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-8.5 pr-8 text-xs text-slate-700 outline-none focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10 transition"
+              />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch("")}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-sm text-slate-400 hover:text-slate-600"
+                >
+                  ×
+                </button>
+              )}
+            </div>
+
+            {/* DESKTOP ACTIONS */}
+            <div className="hidden sm:flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleShip}
+                disabled={selectedOrders.length === 0}
+                className="flex h-10 items-center gap-1.5 rounded-xl bg-[#008dd2] px-4 text-xs font-bold text-white shadow-xs transition hover:bg-[#0079b5] active:scale-95 disabled:opacity-40"
+              >
+                <Icon name="truck" size={14} />
+                Ship ({selectedOrders.length})
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleDelete()}
+                disabled={selectedOrders.length === 0}
+                className="flex h-10 items-center gap-1.5 rounded-xl bg-rose-500 px-3.5 text-xs font-bold text-white shadow-xs transition hover:bg-rose-600 active:scale-95 disabled:opacity-40"
+              >
+                <Icon name="trash" size={14} />
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* MOBILE SELECT ALL + INLINE ACTIONS */}
+        {filteredOrders.length > 0 && (
+          <div className="flex items-center justify-between border-t border-slate-100 pt-2.5 sm:hidden">
+            <label className="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={allSelected}
+                onChange={toggleAll}
+                className="h-4 w-4 rounded accent-[#008dd2]"
+              />
+              <span>
+                Select All ({selectedOrders.length}/{filteredOrders.length})
+              </span>
+            </label>
+
+            {selectedOrders.length > 0 && (
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => handleDelete()}
+                  className="flex h-8 items-center gap-1 rounded-lg bg-rose-500 px-2.5 text-[11px] font-bold text-white shadow-xs active:scale-95"
+                >
+                  <Icon name="trash" size={12} />
+                  Delete
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleShip}
+                  className="flex h-8 items-center gap-1 rounded-lg bg-[#008dd2] px-3 text-[11px] font-bold text-white shadow-xs active:scale-95"
+                >
+                  <Icon name="truck" size={12} />
+                  Ship ({selectedOrders.length})
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* ORDER STATUS TABS */}
+      <OrderStatusNavTabs />
+
+      {/* MOBILE CARD VIEW */}
+      <div className="space-y-3 lg:hidden">
+        {filteredOrders.length === 0 ? (
+          <div className="flex min-h-[200px] flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white p-6 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+              <Icon name="file" size={22} />
+            </div>
+            <p className="mt-3 text-sm font-bold text-slate-700">
+              No processing orders found
+            </p>
+            <p className="mt-1 text-xs text-slate-400">
+              Create a new order to see it processing here.
+            </p>
+          </div>
+        ) : (
+          filteredOrders.map((order, index) => {
+            const id = getId(order, index);
+            const selected = selectedOrders.includes(id);
+
+            return (
+              <div
+                key={id}
+                className={`relative rounded-2xl border bg-white p-3.5 sm:p-4 shadow-[0_1px_4px_rgba(15,23,42,0.03)] transition-all ${
+                  selected
+                    ? "border-[#008dd2] ring-2 ring-[#008dd2]/10"
+                    : "border-slate-200/80"
+                }`}
+              >
+                {/* CARD TOP BAR */}
+                <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selected}
+                      onChange={() => toggleOrder(id)}
+                      className="h-4 w-4 rounded accent-[#008dd2]"
+                    />
+                    <span className="text-xs font-bold text-slate-900">
+                      #{order.order_id || id}
+                    </span>
+                    {getParty(order) !== "—" && (
+                      <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-700 truncate max-w-[100px]">
+                        {getParty(order)}
+                      </span>
+                    )}
+                  </label>
+
+                  <div className="flex items-center gap-1.5">
+                    <span
+                      className={`rounded-md border px-2 py-0.5 text-[10px] font-bold ${
+                        getPayment(order) === "COD"
+                          ? "border-rose-100 bg-rose-50 text-rose-600"
+                          : "border-emerald-100 bg-emerald-50 text-emerald-600"
+                      }`}
+                    >
+                      {getPayment(order)}
+                    </span>
+                    <span className="rounded-full bg-[#e8f6fc] px-2 py-0.5 text-[10px] font-semibold uppercase text-[#008dd2]">
+                      {getStatus(order)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* DETAILS */}
+                <div className="py-2.5 space-y-1.5 text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-slate-800 truncate">
+                      {getCustomer(order)}
+                    </span>
+                    <span className="text-slate-400 text-[11px]">
+                      {getMobile(order)}
+                    </span>
+                  </div>
+
+                  {/* ROUTE */}
+                  <div className="rounded-xl bg-slate-50/80 p-2.5 flex flex-col gap-1 text-[11px]">
+                    <div className="flex items-center gap-2">
+                      <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-sky-100 text-sky-600">
+                        <svg className="h-2.5 w-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                          <circle cx="12" cy="12" r="3" />
+                          <circle cx="12" cy="12" r="8" />
+                        </svg>
+                      </span>
+                      <span className="font-semibold text-slate-800">{getPickupCity(order)}</span>
+                      <span className="text-slate-400">({getPickupPincode(order)})</span>
+                    </div>
+                    <div className="ml-2 h-2.5 w-0 border-l border-dashed border-slate-300" />
+                    <div className="flex items-center gap-2">
+                      <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-slate-200 text-slate-600">
+                        <svg className="h-2.5 w-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                          <circle cx="12" cy="12" r="3" />
+                          <circle cx="12" cy="12" r="8" />
+                        </svg>
+                      </span>
+                      <span className="font-semibold text-slate-800">{getDeliveryCity(order)}</span>
+                      <span className="text-slate-400">({getDeliveryPincode(order)})</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between text-[11px] text-slate-500 pt-0.5">
+                    <span className="truncate max-w-[180px]">
+                      {getProduct(order)} (Qty: {getQty(order)})
+                    </span>
+                    <span className="font-semibold text-slate-700 text-right">
+                      <span className="block font-semibold text-slate-800">{getTotalWeight(order)}</span>
+                      <span className="block text-[10px] font-medium text-slate-500">Vol: {getVolumetricWeight(order)}</span>
+                      <span className="block text-[10px] text-slate-400">{getBoxCount(order)} Box</span>
+                    </span>
+                  </div>
+                </div>
+
+                {/* CARD ACTIONS */}
+                <div className="flex items-center justify-between border-t border-slate-100 pt-2">
+                  <div className="text-[10px] text-slate-400">
+                    {getDate(order)}
+                  </div>
+
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => handleEdit(order)}
+                      disabled={editingOrder}
+                      className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#008dd2] text-white hover:bg-[#0079b5] active:scale-90 transition disabled:opacity-50"
+                      title="Edit Order"
+                    >
+                      <Icon name="edit" size={13} />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleDuplicate(order)}
+                      className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#008dd2] text-white hover:bg-[#0079b5] active:scale-90 transition"
+                      title="Duplicate Order"
+                    >
+                      <Icon name="copy" size={13} />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleDelete([id])}
+                      className="flex h-8 w-8 items-center justify-center rounded-lg  text-white hover:bg-[#0079b5] active:scale-90 transition"
+                      title="Delete Order"
+                    >
+                      <Icon name="trash" size={13} />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => openShipPopup([id])}
+                      className="flex h-8 items-center gap-1 rounded-lg bg-[#008dd2] px-3 text-[11px] font-bold text-white shadow-xs active:scale-95 transition"
+                    >
+                      <Icon name="truck" size={12} />
+                      Ship
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* TABLET & DESKTOP: TABLE VIEW */}
+      <div className="hidden lg:block overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_4px_rgba(15,23,42,0.03)]">
+        <div className="w-full">
+          <table className="w-full table-fixed text-left border-collapse">
+            <thead>
+              <tr className="border-b border-slate-100 bg-slate-50/70 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                <th className="py-2.5 px-2 w-9 text-center">
+                  <input
+                    type="checkbox"
+                    checked={allSelected}
+                    onChange={toggleAll}
+                    className="h-4 w-4 rounded accent-[#008dd2] cursor-pointer"
+                  />
+                </th>
+                <th className="py-2.5 px-1.5 w-[7%]">Party</th>
+                <th className="py-2.5 px-2 w-[16%]">Customer</th>
+                <th className="py-2.5 px-2 w-[22%]">Route</th>
+                <th className="py-2.5 px-2 w-[10%]">Payment</th>
+                <th className="py-2.5 px-2 w-[16%]">Order & Item</th>
+                <th className="py-2.5 px-2 w-[12%]">Weight</th>
+                <th className="py-2.5 px-2 w-[17%] text-right">Actions</th>
+              </tr>
+            </thead>
+
+            <tbody className="divide-y divide-slate-100 text-xs">
+              {filteredOrders.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="p-0">
+                    <div className="flex min-h-[280px] w-full flex-col items-center justify-center px-4 py-10 text-center">
+                      <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-slate-400">
+                        <Icon name="file" size={30} />
+                      </div>
+                      <p className="text-sm font-bold text-slate-700">
+                        No Processing Orders
+                      </p>
+                      <p className="mt-1 max-w-xs text-xs leading-5 text-slate-400">
+                        Create a new order to see it processing here.
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                filteredOrders.map((order, index) => {
+                  const id = getId(order, index);
+                  const selected = selectedOrders.includes(id);
+
+                  return (
+                    <tr
+                      key={id}
+                      className={`transition-colors ${
+                        selected ? "bg-[#008dd2]/[0.03]" : "hover:bg-slate-50/70"
+                      }`}
+                    >
+                      {/* 1. CHECKBOX */}
+                      <td className="py-2.5 px-2 text-center align-middle">
+                        <input
+                          type="checkbox"
+                          checked={selected}
+                          onChange={() => toggleOrder(id)}
+                          className="h-4 w-4 rounded accent-[#008dd2] cursor-pointer"
+                        />
+                      </td>
+
+                      {/* 2. PARTY */}
+                      <td className="py-2.5 px-1.5 align-middle">
+                        <div className="min-w-0">
+                          {getParty(order) !== "—" ? (
+                            <span
+                              className="inline-block max-w-full truncate rounded-md bg-slate-100 px-1.5 py-0.5 text-[11px] font-semibold text-slate-700"
+                              title={order.party_name && order.party_reference_name ? `${order.party_reference_name} — ${order.party_name}` : getParty(order)}
+                            >
+                              {getParty(order)}
+                            </span>
+                          ) : (
+                            <span className="text-[12px] text-slate-400 font-normal">—</span>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* 3. CUSTOMER */}
+                      <td className="py-2.5 px-2 align-middle">
+                        <div className="font-bold text-slate-900">
+                          {getCustomer(order)}
+                        </div>
+                        <div className="text-[11px] text-slate-400">
+                          {getMobile(order)}
+                        </div>
+                        <span className="mt-1 inline-flex rounded-full bg-[#e8f6fc] px-2 py-0.5 text-[10px] font-bold uppercase text-[#008dd2]">
+                          {getStatus(order)}
+                        </span>
+                      </td>
+
+                      {/* 3. ROUTE (SCREENSHOT DESIGN) */}
+                      <td className="py-2.5 px-2 align-middle">
+                        <div className="flex flex-col py-1">
+                          {/* Pickup Node */}
+                          <div className="flex items-center gap-2">
+                            <span className="flex h-4 w-4 shrink-0 items-center justify-center text-sky-500">
+                              <svg
+                                className="h-3.5 w-3.5"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
+                                <circle cx="12" cy="10" r="3" />
+                                <path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 0 0-8-8z" />
+                              </svg>
+                            </span>
+                            <div className="flex items-baseline gap-1 text-[13px]">
+                              <span className="font-medium text-slate-900">
+                                {getPickupCity(order)}
+                              </span>
+                              <span className="text-[12px] text-slate-400">
+                                ({getPickupPincode(order)})
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Dashed Connecting Line */}
+                          <div className="ml-[7px] my-0.5 h-3.5 w-0 border-l border-dashed border-slate-300" />
+
+                          {/* Delivery Node */}
+                          <div className="flex items-center gap-2">
+                            <span className="flex h-4 w-4 shrink-0 items-center justify-center text-slate-400">
+                              <svg
+                                className="h-3.5 w-3.5"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
+                                <circle cx="12" cy="10" r="3" />
+                                <path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 0 0-8-8z" />
+                              </svg>
+                            </span>
+                            <div className="flex items-baseline gap-1 text-[13px]">
+                              <span className="font-medium text-slate-900">
+                                {getDeliveryCity(order)}
+                              </span>
+                              <span className="text-[12px] text-slate-400">
+                                ({getDeliveryPincode(order)})
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* 4. PAYMENT */}
+                      <td className="py-2.5 px-2 align-middle">
+                        <span
+                          className={`inline-flex rounded-md border px-2 py-0.5 text-[11px] font-bold ${
+                            getPayment(order) === "COD"
+                              ? "border-rose-100 bg-rose-50 text-rose-600"
+                              : "border-emerald-100 bg-emerald-50 text-emerald-600"
+                          }`}
+                        >
+                          {getPayment(order)}
+                        </span>
+                        <div className="mt-1 text-[10px] text-slate-400">
+                          {getDate(order)}
+                        </div>
+                      </td>
+
+                      {/* 5. ORDER & ITEM */}
+                      <td className="py-2.5 px-2 align-middle">
+                        <div className="font-bold text-slate-800">
+                          #{order.order_id || id}
+                        </div>
+                        <div className="text-slate-600 truncate max-w-[150px]">
+                          {getProduct(order)}
+                        </div>
+                        <div className="text-[10px] text-slate-400">
+                          Qty: {getQty(order)}
+                        </div>
+                      </td>
+
+                      {/* 6. WEIGHT */}
+                      <td className="py-2.5 px-2 align-middle">
+                        <div className="font-semibold text-slate-900 whitespace-nowrap leading-5">Wt: {getTotalWeight(order)}</div>
+                        <div className="mt-0.5 text-[10px] font-medium text-slate-500 whitespace-nowrap leading-4">Vol: {getVolumetricWeight(order)}</div>
+                        <div className="text-[10px] text-slate-400 whitespace-nowrap leading-4">{getBoxCount(order)} Box</div>
+                      </td>
+
+                     {/* 7. ACTIONS */}
+<td className="py-3 px-4 align-middle text-right">
+  <div className="flex items-center justify-end gap-1.5">
+    <button
+      type="button"
+      onClick={() => openShipPopup([id])}
+      className="flex h-7 w-7 items-center justify-center rounded-md bg-[#008dd2] text-white hover:bg-[#0079b5] transition active:scale-95"
+      title="Ship Order"
+    >
+      <Icon name="truck" size={12} />
+    </button>
+
+    <button
+      type="button"
+      onClick={() => handleEdit(order)}
+      disabled={editingOrder}
+      className="flex h-7 w-7 items-center justify-center rounded-md bg-[#008dd2] text-white hover:bg-[#0079b5] transition active:scale-95 disabled:opacity-50"
+      title="Edit Order"
+    >
+      <Icon name="edit" size={12} />
+    </button>
+
+    <button
+      type="button"
+      onClick={() => handleDuplicate(order)}
+      className="flex h-7 w-7 items-center justify-center rounded-md bg-[#008dd2] text-white hover:bg-[#0079b5] transition active:scale-95"
+      title="Duplicate Order"
+    >
+      <Icon name="copy" size={12} />
+    </button>
+
+    <button
+      type="button"
+      onClick={() => handleDelete([id])}
+      className="flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition active:scale-95"
+      title="Delete Order"
+    >
+      <Icon name="trash" size={12} />
+    </button>
+  </div>
+</td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* CONFIRM SHIPMENT MODAL */}
+      {showShipPopup && (
+        <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center bg-slate-950/55 p-0 sm:p-4 backdrop-blur-xs">
+          <div className="w-full max-w-xl max-h-[90vh] flex flex-col rounded-t-3xl sm:rounded-2xl bg-white shadow-2xl overflow-hidden animate-in slide-in-from-bottom duration-200">
+            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#e8f6fc] text-[#008dd2]">
+                  <Icon name="truck" size={18} />
+                </div>
+                <div>
+                  <h2 className="text-sm sm:text-base font-bold text-slate-900">
+                    Confirm Bulk Shipment
+                  </h2>
+                  <p className="text-[11px] text-slate-400">
+                    Review charges for {selectedOrderObjects.length} order(s)
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowShipPopup(false)}
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3">
+              <div className="rounded-2xl border border-[#ccecf8] bg-[#f4fbfe] p-3.5 flex items-center justify-between gap-3">
+                <div>
+                  <span className="text-xs font-bold text-slate-800">
+                    Shipping Mode
+                  </span>
+                  <p className="text-[10px] text-slate-400">
+                    Applied to all selected orders
+                  </p>
+                </div>
+
+                <select
+                  value={shippingType}
+                  onChange={handleShippingTypeChange}
+                  disabled={previewLoading || shipping}
+                  className="h-9.5 rounded-xl border border-[#7cc9e8] bg-white px-3 text-xs font-bold text-slate-700 outline-none"
+                >
+                  <option value="ROAD">Delivery By Road</option>
+                  <option value="AIR">Delivery By Air</option>
+                </select>
+              </div>
+
+              {previewLoading ? (
+                <div className="space-y-2 py-3">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="rounded-xl border border-slate-200/80 bg-slate-50/50 p-3 space-y-2"
+                      style={{ opacity: 1 - i * 0.2 }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="h-3.5 w-36 rounded bg-slate-200 skeleton-shimmer" />
+                        <div className="h-4 w-16 rounded bg-slate-200 skeleton-shimmer" />
+                      </div>
+                      <div className="h-2.5 w-48 rounded bg-slate-100 skeleton-shimmer" />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {selectedOrderObjects.map((order, index) => {
+                    const id = getId(order, index);
+                    const rate = previewRates[id];
+
+                    return (
+                      <div
+                        key={id}
+                        className="rounded-xl border border-slate-200/80 bg-slate-50/50 p-3 flex items-center justify-between gap-2 text-xs"
+                      >
+                        <div className="min-w-0">
+                          <div className="font-bold text-slate-800 truncate">
+                            #{id} • {getCustomer(order)}
+                          </div>
+                          <div className="text-[10px] text-slate-400 truncate">
+                            {getPickupCity(order)} → {getDeliveryCity(order)} •{" "}
+                            {getTotalWeight(order)}
+                          </div>
+                        </div>
+
+                        <span className="font-extrabold text-[#008dd2] text-sm shrink-0">
+                          ₹{rate ? Number(rate.charge).toFixed(2) : "—"}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div className="border-t border-slate-100 bg-slate-50 p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-xs font-bold text-slate-700">
+                    Total Shipping Charge:
+                  </span>
+                  <p className="text-[10px] text-slate-400">
+                    Will be deducted from your wallet
+                  </p>
+                </div>
+
+                <span className="text-xl font-black text-[#008dd2]">
+                  ₹{previewLoading ? "..." : previewTotal.toFixed(2)}
+                </span>
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowShipPopup(false)}
+                  disabled={shipping}
+                  className="h-10.5 rounded-xl border border-slate-300 bg-white px-4 text-xs font-bold text-slate-700 hover:bg-slate-100"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="button"
+                  onClick={confirmShipNow}
+                  disabled={shipping || previewLoading || previewTotal <= 0}
+                  className={`flex-1 h-10.5 rounded-xl bg-[#008dd2] text-xs font-bold text-white shadow-xs active:scale-95 transition ${shipping ? "opacity-100 cursor-wait" : "disabled:opacity-50"}`}
+                >
+                  {shipping ? (
+                    <ShippingTruckLoader text="Shipping Orders..." />
+                  ) : (
+                    "Confirm & Ship Now →"
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* DELETE CONFIRMATION MODAL */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-xs">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl space-y-4 animate-in zoom-in-95 duration-150">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-50 text-rose-500">
+                <Icon name="trash" size={18} />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-slate-900">
+                  Delete Orders
+                </h3>
+                <p className="text-xs text-slate-400">
+                  Remove {deleteIds.length} order(s) permanently?
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-600 bg-rose-50/70 p-3 rounded-xl border border-rose-100">
+              This action cannot be reversed. These processing shipments will be
+              permanently discarded.
+            </p>
+
+            <div className="flex justify-end gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(false)}
+                className="h-9.5 rounded-xl px-4 text-xs font-bold text-slate-600 hover:bg-slate-100"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmDelete}
+                disabled={deleting}
+                className="h-9.5 rounded-xl bg-rose-500 px-4 text-xs font-bold text-white shadow-xs active:scale-95 disabled:opacity-60"
+              >
+                {deleting ? "Deleting..." : "Delete Permanently"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default ProcessingOrders;
