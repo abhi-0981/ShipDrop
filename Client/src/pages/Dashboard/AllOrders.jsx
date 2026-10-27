@@ -1898,7 +1898,8 @@ useEffect(() => {
             setSelectedMenuOrder(null);
           } else {
             const rect = e.currentTarget.getBoundingClientRect();
-            const openUpward = rect.top >= 95;
+            // Open downwards below the 3-dots button (flip upward only at extreme bottom of viewport)
+            const openUpward = window.innerHeight - rect.bottom < 90 && rect.top >= 95;
             setMenuPosition({
               top: openUpward ? undefined : rect.bottom + 6,
               bottom: openUpward ? window.innerHeight - rect.top + 6 : undefined,
