@@ -1,886 +1,960 @@
-import { useEffect, useMemo, useState } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import api from "../../services/api";
+import toast from "react-hot-toast";
+import {
+  HiOutlineCash,
+  HiOutlineCalendar,
+  HiOutlineDownload,
+  HiOutlineRefresh,
+  HiOutlineSearch,
+  HiOutlineCurrencyRupee,
+  HiOutlineCheckCircle,
+  HiOutlineClock,
+  HiOutlineClipboardCopy,
+  HiOutlineChevronLeft,
+  HiOutlineChevronRight,
+  HiOutlineX,
+  HiOutlineShieldCheck,
+  HiOutlineCube,
+  HiOutlineTruck,
+} from "react-icons/hi";
 import { CardSkeleton, TableRowSkeleton } from "../../components/Common/TableSkeleton";
 
-const CODRemittance = () => {
+// Date formatting helper (YYYY-MM-DD)
+const formatDateForInput = (d) => {
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+};
+
+// Preset dates helper
+const getPresetDates = (preset) => {
+  const now = new Date();
+  const todayStr = formatDateForInput(now);
+
+  if (preset === "today") {
+    return { start: todayStr, end: todayStr };
+  }
+  if (preset === "yesterday") {
+    const y = new Date(now);
+    y.setDate(y.getDate() - 1);
+    const yStr = formatDateForInput(y);
+    return { start: yStr, end: yStr };
+  }
+  if (preset === "7days") {
+    const d = new Date(now);
+    d.setDate(d.getDate() - 6);
+    return { start: formatDateForInput(d), end: todayStr };
+  }
+  if (preset === "30days") {
+    const d = new Date(now);
+    d.setDate(d.getDate() - 29);
+    return { start: formatDateForInput(d), end: todayStr };
+  }
+  if (preset === "thisMonth") {
+    const d = new Date(now.getFullYear(), now.getMonth(), 1);
+    return { start: formatDateForInput(d), end: todayStr };
+  }
+  if (preset === "lastMonth") {
+    const firstDay = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const lastDay = new Date(now.getFullYear(), now.getMonth(), 0);
+    return { start: formatDateForInput(firstDay), end: formatDateForInput(lastDay) };
+  }
+  // "all"
+  return { start: "", end: "" };
+};
+
+export default function CODRemittance() {
   const [remittances, setRemittances] = useState([]);
-
   const [loading, setLoading] = useState(true);
-
   const [refreshing, setRefreshing] = useState(false);
-
+  const [exporting, setExporting] = useState(false);
   const [error, setError] = useState("");
 
+  // Filters
   const [search, setSearch] = useState("");
-
   const [statusFilter, setStatusFilter] = useState("ALL");
+  const [datePreset, setDatePreset] = useState("all");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
-  // ========================================
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(25);
+  const [copiedText, setCopiedText] = useState(null);
 
-  // LOAD USER
-
-  // ========================================
-
+  // Load User ID
   const getUserId = () => {
     try {
-      const savedUser = JSON.parse(localStorage.getItem("user"));
-
+      const savedUser = JSON.parse(localStorage.getItem("user") || "null");
       return savedUser?.id || null;
-    } catch (error) {
-      console.error("User parse error:", error);
-
+    } catch {
       return null;
     }
   };
 
-  // ========================================
-
-  // FETCH COD REMITTANCE
-
-  // ========================================
-
-  const fetchCODRemittances = async (showRefreshLoader = false) => {
+  // Fetch COD Remittances
+  const fetchCODRemittances = useCallback(async (isRefresh = false) => {
     const userId = getUserId();
-
     if (!userId) {
-      setError("User not found. Please login again.");
-
+      setError("User session not found. Please log in again.");
       setLoading(false);
-
       return;
     }
 
     try {
-      if (showRefreshLoader) {
+      if (isRefresh) {
         setRefreshing(true);
       } else {
         setLoading(true);
       }
-
       setError("");
 
-      const response = await api.get(
-        `/payments/cod-remittance?user_id=${userId}`,
-      );
-
+      const response = await api.get(`/payments/cod-remittance?user_id=${userId}`);
       const data = Array.isArray(response.data?.remittances)
         ? response.data.remittances
         : [];
-
       setRemittances(data);
-    } catch (error) {
-      console.error(
-        "COD remittance error:",
-
-        error,
-      );
-
-      setError(
-        error.response?.data?.message || "Unable to load COD remittance",
-      );
-
+    } catch (err) {
+      console.error("COD remittance load error:", err);
+      setError(err.response?.data?.message || "Unable to load COD remittance data");
       setRemittances([]);
     } finally {
       setLoading(false);
-
       setRefreshing(false);
     }
-  };
-
-  // ========================================
-
-  // INITIAL LOAD
-
-  // ========================================
+  }, []);
 
   useEffect(() => {
     fetchCODRemittances();
-  }, []);
+  }, [fetchCODRemittances]);
 
-  // ========================================
+  // Handle Preset Change
+  const handlePresetChange = (preset) => {
+    setDatePreset(preset);
+    if (preset !== "custom") {
+      const dates = getPresetDates(preset);
+      setStartDate(dates.start);
+      setEndDate(dates.end);
+      setCurrentPage(1);
+    }
+  };
 
-  // FILTERED DATA
+  // Copy Helper
+  const handleCopy = (text, label = "ID") => {
+    if (!text) return;
+    navigator.clipboard.writeText(String(text));
+    setCopiedText(String(text));
+    toast.success(`${label} copied to clipboard!`, { id: "clipboard-toast", duration: 1500 });
+    setTimeout(() => setCopiedText(null), 2000);
+  };
 
-  // ========================================
+  // Amount Formatter (INR)
+  const formatAmount = (amount) => {
+    const val = Number(amount || 0);
+    return `₹${val.toLocaleString("en-IN", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
+  };
 
+  // Date Formatter
+  const formatDate = (dateStr) => {
+    if (!dateStr) return "—";
+    const parsed = new Date(dateStr);
+    if (Number.isNaN(parsed.getTime())) return "—";
+    return parsed.toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
+
+  // Clear Filters
+  const clearFilters = () => {
+    setSearch("");
+    setStatusFilter("ALL");
+    setDatePreset("all");
+    setStartDate("");
+    setEndDate("");
+    setCurrentPage(1);
+  };
+
+  const hasFilters = Boolean(
+    search || statusFilter !== "ALL" || datePreset !== "all" || startDate || endDate
+  );
+
+  // Filtered Remittances
   const filteredRemittances = useMemo(() => {
-    const query = search
-
-      .trim()
-
-      .toLowerCase();
+    const query = search.trim().toLowerCase();
 
     return remittances.filter((item) => {
       const orderId = String(item.order_id || "").toLowerCase();
-
       const buyer = String(item.buyer || "").toLowerCase();
-
       const awb = String(item.awb || "").toLowerCase();
-
       const status = String(item.status || "").toUpperCase();
 
+      // Search matching
       const searchMatch =
         !query ||
         orderId.includes(query) ||
         buyer.includes(query) ||
         awb.includes(query);
 
-      const statusMatch = statusFilter === "ALL" || status === statusFilter;
+      // Status matching
+      let statusMatch = true;
+      if (statusFilter === "PENDING") {
+        statusMatch = status === "PENDING";
+      } else if (statusFilter === "SUCCESSFUL") {
+        statusMatch = status === "SUCCESSFUL" || status === "TRANSFERRED" || status === "SETTLED";
+      }
 
-      return searchMatch && statusMatch;
+      // Date matching
+      let dateMatch = true;
+      if (startDate || endDate) {
+        const rawDate = item.tracking_updated_at || item.created_at;
+        if (rawDate) {
+          const d = new Date(rawDate);
+          if (!Number.isNaN(d.getTime())) {
+            const dateStr = formatDateForInput(d);
+            if (startDate && dateStr < startDate) dateMatch = false;
+            if (endDate && dateStr > endDate) dateMatch = false;
+          }
+        }
+      }
+
+      return searchMatch && statusMatch && dateMatch;
     });
-  }, [remittances, search, statusFilter]);
+  }, [remittances, search, statusFilter, startDate, endDate]);
 
-  // ========================================
+  // KPI Summary
+  const summary = useMemo(() => {
+    let totalOrders = 0;
+    let totalCodAmount = 0;
+    let pendingCount = 0;
+    let pendingAmount = 0;
+    let settledCount = 0;
+    let settledAmount = 0;
 
-  // SUMMARY
+    filteredRemittances.forEach((item) => {
+      totalOrders++;
+      const amt = Number(item.cod_amount || 0);
+      totalCodAmount += amt;
 
-  // ========================================
+      const st = String(item.status || "").toUpperCase();
+      if (st === "SUCCESSFUL" || st === "TRANSFERRED" || st === "SETTLED") {
+        settledCount++;
+        settledAmount += amt;
+      } else {
+        pendingCount++;
+        pendingAmount += amt;
+      }
+    });
 
-  const totalRecords = remittances.length;
+    const realizationRate =
+      totalCodAmount > 0
+        ? Math.round((settledAmount / totalCodAmount) * 100)
+        : totalOrders > 0 && pendingCount === 0
+        ? 100
+        : 0;
 
-  const pendingCount = remittances.filter(
-    (item) => String(item.status || "").toUpperCase() === "PENDING",
-  ).length;
+    return {
+      totalOrders,
+      totalCodAmount,
+      pendingCount,
+      pendingAmount,
+      settledCount,
+      settledAmount,
+      realizationRate,
+    };
+  }, [filteredRemittances]);
 
-  const successfulCount = remittances.filter(
-    (item) => String(item.status || "").toUpperCase() === "SUCCESSFUL",
-  ).length;
+  // Pagination calculation
+  const totalPages = Math.ceil(filteredRemittances.length / rowsPerPage) || 1;
+  const paginatedRemittances = useMemo(() => {
+    const start = (currentPage - 1) * rowsPerPage;
+    return filteredRemittances.slice(start, start + rowsPerPage);
+  }, [filteredRemittances, currentPage, rowsPerPage]);
 
-  // ========================================
+  // Export to CSV
+  const handleExportCSV = () => {
+    if (!filteredRemittances.length) {
+      toast.error("No remittance records available to export");
+      return;
+    }
+    setExporting(true);
+    try {
+      const headers = [
+        "Remittance ID",
+        "Order ID",
+        "Buyer / Consignee",
+        "AWB Number",
+        "COD Amount (INR)",
+        "Delivered On",
+        "Remittance Status",
+        "Transferred On",
+        "Remarks / Description",
+      ];
 
-  // FORMAT AMOUNT
+      const csvRows = [headers.join(",")];
 
-  // ========================================
+      filteredRemittances.forEach((r) => {
+        const row = [
+          `"${r.id || ""}"`,
+          `"${String(r.order_id || "").replace(/"/g, '""')}"`,
+          `"${String(r.buyer || "").replace(/"/g, '""')}"`,
+          `"${String(r.awb || "").replace(/"/g, '""')}"`,
+          Number(r.cod_amount || 0).toFixed(2),
+          `"${r.tracking_updated_at ? formatDate(r.tracking_updated_at) : formatDate(r.created_at)}"`,
+          `"${String(r.status || "PENDING").toUpperCase()}"`,
+          `"${r.transferred_on ? formatDate(r.transferred_on) : "Pending"}"`,
+          `"${String(r.description || "COD collection payout").replace(/"/g, '""')}"`,
+        ];
+        csvRows.push(row.join(","));
+      });
 
-  const formatAmount = (amount) => {
-    return `₹${Number(amount || 0).toLocaleString("en-IN", {
-      minimumFractionDigits: 2,
-
-      maximumFractionDigits: 2,
-    })}`;
+      const blob = new Blob([csvRows.join("\n")], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute(
+        "download",
+        `ShipDrop_COD_Remittance_${new Date().toISOString().slice(0, 10)}.csv`
+      );
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast.success("COD Remittance report exported successfully!");
+    } catch (err) {
+      console.error("Export error:", err);
+      toast.error("Failed to export remittance report");
+    } finally {
+      setExporting(false);
+    }
   };
 
-  // ========================================
-
-  // FORMAT DATE
-
-  // ========================================
-
-  const formatDate = (date) => {
-    if (!date) return "—";
-
-    const parsedDate = new Date(date);
-
-    if (Number.isNaN(parsedDate.getTime())) {
-      return "—";
+  // Status Badge Component
+  const renderStatusBadge = (status) => {
+    const s = String(status || "").toUpperCase();
+    if (s === "SUCCESSFUL" || s === "TRANSFERRED" || s === "SETTLED") {
+      return (
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
+          <HiOutlineCheckCircle className="text-[13px] text-emerald-600 dark:text-emerald-400" />
+          <span>Transferred</span>
+        </span>
+      );
     }
-
-    return parsedDate.toLocaleString(
-      "en-IN",
-
-      {
-        day: "2-digit",
-
-        month: "short",
-
-        year: "numeric",
-
-        hour: "2-digit",
-
-        minute: "2-digit",
-
-        hour12: true,
-      },
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
+        <span className="relative flex h-2 w-2">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75"></span>
+          <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-500"></span>
+        </span>
+        <span>Pending Settlement</span>
+      </span>
     );
   };
 
-  // ========================================
-
-  // STATUS
-
-  // ========================================
-
-  const getStatus = (status) => {
-    return String(status || "PENDING").toUpperCase();
-  };
-
-  // ========================================
-
-  // CLEAR FILTERS
-
-  // ========================================
-
-  const clearFilters = () => {
-    setSearch("");
-
-    setStatusFilter("ALL");
-  };
-
-  const hasFilters = search.trim() !== "" || statusFilter !== "ALL";
-
   return (
-    <div className="min-h-full w-full max-w-full overflow-x-hidden bg-[#f6f8fb] dark:bg-[#090b10] px-3 py-4 sm:px-4 lg:px-5">
-      {/* =====================================================
+    <div className="min-h-screen bg-[#f6f8fb] px-4 py-5 transition-colors duration-200 dark:bg-[#090b10]">
+      <div className="mx-auto max-w-[1450px]">
+        {/* ==================================================
+            1. TOP HEADER (REPORT DESIGN)
+        ================================================== */}
+        <div className="mb-3 rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-[0_1px_2px_rgba(15,23,42,0.02)] transition-colors dark:border-slate-800 dark:bg-[#0f1319]">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#edf8ff] text-[#008dd2] dark:bg-[#008dd2]/10 dark:text-[#38bdf8]">
+                <HiOutlineCash className="text-[22px]" />
+              </div>
 
-          PAGE HEADER
-
-      ===================================================== */}
-
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#008dd2]/10 text-[#008dd2]">
-            <svg
-              width="19"
-              height="19"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.8"
-            >
-              <path d="M12 2v20" />
-
-              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7H14a3.5 3.5 0 0 1 0 7H6" />
-            </svg>
-          </div>
-
-          <div className="min-w-0">
-            <h1 className="truncate text-[17px] font-bold tracking-tight text-slate-900">
-              COD Remittance
-            </h1>
-
-            <p className="mt-0.5 truncate text-[11px] text-slate-400">
-              Track delivered COD orders and remittance status
-            </p>
-          </div>
-        </div>
-
-        {/* REFRESH */}
-
-        <button
-          type="button"
-          onClick={() => fetchCODRemittances(true)}
-          disabled={refreshing}
-          title="Refresh"
-          className="flex h-9 shrink-0 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-[11px] font-semibold text-slate-600 shadow-sm transition hover:border-[#008dd2]/30 hover:bg-[#008dd2]/5 hover:text-[#008dd2] disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          <svg
-            className={refreshing ? "animate-spin" : ""}
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <path d="M20 11a8.1 8.1 0 0 0-14.9-4" />
-
-            <path d="M4 4v5h5" />
-
-            <path d="M4 13a8.1 8.1 0 0 0 14.9 4" />
-
-            <path d="M20 20v-5h-5" />
-          </svg>
-
-          <span className="hidden sm:inline">
-            {refreshing ? "Refreshing..." : "Refresh"}
-          </span>
-        </button>
-      </div>
-
-      {/* =====================================================
-
-          SUMMARY CARDS
-
-      ===================================================== */}
-
-      <div className="mb-4 grid grid-cols-3 gap-2 sm:gap-3">
-        {/* TOTAL */}
-
-        <div className="rounded-xl border border-slate-200/80 bg-white px-3 py-3 shadow-sm sm:px-4">
-          <div className="flex items-center justify-between gap-2">
-            <div className="min-w-0">
-              <p className="truncate text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-                Total Orders
-              </p>
-
-              <p className="mt-1 text-lg font-bold text-slate-800">
-                {totalRecords}
-              </p>
+              <div>
+                <h1 className="text-[17px] font-semibold tracking-[-0.2px] text-slate-900 dark:text-slate-100">
+                  COD Remittance Ledger
+                </h1>
+                <p className="mt-0.5 text-[12px] text-slate-400 dark:text-slate-500">
+                  Track delivered Cash-on-Delivery collections, pending settlements, and automated wallet payouts
+                </p>
+              </div>
             </div>
 
-            <div className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500 sm:flex">
-              <svg
-                width="15"
-                height="15"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
+            {/* TOP ACTION BUTTONS */}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleExportCSV}
+                disabled={loading || exporting || filteredRemittances.length === 0}
+                className="inline-flex h-9 items-center gap-1.5 rounded-md bg-[#10b981] px-3.5 text-[12px] font-medium text-white shadow-xs transition hover:bg-[#059669] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <rect x="4" y="4" width="16" height="16" rx="2" />
-
-                <path d="M8 9h8" />
-
-                <path d="M8 13h6" />
-
-                <path d="M8 17h4" />
-              </svg>
-            </div>
-          </div>
-        </div>
-
-        {/* PENDING */}
-
-        <div className="rounded-xl border border-amber-100 bg-white px-3 py-3 shadow-sm sm:px-4">
-          <div className="flex items-center justify-between gap-2">
-            <div className="min-w-0">
-              <p className="truncate text-[10px] font-semibold uppercase tracking-wide text-amber-500">
-                Pending
-              </p>
-
-              <p className="mt-1 text-lg font-bold text-slate-800">
-                {pendingCount}
-              </p>
-            </div>
-
-            <div className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-500 sm:flex">
-              <svg
-                width="15"
-                height="15"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-              >
-                <circle cx="12" cy="12" r="9" />
-
-                <path d="M12 7v5l3 2" />
-              </svg>
-            </div>
-          </div>
-        </div>
-
-        {/* SUCCESSFUL */}
-
-        <div className="rounded-xl border border-emerald-100 bg-white px-3 py-3 shadow-sm sm:px-4">
-          <div className="flex items-center justify-between gap-2">
-            <div className="min-w-0">
-              <p className="truncate text-[10px] font-semibold uppercase tracking-wide text-emerald-500">
-                Successful
-              </p>
-
-              <p className="mt-1 text-lg font-bold text-slate-800">
-                {successfulCount}
-              </p>
-            </div>
-
-            <div className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-500 sm:flex">
-              <svg
-                width="15"
-                height="15"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-              >
-                <circle cx="12" cy="12" r="9" />
-
-                <path d="m8 12 2.5 2.5L16 9" />
-              </svg>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* =====================================================
-
-          FILTER BAR
-
-      ===================================================== */}
-
-      <div className="mb-3 rounded-xl border border-slate-200/80 bg-white p-2.5 shadow-sm">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          {/* SEARCH */}
-
-          <div className="relative min-w-0 flex-1">
-            <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-              <svg
-                width="15"
-                height="15"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <circle cx="11" cy="11" r="7" />
-
-                <path d="m20 20-3.5-3.5" />
-              </svg>
-            </div>
-
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search Order ID, Buyer or AWB..."
-              className="h-9 w-full rounded-lg border border-slate-200 bg-slate-50/50 pl-9 pr-3 text-[11px] text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10"
-            />
-          </div>
-
-          {/* STATUS */}
-
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="h-9 rounded-lg border border-slate-200 bg-slate-50/50 px-3 text-[11px] font-medium text-slate-600 outline-none transition focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10 sm:w-[135px]"
-          >
-            <option value="ALL">All Status</option>
-
-            <option value="PENDING">Pending</option>
-
-            <option value="SUCCESSFUL">Successful</option>
-          </select>
-
-          {/* CLEAR */}
-
-          {hasFilters && (
-            <button
-              type="button"
-              onClick={clearFilters}
-              className="h-9 rounded-lg px-3 text-[11px] font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
-            >
-              Clear
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* =====================================================
-
-          TABLE
-
-      ===================================================== */}
-
-      <div className="w-full max-w-full overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm">
-        {/* TABLE HEADER */}
-
-        <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-          <div>
-            <h2 className="text-[13px] font-bold text-slate-800">
-              Remittance History
-            </h2>
-
-            <p className="mt-0.5 text-[10px] text-slate-400">
-              {filteredRemittances.length}{" "}
-              {filteredRemittances.length === 1 ? "record" : "records"} found
-            </p>
-          </div>
-
-          <div className="rounded-md bg-slate-50 px-2 py-1 text-[10px] font-semibold text-slate-500">
-            COD
-          </div>
-        </div>
-
-        {/* DESKTOP TABLE */}
-
-        <div className="hidden w-full md:block">
-          <table className="w-full table-fixed">
-            <colgroup>
-              <col className="w-[12%]" />
-
-              <col className="w-[14%]" />
-
-              <col className="w-[13%]" />
-
-              <col className="w-[12%]" />
-
-              <col className="w-[15%]" />
-
-              <col className="w-[11%]" />
-
-              <col className="w-[15%]" />
-
-              <col className="w-[8%]" />
-            </colgroup>
-
-            <thead>
-              <tr className="border-b border-slate-100 bg-slate-50/70">
-                <th className="px-3 py-2.5 text-left text-[9px] font-bold uppercase tracking-wider text-slate-400">
-                  Order ID
-                </th>
-
-                <th className="px-3 py-2.5 text-left text-[9px] font-bold uppercase tracking-wider text-slate-400">
-                  Buyer
-                </th>
-
-                <th className="px-3 py-2.5 text-left text-[9px] font-bold uppercase tracking-wider text-slate-400">
-                  AWB No
-                </th>
-
-                <th className="px-3 py-2.5 text-right text-[9px] font-bold uppercase tracking-wider text-slate-400">
-                  COD Amount
-                </th>
-
-                <th className="px-3 py-2.5 text-left text-[9px] font-bold uppercase tracking-wider text-slate-400">
-                  Delivered On
-                </th>
-
-                <th className="px-3 py-2.5 text-left text-[9px] font-bold uppercase tracking-wider text-slate-400">
-                  Status
-                </th>
-
-                <th className="px-3 py-2.5 text-left text-[9px] font-bold uppercase tracking-wider text-slate-400">
-                  Transferred On
-                </th>
-
-                <th className="px-3 py-2.5 text-left text-[9px] font-bold uppercase tracking-wider text-slate-400">
-                  Description
-                </th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {loading ? (
-                <TableRowSkeleton rows={6} cols={8} />
-              ) : error ? (
-                <tr>
-                  <td colSpan="8" className="px-5 py-14 text-center">
-                    <div className="mx-auto max-w-sm">
-                      <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-red-50 text-red-500">
-                        <svg
-                          width="18"
-                          height="18"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        >
-                          <circle cx="12" cy="12" r="9" />
-
-                          <path d="M12 8v5" />
-
-                          <path d="M12 16h.01" />
-                        </svg>
-                      </div>
-
-                      <p className="mt-3 text-[12px] font-semibold text-slate-700">
-                        Unable to load remittance
-                      </p>
-
-                      <p className="mt-1 text-[10px] text-slate-400">{error}</p>
-
-                      <button
-                        type="button"
-                        onClick={() => fetchCODRemittances()}
-                        className="mt-3 rounded-lg bg-[#008dd2] px-3 py-2 text-[10px] font-semibold text-white transition hover:bg-[#007dbb]"
-                      >
-                        Try Again
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ) : filteredRemittances.length === 0 ? (
-                <tr>
-                  <td colSpan="8" className="px-5 py-14 text-center">
-                    <div className="mx-auto flex max-w-sm flex-col items-center">
-                      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-slate-400">
-                        <svg
-                          width="20"
-                          height="20"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="1.7"
-                        >
-                          <path d="M6 2h9l3 3v17H6z" />
-
-                          <path d="M15 2v4h4" />
-
-                          <path d="M9 12h6" />
-
-                          <path d="M9 16h6" />
-                        </svg>
-                      </div>
-
-                      <p className="mt-3 text-[12px] font-bold text-slate-700">
-                        {hasFilters
-                          ? "No matching records"
-                          : "No COD remittance records"}
-                      </p>
-
-                      <p className="mt-1 text-[10px] text-slate-400">
-                        {hasFilters
-                          ? "Try changing your search or filter."
-                          : "Delivered COD orders will appear here."}
-                      </p>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                filteredRemittances.map((item, index) => {
-                  const status = getStatus(item.status);
-
-                  return (
-                    <tr
-                      key={item.id || item.order_id || index}
-                      className="border-b border-slate-100 last:border-b-0 transition hover:bg-slate-50/60"
-                    >
-                      {/* ORDER */}
-
-                      <td className="px-3 py-3">
-                        <span className="block truncate text-[11px] font-bold text-slate-800">
-                          #{item.order_id || "—"}
-                        </span>
-                      </td>
-
-                      {/* BUYER */}
-
-                      <td className="px-3 py-3">
-                        <span className="block truncate text-[11px] font-medium text-slate-700">
-                          {item.buyer || "—"}
-                        </span>
-                      </td>
-
-                      {/* AWB */}
-
-                      <td className="px-3 py-3">
-                        <span className="block truncate text-[10px] font-medium text-slate-500">
-                          {item.awb || "—"}
-                        </span>
-                      </td>
-
-                      {/* AMOUNT */}
-
-                      <td className="px-3 py-3 text-right">
-                        <span className="text-[11px] font-bold text-slate-800">
-                          {formatAmount(item.cod_amount)}
-                        </span>
-                      </td>
-
-                      {/* CREATED */}
-
-                      <td className="px-3 py-3">
-                        <span className="block truncate text-[10px] text-slate-500">
-                          {formatDate(item.tracking_updated_at)}
-                        </span>
-                      </td>
-
-                      {/* STATUS */}
-
-                      <td className="px-3 py-3">
-                        <span
-                          className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[9px] font-bold ${
-                            status === "SUCCESSFUL"
-                              ? "bg-emerald-50 text-emerald-600"
-                              : "bg-amber-50 text-amber-600"
-                          }`}
-                        >
-                          <span
-                            className={`h-1.5 w-1.5 rounded-full ${
-                              status === "SUCCESSFUL"
-                                ? "bg-emerald-500"
-                                : "bg-amber-500"
-                            }`}
-                          />
-
-                          {status === "SUCCESSFUL" ? "Successful" : "Pending"}
-                        </span>
-                      </td>
-
-                      {/* TRANSFERRED */}
-
-                      <td className="px-3 py-3">
-                        <span className="block truncate text-[10px] text-slate-500">
-                          {formatDate(item.transferred_on)}
-                        </span>
-                      </td>
-
-                      {/* DESCRIPTION */}
-
-                      <td className="px-3 py-3">
-                        <span
-                          title={item.description || ""}
-                          className="block truncate text-[10px] text-slate-500"
-                        >
-                          {item.description || "—"}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* =================================================
-
-            MOBILE CARD VIEW
-
-        ================================================= */}
-
-        <div className="md:hidden">
-          {loading ? (
-            <div className="p-3">
-              <CardSkeleton count={4} />
-            </div>
-          ) : error ? (
-            <div className="px-5 py-12 text-center">
-              <p className="text-[12px] font-semibold text-red-500">{error}</p>
+                <HiOutlineDownload className="text-[15px]" />
+                <span>{exporting ? "Exporting..." : "Export CSV"}</span>
+              </button>
 
               <button
                 type="button"
-                onClick={() => fetchCODRemittances()}
-                className="mt-3 rounded-lg bg-[#008dd2] px-3 py-2 text-[10px] font-semibold text-white"
+                onClick={() => fetchCODRemittances(true)}
+                disabled={loading || refreshing}
+                title="Refresh"
+                className="flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-500 shadow-xs transition hover:bg-slate-50 hover:text-slate-700 active:scale-95 dark:border-slate-800 dark:bg-[#141923] dark:text-slate-400 dark:hover:bg-slate-800"
               >
-                Try Again
+                <HiOutlineRefresh
+                  className={`text-[15px] ${refreshing || loading ? "animate-spin text-[#008dd2]" : ""}`}
+                />
               </button>
             </div>
-          ) : filteredRemittances.length === 0 ? (
-            <div className="px-5 py-14 text-center">
-              <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-slate-400">
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.7"
+          </div>
+        </div>
+
+        {/* ==================================================
+            2. DATE PERIOD FILTER BAR
+        ================================================== */}
+        <div className="mb-3 rounded-xl border border-slate-200 bg-white p-3 shadow-[0_1px_2px_rgba(15,23,42,0.02)] transition-colors dark:border-slate-800 dark:bg-[#0f1319]">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mr-1 dark:text-slate-500">
+                Period:
+              </span>
+              {[
+                { id: "all", label: "All Time" },
+                { id: "today", label: "Today" },
+                { id: "yesterday", label: "Yesterday" },
+                { id: "7days", label: "Last 7 Days" },
+                { id: "30days", label: "Last 30 Days" },
+                { id: "thisMonth", label: "This Month" },
+                { id: "lastMonth", label: "Last Month" },
+              ].map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => handlePresetChange(p.id)}
+                  className={`px-3 py-1.5 rounded-md text-[12px] transition ${
+                    datePreset === p.id
+                      ? "bg-[#008dd2] text-white font-semibold shadow-xs"
+                      : "bg-slate-100/90 text-slate-600 hover:bg-slate-200/80 font-medium dark:bg-slate-800/80 dark:text-slate-300 dark:hover:bg-slate-700"
+                  }`}
                 >
-                  <path d="M6 2h9l3 3v17H6z" />
+                  {p.label}
+                </button>
+              ))}
+            </div>
 
-                  <path d="M15 2v4h4" />
-
-                  <path d="M9 12h6" />
-
-                  <path d="M9 16h6" />
-                </svg>
+            {/* Custom Date Range */}
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50/70 px-2.5 py-1 dark:border-slate-800 dark:bg-slate-800/40">
+                <HiOutlineCalendar className="text-slate-400 text-sm" />
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => {
+                    setDatePreset("custom");
+                    setStartDate(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="bg-transparent text-[12px] font-medium text-slate-700 outline-none dark:text-slate-200"
+                />
+                <span className="text-slate-300 text-xs dark:text-slate-600">→</span>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => {
+                    setDatePreset("custom");
+                    setEndDate(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="bg-transparent text-[12px] font-medium text-slate-700 outline-none dark:text-slate-200"
+                />
               </div>
+            </div>
+          </div>
+        </div>
 
-              <p className="mt-3 text-[12px] font-bold text-slate-700">
-                {hasFilters
-                  ? "No matching records"
-                  : "No COD remittance records"}
-              </p>
+        {/* ==================================================
+            3. KPI SUMMARY CARDS (REPORT STATCARD DESIGN)
+        ================================================== */}
+        <div className="mb-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {/* Card 1: Total COD Collected */}
+          <div className="rounded-2xl border border-slate-200/80 bg-white p-3.5 sm:p-4 shadow-[0_1px_4px_rgba(15,23,42,0.03)] transition-all dark:border-slate-800 dark:bg-[#0f1319]">
+            <div className="flex items-start justify-between">
+              <div className="min-w-0 flex-1 pr-2">
+                <p className="text-[11px] font-semibold tracking-wide text-slate-400 uppercase dark:text-slate-500">
+                  Total COD Orders
+                </p>
+                <h3 className="mt-1 text-[22px] font-bold text-slate-800 tracking-tight dark:text-slate-100">
+                  {formatAmount(summary.totalCodAmount)}
+                </h3>
+                <div className="mt-1 flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+                  <span className="font-semibold text-[#008dd2]">{summary.totalOrders}</span>
+                  <span>Delivered COD parcels</span>
+                </div>
+              </div>
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-[#008dd2] dark:bg-blue-950/40 dark:text-[#38bdf8]">
+                <HiOutlineCube className="text-[20px]" />
+              </div>
+            </div>
+          </div>
 
-              <p className="mt-1 text-[10px] text-slate-400">
-                {hasFilters
-                  ? "Try changing your search or filter."
-                  : "Delivered COD orders will appear here."}
+          {/* Card 2: Pending Remittance */}
+          <div className="rounded-2xl border border-amber-200/70 bg-white p-3.5 sm:p-4 shadow-[0_1px_4px_rgba(15,23,42,0.03)] transition-all dark:border-amber-900/40 dark:bg-[#0f1319]">
+            <div className="flex items-start justify-between">
+              <div className="min-w-0 flex-1 pr-2">
+                <p className="text-[11px] font-semibold tracking-wide text-amber-600 uppercase dark:text-amber-400">
+                  Pending Payout
+                </p>
+                <h3 className="mt-1 text-[22px] font-bold text-amber-600 tracking-tight dark:text-amber-400">
+                  {formatAmount(summary.pendingAmount)}
+                </h3>
+                <div className="mt-1 flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+                  <span className="font-semibold text-amber-600 dark:text-amber-400">
+                    {summary.pendingCount}
+                  </span>
+                  <span>Awaiting wallet settlement</span>
+                </div>
+              </div>
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400">
+                <HiOutlineClock className="text-[20px]" />
+              </div>
+            </div>
+          </div>
+
+          {/* Card 3: Successfully Transferred */}
+          <div className="rounded-2xl border border-emerald-200/70 bg-white p-3.5 sm:p-4 shadow-[0_1px_4px_rgba(15,23,42,0.03)] transition-all dark:border-emerald-900/40 dark:bg-[#0f1319]">
+            <div className="flex items-start justify-between">
+              <div className="min-w-0 flex-1 pr-2">
+                <p className="text-[11px] font-semibold tracking-wide text-emerald-600 uppercase dark:text-emerald-400">
+                  Transferred to Wallet
+                </p>
+                <h3 className="mt-1 text-[22px] font-bold text-emerald-600 tracking-tight dark:text-emerald-400">
+                  {formatAmount(summary.settledAmount)}
+                </h3>
+                <div className="mt-1 flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+                  <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                    {summary.settledCount}
+                  </span>
+                  <span>Settled & credited directly</span>
+                </div>
+              </div>
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400">
+                <HiOutlineCheckCircle className="text-[20px]" />
+              </div>
+            </div>
+          </div>
+
+          {/* Card 4: Settlement Health Rate */}
+          <div className="rounded-2xl border border-slate-200/80 bg-white p-3.5 sm:p-4 shadow-[0_1px_4px_rgba(15,23,42,0.03)] transition-all dark:border-slate-800 dark:bg-[#0f1319]">
+            <div className="flex items-start justify-between">
+              <div className="min-w-0 flex-1 pr-2">
+                <p className="text-[11px] font-semibold tracking-wide text-slate-400 uppercase dark:text-slate-500">
+                  Settlement Rate
+                </p>
+                <h3 className="mt-1 text-[22px] font-bold text-slate-800 tracking-tight dark:text-slate-100">
+                  {summary.realizationRate}%
+                </h3>
+                <div className="mt-1 flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+                  <span className="font-semibold text-indigo-600 dark:text-indigo-400">
+                    {summary.settledCount}/{summary.totalOrders}
+                  </span>
+                  <span>Completed realization</span>
+                </div>
+              </div>
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400">
+                <HiOutlineShieldCheck className="text-[20px]" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ==================================================
+            4. SEARCH & FILTER CONTROLS
+        ================================================== */}
+        <div className="mb-3 rounded-xl border border-slate-200/80 bg-white p-3 shadow-xs transition-colors dark:border-slate-800 dark:bg-[#0f1319]">
+          <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
+            {/* Search Bar */}
+            <div className="relative min-w-0 flex-1">
+              <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500">
+                <HiOutlineSearch className="text-[16px]" />
+              </div>
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setCurrentPage(1);
+                }}
+                placeholder="Search by Order ID, Buyer Name, or AWB number..."
+                className="h-9.5 w-full rounded-lg border border-slate-200 bg-slate-50/60 pl-9 pr-3 text-[12px] text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10 dark:border-slate-700 dark:bg-slate-800/40 dark:text-slate-200 dark:placeholder:text-slate-500 dark:focus:border-[#008dd2] dark:focus:bg-[#141923]"
+              />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch("")}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                >
+                  <HiOutlineX className="text-sm" />
+                </button>
+              )}
+            </div>
+
+            {/* Status Dropdown */}
+            <select
+              value={statusFilter}
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="h-9.5 rounded-lg border border-slate-200 bg-slate-50/60 px-3 text-[12px] font-medium text-slate-600 outline-none transition focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10 sm:w-[170px] dark:border-slate-700 dark:bg-slate-800/40 dark:text-slate-200"
+            >
+              <option value="ALL">All Statuses</option>
+              <option value="PENDING">Pending Settlement</option>
+              <option value="SUCCESSFUL">Transferred to Wallet</option>
+            </select>
+
+            {/* Clear Filters Button */}
+            {hasFilters && (
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="h-9.5 shrink-0 rounded-lg px-3 text-[12px] font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+              >
+                Clear Filters
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* ==================================================
+            5. MAIN TABLE (DESKTOP & MOBILE VIEWS)
+        ================================================== */}
+        <div className="w-full overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-colors dark:border-slate-800 dark:bg-[#0f1319]">
+          {/* Table Header Bar */}
+          <div className="flex items-center justify-between border-b border-slate-100 bg-white px-5 py-3.5 dark:border-slate-800 dark:bg-[#0f1319]">
+            <div>
+              <h2 className="text-[14px] font-bold text-slate-800 dark:text-slate-100">
+                Remittance Records
+              </h2>
+              <p className="mt-0.5 text-[11px] text-slate-400 dark:text-slate-500">
+                Showing {filteredRemittances.length} matching{" "}
+                {filteredRemittances.length === 1 ? "record" : "records"}
               </p>
             </div>
-          ) : (
-            <div className="divide-y divide-slate-100">
-              {filteredRemittances.map((item, index) => {
-                const status = getStatus(item.status);
 
-                return (
-                  <div key={item.id || item.order_id || index} className="p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="truncate text-[12px] font-bold text-slate-800">
-                          #{item.order_id || "—"}
-                        </p>
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1 rounded-md bg-[#edf8ff] px-2.5 py-1 text-[11px] font-bold text-[#008dd2] dark:bg-[#008dd2]/10 dark:text-[#38bdf8]">
+                <span>COD Settler</span>
+              </span>
+            </div>
+          </div>
 
-                        <p className="mt-0.5 truncate text-[10px] text-slate-500">
-                          {item.buyer || "—"}
-                        </p>
+          {/* 1. MOBILE RESPONSIVE CARDS */}
+          <div className="space-y-3 p-3.5 sm:hidden">
+            {loading ? (
+              <CardSkeleton count={4} />
+            ) : error ? (
+              <div className="p-8 text-center">
+                <p className="text-xs font-semibold text-rose-600">{error}</p>
+                <button
+                  type="button"
+                  onClick={() => fetchCODRemittances(true)}
+                  className="mt-2 text-xs font-bold text-[#008dd2] underline"
+                >
+                  Try Again
+                </button>
+              </div>
+            ) : paginatedRemittances.length === 0 ? (
+              <div className="p-10 text-center text-slate-400 dark:text-slate-500">
+                <HiOutlineCash className="mx-auto text-3xl mb-1 text-slate-300 dark:text-slate-600" />
+                <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                  No remittance records found
+                </p>
+                <p className="text-[11px] mt-0.5">Delivered COD orders will automatically list here.</p>
+              </div>
+            ) : (
+              paginatedRemittances.map((item) => (
+                <div
+                  key={item.id}
+                  className="rounded-xl border border-slate-200/80 bg-white p-3.5 shadow-2xs space-y-2.5 dark:border-slate-800 dark:bg-[#141923]"
+                >
+                  <div className="flex items-start justify-between border-b border-slate-100 pb-2 dark:border-slate-800/80">
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-mono text-xs font-bold text-slate-800 dark:text-slate-100">
+                          #{item.order_id}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleCopy(item.order_id, "Order ID")}
+                          className="text-slate-400 hover:text-[#008dd2]"
+                        >
+                          <HiOutlineClipboardCopy className="text-xs" />
+                        </button>
                       </div>
+                      <p className="text-[11px] font-medium text-slate-600 dark:text-slate-300 mt-0.5">
+                        {item.buyer || "Consignee"}
+                      </p>
+                    </div>
 
-                      <span
-                        className={`shrink-0 rounded-md px-2 py-1 text-[9px] font-bold ${
-                          status === "SUCCESSFUL"
-                            ? "bg-emerald-50 text-emerald-600"
-                            : "bg-amber-50 text-amber-600"
-                        }`}
-                      >
-                        {status === "SUCCESSFUL" ? "Successful" : "Pending"}
+                    <div className="text-right">
+                      <span className="text-sm font-black text-emerald-600 dark:text-emerald-400">
+                        {formatAmount(item.cod_amount)}
+                      </span>
+                      <div className="mt-1">{renderStatusBadge(item.status)}</div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-[11px]">
+                    <div>
+                      <span className="text-slate-400 block text-[10px]">AWB Number:</span>
+                      <span className="font-mono font-semibold text-slate-700 dark:text-slate-300">
+                        {item.awb || "—"}
                       </span>
                     </div>
-
-                    <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3">
-                      <div>
-                        <p className="text-[9px] font-semibold uppercase tracking-wide text-slate-400">
-                          AWB
-                        </p>
-
-                        <p className="mt-0.5 truncate text-[10px] font-medium text-slate-600">
-                          {item.awb || "—"}
-                        </p>
-                      </div>
-
-                      <div>
-                        <p className="text-[9px] font-semibold uppercase tracking-wide text-slate-400">
-                          COD Amount
-                        </p>
-
-                        <p className="mt-0.5 text-[11px] font-bold text-slate-800">
-                          {formatAmount(item.cod_amount)}
-                        </p>
-                      </div>
-
-                      <div>
-                        <p className="text-[9px] font-semibold uppercase tracking-wide text-slate-400">
-                          Delivered On
-                        </p>
-
-                        <p className="mt-0.5 text-[10px] text-slate-500">
-                          {formatDate(item.tracking_updated_at)}
-                        </p>
-                      </div>
-
-                      <div>
-                        <p className="text-[9px] font-semibold uppercase tracking-wide text-slate-400">
-                          Transferred On
-                        </p>
-
-                        <p className="mt-0.5 text-[10px] text-slate-500">
-                          {formatDate(item.transferred_on)}
-                        </p>
-                      </div>
+                    <div>
+                      <span className="text-slate-400 block text-[10px]">Delivered On:</span>
+                      <span className="text-slate-600 dark:text-slate-300 font-medium">
+                        {formatDate(item.tracking_updated_at || item.created_at)}
+                      </span>
                     </div>
-
-                    {item.description && (
-                      <div className="mt-3 rounded-lg bg-slate-50 px-3 py-2">
-                        <p className="text-[9px] font-semibold uppercase tracking-wide text-slate-400">
-                          Description
-                        </p>
-
-                        <p className="mt-0.5 text-[10px] text-slate-600">
-                          {item.description}
-                        </p>
-                      </div>
-                    )}
                   </div>
-                );
-              })}
+
+                  {item.transferred_on && (
+                    <div className="border-t border-slate-50 pt-1.5 text-[10px] text-slate-400 dark:border-slate-800/60 flex items-center justify-between">
+                      <span>Transferred Date:</span>
+                      <span className="font-medium text-emerald-600 dark:text-emerald-400">
+                        {formatDate(item.transferred_on)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* 2. TABLET & DESKTOP TABLE VIEW */}
+          <div className="hidden sm:block overflow-x-auto">
+            <table className="w-full table-fixed border-collapse">
+              <colgroup>
+                <col className="w-[11%]" />  {/* Order ID */}
+                <col className="w-[18%]" />  {/* Buyer */}
+                <col className="w-[15%]" />  {/* AWB */}
+                <col className="w-[12%]" />  {/* COD Amount */}
+                <col className="w-[14%]" />  {/* Delivered On */}
+                <col className="w-[15%]" />  {/* Status */}
+                <col className="w-[15%]" />  {/* Transferred On */}
+              </colgroup>
+
+              <thead>
+                <tr className="border-b border-slate-100 bg-slate-50/70 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:border-slate-800 dark:bg-slate-800/40 dark:text-slate-400">
+                  <th className="px-4 py-3 text-left">Order ID</th>
+                  <th className="px-4 py-3 text-left">Buyer / Consignee</th>
+                  <th className="px-4 py-3 text-left">AWB Number</th>
+                  <th className="px-4 py-3 text-right">COD Amount</th>
+                  <th className="px-4 py-3 text-left">Delivered Date</th>
+                  <th className="px-4 py-3 text-left">Remittance Status</th>
+                  <th className="px-4 py-3 text-left">Payout Date</th>
+                </tr>
+              </thead>
+
+              <tbody className="divide-y divide-slate-100 text-xs dark:divide-slate-800">
+                {loading ? (
+                  <TableRowSkeleton rows={6} cols={7} />
+                ) : error ? (
+                  <tr>
+                    <td colSpan="7" className="px-5 py-14 text-center">
+                      <p className="text-xs font-semibold text-rose-600">{error}</p>
+                      <button
+                        type="button"
+                        onClick={() => fetchCODRemittances(true)}
+                        className="mt-2 text-xs font-bold text-[#008dd2] underline"
+                      >
+                        Try Again
+                      </button>
+                    </td>
+                  </tr>
+                ) : paginatedRemittances.length === 0 ? (
+                  <tr>
+                    <td colSpan="7" className="px-5 py-16 text-center">
+                      <HiOutlineCash className="mx-auto text-4xl mb-2 text-slate-300 dark:text-slate-600" />
+                      <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                        No COD remittance records found
+                      </p>
+                      <p className="mt-1 text-[11px] text-slate-400 dark:text-slate-500">
+                        {hasFilters
+                          ? "Try adjusting your search query, dates, or status filter."
+                          : "Orders delivered with Cash-on-Delivery will appear here for payout tracking."}
+                      </p>
+                      {hasFilters && (
+                        <button
+                          type="button"
+                          onClick={clearFilters}
+                          className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 shadow-xs hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                        >
+                          <span>Reset Filters</span>
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ) : (
+                  paginatedRemittances.map((item) => (
+                    <tr
+                      key={item.id}
+                      className="transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-800/30"
+                    >
+                      {/* Order ID */}
+                      <td className="px-4 py-3.5">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-mono text-xs font-bold text-slate-800 dark:text-slate-100">
+                            #{item.order_id}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleCopy(item.order_id, "Order ID")}
+                            title="Copy Order ID"
+                            className="text-slate-400 opacity-60 transition hover:opacity-100 hover:text-[#008dd2]"
+                          >
+                            <HiOutlineClipboardCopy className="text-[13px]" />
+                          </button>
+                        </div>
+                      </td>
+
+                      {/* Buyer */}
+                      <td className="px-4 py-3.5">
+                        <div className="min-w-0 pr-2">
+                          <p className="truncate font-bold text-slate-800 dark:text-slate-100">
+                            {item.buyer || "Consignee"}
+                          </p>
+                          <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">
+                            Ref: #{item.id}
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* AWB */}
+                      <td className="px-4 py-3.5">
+                        {item.awb ? (
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-mono text-xs font-semibold text-slate-700 dark:text-slate-300">
+                              {item.awb}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleCopy(item.awb, "AWB")}
+                              title="Copy AWB Number"
+                              className="text-slate-400 opacity-60 transition hover:opacity-100 hover:text-[#008dd2]"
+                            >
+                              <HiOutlineClipboardCopy className="text-[13px]" />
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-slate-400">—</span>
+                        )}
+                      </td>
+
+                      {/* COD Amount */}
+                      <td className="px-4 py-3.5 text-right font-black text-emerald-600 dark:text-emerald-400 text-[13px]">
+                        {formatAmount(item.cod_amount)}
+                      </td>
+
+                      {/* Delivered On */}
+                      <td className="px-4 py-3.5 text-slate-600 dark:text-slate-300 text-[11px]">
+                        {formatDate(item.tracking_updated_at || item.created_at)}
+                      </td>
+
+                      {/* Status */}
+                      <td className="px-4 py-3.5">{renderStatusBadge(item.status)}</td>
+
+                      {/* Transferred On */}
+                      <td className="px-4 py-3.5 text-slate-600 dark:text-slate-300 text-[11px]">
+                        {item.transferred_on ? (
+                          <div>
+                            <span className="font-medium text-emerald-600 dark:text-emerald-400">
+                              {formatDate(item.transferred_on)}
+                            </span>
+                            {item.description && (
+                              <p className="truncate text-[10px] text-slate-400 max-w-[150px]">
+                                {item.description}
+                              </p>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-slate-400 italic">Pending payout</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* ==================================================
+              6. TABLE FOOTER & PAGINATION
+          ================================================== */}
+          {!loading && !error && filteredRemittances.length > 0 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between border-t border-slate-100 bg-slate-50/50 px-5 py-3 text-xs text-slate-500 gap-3 dark:border-slate-800 dark:bg-slate-800/30 dark:text-slate-400">
+              <div className="flex items-center gap-2">
+                <span>
+                  Showing{" "}
+                  <b className="font-semibold text-slate-800 dark:text-slate-100">
+                    {Math.min((currentPage - 1) * rowsPerPage + 1, filteredRemittances.length)}
+                  </b>{" "}
+                  to{" "}
+                  <b className="font-semibold text-slate-800 dark:text-slate-100">
+                    {Math.min(currentPage * rowsPerPage, filteredRemittances.length)}
+                  </b>{" "}
+                  of{" "}
+                  <b className="font-semibold text-slate-800 dark:text-slate-100">
+                    {filteredRemittances.length}
+                  </b>{" "}
+                  records
+                </span>
+
+                <span className="text-slate-300 dark:text-slate-600">|</span>
+
+                <select
+                  value={rowsPerPage}
+                  onChange={(e) => {
+                    setRowsPerPage(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="rounded border border-slate-200 bg-white px-2 py-0.5 text-xs font-semibold text-slate-700 outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                >
+                  <option value={10}>10 per page</option>
+                  <option value={25}>25 per page</option>
+                  <option value={50}>50 per page</option>
+                  <option value={100}>100 per page</option>
+                </select>
+              </div>
+
+              {totalPages > 1 && (
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                    disabled={currentPage === 1}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 shadow-2xs hover:bg-slate-100 disabled:opacity-40 disabled:hover:bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                  >
+                    <HiOutlineChevronLeft />
+                  </button>
+
+                  <span className="px-2 text-xs font-bold text-slate-700 dark:text-slate-200">
+                    Page {currentPage} of {totalPages}
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 shadow-2xs hover:bg-slate-100 disabled:opacity-40 disabled:hover:bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                  >
+                    <HiOutlineChevronRight />
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
-
-        {/* =================================================
-
-            FOOTER
-
-        ================================================= */}
-
-        {!loading && !error && filteredRemittances.length > 0 && (
-          <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/50 px-4 py-2.5">
-            <p className="text-[10px] text-slate-400">
-              Showing{" "}
-              <span className="font-bold text-slate-700">
-                {filteredRemittances.length}
-              </span>{" "}
-              of{" "}
-              <span className="font-bold text-slate-700">{totalRecords}</span>{" "}
-              records
-            </p>
-          </div>
-        )}
       </div>
     </div>
   );
-};
-
-export default CODRemittance;
+}
