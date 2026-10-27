@@ -1143,7 +1143,7 @@ for (const shipment of cancelled) {
       refundAmount,
       transactionOpeningBalance,
       transactionClosingBalance,
-      `Cancellation refund for order id ${shipment.display_order_id}`
+      `Freight refund credited for cancelled order #${shipment.display_order_id}`
     ]
   );
 

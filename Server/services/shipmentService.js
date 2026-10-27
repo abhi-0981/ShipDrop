@@ -2267,7 +2267,7 @@ order: {
 
     currentBalance - charge,
 
-    `Debited for order id ${lockedOrder.order_id}`
+    `Freight charges debited for Order #${lockedOrder.order_id}`
   ]
 );
     const orderUpdate =
@@ -3416,9 +3416,9 @@ await txQuery(
 
     transactionClosingBalance,
 
-    `Debited for orders ${shipmentOrders
+    `Freight charges debited for batch manifest (${shipmentOrders.length} orders: ${shipmentOrders
       .map((item) => item.order.order_id)
-      .join(", ")}`
+      .join(", ")})`
   ]
 );
 

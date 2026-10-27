@@ -225,7 +225,7 @@ const addMoneyToWallet = (
                   SET
                     opening_balance = ?,
                     closing_balance = ?,
-                    description = 'Wallet Recharged'
+                    description = 'Online wallet top-up via Razorpay'
                   WHERE id = ?
                     AND user_id = ?
                     AND type = 'RECHARGE'

@@ -94,135 +94,183 @@ const WalletHistory = () => {
   };
 
   const getDescriptionData = (transaction) => {
-    const description = String(transaction.description || "").trim();
+    const rawDesc = String(transaction.description || "").trim();
     const type = getType(transaction.type);
+    const isDebit = type === "DEBIT";
+    const paymentId = transaction.razorpay_payment_id;
 
-    if (description.toLowerCase().includes("cancellation refund")) {
-      const orderId =
-        description.match(/order id\s*[-:#]?\s*(.+)$/i)?.[1] || "";
+    // Extract Order ID if present (e.g. "Order #123456", "order id 123456", "Order 123456", etc.)
+    const orderMatch = rawDesc.match(/order(?:\s*id)?\s*[-:#]?\s*([a-z0-9,\s-]+)/i);
+    const rawOrderMatches = orderMatch?.[1]?.trim() || "";
+    // Extract first clean order number
+    const singleOrderId = rawOrderMatches.split(/[\s,]+/)[0]?.replace(/^#/, "");
 
+    // 1. CANCELLATION REFUND
+    if (
+      rawDesc.toLowerCase().includes("cancellation refund") ||
+      (rawDesc.toLowerCase().includes("refund") && !rawDesc.toLowerCase().includes("weight"))
+    ) {
       return {
-        title: "Cancellation Refund",
-        subtitle: orderId ? `Order #${orderId}` : "Amount refunded to wallet",
+        category: "Refund",
+        title: "Order Cancellation Refund",
+        subtitle: singleOrderId
+          ? `Full shipping freight credited back for Order #${singleOrderId}`
+          : "Full shipping freight refund credited to wallet",
+        badge: "100% Refund",
+        badgeClass: "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800",
         icon: "refund",
-        iconClass: "bg-blue-50 text-blue-600",
+        iconClass: "bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400",
       };
     }
 
-    if (description.toLowerCase().includes("weight adjustment")) {
-      const orderId =
-        description.match(/order\s*#?\s*([a-z0-9-]+)/i)?.[1] ||
-        description.match(/order id\s*[-:#]?\s*(.+)$/i)?.[1] ||
-        "";
+    // 2. WEIGHT DISCREPANCY / WEIGHT ADJUSTMENT
+    if (rawDesc.toLowerCase().includes("weight adjustment") || rawDesc.toLowerCase().includes("weight")) {
+      const weightMatch = rawDesc.match(/actual\s*weight\s*([0-9.]+)\s*(?:kg)?/i);
+      const actualWeightStr = weightMatch ? `${weightMatch[1]} kg` : "";
 
-      return {
-        title: "Weight Adjustment",
-        subtitle: orderId
-          ? `Order #${orderId}`
-          : type === "DEBIT"
-            ? "Corrected shipping charge"
-            : "Amount adjusted to wallet",
-        icon: type === "DEBIT" ? "debit" : "refund",
-        iconClass:
-          type === "DEBIT"
-            ? "bg-red-50 text-red-600"
-            : "bg-emerald-50 text-emerald-600",
-      };
+      if (isDebit) {
+        return {
+          category: "Surcharge",
+          title: "Weight Discrepancy Adjustment",
+          subtitle: actualWeightStr && singleOrderId
+            ? `Courier freight adjusted for revised weight (${actualWeightStr}) on Order #${singleOrderId}`
+            : singleOrderId
+              ? `Courier billable weight discrepancy debited for Order #${singleOrderId}`
+              : "Courier billable weight discrepancy charge debited from wallet",
+          badge: "Revised Weight",
+          badgeClass: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800",
+          icon: "weight-debit",
+          iconClass: "bg-rose-50 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400",
+        };
+      } else {
+        return {
+          category: "Reversal",
+          title: "Weight Discrepancy Reversal",
+          subtitle: singleOrderId
+            ? `Original freight credited back due to weight revision on Order #${singleOrderId}`
+            : "Original freight credited back due to courier weight recalculation",
+          badge: "Freight Reversal",
+          badgeClass: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800",
+          icon: "weight-credit",
+          iconClass: "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400",
+        };
+      }
     }
 
-    if (type === "DEBIT") {
-      const orderId =
-        description.match(/order id\s*[-:#]?\s*(.+)$/i)?.[1] || "";
-
+    // 3. SHIPPING CHARGES (MANIFESTATION / LABEL CREATION)
+    if (isDebit) {
+      const isBatch = rawOrderMatches.includes(",") || rawDesc.toLowerCase().includes("orders");
       return {
-        title: "Shipping Charge",
-        subtitle: orderId ? `Order #${orderId}` : "Amount debited from wallet",
+        category: "Freight",
+        title: isBatch ? "Batch Shipment Freight" : "Shipment Freight Charge",
+        subtitle: isBatch
+          ? `Freight charges debited for batch manifest (${rawOrderMatches})`
+          : singleOrderId
+            ? `Freight charges deducted for Order #${singleOrderId}`
+            : "Shipping and logistics fee debited from wallet",
+        badge: "Manifested",
+        badgeClass: "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800",
         icon: "debit",
-        iconClass: "bg-red-50 text-red-600",
+        iconClass: "bg-rose-50 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400",
       };
     }
 
-    if (description.toLowerCase().includes("wallet recharged")) {
+    // 4. WALLET RECHARGE / TOP-UP
+    if (
+      rawDesc.toLowerCase().includes("recharge") ||
+      rawDesc.toLowerCase().includes("wallet recharged") ||
+      transaction.type === "RECHARGE" ||
+      paymentId
+    ) {
       return {
-        title: "Wallet Recharged",
-        subtitle: "Money added to wallet",
+        category: "Top-Up",
+        title: "Online Wallet Top-Up",
+        subtitle: paymentId
+          ? `Top-up successful via Razorpay (Payment Ref: ${paymentId})`
+          : "Prepaid wallet balance recharged successfully",
+        badge: "Recharge Success",
+        badgeClass: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800",
         icon: "recharge",
-        iconClass: "bg-emerald-50 text-emerald-600",
+        iconClass: "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400",
       };
     }
 
+    // 5. COD REMITTANCE
+    if (rawDesc.toLowerCase().includes("cod") || rawDesc.toLowerCase().includes("remittance")) {
+      return {
+        category: "Remittance",
+        title: "COD Remittance Payout",
+        subtitle: singleOrderId
+          ? `Cash on Delivery collections settled for Order #${singleOrderId}`
+          : "COD collection remittance payout credited to wallet",
+        badge: "COD Settled",
+        badgeClass: "bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-800",
+        icon: "cod",
+        iconClass: "bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400",
+      };
+    }
+
+    // 6. GENERAL / ADMIN BALANCE ADJUSTMENT
     return {
-      title: description || "Wallet Credit",
-      subtitle: description ? "Wallet transaction" : "Amount added to wallet",
-      icon: "recharge",
-      iconClass: "bg-emerald-50 text-emerald-600",
+      category: "Adjustment",
+      title: "Wallet Balance Adjustment",
+      subtitle: rawDesc || "Manual balance credit added by ShipDrop Accounts",
+      badge: isDebit ? "Debit Adjust" : "Credit Adjust",
+      badgeClass: isDebit
+        ? "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700"
+        : "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800",
+      icon: isDebit ? "debit" : "recharge",
+      iconClass: isDebit
+        ? "bg-rose-50 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400"
+        : "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400",
     };
   };
 
   const DescriptionIcon = ({ type }) => {
     if (type === "debit") {
       return (
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.8"
-          className="h-4 w-4"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M12 19V5"
-          />
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M6.5 10.5L12 5l5.5 5.5"
-          />
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 19V5m0 0l-5.5 5.5M12 5l5.5 5.5" />
+        </svg>
+      );
+    }
+
+    if (type === "weight-debit") {
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v18m-7-9l7-7 7 7M5 12h14" />
+        </svg>
+      );
+    }
+
+    if (type === "weight-credit") {
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
         </svg>
       );
     }
 
     if (type === "refund") {
       return (
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.8"
-          className="h-4 w-4"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M19 7v5h-5"
-          />
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M19 12a7 7 0 10-2.05 4.95"
-          />
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 14l-4-4m0 0l4-4m-4 4h11a4 4 0 014 4v2" />
         </svg>
       );
     }
 
+    if (type === "cod") {
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+        </svg>
+      );
+    }
+
+    // Default recharge / credit
     return (
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        className="h-4 w-4"
-      >
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v14" />
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M7 10l5-5 5 5"
-        />
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v14m0 0l5.5-5.5M12 19l-5.5-5.5" />
       </svg>
     );
   };
@@ -520,27 +568,36 @@ const WalletHistory = () => {
             return (
               <div
                 key={transaction.id}
-                className="rounded-2xl border border-slate-200/80 bg-white p-3.5 shadow-xs space-y-2"
+                className="rounded-2xl border border-slate-200/80 bg-white p-3.5 shadow-xs space-y-2.5"
               >
-                <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                  <div className="flex items-center gap-2">
+                <div className="flex items-start justify-between border-b border-slate-100 pb-2">
+                  <div className="flex items-start gap-2.5">
                     <div
-                      className={`flex h-8 w-8 items-center justify-center rounded-lg ${desc.iconClass}`}
+                      className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${desc.iconClass}`}
                     >
                       <DescriptionIcon type={desc.icon} />
                     </div>
                     <div>
-                      <p className="text-xs font-bold text-slate-800 leading-tight">
-                        {desc.title}
-                      </p>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <p className="text-xs font-bold text-slate-800 leading-tight">
+                          {desc.title}
+                        </p>
+                        {desc.badge && (
+                          <span
+                            className={`inline-flex items-center rounded border px-1.5 py-0.5 text-[9px] font-bold leading-none ${desc.badgeClass}`}
+                          >
+                            {desc.badge}
+                          </span>
+                        )}
+                      </div>
                       <span className="font-mono text-[10px] text-slate-400">
-                        #{transaction.id}
+                        TXN #{transaction.id}
                       </span>
                     </div>
                   </div>
 
                   <span
-                    className={`text-sm font-black ${
+                    className={`text-sm font-black shrink-0 ${
                       isDebit ? "text-rose-600" : "text-emerald-600"
                     }`}
                   >
@@ -568,11 +625,11 @@ const WalletHistory = () => {
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between border-t border-slate-50 pt-1.5 text-[10px] text-slate-400">
-                  <span className="min-w-0 max-w-[62%] break-words leading-4">
+                <div className="flex items-center justify-between border-t border-slate-50 pt-1.5 text-[10px]">
+                  <span className="min-w-0 max-w-[65%] break-words leading-4 font-medium text-slate-600">
                     {desc.subtitle}
                   </span>
-                  <span className="shrink-0 text-right leading-4">
+                  <span className="shrink-0 text-right leading-4 text-slate-400">
                     {formatDate(transaction.created_at)}
                   </span>
                 </div>
@@ -588,12 +645,12 @@ const WalletHistory = () => {
       <div className="hidden sm:block w-full overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
         <table className="w-full table-fixed border-collapse">
           <colgroup>
-            <col className="w-[7%]" />
-            <col className="w-[13%]" />
-            <col className="w-[10%]" />
-            <col className="w-[14%]" />
-            <col className="w-[14%]" />
-            <col className="w-[28%]" />
+            <col className="w-[8%]" />
+            <col className="w-[12%]" />
+            <col className="w-[9%]" />
+            <col className="w-[12%]" />
+            <col className="w-[12%]" />
+            <col className="w-[33%]" />
             <col className="w-[14%]" />
           </colgroup>
 
@@ -708,17 +765,26 @@ const WalletHistory = () => {
                     </td>
 
                     <td className="px-4 py-3.5">
-                      <div className="flex items-center gap-2.5">
+                      <div className="flex items-start gap-2.5">
                         <div
-                          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${description.iconClass}`}
+                          className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${description.iconClass}`}
                         >
                           <DescriptionIcon type={description.icon} />
                         </div>
-                        <div className="min-w-0">
-                          <p className="whitespace-normal break-words font-bold leading-4 text-slate-800">
-                            {description.title}
-                          </p>
-                          <p className="mt-0.5 whitespace-normal break-words text-[11px] leading-4 text-slate-400">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="whitespace-normal break-words font-bold leading-tight text-slate-800">
+                              {description.title}
+                            </span>
+                            {description.badge && (
+                              <span
+                                className={`inline-flex items-center rounded-md border px-1.5 py-0.5 text-[9px] font-bold leading-none ${description.badgeClass}`}
+                              >
+                                {description.badge}
+                              </span>
+                            )}
+                          </div>
+                          <p className="mt-1 whitespace-normal break-words text-[11px] leading-relaxed text-slate-500">
                             {description.subtitle}
                           </p>
                         </div>
