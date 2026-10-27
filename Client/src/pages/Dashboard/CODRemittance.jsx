@@ -7,16 +7,13 @@ import {
   HiOutlineDownload,
   HiOutlineRefresh,
   HiOutlineSearch,
-  HiOutlineCurrencyRupee,
   HiOutlineCheckCircle,
   HiOutlineClock,
   HiOutlineClipboardCopy,
   HiOutlineChevronLeft,
   HiOutlineChevronRight,
   HiOutlineX,
-  HiOutlineShieldCheck,
-  HiOutlineCube,
-  HiOutlineTruck,
+  HiOutlineDocumentText,
 } from "react-icons/hi";
 import { CardSkeleton, TableRowSkeleton } from "../../components/Common/TableSkeleton";
 
@@ -144,7 +141,7 @@ export default function CODRemittance() {
     if (!text) return;
     navigator.clipboard.writeText(String(text));
     setCopiedText(String(text));
-    toast.success(`${label} copied to clipboard!`, { id: "clipboard-toast", duration: 1500 });
+    toast.success(`${label} copied!`, { id: "clipboard-toast", duration: 1500 });
     setTimeout(() => setCopiedText(null), 2000);
   };
 
@@ -229,7 +226,7 @@ export default function CODRemittance() {
     });
   }, [remittances, search, statusFilter, startDate, endDate]);
 
-  // KPI Summary
+  // KPI Summary (Only 3 Core Cards)
   const summary = useMemo(() => {
     let totalOrders = 0;
     let totalCodAmount = 0;
@@ -253,13 +250,6 @@ export default function CODRemittance() {
       }
     });
 
-    const realizationRate =
-      totalCodAmount > 0
-        ? Math.round((settledAmount / totalCodAmount) * 100)
-        : totalOrders > 0 && pendingCount === 0
-        ? 100
-        : 0;
-
     return {
       totalOrders,
       totalCodAmount,
@@ -267,7 +257,6 @@ export default function CODRemittance() {
       pendingAmount,
       settledCount,
       settledAmount,
-      realizationRate,
     };
   }, [filteredRemittances]);
 
@@ -287,30 +276,28 @@ export default function CODRemittance() {
     setExporting(true);
     try {
       const headers = [
-        "Remittance ID",
         "Order ID",
-        "Buyer / Consignee",
-        "AWB Number",
+        "Buyer",
+        "AWB No",
         "COD Amount (INR)",
         "Delivered On",
-        "Remittance Status",
+        "Status",
         "Transferred On",
-        "Remarks / Description",
+        "Description",
       ];
 
       const csvRows = [headers.join(",")];
 
       filteredRemittances.forEach((r) => {
         const row = [
-          `"${r.id || ""}"`,
           `"${String(r.order_id || "").replace(/"/g, '""')}"`,
           `"${String(r.buyer || "").replace(/"/g, '""')}"`,
           `"${String(r.awb || "").replace(/"/g, '""')}"`,
           Number(r.cod_amount || 0).toFixed(2),
           `"${r.tracking_updated_at ? formatDate(r.tracking_updated_at) : formatDate(r.created_at)}"`,
-          `"${String(r.status || "PENDING").toUpperCase()}"`,
-          `"${r.transferred_on ? formatDate(r.transferred_on) : "Pending"}"`,
-          `"${String(r.description || "COD collection payout").replace(/"/g, '""')}"`,
+          `"${String(r.status || "PENDING").toUpperCase() === "PENDING" ? "Pending" : "Transferred"}"`,
+          `"${r.transferred_on ? formatDate(r.transferred_on) : "—"}"`,
+          `"${String(r.description || "—").replace(/"/g, '""')}"`,
         ];
         csvRows.push(row.join(","));
       });
@@ -335,24 +322,21 @@ export default function CODRemittance() {
     }
   };
 
-  // Status Badge Component
+  // Status Badge Component (Compact single-line, refined aesthetics)
   const renderStatusBadge = (status) => {
     const s = String(status || "").toUpperCase();
     if (s === "SUCCESSFUL" || s === "TRANSFERRED" || s === "SETTLED") {
       return (
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
-          <HiOutlineCheckCircle className="text-[13px] text-emerald-600 dark:text-emerald-400" />
+        <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-emerald-200/90 bg-emerald-50/80 px-2.5 py-0.5 text-[11.5px] font-semibold text-emerald-700 dark:border-emerald-800/80 dark:bg-emerald-950/40 dark:text-emerald-300">
+          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
           <span>Transferred</span>
         </span>
       );
     }
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
-        <span className="relative flex h-2 w-2">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75"></span>
-          <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-500"></span>
-        </span>
-        <span>Pending Settlement</span>
+      <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-amber-200/90 bg-amber-50/80 px-2.5 py-0.5 text-[11.5px] font-semibold text-amber-700 dark:border-amber-800/80 dark:bg-amber-950/40 dark:text-amber-300">
+        <span className="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
+        <span>Pending</span>
       </span>
     );
   };
@@ -361,7 +345,7 @@ export default function CODRemittance() {
     <div className="min-h-screen bg-[#f6f8fb] px-4 py-5 transition-colors duration-200 dark:bg-[#090b10]">
       <div className="mx-auto max-w-[1450px]">
         {/* ==================================================
-            1. TOP HEADER (REPORT DESIGN)
+            1. TOP HEADER (EXECUTIVE REPORT DESIGN)
         ================================================== */}
         <div className="mb-3 rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-[0_1px_2px_rgba(15,23,42,0.02)] transition-colors dark:border-slate-800 dark:bg-[#0f1319]">
           <div className="flex flex-wrap items-center justify-between gap-4">
@@ -372,15 +356,15 @@ export default function CODRemittance() {
 
               <div>
                 <h1 className="text-[17px] font-semibold tracking-[-0.2px] text-slate-900 dark:text-slate-100">
-                  COD Remittance Ledger
+                  COD Remittance
                 </h1>
                 <p className="mt-0.5 text-[12px] text-slate-400 dark:text-slate-500">
-                  Track delivered Cash-on-Delivery collections, pending settlements, and automated wallet payouts
+                  Track delivered COD orders and remittance status
                 </p>
               </div>
             </div>
 
-            {/* TOP ACTION BUTTONS */}
+            {/* TOP ACTIONS */}
             <div className="flex items-center gap-2">
               <button
                 type="button"
@@ -471,110 +455,80 @@ export default function CODRemittance() {
         </div>
 
         {/* ==================================================
-            3. KPI SUMMARY CARDS (REPORT STATCARD DESIGN)
+            3. EXACT 3 KPI SUMMARY CARDS (NO 4th CARD)
         ================================================== */}
-        <div className="mb-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
-          {/* Card 1: Total COD Collected */}
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-3.5 sm:p-4 shadow-[0_1px_4px_rgba(15,23,42,0.03)] transition-all dark:border-slate-800 dark:bg-[#0f1319]">
-            <div className="flex items-start justify-between">
-              <div className="min-w-0 flex-1 pr-2">
-                <p className="text-[11px] font-semibold tracking-wide text-slate-400 uppercase dark:text-slate-500">
-                  Total COD Orders
+        <div className="mb-3 grid grid-cols-1 md:grid-cols-3 gap-3.5">
+          {/* Card 1: TOTAL ORDERS */}
+          <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_1px_4px_rgba(15,23,42,0.03)] transition-all dark:border-slate-800 dark:bg-[#0f1319]">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                  Total Orders
                 </p>
-                <h3 className="mt-1 text-[22px] font-bold text-slate-800 tracking-tight dark:text-slate-100">
-                  {formatAmount(summary.totalCodAmount)}
-                </h3>
-                <div className="mt-1 flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
-                  <span className="font-semibold text-[#008dd2]">{summary.totalOrders}</span>
-                  <span>Delivered COD parcels</span>
-                </div>
+                <p className="mt-1 text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+                  {summary.totalOrders}
+                </p>
+                <p className="mt-0.5 text-[11.5px] font-medium text-slate-500 dark:text-slate-400">
+                  COD Value: <span className="font-semibold text-slate-800 dark:text-slate-200">{formatAmount(summary.totalCodAmount)}</span>
+                </p>
               </div>
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-[#008dd2] dark:bg-blue-950/40 dark:text-[#38bdf8]">
-                <HiOutlineCube className="text-[20px]" />
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-sky-50 text-[#008dd2] dark:bg-[#008dd2]/10 dark:text-[#38bdf8]">
+                <HiOutlineDocumentText className="text-xl" />
               </div>
             </div>
           </div>
 
-          {/* Card 2: Pending Remittance */}
-          <div className="rounded-2xl border border-amber-200/70 bg-white p-3.5 sm:p-4 shadow-[0_1px_4px_rgba(15,23,42,0.03)] transition-all dark:border-amber-900/40 dark:bg-[#0f1319]">
-            <div className="flex items-start justify-between">
-              <div className="min-w-0 flex-1 pr-2">
-                <p className="text-[11px] font-semibold tracking-wide text-amber-600 uppercase dark:text-amber-400">
-                  Pending Payout
+          {/* Card 2: PENDING */}
+          <div className="rounded-2xl border border-amber-200/80 bg-white p-4 shadow-[0_1px_4px_rgba(15,23,42,0.03)] transition-all dark:border-amber-900/40 dark:bg-[#0f1319]">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                  Pending
                 </p>
-                <h3 className="mt-1 text-[22px] font-bold text-amber-600 tracking-tight dark:text-amber-400">
-                  {formatAmount(summary.pendingAmount)}
-                </h3>
-                <div className="mt-1 flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
-                  <span className="font-semibold text-amber-600 dark:text-amber-400">
-                    {summary.pendingCount}
-                  </span>
-                  <span>Awaiting wallet settlement</span>
-                </div>
+                <p className="mt-1 text-2xl font-bold tracking-tight text-amber-600 dark:text-amber-400">
+                  {summary.pendingCount}
+                </p>
+                <p className="mt-0.5 text-[11.5px] font-medium text-slate-500 dark:text-slate-400">
+                  Pending Amount: <span className="font-semibold text-amber-600 dark:text-amber-400">{formatAmount(summary.pendingAmount)}</span>
+                </p>
               </div>
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400">
-                <HiOutlineClock className="text-[20px]" />
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400">
+                <HiOutlineClock className="text-xl" />
               </div>
             </div>
           </div>
 
-          {/* Card 3: Successfully Transferred */}
-          <div className="rounded-2xl border border-emerald-200/70 bg-white p-3.5 sm:p-4 shadow-[0_1px_4px_rgba(15,23,42,0.03)] transition-all dark:border-emerald-900/40 dark:bg-[#0f1319]">
-            <div className="flex items-start justify-between">
-              <div className="min-w-0 flex-1 pr-2">
-                <p className="text-[11px] font-semibold tracking-wide text-emerald-600 uppercase dark:text-emerald-400">
-                  Transferred to Wallet
+          {/* Card 3: SUCCESSFUL */}
+          <div className="rounded-2xl border border-emerald-200/80 bg-white p-4 shadow-[0_1px_4px_rgba(15,23,42,0.03)] transition-all dark:border-emerald-900/40 dark:bg-[#0f1319]">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                  Successful
                 </p>
-                <h3 className="mt-1 text-[22px] font-bold text-emerald-600 tracking-tight dark:text-emerald-400">
-                  {formatAmount(summary.settledAmount)}
-                </h3>
-                <div className="mt-1 flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
-                  <span className="font-semibold text-emerald-600 dark:text-emerald-400">
-                    {summary.settledCount}
-                  </span>
-                  <span>Settled & credited directly</span>
-                </div>
-              </div>
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400">
-                <HiOutlineCheckCircle className="text-[20px]" />
-              </div>
-            </div>
-          </div>
-
-          {/* Card 4: Settlement Health Rate */}
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-3.5 sm:p-4 shadow-[0_1px_4px_rgba(15,23,42,0.03)] transition-all dark:border-slate-800 dark:bg-[#0f1319]">
-            <div className="flex items-start justify-between">
-              <div className="min-w-0 flex-1 pr-2">
-                <p className="text-[11px] font-semibold tracking-wide text-slate-400 uppercase dark:text-slate-500">
-                  Settlement Rate
+                <p className="mt-1 text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">
+                  {summary.settledCount}
                 </p>
-                <h3 className="mt-1 text-[22px] font-bold text-slate-800 tracking-tight dark:text-slate-100">
-                  {summary.realizationRate}%
-                </h3>
-                <div className="mt-1 flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
-                  <span className="font-semibold text-indigo-600 dark:text-indigo-400">
-                    {summary.settledCount}/{summary.totalOrders}
-                  </span>
-                  <span>Completed realization</span>
-                </div>
+                <p className="mt-0.5 text-[11.5px] font-medium text-slate-500 dark:text-slate-400">
+                  Transferred: <span className="font-semibold text-emerald-600 dark:text-emerald-400">{formatAmount(summary.settledAmount)}</span>
+                </p>
               </div>
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400">
-                <HiOutlineShieldCheck className="text-[20px]" />
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400">
+                <HiOutlineCheckCircle className="text-xl" />
               </div>
             </div>
           </div>
         </div>
 
         {/* ==================================================
-            4. SEARCH & FILTER CONTROLS
+            4. SEARCH & STATUS FILTER BAR
         ================================================== */}
-        <div className="mb-3 rounded-xl border border-slate-200/80 bg-white p-3 shadow-xs transition-colors dark:border-slate-800 dark:bg-[#0f1319]">
-          <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
+        <div className="mb-3 rounded-xl border border-slate-200 bg-white p-3 shadow-[0_1px_2px_rgba(15,23,42,0.02)] transition-colors dark:border-slate-800 dark:bg-[#0f1319]">
+          <div className="flex flex-wrap items-center gap-2.5">
             {/* Search Bar */}
-            <div className="relative min-w-0 flex-1">
-              <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500">
+            <div className="relative min-w-[280px] flex-1">
+              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500">
                 <HiOutlineSearch className="text-[16px]" />
-              </div>
+              </span>
               <input
                 type="text"
                 value={search}
@@ -582,8 +536,8 @@ export default function CODRemittance() {
                   setSearch(e.target.value);
                   setCurrentPage(1);
                 }}
-                placeholder="Search by Order ID, Buyer Name, or AWB number..."
-                className="h-9.5 w-full rounded-lg border border-slate-200 bg-slate-50/60 pl-9 pr-3 text-[12px] text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10 dark:border-slate-700 dark:bg-slate-800/40 dark:text-slate-200 dark:placeholder:text-slate-500 dark:focus:border-[#008dd2] dark:focus:bg-[#141923]"
+                placeholder="Search Order ID, Buyer or AWB..."
+                className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50/50 pl-9 pr-8 text-[12.5px] text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10 dark:border-slate-700 dark:bg-slate-800/40 dark:text-slate-200 dark:placeholder:text-slate-500 dark:focus:border-[#008dd2]"
               />
               {search && (
                 <button
@@ -603,11 +557,11 @@ export default function CODRemittance() {
                 setStatusFilter(e.target.value);
                 setCurrentPage(1);
               }}
-              className="h-9.5 rounded-lg border border-slate-200 bg-slate-50/60 px-3 text-[12px] font-medium text-slate-600 outline-none transition focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10 sm:w-[170px] dark:border-slate-700 dark:bg-slate-800/40 dark:text-slate-200"
+              className="h-10 min-w-[150px] rounded-lg border border-slate-200 bg-white px-3 text-[12.5px] font-medium text-slate-600 outline-none transition focus:border-[#008dd2] dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-200"
             >
-              <option value="ALL">All Statuses</option>
-              <option value="PENDING">Pending Settlement</option>
-              <option value="SUCCESSFUL">Transferred to Wallet</option>
+              <option value="ALL">All Status</option>
+              <option value="PENDING">Pending</option>
+              <option value="SUCCESSFUL">Transferred</option>
             </select>
 
             {/* Clear Filters Button */}
@@ -615,7 +569,7 @@ export default function CODRemittance() {
               <button
                 type="button"
                 onClick={clearFilters}
-                className="h-9.5 shrink-0 rounded-lg px-3 text-[12px] font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+                className="h-10 px-3 rounded-lg text-[12px] font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
               >
                 Clear Filters
               </button>
@@ -624,24 +578,23 @@ export default function CODRemittance() {
         </div>
 
         {/* ==================================================
-            5. MAIN TABLE (DESKTOP & MOBILE VIEWS)
+            5. MAIN TABLE (REMITTANCE HISTORY)
         ================================================== */}
-        <div className="w-full overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm transition-colors dark:border-slate-800 dark:bg-[#0f1319]">
+        <div className="w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)] transition-colors dark:border-slate-800 dark:bg-[#0f1319]">
           {/* Table Header Bar */}
           <div className="flex items-center justify-between border-b border-slate-100 bg-white px-5 py-3.5 dark:border-slate-800 dark:bg-[#0f1319]">
             <div>
               <h2 className="text-[14px] font-bold text-slate-800 dark:text-slate-100">
-                Remittance Records
+                Remittance History
               </h2>
-              <p className="mt-0.5 text-[11px] text-slate-400 dark:text-slate-500">
-                Showing {filteredRemittances.length} matching{" "}
-                {filteredRemittances.length === 1 ? "record" : "records"}
+              <p className="mt-0.5 text-[11.5px] text-slate-400 dark:text-slate-500">
+                {filteredRemittances.length} {filteredRemittances.length === 1 ? "record" : "records"} found
               </p>
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1 rounded-md bg-[#edf8ff] px-2.5 py-1 text-[11px] font-bold text-[#008dd2] dark:bg-[#008dd2]/10 dark:text-[#38bdf8]">
-                <span>COD Settler</span>
+              <span className="inline-flex items-center rounded-md bg-slate-100 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                COD
               </span>
             </div>
           </div>
@@ -677,10 +630,8 @@ export default function CODRemittance() {
                 >
                   <div className="flex items-start justify-between border-b border-slate-100 pb-2 dark:border-slate-800/80">
                     <div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-mono text-xs font-bold text-slate-800 dark:text-slate-100">
-                          #{item.order_id}
-                        </span>
+                      <div className="flex items-center gap-1.5 font-mono text-xs font-bold text-slate-800 dark:text-slate-100">
+                        <span>#{item.order_id}</span>
                         <button
                           type="button"
                           onClick={() => handleCopy(item.order_id, "Order ID")}
@@ -689,28 +640,28 @@ export default function CODRemittance() {
                           <HiOutlineClipboardCopy className="text-xs" />
                         </button>
                       </div>
-                      <p className="text-[11px] font-medium text-slate-600 dark:text-slate-300 mt-0.5">
-                        {item.buyer || "Consignee"}
+                      <p className="text-[12px] font-medium text-slate-700 dark:text-slate-300 mt-0.5">
+                        {item.buyer || "—"}
                       </p>
                     </div>
 
                     <div className="text-right">
-                      <span className="text-sm font-black text-emerald-600 dark:text-emerald-400">
+                      <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
                         {formatAmount(item.cod_amount)}
                       </span>
                       <div className="mt-1">{renderStatusBadge(item.status)}</div>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2 text-[11px]">
+                  <div className="grid grid-cols-2 gap-2 text-[11.5px]">
                     <div>
-                      <span className="text-slate-400 block text-[10px]">AWB Number:</span>
-                      <span className="font-mono font-semibold text-slate-700 dark:text-slate-300">
+                      <span className="text-slate-400 block text-[10.5px]">AWB No:</span>
+                      <span className="font-mono font-medium text-slate-700 dark:text-slate-300">
                         {item.awb || "—"}
                       </span>
                     </div>
                     <div>
-                      <span className="text-slate-400 block text-[10px]">Delivered On:</span>
+                      <span className="text-slate-400 block text-[10.5px]">Delivered On:</span>
                       <span className="text-slate-600 dark:text-slate-300 font-medium">
                         {formatDate(item.tracking_updated_at || item.created_at)}
                       </span>
@@ -718,8 +669,8 @@ export default function CODRemittance() {
                   </div>
 
                   {item.transferred_on && (
-                    <div className="border-t border-slate-50 pt-1.5 text-[10px] text-slate-400 dark:border-slate-800/60 flex items-center justify-between">
-                      <span>Transferred Date:</span>
+                    <div className="border-t border-slate-50 pt-1.5 text-[11px] text-slate-400 dark:border-slate-800/60 flex items-center justify-between">
+                      <span>Transferred On:</span>
                       <span className="font-medium text-emerald-600 dark:text-emerald-400">
                         {formatDate(item.transferred_on)}
                       </span>
@@ -732,35 +683,26 @@ export default function CODRemittance() {
 
           {/* 2. TABLET & DESKTOP TABLE VIEW */}
           <div className="hidden sm:block overflow-x-auto">
-            <table className="w-full table-fixed border-collapse">
-              <colgroup>
-                <col className="w-[11%]" />  {/* Order ID */}
-                <col className="w-[18%]" />  {/* Buyer */}
-                <col className="w-[15%]" />  {/* AWB */}
-                <col className="w-[12%]" />  {/* COD Amount */}
-                <col className="w-[14%]" />  {/* Delivered On */}
-                <col className="w-[15%]" />  {/* Status */}
-                <col className="w-[15%]" />  {/* Transferred On */}
-              </colgroup>
-
+            <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-slate-100 bg-slate-50/70 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:border-slate-800 dark:bg-slate-800/40 dark:text-slate-400">
+                <tr className="border-b border-slate-200 bg-white text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-800/40 dark:text-slate-400">
                   <th className="px-4 py-3 text-left">Order ID</th>
-                  <th className="px-4 py-3 text-left">Buyer / Consignee</th>
-                  <th className="px-4 py-3 text-left">AWB Number</th>
-                  <th className="px-4 py-3 text-right">COD Amount</th>
-                  <th className="px-4 py-3 text-left">Delivered Date</th>
-                  <th className="px-4 py-3 text-left">Remittance Status</th>
-                  <th className="px-4 py-3 text-left">Payout Date</th>
+                  <th className="px-4 py-3 text-left">Buyer</th>
+                  <th className="px-4 py-3 text-left">AWB No</th>
+                  <th className="px-4 py-3 text-left">COD Amount</th>
+                  <th className="px-4 py-3 text-left">Delivered On</th>
+                  <th className="px-4 py-3 text-left">Status</th>
+                  <th className="px-4 py-3 text-left">Transferred On</th>
+                  <th className="px-4 py-3 text-left">Description</th>
                 </tr>
               </thead>
 
-              <tbody className="divide-y divide-slate-100 text-xs dark:divide-slate-800">
+              <tbody className="divide-y divide-slate-100 text-[12.5px] dark:divide-slate-800">
                 {loading ? (
-                  <TableRowSkeleton rows={6} cols={7} />
+                  <TableRowSkeleton rows={6} cols={8} />
                 ) : error ? (
                   <tr>
-                    <td colSpan="7" className="px-5 py-14 text-center">
+                    <td colSpan="8" className="px-5 py-14 text-center">
                       <p className="text-xs font-semibold text-rose-600">{error}</p>
                       <button
                         type="button"
@@ -773,12 +715,12 @@ export default function CODRemittance() {
                   </tr>
                 ) : paginatedRemittances.length === 0 ? (
                   <tr>
-                    <td colSpan="7" className="px-5 py-16 text-center">
+                    <td colSpan="8" className="px-5 py-16 text-center">
                       <HiOutlineCash className="mx-auto text-4xl mb-2 text-slate-300 dark:text-slate-600" />
                       <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
                         No COD remittance records found
                       </p>
-                      <p className="mt-1 text-[11px] text-slate-400 dark:text-slate-500">
+                      <p className="mt-1 text-[11.5px] text-slate-400 dark:text-slate-500">
                         {hasFilters
                           ? "Try adjusting your search query, dates, or status filter."
                           : "Orders delivered with Cash-on-Delivery will appear here for payout tracking."}
@@ -801,16 +743,14 @@ export default function CODRemittance() {
                       className="transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-800/30"
                     >
                       {/* Order ID */}
-                      <td className="px-4 py-3.5">
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-mono text-xs font-bold text-slate-800 dark:text-slate-100">
-                            #{item.order_id}
-                          </span>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <div className="flex items-center gap-1.5 font-mono text-[12.5px] font-semibold text-slate-900 dark:text-slate-100">
+                          <span>#{item.order_id}</span>
                           <button
                             type="button"
                             onClick={() => handleCopy(item.order_id, "Order ID")}
                             title="Copy Order ID"
-                            className="text-slate-400 opacity-60 transition hover:opacity-100 hover:text-[#008dd2]"
+                            className="text-slate-400 hover:text-[#008dd2] transition p-0.5"
                           >
                             <HiOutlineClipboardCopy className="text-[13px]" />
                           </button>
@@ -818,29 +758,22 @@ export default function CODRemittance() {
                       </td>
 
                       {/* Buyer */}
-                      <td className="px-4 py-3.5">
-                        <div className="min-w-0 pr-2">
-                          <p className="truncate font-bold text-slate-800 dark:text-slate-100">
-                            {item.buyer || "Consignee"}
-                          </p>
-                          <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">
-                            Ref: #{item.id}
-                          </span>
-                        </div>
+                      <td className="px-4 py-3">
+                        <span className="text-[12.5px] font-medium text-slate-800 dark:text-slate-200">
+                          {item.buyer || "—"}
+                        </span>
                       </td>
 
                       {/* AWB */}
-                      <td className="px-4 py-3.5">
+                      <td className="px-4 py-3 whitespace-nowrap">
                         {item.awb ? (
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-mono text-xs font-semibold text-slate-700 dark:text-slate-300">
-                              {item.awb}
-                            </span>
+                          <div className="flex items-center gap-1.5 font-mono text-[12px] text-slate-700 dark:text-slate-300">
+                            <span>{item.awb}</span>
                             <button
                               type="button"
                               onClick={() => handleCopy(item.awb, "AWB")}
-                              title="Copy AWB Number"
-                              className="text-slate-400 opacity-60 transition hover:opacity-100 hover:text-[#008dd2]"
+                              title="Copy AWB"
+                              className="text-slate-400 hover:text-[#008dd2] transition p-0.5"
                             >
                               <HiOutlineClipboardCopy className="text-[13px]" />
                             </button>
@@ -851,34 +784,28 @@ export default function CODRemittance() {
                       </td>
 
                       {/* COD Amount */}
-                      <td className="px-4 py-3.5 text-right font-black text-emerald-600 dark:text-emerald-400 text-[13px]">
+                      <td className="px-4 py-3 whitespace-nowrap font-bold text-emerald-600 dark:text-emerald-400 text-[13px]">
                         {formatAmount(item.cod_amount)}
                       </td>
 
                       {/* Delivered On */}
-                      <td className="px-4 py-3.5 text-slate-600 dark:text-slate-300 text-[11px]">
+                      <td className="px-4 py-3 whitespace-nowrap text-[12px] text-slate-600 dark:text-slate-300">
                         {formatDate(item.tracking_updated_at || item.created_at)}
                       </td>
 
                       {/* Status */}
-                      <td className="px-4 py-3.5">{renderStatusBadge(item.status)}</td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        {renderStatusBadge(item.status)}
+                      </td>
 
                       {/* Transferred On */}
-                      <td className="px-4 py-3.5 text-slate-600 dark:text-slate-300 text-[11px]">
-                        {item.transferred_on ? (
-                          <div>
-                            <span className="font-medium text-emerald-600 dark:text-emerald-400">
-                              {formatDate(item.transferred_on)}
-                            </span>
-                            {item.description && (
-                              <p className="truncate text-[10px] text-slate-400 max-w-[150px]">
-                                {item.description}
-                              </p>
-                            )}
-                          </div>
-                        ) : (
-                          <span className="text-slate-400 italic">Pending payout</span>
-                        )}
+                      <td className="px-4 py-3 whitespace-nowrap text-[12px] text-slate-600 dark:text-slate-300">
+                        {item.transferred_on ? formatDate(item.transferred_on) : "—"}
+                      </td>
+
+                      {/* Description */}
+                      <td className="px-4 py-3 text-[12px] text-slate-500 dark:text-slate-400">
+                        {item.description || "—"}
                       </td>
                     </tr>
                   ))
