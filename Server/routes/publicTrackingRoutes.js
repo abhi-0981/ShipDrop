@@ -5,6 +5,7 @@ const router = express.Router();
 const {
   publicTrackingController,
 } = require("../controllers/publicTrackingController");
+const { publicTrackingLimiter } = require("../middleware/rateLimitMiddleware");
 
 // ======================================================
 // PUBLIC DELHIVERY TRACKING
@@ -12,6 +13,7 @@ const {
 
 router.get(
   "/:awb",
+  publicTrackingLimiter,
   publicTrackingController
 );
 

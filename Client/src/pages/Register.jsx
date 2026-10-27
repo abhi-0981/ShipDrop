@@ -12,6 +12,7 @@ import {
 } from "react-icons/fi";
 import toast from "react-hot-toast";
 import api from "../services/api";
+import ParcelDropLogo from "../components/Common/ParcelDropLogo";
 
 function Register() {
   const navigate = useNavigate();
@@ -477,15 +478,13 @@ function Register() {
           <div className="mb-7 text-center">
             <Link
               to="/"
-              className="inline-block text-3xl font-extrabold tracking-tight text-[#008dd2]"
+              className="inline-flex justify-center transition-transform hover:scale-[1.02] active:scale-95"
+              title="ParcelDrop"
             >
-              Parcel
-              <span className="text-slate-800">
-                Drop
-              </span>
+              <ParcelDropLogo height={40} />
             </Link>
 
-            <h1 className="mt-5 text-2xl font-bold text-slate-800">
+            <h1 className="-mt-1.5 text-2xl font-bold text-slate-800">
               Create Your Account
             </h1>
 
@@ -858,7 +857,7 @@ function Register() {
 
             <button
   type="submit"
-  disabled
+
   className="md:col-span-2 flex w-full items-center justify-center rounded-xl bg-[#008dd2] py-3 text-sm font-semibold text-white transition hover:bg-[#007fbd] disabled:cursor-not-allowed disabled:opacity-60"
 >
   {loading ? "Creating account..." : "Create Account"}

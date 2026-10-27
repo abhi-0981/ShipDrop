@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   FiArrowLeft,
@@ -9,9 +9,26 @@ import {
 } from "react-icons/fi";
 import toast from "react-hot-toast";
 import api from "../services/api";
+import ParcelDropLogo from "../components/Common/ParcelDropLogo";
 
 function Login() {
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const user = localStorage.getItem("user");
+    if (token && user) {
+      api
+        .get("/users/session")
+        .then(() => {
+          navigate("/dashboard", { replace: true });
+        })
+        .catch(() => {
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+        });
+    }
+  }, [navigate]);
 
   const [formData, setFormData] = useState({
     email: "",
@@ -62,12 +79,14 @@ function Login() {
       });
 
       const user = response.data?.user;
+      const token = response.data?.token;
 
-      if (!user?.id) {
+      if (!user?.id || !token) {
         toast.error("Login failed. Please try again.");
         return;
       }
 
+      localStorage.setItem("token", token);
       localStorage.setItem(
         "user",
         JSON.stringify(user)
@@ -81,7 +100,7 @@ function Login() {
     } catch (error) {
       toast.error(
         error.response?.data?.message ||
-          "Unable to login. Please try again."
+        "Unable to login. Please try again."
       );
     } finally {
       setLoading(false);
@@ -109,12 +128,13 @@ function Login() {
           <div className="mb-5 text-center">
             <Link
               to="/"
-              className="inline-block text-3xl font-extrabold tracking-tight text-[#008dd2]"
+              className="inline-flex justify-center transition-transform hover:scale-[1.02] active:scale-95"
+              title="ParcelDrop"
             >
-              Parcel<span className="text-slate-800">Drop</span>
+              <ParcelDropLogo height={40} />
             </Link>
 
-            <h1 className="mt-3 text-2xl font-bold text-slate-800">
+            <h1 className="-mt-1.5 text-2xl font-bold text-slate-800">
               Welcome Back
             </h1>
 

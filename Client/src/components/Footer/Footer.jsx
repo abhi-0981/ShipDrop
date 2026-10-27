@@ -152,7 +152,7 @@ function Footer() {
               <MdEmail className="text-lg text-[#008dd2]" />
 
               <p className="text-[14px] text-gray-300">
-                care@parceldrop.com
+                care@parceldrop.in
               </p>
             </div>
 

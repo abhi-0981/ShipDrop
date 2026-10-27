@@ -1162,7 +1162,7 @@ const setAsDefault = async (warehouseId) => {
 
   return (
 
-    <div className="min-h-screen bg-[#f6f8fb] dark:bg-[#090b10] px-4 py-5 sm:px-6 lg:px-7 text-slate-900 dark:text-slate-100 transition-colors duration-200">
+    <div className="min-h-screen bg-[#f6f8fb] dark:bg-[#090b10] px-4 py-5 sm:px-6 lg:px-7">
 
       <div className="mx-auto w-full max-w-[1450px]">
 
@@ -1207,8 +1207,7 @@ const setAsDefault = async (warehouseId) => {
         <div className="w-full overflow-hidden rounded-xl border border-slate-200 dark:border-[#1f2535] bg-white dark:bg-[#121620] shadow-sm">
 
           {loading ? (
-
-            <div className="divide-y divide-slate-100 dark:divide-[#1f2535] p-2">
+            <div className="divide-y divide-slate-100 p-2">
               {Array.from({ length: 4 }).map((_, i) => (
                 <div
                   key={i}
@@ -1216,34 +1215,33 @@ const setAsDefault = async (warehouseId) => {
                   style={{ opacity: 1 - i * 0.2 }}
                 >
                   <div className="space-y-1.5 w-1/4">
-                    <div className="h-4 w-32 rounded bg-slate-200 dark:bg-[#1c2130] skeleton-shimmer" />
-                    <div className="h-3 w-20 rounded bg-slate-100 dark:bg-[#171b26] skeleton-shimmer" />
+                    <div className="h-4 w-32 rounded bg-slate-200 skeleton-shimmer" />
+                    <div className="h-3 w-20 rounded bg-slate-100 skeleton-shimmer" />
                   </div>
                   <div className="space-y-1.5 w-1/4">
-                    <div className="h-3.5 w-28 rounded bg-slate-200 dark:bg-[#1c2130] skeleton-shimmer" />
-                    <div className="h-2.5 w-24 rounded bg-slate-100 dark:bg-[#171b26] skeleton-shimmer" />
+                    <div className="h-3.5 w-28 rounded bg-slate-200 skeleton-shimmer" />
+                    <div className="h-2.5 w-24 rounded bg-slate-100 skeleton-shimmer" />
                   </div>
                   <div className="space-y-1.5 w-1/3">
-                    <div className="h-3.5 w-full rounded bg-slate-200 dark:bg-[#1c2130] skeleton-shimmer" />
-                    <div className="h-2.5 w-4/5 rounded bg-slate-100 dark:bg-[#171b26] skeleton-shimmer" />
+                    <div className="h-3.5 w-full rounded bg-slate-200 skeleton-shimmer" />
+                    <div className="h-2.5 w-4/5 rounded bg-slate-100 skeleton-shimmer" />
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="h-7 w-7 rounded-lg bg-slate-200 dark:bg-[#1c2130] skeleton-shimmer" />
-                    <div className="h-7 w-7 rounded-lg bg-slate-200 dark:bg-[#1c2130] skeleton-shimmer" />
+                    <div className="h-7 w-7 rounded-lg bg-slate-200 skeleton-shimmer" />
+                    <div className="h-7 w-7 rounded-lg bg-slate-200 skeleton-shimmer" />
                   </div>
                 </div>
               ))}
             </div>
-
           ) : warehouses.length === 0 ? (
 
             <div className="px-6 py-14 text-center">
 
-              <h2 className="text-base font-semibold text-slate-800 dark:text-white">
+              <h2 className="text-base font-semibold text-slate-800">
                 No pickup addresses
               </h2>
 
-              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+              <p className="mt-1 text-xs text-slate-500">
                 Add your first warehouse to start shipping.
               </p>
 

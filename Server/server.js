@@ -52,6 +52,11 @@ console.log(
 // ======================================================
 
 require("./config/db");
+const { ensureIndexes } = require("./config/ensureIndexes");
+const { ensureTables } = require("./config/ensureTables");
+
+ensureIndexes().catch((err) => console.warn("ensureIndexes notice:", err.message));
+ensureTables().catch((err) => console.warn("ensureTables notice:", err.message));
 
 
 // ======================================================
@@ -99,6 +104,24 @@ const serviceabilityRoutes =
 
 const publicTrackingRoutes =
   require("./routes/publicTrackingRoutes");
+
+const partyIdentityRoutes =
+  require("./routes/partyIdentityRoutes");
+
+const offlineOrderRoutes =
+  require("./routes/offlineOrderRoutes");
+
+const notificationRoutes =
+  require("./routes/notificationRoutes");
+
+const announcementRoutes =
+  require("./routes/announcementRoutes");
+
+const reportRoutes =
+  require("./routes/reportRoutes");
+
+const analyticsRoutes =
+  require("./routes/analyticsRoutes");
 
 
 // ======================================================
@@ -162,6 +185,11 @@ const isAllowedOrigin = (origin) => {
 
 console.log("Allowed CORS origins:", explicitAllowedOrigins);
 
+const { securityHeaders } = require("./middleware/securityHeaders");
+const { generalApiLimiter } = require("./middleware/rateLimitMiddleware");
+
+app.use(securityHeaders);
+
 app.use(
   cors({
     origin: function (origin, callback) {
@@ -201,12 +229,70 @@ app.use(
   })
 );
 
+// Apply rate limiter to /api routes
+app.use("/api", generalApiLimiter);
+
+// ======================================================
+// ZERO-DEPENDENCY GZIP COMPRESSION (70-85% Payload Reduction)
+// ======================================================
+
+const zlib = require("zlib");
+
+app.use((req, res, next) => {
+  const acceptEncoding = req.headers["accept-encoding"] || "";
+  if (!acceptEncoding.includes("gzip")) {
+    return next();
+  }
+
+  const originalSend = res.send;
+  res.send = function (body) {
+    if (
+      res.headersSent ||
+      res.getHeader("Content-Encoding") ||
+      res.statusCode === 304 ||
+      !body ||
+      (typeof body !== "string" && !Buffer.isBuffer(body))
+    ) {
+      return originalSend.call(this, body);
+    }
+
+    const buffer = Buffer.isBuffer(body) ? body : Buffer.from(body);
+    if (buffer.length < 1024) {
+      return originalSend.call(this, body);
+    }
+
+    try {
+      const compressed = zlib.gzipSync(buffer, { level: 6 });
+      res.setHeader("Content-Encoding", "gzip");
+      res.removeHeader("Content-Length");
+      res.setHeader("Content-Length", compressed.length);
+      res.setHeader("Vary", "Accept-Encoding");
+      return originalSend.call(this, compressed);
+    } catch {
+      return originalSend.call(this, body);
+    }
+  };
+
+  next();
+});
+
 
 // ======================================================
 // HOME
 // ======================================================
 
 app.get("/api/db-test", async (req, res) => {
+  // Hide internal database diagnostics in production unless requested with admin secret
+  if (
+    process.env.NODE_ENV === "production" &&
+    (!process.env.CRON_SECRET || req.query.secret !== process.env.CRON_SECRET)
+  ) {
+    return res.status(404).json({
+      success: false,
+      message: "Route not found",
+    });
+  }
+
   try {
     const db = require("./config/db");
 
@@ -214,7 +300,7 @@ app.get("/api/db-test", async (req, res) => {
 
     return res.json({
       success: true,
-      message: "Aiven DB connected successfully",
+      message: "DB connection verified",
       data: rows,
     });
 
@@ -224,14 +310,11 @@ app.get("/api/db-test", async (req, res) => {
       code: error.code,
       errno: error.errno,
       message: error.message,
-      address: error.address,
-      port: error.port,
     });
 
     return res.status(500).json({
       success: false,
-      code: error.code,
-      message: error.message,
+      message: "Database connection failed",
     });
   }
 });
@@ -335,6 +418,42 @@ app.use(
   ticketRoutes
 );
 
+// NOTIFICATIONS
+app.use(
+  "/api/notifications",
+  notificationRoutes
+);
+
+// ANNOUNCEMENTS / BROADCAST POPUPS
+app.use(
+  "/api/announcements",
+  announcementRoutes
+);
+app.use(
+  "/announcements",
+  announcementRoutes
+);
+
+// USER REPORTS
+app.use(
+  "/api/reports",
+  reportRoutes
+);
+app.use(
+  "/reports",
+  reportRoutes
+);
+
+// SELLER ANALYTICS
+app.use(
+  "/api/analytics",
+  analyticsRoutes
+);
+app.use(
+  "/analytics",
+  analyticsRoutes
+);
+
 // SERVICEABILITY
 
 app.use(
@@ -346,6 +465,28 @@ app.use(
 app.use(
   "/api/public/tracking",
   publicTrackingRoutes
+);
+
+// PARTY IDENTITIES
+app.use(
+  "/api/party-identities",
+  partyIdentityRoutes
+);
+
+app.use(
+  "/party-identities",
+  partyIdentityRoutes
+);
+
+// OFFLINE ORDERS
+app.use(
+  "/api/offline-orders",
+  offlineOrderRoutes
+);
+
+app.use(
+  "/offline-orders",
+  offlineOrderRoutes
 );
 
 
@@ -360,64 +501,33 @@ app.use(
 
 
 // ======================================================
-// 404
-// ======================================================
-
-app.use(
-  (req, res) => {
-
-    return res.status(404).json({
-
-      success: false,
-
-      message:
-        "API route not found",
-
-      path:
-        req.originalUrl,
-
-    });
-
-  }
-);
-
-
-// ======================================================
-// GLOBAL ERROR HANDLER
-// ======================================================
-
-app.use(
-  (
-    error,
-    req,
-    res,
-    next
-  ) => {
-
-    console.log(
-      "Global server error:",
-      error
-    );
-
-    return res.status(500).json({
-
-      success: false,
-
-      message:
-        error.message ||
-        "Internal server error",
-
-    });
-
-  }
-);
-
-
-// ======================================================
 // CRON TRIGGER ENDPOINTS (FOR VERCEL / EXTERNAL CRON)
 // ======================================================
 
-app.get("/api/cron/track-orders", async (req, res) => {
+const verifyCronAuth = (req, res, next) => {
+  const cronSecret = process.env.CRON_SECRET;
+  if (!cronSecret) {
+    if (process.env.NODE_ENV === "production" && process.env.VERCEL) {
+      console.warn("[SECURITY NOTICE] CRON_SECRET is not configured in production environment variables.");
+    }
+    return next();
+  }
+
+  const authHeader = req.headers.authorization || "";
+  const bearer = authHeader.replace(/^Bearer\s+/i, "").trim();
+  const provided = bearer || req.query.secret || req.headers["x-cron-secret"];
+
+  if (provided !== cronSecret) {
+    return res.status(401).json({
+      success: false,
+      message: "Unauthorized: Invalid or missing cron secret token",
+    });
+  }
+
+  return next();
+};
+
+app.get("/api/cron/track-orders", verifyCronAuth, async (req, res, next) => {
   try {
     const { runTrackingJob } = require("./jobs/trackActiveOrders");
     await runTrackingJob();
@@ -426,14 +536,11 @@ app.get("/api/cron/track-orders", async (req, res) => {
       message: "Tracking job executed successfully",
     });
   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    next(error);
   }
 });
 
-app.get("/api/cron/auto-cancel", async (req, res) => {
+app.get("/api/cron/auto-cancel", verifyCronAuth, async (req, res, next) => {
   try {
     const { runAutoCancel } = require("./jobs/autoCancelManifestedOrders");
     await runAutoCancel();
@@ -442,12 +549,21 @@ app.get("/api/cron/auto-cancel", async (req, res) => {
       message: "Auto-cancel job executed successfully",
     });
   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    next(error);
   }
 });
+
+// ======================================================
+// 404 & GLOBAL ERROR HANDLER MIDDLEWARE
+// ======================================================
+
+const {
+  errorHandler,
+  notFoundHandler,
+} = require("./middleware/errorHandler");
+
+app.use(notFoundHandler);
+app.use(errorHandler);
 
 
 // ======================================================
@@ -468,5 +584,17 @@ if (require.main === module && !process.env.VERCEL) {
     startTrackingJob();
   });
 }
+
+// ======================================================
+// PROCESS CRASH GUARDS
+// ======================================================
+
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("Unhandled Promise Rejection at:", promise, "reason:", reason);
+});
+
+process.on("uncaughtException", (error) => {
+  console.error("Uncaught Exception thrown:", error);
+});
 
 module.exports = app;

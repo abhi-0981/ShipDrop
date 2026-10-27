@@ -55,43 +55,124 @@ const normalizeTrackingStatus = (
   const rawUpper =
     rawStatus.toUpperCase();
 
-  // ----------------------------------------------
-  // DELIVERED
-  // ----------------------------------------------
+  const scans = Array.isArray(shipment?.Scans) ? shipment.Scans : [];
 
-  if (
-    rawUpper === "DELIVERED"
-  ) {
-    return "DELIVERED";
-  }
+  const hasReturnAcceptedScan = scans.some((scanItem) => {
+    const detail = scanItem?.ScanDetail || scanItem?.scanDetail || scanItem || {};
+    const sText = String(detail?.Scan || detail?.Status || detail?.ScanType || "").toUpperCase();
+    const sInstr = String(detail?.Instructions || "").toUpperCase();
+    return (
+      sText.includes("RETURN ACCEPT") ||
+      sInstr.includes("RETURN ACCEPT") ||
+      sText.includes("RETURNED TO SHIPPER") ||
+      sInstr.includes("RETURNED TO SHIPPER") ||
+      sText.includes("DELIVERED TO SHIPPER") ||
+      sInstr.includes("DELIVERED TO SHIPPER") ||
+      sText.includes("DELIVERED TO ORIGIN") ||
+      sInstr.includes("DELIVERED TO ORIGIN") ||
+      sText.includes("DELIVERED TO CLIENT") ||
+      sInstr.includes("DELIVERED TO CLIENT")
+    );
+  });
+
+  const isReturnAccepted =
+    rawUpper.includes("RETURN ACCEPT") ||
+    rawUpper.includes("RETURN_ACCEPT") ||
+    instructions.includes("return accept") ||
+    instructions.includes("return_accept") ||
+    hasReturnAcceptedScan;
+
+  const isRtoDeliveredText =
+    rawUpper.includes("RTO DELIVERED") ||
+    rawUpper.includes("RTO_DELIVERED") ||
+    rawUpper.includes("RETURN DELIVERED") ||
+    rawUpper.includes("RETURN_DELIVERED") ||
+    rawUpper.includes("DELIVERED TO SHIPPER") ||
+    rawUpper.includes("RETURNED TO SHIPPER") ||
+    rawUpper.includes("DELIVERED TO CLIENT") ||
+    rawUpper.includes("RETURNED TO CLIENT") ||
+    rawUpper.includes("DELIVERED TO ORIGIN") ||
+    rawUpper.includes("RETURNED TO ORIGIN") ||
+    rawUpper.includes("DELIVERED TO CONSIGNOR") ||
+    rawUpper.includes("RETURNED TO CONSIGNOR") ||
+    instructions.includes("rto delivered") ||
+    instructions.includes("return delivered") ||
+    instructions.includes("delivered to shipper") ||
+    instructions.includes("returned to shipper") ||
+    instructions.includes("delivered to client") ||
+    instructions.includes("returned to client") ||
+    instructions.includes("delivered to origin") ||
+    instructions.includes("returned to origin") ||
+    instructions.includes("delivered to consignor") ||
+    instructions.includes("returned to consignor");
+
+  const isReturned =
+    rawUpper.includes("RETURNED") ||
+    Boolean(shipment?.ReturnedDate);
+
+  // If status is DL (Delivered) or raw is DELIVERED, but return/RTO was initiated or present in instructions
+  const isDlWithReturnContext =
+    (statusType === "DL" || rawUpper === "DELIVERED" || rawUpper.includes("DELIVERED")) &&
+    (
+      instructions.includes("return") ||
+      instructions.includes("rto") ||
+      rawUpper.includes("RETURN") ||
+      rawUpper.includes("RTO") ||
+      Boolean(shipment?.RTOStartedDate) ||
+      Boolean(shipment?.ReturnedDate)
+    );
+
+  // If statusType is RT (Return) and status indicates delivered or accepted
+  const isRtDelivered =
+    statusType === "RT" &&
+    (
+      rawUpper === "DELIVERED" ||
+      rawUpper.includes("DELIVER") ||
+      instructions.includes("deliver") ||
+      instructions.includes("accept")
+    );
 
   // ----------------------------------------------
-  // CANCELLED
+  // 1. CANCELLED
   // ----------------------------------------------
 
   if (
     rawUpper === "CANCELLED" ||
-    rawUpper === "CANCELED"
+    rawUpper === "CANCELED" ||
+    statusType === "CN"
   ) {
     return "CANCELLED";
   }
 
   // ----------------------------------------------
-  // RTO DELIVERED / RETURNED
+  // 2. RTO DELIVERED / RETURN ACCEPTED
+  // (Must be checked BEFORE forward DELIVERED so
+  // "RETURN Accepted" goes to RTO DELIVERED, not DELIVERED)
   // ----------------------------------------------
 
   if (
-    rawUpper.includes("RETURNED") ||
-    rawUpper.includes("RTO DELIVERED") ||
-    Boolean(
-      shipment?.ReturnedDate
-    )
+    isReturnAccepted ||
+    isRtoDeliveredText ||
+    isReturned ||
+    isDlWithReturnContext ||
+    isRtDelivered
   ) {
     return "RTO DELIVERED";
   }
 
   // ----------------------------------------------
-  // RTO IN TRANSIT
+  // 3. FORWARD DELIVERED
+  // ----------------------------------------------
+
+  if (
+    rawUpper === "DELIVERED" ||
+    statusType === "DL"
+  ) {
+    return "DELIVERED";
+  }
+
+  // ----------------------------------------------
+  // 4. RTO IN TRANSIT
   // ----------------------------------------------
 
   if (
@@ -102,8 +183,10 @@ const normalizeTrackingStatus = (
   }
 
   if (
+    statusType === "RT" ||
     rawUpper.includes("RTO") ||
-    rawUpper.includes("RETURN")
+    rawUpper.includes("RETURN") ||
+    instructions.includes("rto")
   ) {
     return "RTO IN TRANSIT";
   }
@@ -116,6 +199,8 @@ const normalizeTrackingStatus = (
     rawUpper.includes(
       "OUT FOR DELIVERY"
     ) ||
+    rawUpper === "OFD" ||
+    statusType === "OFD" ||
     instructions.includes(
       "out for delivery"
     )
@@ -130,6 +215,8 @@ const normalizeTrackingStatus = (
   if (
     rawUpper === "IN TRANSIT" ||
     rawUpper === "INTRANSIT" ||
+    rawUpper === "DISPATCHED" ||
+    statusType === "IT" ||
     rawUpper.includes(
       "IN TRANSIT"
     )
@@ -137,18 +224,15 @@ const normalizeTrackingStatus = (
     return "IN TRANSIT";
   }
 
-  // ----------------------------------------------
-  // NOT PICKED
-  // Delhivery: Ready for Pickup
-  // ----------------------------------------------
+// NOT PICKED
+// Delhivery: Shipment not ready for pickup
 
-  if (
-    rawUpper.includes(
-      "READY FOR PICKUP"
-    )
-  ) {
-    return "NOT PICKED";
-  }
+if (
+  instructions.includes("shipment not ready for pickup") ||
+  rawUpper.includes("READY FOR PICKUP")
+) {
+  return "NOT PICKED";
+}
 
   // ----------------------------------------------
   // PENDING
@@ -199,6 +283,15 @@ const orderStatusMap = {
   "RTO DELIVERED":
     "RTO Delivered",
 
+  "RETURN ACCEPTED":
+    "RTO Delivered",
+
+  "RETURN_ACCEPTED":
+    "RTO Delivered",
+
+  "RETURN ACCEPT":
+    "RTO Delivered",
+
   "RTO IN TRANSIT":
     "RTO In Transit",
 
@@ -217,6 +310,52 @@ const orderStatusMap = {
   MANIFESTED:
     "Manifested",
 };
+
+// ======================================================
+// SELF-HEALING: FIX HISTORICAL RTO DELIVERED ORDERS
+// ======================================================
+// If any orders in the DB were previously marked as DELIVERED
+// but their tracking data shows "RETURN Accepted", heal them
+// to RTO DELIVERED / RTO Delivered.
+// ======================================================
+
+const fixHistoricalRtoDeliveredOrders = async () => {
+  try {
+    const [result] = await db.promise().query(`
+      UPDATE orders
+      SET
+        tracking_status = 'RTO DELIVERED',
+        status = 'RTO Delivered',
+        tracking_updated_at = NOW()
+      WHERE
+        (
+          UPPER(TRIM(COALESCE(tracking_status, ''))) = 'DELIVERED'
+          OR UPPER(TRIM(COALESCE(status, ''))) = 'DELIVERED'
+        )
+        AND (
+          tracking_data LIKE '%RETURN Accepted%'
+          OR tracking_data LIKE '%return accepted%'
+          OR tracking_data LIKE '%RETURN_ACCEPTED%'
+          OR tracking_data LIKE '%return_accepted%'
+          OR tracking_data LIKE '%RETURN ACCEPT%'
+          OR tracking_data LIKE '%RETURN DELIVERED%'
+          OR tracking_data LIKE '%DELIVERED TO SHIPPER%'
+          OR tracking_data LIKE '%RETURNED TO SHIPPER%'
+        )
+    `);
+
+    if (result && result.affectedRows > 0) {
+      console.log(
+        `[DELHIVERY FIX] Auto-healed ${result.affectedRows} orders from DELIVERED to RTO DELIVERED`
+      );
+    }
+  } catch (err) {
+    console.error("[DELHIVERY FIX] Auto-heal RTO error:", err?.message || err);
+  }
+};
+
+// Auto run in background
+setImmediate(fixHistoricalRtoDeliveredOrders);
 
 // ======================================================
 // UPDATE ONE TRACKING RECORD
@@ -400,6 +539,16 @@ const saveTrackingToDatabase = async (
       )
     );
   }
+
+  // Clear cached status counts so sidebar and dashboard reflect new statuses immediately
+  try {
+    const { clearOrderStatusCountsCache } = require("../models/orderModel");
+    if (typeof clearOrderStatusCountsCache === "function") {
+      clearOrderStatusCountsCache();
+    }
+  } catch (err) {
+    // silent
+  }
 };
 
 // ======================================================
@@ -501,7 +650,7 @@ const getTrackingForWaybills = async (
                 "application/json",
             },
 
-            timeout: 30000,
+            timeout: 10000,
           }
         );
 
@@ -860,4 +1009,6 @@ module.exports = {
   getTrackingForWaybills,
   attachTrackingToOrders,
   normalizeTrackingStatus,
+  orderStatusMap,
+  fixHistoricalRtoDeliveredOrders,
 };

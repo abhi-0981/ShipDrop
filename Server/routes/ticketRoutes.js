@@ -8,7 +8,12 @@ const {
   closeTicketController,
 } = require("../controllers/ticketController");
 
+const { authenticateUser } = require("../middleware/authMiddleware");
+
 const router = express.Router();
+
+// All ticket routes are account-owned and require authentication
+router.use(authenticateUser);
 
 // ======================================================
 // CREATE

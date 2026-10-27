@@ -426,7 +426,7 @@ function RateCalculator() {
   // ====================================================
 
   return (
-    <div className="min-h-full w-full bg-[#f6f8fb] p-5 md:p-6">
+    <div className="min-h-full w-full bg-[#f6f8fb] dark:bg-[#090b10] p-5 md:p-6">
 
       {/* ==================================================
           HEADER
@@ -729,8 +729,22 @@ function RateCalculator() {
           </div>
 
           <div className="p-5">
-
-            {!shippingOptions ? (
+            {rateLoading ? (
+              <div className="space-y-3 animate-fadeIn">
+                <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="h-4 w-32 rounded bg-slate-200 skeleton-shimmer" />
+                    <div className="h-5 w-20 rounded bg-slate-200 skeleton-shimmer" />
+                  </div>
+                  <div className="h-3 w-48 rounded bg-slate-100 skeleton-shimmer" />
+                  <div className="grid grid-cols-3 gap-2 pt-2">
+                    <div className="h-8 rounded-lg bg-slate-100 skeleton-shimmer" />
+                    <div className="h-8 rounded-lg bg-slate-100 skeleton-shimmer" />
+                    <div className="h-8 rounded-lg bg-slate-100 skeleton-shimmer" />
+                  </div>
+                </div>
+              </div>
+            ) : !shippingOptions ? (
               <div className="flex min-h-[310px] flex-col items-center justify-center text-center">
 
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-50 text-slate-300">

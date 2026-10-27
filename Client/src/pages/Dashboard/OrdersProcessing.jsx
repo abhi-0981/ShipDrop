@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-hot-toast";
 import api from "../../services/api";
+import { notifyOrderChange, subscribeToOrderUpdates } from "../../services/orderEvents";
+import { RouteSkeleton } from "../../components/Common/TableSkeleton";
+import OrderStatusNavTabs from "../../components/Common/OrderStatusNavTabs";
+import ShippingTruckLoader from "../../components/Common/ShippingTruckLoader";
 
 // ======================================================
 // ICON
@@ -141,17 +146,12 @@ function ProcessingOrders() {
   // TOAST
   // ====================================================
 
-  const [toast, setToast] = useState(null);
-
   const showToast = (message, type = "success") => {
-    setToast({
-      message,
-      type,
-    });
-
-    setTimeout(() => {
-      setToast(null);
-    }, 3500);
+    if (type === "error") {
+      toast.error(message);
+    } else {
+      toast.success(message);
+    }
   };
 
   // ====================================================
@@ -213,34 +213,14 @@ function ProcessingOrders() {
   // ====================================================
 
   useEffect(() => {
-    const handleNewOrder = () => {
+    const unsubscribe = subscribeToOrderUpdates(() => {
       fetchOrders(false);
-    };
-
-    window.addEventListener("processingOrderCreated", handleNewOrder);
+    });
 
     return () => {
-      window.removeEventListener("processingOrderCreated", handleNewOrder);
+      unsubscribe();
     };
   }, []);
-
-  // ====================================================
-  // ORDER UPDATED EVENT
-  // ====================================================
-
- useEffect(() => {
-  const handleOrderUpdated = () => {
-    fetchOrders(false);
-  };
-
-  window.addEventListener("processingOrderUpdated", handleOrderUpdated);
-  window.addEventListener("shipdrop:orders-updated", handleOrderUpdated);
-
-  return () => {
-    window.removeEventListener("processingOrderUpdated", handleOrderUpdated);
-    window.removeEventListener("shipdrop:orders-updated", handleOrderUpdated);
-  };
-}, []);
 
   // ====================================================
   // HELPERS
@@ -248,6 +228,10 @@ function ProcessingOrders() {
 
   const getId = (order, index = 0) => {
     return order.id ?? order.order_id ?? index;
+  };
+
+  const getParty = (order) => {
+    return order.party_reference_name || order.party_name || order.party_identity_name || order.party || "—";
   };
 
   const getCustomer = (order) => {
@@ -1052,10 +1036,10 @@ function ProcessingOrders() {
       await fetchOrders(false);
 
       // ==========================================
-// ORDER STATUS UPDATE
-// ==========================================
+      // NOTIFY ORDER STATUS UPDATE
+      // ==========================================
 
-window.dispatchEvent(new Event("orderStatusUpdated"));
+      notifyOrderChange({ type: "status_changed", action: "shipped" });
 
       // ==========================================
       // WALLET EVENTS
@@ -1167,6 +1151,8 @@ window.dispatchEvent(new Event("orderStatusUpdated"));
 
       await fetchOrders(false);
 
+      notifyOrderChange({ type: "deleted", orderIds: deleteIds });
+
       showToast(
         `${deletedCount} order${
           deletedCount > 1 ? "s" : ""
@@ -1192,19 +1178,7 @@ window.dispatchEvent(new Event("orderStatusUpdated"));
   // ====================================================
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-[#f5f7fb] p-4">
-        <div className="flex min-h-[300px] items-center justify-center rounded-xl border border-slate-200 bg-white">
-          <div className="text-center">
-            <div className="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-[#7451ff]" />
-
-            <p className="text-sm text-slate-500">
-              Loading processing orders...
-            </p>
-          </div>
-        </div>
-      </div>
-    );
+    return <RouteSkeleton />;
   }
 
   const selectedOrderObjects = getSelectedOrderObjects();
@@ -1214,38 +1188,8 @@ window.dispatchEvent(new Event("orderStatusUpdated"));
   // ====================================================
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-[#f5f7fb] p-4">
-      {/* ==================================================
-          TOAST
-      ================================================== */}
+    <div className="min-h-screen overflow-x-hidden bg-[#f6f8fb] dark:bg-[#090b10] p-4">
 
-      {toast && (
-        <div className="fixed right-6 top-6 z-[11000]">
-          <div
-            className={`flex min-w-[320px] items-center gap-3 rounded-xl border bg-white px-5 py-4 shadow-2xl ${
-              toast.type === "success" ? "border-green-200" : "border-red-200"
-            }`}
-          >
-            <div
-              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-lg font-bold ${
-                toast.type === "success"
-                  ? "bg-green-100 text-green-600"
-                  : "bg-red-100 text-red-600"
-              }`}
-            >
-              {toast.type === "success" ? "✓" : "!"}
-            </div>
-
-            <div>
-              <p className="text-sm font-bold text-slate-800">
-                {toast.type === "success" ? "Success" : "Something went wrong"}
-              </p>
-
-              <p className="mt-1 text-xs text-slate-500">{toast.message}</p>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ==================================================
           PAGE
@@ -1325,6 +1269,9 @@ window.dispatchEvent(new Event("orderStatusUpdated"));
           </div>
         </div>
 
+        {/* ORDER STATUS TABS */}
+        <OrderStatusNavTabs />
+
         {/* ==================================================
             TABLE
         ================================================== */}
@@ -1333,6 +1280,7 @@ window.dispatchEvent(new Event("orderStatusUpdated"));
           <table className="w-full min-w-[1160px] table-fixed border-collapse">
             <colgroup>
               <col className="w-[60px]" />
+              <col className="w-[100px]" />
               <col className="w-[183px]" />
               <col className="w-[165px]" />
               <col className="w-[140px]" />
@@ -1350,6 +1298,10 @@ window.dispatchEvent(new Event("orderStatusUpdated"));
                     onChange={toggleAll}
                     className="h-[16px] w-[16px] cursor-pointer accent-[#7451ff]"
                   />
+                </th>
+
+                <th className="border-r border-b border-slate-200 px-3 text-left text-[14px] font-medium text-slate-800">
+                  Party
                 </th>
 
                 <th className="border-r border-b border-slate-200 px-4 text-left text-[14px] font-medium text-slate-800">
@@ -1381,7 +1333,7 @@ window.dispatchEvent(new Event("orderStatusUpdated"));
             <tbody>
               {filteredOrders.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="h-[280px] text-center">
+                  <td colSpan="8" className="h-[280px] text-center">
                     <div className="flex flex-col items-center justify-center">
                       <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-100">
                         <Icon name={searchText ? "search" : "file"} size={21} />
@@ -1411,6 +1363,21 @@ window.dispatchEvent(new Event("orderStatusUpdated"));
                           onChange={() => toggleOrder(id)}
                           className="h-[16px] w-[16px] cursor-pointer accent-[#7451ff]"
                         />
+                      </td>
+
+                      <td className="border-r border-b border-slate-200 px-3">
+                        <div className="min-w-0">
+                          {getParty(order) !== "—" ? (
+                            <span
+                              className="inline-block max-w-full truncate rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-700"
+                              title={order.party_name && order.party_reference_name ? `${order.party_reference_name} — ${order.party_name}` : getParty(order)}
+                            >
+                              {getParty(order)}
+                            </span>
+                          ) : (
+                            <span className="text-[12px] text-slate-400 font-normal">—</span>
+                          )}
+                        </div>
                       </td>
 
                       <td className="border-r border-b border-slate-200 px-4">
@@ -1639,16 +1606,20 @@ window.dispatchEvent(new Event("orderStatusUpdated"));
               {/* RATE LOADING */}
 
               {previewLoading ? (
-                <div className="flex min-h-[180px] items-center justify-center">
-                  <div className="text-center">
-                    <div className="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-[#7451ff]" />
-
-                    <p className="text-xs font-medium text-slate-500">
-                      Calculating{" "}
-                      {shippingType === "AIR" ? "Air" : "Delivery By Road"}{" "}
-                      shipping charges...
-                    </p>
-                  </div>
+                <div className="space-y-2 py-3">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="rounded-xl border border-slate-200/80 bg-slate-50/50 p-3 space-y-2"
+                      style={{ opacity: 1 - i * 0.2 }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="h-3.5 w-36 rounded bg-slate-200 skeleton-shimmer" />
+                        <div className="h-4 w-16 rounded bg-slate-200 skeleton-shimmer" />
+                      </div>
+                      <div className="h-2.5 w-48 rounded bg-slate-100 skeleton-shimmer" />
+                    </div>
+                  ))}
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -1781,13 +1752,10 @@ window.dispatchEvent(new Event("orderStatusUpdated"));
                   type="button"
                   disabled={shipping || previewLoading || previewTotal <= 0}
                   onClick={confirmShipNow}
-                  className="flex h-[40px] items-center gap-2 rounded-[5px] bg-[#7451ff] px-6 text-[13px] font-medium text-white hover:bg-[#6745ec] disabled:cursor-not-allowed disabled:opacity-50"
+                  className={`flex h-[40px] items-center justify-center gap-2 rounded-[5px] bg-[#7451ff] px-6 text-[13px] font-medium text-white hover:bg-[#6745ec] transition ${shipping ? "opacity-100 cursor-wait" : "disabled:cursor-not-allowed disabled:opacity-50"}`}
                 >
                   {shipping ? (
-                    <>
-                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
-                      Shipping...
-                    </>
+                    <ShippingTruckLoader text="Shipping Orders..." />
                   ) : (
                     <>
                       <Icon name="truck" size={15} />

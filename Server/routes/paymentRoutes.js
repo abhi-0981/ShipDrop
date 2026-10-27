@@ -10,6 +10,11 @@ const {
   getCODRemittanceHistory,
 } = require("../controllers/paymentController");
 
+const { authenticateUser } = require("../middleware/authMiddleware");
+
+// All payment and wallet routes are account-owned and require authentication
+router.use(authenticateUser);
+
 
 // ========================================
 // GET WALLET BALANCE

@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-hot-toast";
 import api from "../../services/api";
+import { notifyOrderChange, subscribeToOrderUpdates } from "../../services/orderEvents";
+import { RouteSkeleton } from "../../components/Common/TableSkeleton";
+import OrderStatusNavTabs from "../../components/Common/OrderStatusNavTabs";
+import ShippingTruckLoader from "../../components/Common/ShippingTruckLoader";
 
 const Icon = ({ name, size = 16 }) => {
   const common = {
@@ -79,8 +84,21 @@ const Icon = ({ name, size = 16 }) => {
 };
 
 function ProcessingOrders() {
-  const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [orders, setOrders] = useState(() => {
+    try {
+      const cached = sessionStorage.getItem("shipdrop_processing_orders_cache");
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [loading, setLoading] = useState(() => {
+    try {
+      return !sessionStorage.getItem("shipdrop_processing_orders_cache");
+    } catch {
+      return true;
+    }
+  });
   const navigate = useNavigate();
 
   const [selectedOrders, setSelectedOrders] = useState([]);
@@ -101,13 +119,13 @@ function ProcessingOrders() {
   const [deleting, setDeleting] = useState(false);
 
   const [editingOrder, setEditingOrder] = useState(false);
-  const [toast, setToast] = useState(null);
 
   const showToast = (message, type = "success") => {
-    setToast({ message, type });
-    setTimeout(() => {
-      setToast(null);
-    }, 3500);
+    if (type === "error") {
+      toast.error(message);
+    } else {
+      toast.success(message);
+    }
   };
 
   const fetchOrders = async (showLoader = true) => {
@@ -131,7 +149,11 @@ function ProcessingOrders() {
       const data = response.data?.orders ?? response.data ?? [];
 
       rateCacheRef.current.clear();
-      setOrders(Array.isArray(data) ? data : []);
+      const list = Array.isArray(data) ? data : [];
+      setOrders(list);
+      try {
+        sessionStorage.setItem("shipdrop_processing_orders_cache", JSON.stringify(list));
+      } catch {}
     } catch (error) {
       // console.log("Processing orders error:", error);
       setOrders([]);
@@ -145,20 +167,17 @@ function ProcessingOrders() {
   }, []);
 
   useEffect(() => {
-    const handleNewOrder = () => fetchOrders(false);
-    window.addEventListener("processingOrderCreated", handleNewOrder);
-    return () =>
-      window.removeEventListener("processingOrderCreated", handleNewOrder);
-  }, []);
-
-  useEffect(() => {
-    const handleOrderUpdated = () => fetchOrders(false);
-    window.addEventListener("processingOrderUpdated", handleOrderUpdated);
-    return () =>
-      window.removeEventListener("processingOrderUpdated", handleOrderUpdated);
+    const unsubscribe = subscribeToOrderUpdates(() => {
+      fetchOrders(false);
+    });
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   const getId = (order, index = 0) => order.id ?? order.order_id ?? index;
+  const getParty = (order) =>
+    order.party_reference_name || order.party_name || order.party_identity_name || order.party || "—";
   const getCustomer = (order) =>
     order.consignee_name || order.customer_name || order.name || "—";
   const getMobile = (order) =>
@@ -224,7 +243,30 @@ function ProcessingOrders() {
   const getTotalWeight = (order) => {
     const weight = getWeightNumber(order);
     if (weight <= 0) return "—";
-    return `${weight} kg`;
+    return `${Number(weight.toFixed(2))} kg`;
+  };
+
+  // Read volumetric weight from existing data, or calculate it from package dimensions.
+  const getVolumetricWeight = (order) => {
+    const directValue = order.volumetric_weight ?? order.volumetricWeight ?? order.total_volumetric_weight ?? order.totalVolumetricWeight;
+    if (directValue !== null && directValue !== undefined && directValue !== "") {
+      const value = Number(directValue);
+      return Number.isFinite(value) && value > 0 ? `${value.toFixed(2)} kg` : "—";
+    }
+    if (!Array.isArray(order.packages) || order.packages.length === 0) return "—";
+    let total = 0;
+    let foundDimensions = false;
+    for (const pkg of order.packages) {
+      const length = Number(pkg?.length ?? pkg?.length_cm ?? pkg?.lengthCm ?? pkg?.l);
+      const width = Number(pkg?.width ?? pkg?.breadth ?? pkg?.width_cm ?? pkg?.widthCm ?? pkg?.w);
+      const height = Number(pkg?.height ?? pkg?.height_cm ?? pkg?.heightCm ?? pkg?.h);
+      const count = Number(pkg?.package_count ?? pkg?.count ?? 1) || 1;
+      if (Number.isFinite(length) && length > 0 && Number.isFinite(width) && width > 0 && Number.isFinite(height) && height > 0) {
+        foundDimensions = true;
+        total += (length * width * height * count) / 5000;
+      }
+    }
+    return foundDimensions ? `${total.toFixed(2)} kg` : "—";
   };
 
   const getBoxCount = (order) => {
@@ -389,6 +431,7 @@ function ProcessingOrders() {
         pickup_pincode: source.pickup_pincode || order.pickup_pincode || null,
         pickup_city: source.pickup_city || order.pickup_city || null,
         warehouse_id: warehouseId,
+        party_identity_id: source.party_identity_id || order.party_identity_id || null,
         pickup_address_id: source.pickup_address_id || order.pickup_address_id || null,
         orderData: {
           consignee_name: source.consignee_name,
@@ -408,6 +451,7 @@ function ProcessingOrders() {
           payment_type: source.payment_type || "Prepaid",
           risk_type: source.risk_type || "Owner Risk",
           warehouse_id: warehouseId,
+          party_identity_id: source.party_identity_id || order.party_identity_id || null,
         },
         products: Array.isArray(source.products) ? source.products : [],
         packages: Array.isArray(source.packages) ? source.packages : [],
@@ -425,6 +469,7 @@ function ProcessingOrders() {
         "success"
       );
       await fetchOrders(false);
+      notifyOrderChange({ type: "created", orderId: createResult.order_id });
     } catch (error) {
       showToast(
         error?.response?.data?.message || error?.message || "Unable to duplicate order",
@@ -438,6 +483,7 @@ function ProcessingOrders() {
     if (!searchText) return true;
     const searchableText = [
       getId(order),
+      getParty(order),
       getCustomer(order),
       getMobile(order),
       getPickupCity(order),
@@ -715,8 +761,8 @@ function ProcessingOrders() {
       await fetchOrders(false);
 
       window.dispatchEvent(new Event("walletBalanceUpdated"));
-      window.dispatchEvent(new Event("orderStatusUpdated"));
       window.dispatchEvent(new Event("walletUpdated"));
+      notifyOrderChange({ type: "status_changed", action: "shipped" });
 
       showToast(
         `${shippedCount} order${
@@ -783,6 +829,7 @@ function ProcessingOrders() {
       rateCacheRef.current.clear();
 
       await fetchOrders(false);
+      notifyOrderChange({ type: "deleted", orderIds: deleteIds });
       showToast(`${deletedCount} order(s) deleted successfully.`, "success");
     } catch (error) {
       showToast(error.message || "Failed to delete orders", "error");
@@ -792,56 +839,25 @@ function ProcessingOrders() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-full bg-[#f6f8fb] p-4 sm:p-6">
-        <div className="flex min-h-[60vh] items-center justify-center rounded-2xl border border-slate-200/80 bg-white">
-          <div className="text-center">
-            <div className="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-3 border-slate-200 border-t-[#7451ff]" />
-            <p className="text-xs font-semibold text-slate-500">
-              Loading processing orders...
-            </p>
-          </div>
-        </div>
-      </div>
-    );
+    return <RouteSkeleton />;
   }
 
   const selectedOrderObjects = getSelectedOrderObjects();
 
   return (
     <div className="min-h-full w-full bg-[#f6f8fb] p-3 sm:p-5 md:p-6 pb-20 lg:pb-8">
-      {/* TOAST */}
-      {toast && (
-        <div className="fixed right-4 top-4 z-[11000] max-w-[90vw]">
-          <div
-            className={`flex items-center gap-3 rounded-xl border bg-white p-3.5 shadow-2xl ${
-              toast.type === "success" ? "border-green-200" : "border-red-200"
-            }`}
-          >
-            <div
-              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
-                toast.type === "success"
-                  ? "bg-green-100 text-green-600"
-                  : "bg-red-100 text-red-600"
-              }`}
-            >
-              {toast.type === "success" ? "✓" : "!"}
-            </div>
-            <p className="text-xs font-semibold text-slate-700">{toast.message}</p>
-          </div>
-        </div>
-      )}
+
 
       {/* HEADER & CONTROLS */}
       <div className="mb-3.5 rounded-2xl border border-slate-200/80 bg-white p-3.5 sm:p-4 shadow-[0_1px_4px_rgba(15,23,42,0.03)] space-y-3">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f0ecff] text-[#7052ff]">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#e8f6fc] text-[#008dd2]">
               <Icon name="truck" size={18} />
             </div>
             <div>
               <h1 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
-                Processing Orders
+                Ready To Ship
               </h1>
               <p className="text-[11px] text-slate-400">
                 {filteredOrders.length} of {orders.length} orders
@@ -860,7 +876,7 @@ function ProcessingOrders() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search orders, customers..."
-                className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-8.5 pr-8 text-xs text-slate-700 outline-none focus:border-[#7451ff] focus:bg-white focus:ring-2 focus:ring-[#7451ff]/10 transition"
+                className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-8.5 pr-8 text-xs text-slate-700 outline-none focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10 transition"
               />
               {search && (
                 <button
@@ -879,7 +895,7 @@ function ProcessingOrders() {
                 type="button"
                 onClick={handleShip}
                 disabled={selectedOrders.length === 0}
-                className="flex h-10 items-center gap-1.5 rounded-xl bg-[#7451ff] px-4 text-xs font-bold text-white shadow-xs transition hover:bg-[#6745ec] active:scale-95 disabled:opacity-40"
+                className="flex h-10 items-center gap-1.5 rounded-xl bg-[#008dd2] px-4 text-xs font-bold text-white shadow-xs transition hover:bg-[#0079b5] active:scale-95 disabled:opacity-40"
               >
                 <Icon name="truck" size={14} />
                 Ship ({selectedOrders.length})
@@ -906,7 +922,7 @@ function ProcessingOrders() {
                 type="checkbox"
                 checked={allSelected}
                 onChange={toggleAll}
-                className="h-4 w-4 rounded accent-[#7451ff]"
+                className="h-4 w-4 rounded accent-[#008dd2]"
               />
               <span>
                 Select All ({selectedOrders.length}/{filteredOrders.length})
@@ -927,7 +943,7 @@ function ProcessingOrders() {
                 <button
                   type="button"
                   onClick={handleShip}
-                  className="flex h-8 items-center gap-1 rounded-lg bg-[#7451ff] px-3 text-[11px] font-bold text-white shadow-xs active:scale-95"
+                  className="flex h-8 items-center gap-1 rounded-lg bg-[#008dd2] px-3 text-[11px] font-bold text-white shadow-xs active:scale-95"
                 >
                   <Icon name="truck" size={12} />
                   Ship ({selectedOrders.length})
@@ -938,8 +954,11 @@ function ProcessingOrders() {
         )}
       </div>
 
+      {/* ORDER STATUS TABS */}
+      <OrderStatusNavTabs />
+
       {/* MOBILE CARD VIEW */}
-      <div className="space-y-3 sm:hidden">
+      <div className="space-y-3 lg:hidden">
         {filteredOrders.length === 0 ? (
           <div className="flex min-h-[200px] flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white p-6 text-center">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
@@ -962,7 +981,7 @@ function ProcessingOrders() {
                 key={id}
                 className={`relative rounded-2xl border bg-white p-3.5 sm:p-4 shadow-[0_1px_4px_rgba(15,23,42,0.03)] transition-all ${
                   selected
-                    ? "border-[#7451ff] ring-2 ring-[#7451ff]/10"
+                    ? "border-[#008dd2] ring-2 ring-[#008dd2]/10"
                     : "border-slate-200/80"
                 }`}
               >
@@ -973,11 +992,16 @@ function ProcessingOrders() {
                       type="checkbox"
                       checked={selected}
                       onChange={() => toggleOrder(id)}
-                      className="h-4 w-4 rounded accent-[#7451ff]"
+                      className="h-4 w-4 rounded accent-[#008dd2]"
                     />
                     <span className="text-xs font-bold text-slate-900">
                       #{order.order_id || id}
                     </span>
+                    {getParty(order) !== "—" && (
+                      <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-700 truncate max-w-[100px]">
+                        {getParty(order)}
+                      </span>
+                    )}
                   </label>
 
                   <div className="flex items-center gap-1.5">
@@ -990,7 +1014,7 @@ function ProcessingOrders() {
                     >
                       {getPayment(order)}
                     </span>
-                    <span className="rounded-full bg-[#f2edff] px-2 py-0.5 text-[10px] font-semibold text-[#008dd2]">
+                    <span className="rounded-full bg-[#e8f6fc] px-2 py-0.5 text-[10px] font-semibold uppercase text-[#008dd2]">
                       {getStatus(order)}
                     </span>
                   </div>
@@ -1036,8 +1060,10 @@ function ProcessingOrders() {
                     <span className="truncate max-w-[180px]">
                       {getProduct(order)} (Qty: {getQty(order)})
                     </span>
-                    <span className="font-semibold text-slate-700">
-                      {getTotalWeight(order)} • {getBoxCount(order)} Box
+                    <span className="font-semibold text-slate-700 text-right">
+                      <span className="block font-semibold text-slate-800">{getTotalWeight(order)}</span>
+                      <span className="block text-[10px] font-medium text-slate-500">Vol: {getVolumetricWeight(order)}</span>
+                      <span className="block text-[10px] text-slate-400">{getBoxCount(order)} Box</span>
                     </span>
                   </div>
                 </div>
@@ -1053,7 +1079,7 @@ function ProcessingOrders() {
                       type="button"
                       onClick={() => handleEdit(order)}
                       disabled={editingOrder}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-sky-200 text-sky-600 hover:bg-sky-50 active:scale-90 transition disabled:opacity-50"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#008dd2] text-white hover:bg-[#0079b5] active:scale-90 transition disabled:opacity-50"
                       title="Edit Order"
                     >
                       <Icon name="edit" size={13} />
@@ -1062,7 +1088,7 @@ function ProcessingOrders() {
                     <button
                       type="button"
                       onClick={() => handleDuplicate(order)}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-violet-200 text-violet-600 hover:bg-violet-50 active:scale-90 transition"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#008dd2] text-white hover:bg-[#0079b5] active:scale-90 transition"
                       title="Duplicate Order"
                     >
                       <Icon name="copy" size={13} />
@@ -1071,7 +1097,7 @@ function ProcessingOrders() {
                     <button
                       type="button"
                       onClick={() => handleDelete([id])}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 active:scale-90 transition"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg  text-white hover:bg-[#0079b5] active:scale-90 transition"
                       title="Delete Order"
                     >
                       <Icon name="trash" size={13} />
@@ -1080,7 +1106,7 @@ function ProcessingOrders() {
                     <button
                       type="button"
                       onClick={() => openShipPopup([id])}
-                      className="flex h-8 items-center gap-1 rounded-lg bg-[#7451ff] px-3 text-[11px] font-bold text-white shadow-xs active:scale-95 transition"
+                      className="flex h-8 items-center gap-1 rounded-lg bg-[#008dd2] px-3 text-[11px] font-bold text-white shadow-xs active:scale-95 transition"
                     >
                       <Icon name="truck" size={12} />
                       Ship
@@ -1094,32 +1120,33 @@ function ProcessingOrders() {
       </div>
 
       {/* TABLET & DESKTOP: TABLE VIEW */}
-      <div className="hidden sm:block overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_4px_rgba(15,23,42,0.03)]">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+      <div className="hidden lg:block overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_4px_rgba(15,23,42,0.03)]">
+        <div className="w-full">
+          <table className="w-full table-fixed text-left border-collapse">
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50/70 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                <th className="py-3 px-4 w-12 text-center">
+                <th className="py-2.5 px-2 w-9 text-center">
                   <input
                     type="checkbox"
                     checked={allSelected}
                     onChange={toggleAll}
-                    className="h-4 w-4 rounded accent-[#7451ff] cursor-pointer"
+                    className="h-4 w-4 rounded accent-[#008dd2] cursor-pointer"
                   />
                 </th>
-                <th className="py-3 px-4">Customer</th>
-                <th className="py-3 px-4">Route</th>
-                <th className="py-3 px-4">Payment</th>
-                <th className="py-3 px-4">Order & Item</th>
-                <th className="py-3 px-4">Weight</th>
-                <th className="py-3 px-4 text-right">Actions</th>
+                <th className="py-2.5 px-1.5 w-[7%]">Party</th>
+                <th className="py-2.5 px-2 w-[16%]">Customer</th>
+                <th className="py-2.5 px-2 w-[22%]">Route</th>
+                <th className="py-2.5 px-2 w-[10%]">Payment</th>
+                <th className="py-2.5 px-2 w-[16%]">Order & Item</th>
+                <th className="py-2.5 px-2 w-[12%]">Weight</th>
+                <th className="py-2.5 px-2 w-[17%] text-right">Actions</th>
               </tr>
             </thead>
 
             <tbody className="divide-y divide-slate-100 text-xs">
               {filteredOrders.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="p-0">
+                  <td colSpan={8} className="p-0">
                     <div className="flex min-h-[280px] w-full flex-col items-center justify-center px-4 py-10 text-center">
                       <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-slate-400">
                         <Icon name="file" size={30} />
@@ -1142,34 +1169,50 @@ function ProcessingOrders() {
                     <tr
                       key={id}
                       className={`transition-colors ${
-                        selected ? "bg-[#7451ff]/[0.03]" : "hover:bg-slate-50/70"
+                        selected ? "bg-[#008dd2]/[0.03]" : "hover:bg-slate-50/70"
                       }`}
                     >
                       {/* 1. CHECKBOX */}
-                      <td className="py-3 px-4 text-center align-middle">
+                      <td className="py-2.5 px-2 text-center align-middle">
                         <input
                           type="checkbox"
                           checked={selected}
                           onChange={() => toggleOrder(id)}
-                          className="h-4 w-4 rounded accent-[#7451ff] cursor-pointer"
+                          className="h-4 w-4 rounded accent-[#008dd2] cursor-pointer"
                         />
                       </td>
 
-                      {/* 2. CUSTOMER */}
-                      <td className="py-3 px-4 align-middle">
+                      {/* 2. PARTY */}
+                      <td className="py-2.5 px-1.5 align-middle">
+                        <div className="min-w-0">
+                          {getParty(order) !== "—" ? (
+                            <span
+                              className="inline-block max-w-full truncate rounded-md bg-slate-100 px-1.5 py-0.5 text-[11px] font-semibold text-slate-700"
+                              title={order.party_name && order.party_reference_name ? `${order.party_reference_name} — ${order.party_name}` : getParty(order)}
+                            >
+                              {getParty(order)}
+                            </span>
+                          ) : (
+                            <span className="text-[12px] text-slate-400 font-normal">—</span>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* 3. CUSTOMER */}
+                      <td className="py-2.5 px-2 align-middle">
                         <div className="font-bold text-slate-900">
                           {getCustomer(order)}
                         </div>
                         <div className="text-[11px] text-slate-400">
                           {getMobile(order)}
                         </div>
-                        <span className="mt-1 inline-flex rounded-full bg-[#f2edff] px-2 py-0.5 text-[9px] font-bold text-[#008dd2]">
+                        <span className="mt-1 inline-flex rounded-full bg-[#e8f6fc] px-2 py-0.5 text-[10px] font-bold uppercase text-[#008dd2]">
                           {getStatus(order)}
                         </span>
                       </td>
 
                       {/* 3. ROUTE (SCREENSHOT DESIGN) */}
-                      <td className="py-3 px-4 align-middle">
+                      <td className="py-2.5 px-2 align-middle">
                         <div className="flex flex-col py-1">
                           {/* Pickup Node */}
                           <div className="flex items-center gap-2">
@@ -1229,9 +1272,9 @@ function ProcessingOrders() {
                       </td>
 
                       {/* 4. PAYMENT */}
-                      <td className="py-3 px-4 align-middle">
+                      <td className="py-2.5 px-2 align-middle">
                         <span
-                          className={`inline-flex rounded-md border px-2 py-0.5 text-[10px] font-bold ${
+                          className={`inline-flex rounded-md border px-2 py-0.5 text-[11px] font-bold ${
                             getPayment(order) === "COD"
                               ? "border-rose-100 bg-rose-50 text-rose-600"
                               : "border-emerald-100 bg-emerald-50 text-emerald-600"
@@ -1245,7 +1288,7 @@ function ProcessingOrders() {
                       </td>
 
                       {/* 5. ORDER & ITEM */}
-                      <td className="py-3 px-4 align-middle">
+                      <td className="py-2.5 px-2 align-middle">
                         <div className="font-bold text-slate-800">
                           #{order.order_id || id}
                         </div>
@@ -1258,56 +1301,53 @@ function ProcessingOrders() {
                       </td>
 
                       {/* 6. WEIGHT */}
-                      <td className="py-3 px-4 align-middle">
-                        <div className="font-semibold text-slate-700">
-                          {getTotalWeight(order)}
-                        </div>
-                        <div className="text-[10px] text-slate-400">
-                          {getBoxCount(order)} Box
-                        </div>
+                      <td className="py-2.5 px-2 align-middle">
+                        <div className="font-semibold text-slate-900 whitespace-nowrap leading-5">Wt: {getTotalWeight(order)}</div>
+                        <div className="mt-0.5 text-[10px] font-medium text-slate-500 whitespace-nowrap leading-4">Vol: {getVolumetricWeight(order)}</div>
+                        <div className="text-[10px] text-slate-400 whitespace-nowrap leading-4">{getBoxCount(order)} Box</div>
                       </td>
 
-                      {/* 7. ACTIONS */}
-                      <td className="py-3 px-4 align-middle text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => openShipPopup([id])}
-                            className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#f0ecff] text-[#7451ff] hover:bg-[#7451ff] hover:text-white transition active:scale-95"
-                            title="Ship Order"
-                          >
-                            <Icon name="truck" size={14} />
-                          </button>
+                     {/* 7. ACTIONS */}
+<td className="py-3 px-4 align-middle text-right">
+  <div className="flex items-center justify-end gap-1.5">
+    <button
+      type="button"
+      onClick={() => openShipPopup([id])}
+      className="flex h-7 w-7 items-center justify-center rounded-md bg-[#008dd2] text-white hover:bg-[#0079b5] transition active:scale-95"
+      title="Ship Order"
+    >
+      <Icon name="truck" size={12} />
+    </button>
 
-                          <button
-                            type="button"
-                            onClick={() => handleEdit(order)}
-                            disabled={editingOrder}
-                            className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-50 text-sky-600 hover:bg-sky-600 hover:text-white transition active:scale-95 disabled:opacity-50"
-                            title="Edit Order"
-                          >
-                            <Icon name="edit" size={14} />
-                          </button>
+    <button
+      type="button"
+      onClick={() => handleEdit(order)}
+      disabled={editingOrder}
+      className="flex h-7 w-7 items-center justify-center rounded-md bg-[#008dd2] text-white hover:bg-[#0079b5] transition active:scale-95 disabled:opacity-50"
+      title="Edit Order"
+    >
+      <Icon name="edit" size={12} />
+    </button>
 
-                          <button
-                            type="button"
-                            onClick={() => handleDuplicate(order)}
-                            className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-50 text-violet-600 hover:bg-violet-600 hover:text-white transition active:scale-95"
-                            title="Duplicate Order"
-                          >
-                            <Icon name="copy" size={14} />
-                          </button>
+    <button
+      type="button"
+      onClick={() => handleDuplicate(order)}
+      className="flex h-7 w-7 items-center justify-center rounded-md bg-[#008dd2] text-white hover:bg-[#0079b5] transition active:scale-95"
+      title="Duplicate Order"
+    >
+      <Icon name="copy" size={12} />
+    </button>
 
-                          <button
-                            type="button"
-                            onClick={() => handleDelete([id])}
-                            className="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white transition active:scale-95"
-                            title="Delete Order"
-                          >
-                            <Icon name="trash" size={14} />
-                          </button>
-                        </div>
-                      </td>
+    <button
+      type="button"
+      onClick={() => handleDelete([id])}
+      className="flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition active:scale-95"
+      title="Delete Order"
+    >
+      <Icon name="trash" size={12} />
+    </button>
+  </div>
+</td>
                     </tr>
                   );
                 })
@@ -1323,7 +1363,7 @@ function ProcessingOrders() {
           <div className="w-full max-w-xl max-h-[90vh] flex flex-col rounded-t-3xl sm:rounded-2xl bg-white shadow-2xl overflow-hidden animate-in slide-in-from-bottom duration-200">
             <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
               <div className="flex items-center gap-2.5">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f2edff] text-[#7451ff]">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#e8f6fc] text-[#008dd2]">
                   <Icon name="truck" size={18} />
                 </div>
                 <div>
@@ -1346,7 +1386,7 @@ function ProcessingOrders() {
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3">
-              <div className="rounded-2xl border border-[#e5ddff] bg-[#faf8ff] p-3.5 flex items-center justify-between gap-3">
+              <div className="rounded-2xl border border-[#ccecf8] bg-[#f4fbfe] p-3.5 flex items-center justify-between gap-3">
                 <div>
                   <span className="text-xs font-bold text-slate-800">
                     Shipping Mode
@@ -1360,7 +1400,7 @@ function ProcessingOrders() {
                   value={shippingType}
                   onChange={handleShippingTypeChange}
                   disabled={previewLoading || shipping}
-                  className="h-9.5 rounded-xl border border-[#a996ff] bg-white px-3 text-xs font-bold text-slate-700 outline-none"
+                  className="h-9.5 rounded-xl border border-[#7cc9e8] bg-white px-3 text-xs font-bold text-slate-700 outline-none"
                 >
                   <option value="ROAD">Delivery By Road</option>
                   <option value="AIR">Delivery By Air</option>
@@ -1368,11 +1408,20 @@ function ProcessingOrders() {
               </div>
 
               {previewLoading ? (
-                <div className="py-12 text-center">
-                  <div className="mx-auto mb-2.5 h-7 w-7 animate-spin rounded-full border-3 border-slate-200 border-t-[#7451ff]" />
-                  <p className="text-xs font-medium text-slate-500">
-                    Calculating shipping rates...
-                  </p>
+                <div className="space-y-2 py-3">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="rounded-xl border border-slate-200/80 bg-slate-50/50 p-3 space-y-2"
+                      style={{ opacity: 1 - i * 0.2 }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="h-3.5 w-36 rounded bg-slate-200 skeleton-shimmer" />
+                        <div className="h-4 w-16 rounded bg-slate-200 skeleton-shimmer" />
+                      </div>
+                      <div className="h-2.5 w-48 rounded bg-slate-100 skeleton-shimmer" />
+                    </div>
+                  ))}
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -1395,7 +1444,7 @@ function ProcessingOrders() {
                           </div>
                         </div>
 
-                        <span className="font-extrabold text-[#7451ff] text-sm shrink-0">
+                        <span className="font-extrabold text-[#008dd2] text-sm shrink-0">
                           ₹{rate ? Number(rate.charge).toFixed(2) : "—"}
                         </span>
                       </div>
@@ -1416,7 +1465,7 @@ function ProcessingOrders() {
                   </p>
                 </div>
 
-                <span className="text-xl font-black text-[#7451ff]">
+                <span className="text-xl font-black text-[#008dd2]">
                   ₹{previewLoading ? "..." : previewTotal.toFixed(2)}
                 </span>
               </div>
@@ -1435,9 +1484,13 @@ function ProcessingOrders() {
                   type="button"
                   onClick={confirmShipNow}
                   disabled={shipping || previewLoading || previewTotal <= 0}
-                  className="flex-1 h-10.5 rounded-xl bg-[#7451ff] text-xs font-bold text-white shadow-xs active:scale-95 disabled:opacity-50 transition"
+                  className={`flex-1 h-10.5 rounded-xl bg-[#008dd2] text-xs font-bold text-white shadow-xs active:scale-95 transition ${shipping ? "opacity-100 cursor-wait" : "disabled:opacity-50"}`}
                 >
-                  {shipping ? "Processing..." : "Confirm & Ship Now →"}
+                  {shipping ? (
+                    <ShippingTruckLoader text="Shipping Orders..." />
+                  ) : (
+                    "Confirm & Ship Now →"
+                  )}
                 </button>
               </div>
             </div>

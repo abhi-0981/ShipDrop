@@ -63,11 +63,23 @@ const getManifestedOrders = async (req, res) => {
       : [];
 
     // ==================================================
-    // GET LIVE DELHIVERY TRACKING STATUS
+    // DELHIVERY TRACKING: Serve unpacked data immediately
+    // Only call external API synchronously if explicitly requested
     // ==================================================
+    const shouldRefreshTracking = req.query?.refresh_tracking === "true" || req.query?.include_tracking === "true";
+    let manifestsWithTracking = list;
 
-    const manifestsWithTracking =
-      await attachTrackingToOrders(list);
+    if (shouldRefreshTracking) {
+      manifestsWithTracking = await attachTrackingToOrders(list);
+    } else {
+      // Fire-and-forget in background for orders that have waybill but no tracking data yet
+      const needsTracking = list.filter((m) => m.waybill && !m.tracking_data);
+      if (needsTracking.length > 0) {
+        attachTrackingToOrders(needsTracking).catch((err) => {
+          console.error("Background tracking fetch for manifests error:", err?.message || err);
+        });
+      }
+    }
 
     return res.status(200).json({
       success: true,

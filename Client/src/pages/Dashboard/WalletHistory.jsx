@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import api from "../../services/api";
+import { CardSkeleton, TableRowSkeleton } from "../../components/Common/TableSkeleton";
 
 const WalletHistory = () => {
   const [transactions, setTransactions] = useState([]);
@@ -375,7 +376,7 @@ const WalletHistory = () => {
   };
 
   return (
-    <div className="min-h-full w-full overflow-x-hidden bg-[#f6f8fb] p-3.5 sm:p-5 md:p-6 pb-20 lg:pb-8">
+    <div className="min-h-full w-full overflow-x-hidden bg-[#f6f8fb] dark:bg-[#090b10] p-3.5 sm:p-5 md:p-6 pb-20 lg:pb-8">
       {/* =====================================================
           PAGE HEADER
       ====================================================== */}
@@ -491,9 +492,7 @@ const WalletHistory = () => {
       ====================================================== */}
       <div className="space-y-2.5 sm:hidden">
         {loading ? (
-          <div className="py-12 text-center text-xs font-semibold text-slate-400">
-            Loading transactions...
-          </div>
+          <CardSkeleton count={4} />
         ) : error ? (
           <div className="rounded-2xl border border-rose-100 bg-white p-6 text-center space-y-2">
             <p className="text-xs font-bold text-rose-600">{error}</p>
@@ -626,16 +625,7 @@ const WalletHistory = () => {
 
           <tbody className="divide-y divide-slate-100 text-xs">
             {loading && (
-              <tr>
-                <td colSpan="7" className="px-5 py-14 text-center">
-                  <div className="flex flex-col items-center">
-                    <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-200 border-t-[#008dd2]" />
-                    <span className="mt-3 text-xs font-semibold text-slate-400">
-                      Loading transactions...
-                    </span>
-                  </div>
-                </td>
-              </tr>
+              <TableRowSkeleton rows={6} cols={7} />
             )}
 
             {!loading && error && (

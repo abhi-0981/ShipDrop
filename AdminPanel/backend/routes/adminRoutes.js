@@ -28,6 +28,14 @@ const {
   bulkMarkCODRemittancesSuccessful,
 } = require("../controllers/codRemittanceAdminController");
 
+const {
+  getAdminPickupAddresses,
+} = require("../controllers/pickupAdminController");
+
+const {
+  getAdminParties,
+} = require("../controllers/partyAdminController");
+
 const router = express.Router();
 
 /* =========================================================
@@ -86,5 +94,18 @@ router.patch(
   "/cod-remittances/bulk-successful",
   bulkMarkCODRemittancesSuccessful
 );
+
+/* =========================================================
+   PICKUP ADDRESSES (ALL MERCHANTS)
+========================================================= */
+
+router.get("/pickup-addresses", getAdminPickupAddresses);
+
+/* =========================================================
+   PARTY IDENTITIES (ALL MERCHANTS)
+========================================================= */
+
+router.get("/party-identities", getAdminParties);
+router.get("/parties", getAdminParties);
 
 module.exports = router;

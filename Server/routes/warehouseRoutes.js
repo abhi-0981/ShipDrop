@@ -12,6 +12,11 @@ const {
   setDefaultWarehouse,
 } = require("../controllers/warehouseController");
 
+const { authenticateUser } = require("../middleware/authMiddleware");
+
+// All warehouse routes are account-owned and require authentication
+router.use(authenticateUser);
+
 
 
 // ======================================================

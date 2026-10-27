@@ -118,7 +118,13 @@ const normalizeStatus = (status) => {
   if (value === "OUT FOR DELIVERY" || value === "OUT_FOR_DELIVERY") return "Out For Delivery";
   if (value === "DELIVERED") return "Delivered";
   if (value === "RTO IN TRANSIT" || value === "RTO_IN_TRANSIT") return "RTO In Transit";
-  if (value === "RTO DELIVERED" || value === "RTO_DELIVERED") return "RTO Delivered";
+  if (
+    value === "RTO DELIVERED" ||
+    value === "RTO_DELIVERED" ||
+    value === "RETURN ACCEPTED" ||
+    value === "RETURN_ACCEPTED" ||
+    value.includes("RETURN ACCEPT")
+  ) return "RTO Delivered";
   if (value === "RETURNED") return "Returned";
   if (value === "CANCELLED" || value === "CANCELED") return "Cancelled";
   if (value === "PENDING") return "Pending";
@@ -858,6 +864,22 @@ const AllOrders = () => {
     }
   };
 
+  // Open ParcelDrop's existing in-app tracking popup for this AWB.
+  const trackAwb = (awb) => {
+    const trackingNumber = String(awb || "").trim();
+
+    if (!trackingNumber || trackingNumber === "-") {
+      toast.error("AWB not available");
+      return;
+    }
+
+    window.dispatchEvent(
+      new CustomEvent("parceldrop:track-awb", {
+        detail: { awb: trackingNumber },
+      }),
+    );
+  };
+
   const resetFilters = () => {
     setSearch("");
     setActiveStatus("All");
@@ -1024,7 +1046,7 @@ const AllOrders = () => {
               >
                 <span>{STATUS_CONFIG[status]?.label}</span>
                 <span
-                  className={`rounded-full px-1.5 py-0.2 text-[10px] font-bold ${
+                  className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
                     active ? "bg-[#008dd2] text-white" : "bg-slate-100 text-slate-600"
                   }`}
                 >
@@ -1120,9 +1142,15 @@ const AllOrders = () => {
 
                   {/* AWB ACTION BAR */}
                   <div className="flex items-center justify-between font-mono text-[11px] text-slate-700 bg-slate-50/80 px-2.5 py-1.5 rounded-xl border border-slate-100">
-                    <span className="truncate font-semibold">
+                    <button
+                      type="button"
+                      onClick={() => trackAwb(order.awb)}
+                      disabled={!order.awb || order.awb === "-"}
+                      title="Track shipment"
+                      className="min-w-0 truncate text-left font-semibold text-[#008dd2] hover:underline disabled:cursor-default disabled:text-slate-700"
+                    >
                       AWB: {order.awb}
-                    </span>
+                    </button>
 
                     {order.awb !== "-" && (
                       <button
@@ -1293,9 +1321,15 @@ const AllOrders = () => {
 
                       <td className="border-r border-slate-100 px-3 py-3 align-top">
                         <div className="flex items-center gap-1.5">
-                          <span className="text-[11px] font-medium text-slate-700 font-mono">
+                          <button
+                            type="button"
+                            onClick={() => trackAwb(order.awb)}
+                            disabled={!order.awb || order.awb === "-"}
+                            title="Track shipment"
+                            className="text-left text-[11px] font-medium font-mono text-[#008dd2] hover:underline disabled:cursor-default disabled:text-slate-700"
+                          >
                             {order.awb}
-                          </span>
+                          </button>
                           {order.awb !== "-" && (
                             <button
                               type="button"

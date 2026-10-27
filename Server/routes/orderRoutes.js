@@ -12,11 +12,18 @@ const {
   deleteOrders,
   searchPreviousCustomers,
   searchTracking,
+  getOrderStatusCounts,
+  getDashboardSummary,
 } = require("../controllers/orderController");
 
 const {
   importOrders,
 } = require("../controllers/importOrderController");
+
+const { authenticateUser } = require("../middleware/authMiddleware");
+
+// All order routes are account-owned and require authentication
+router.use(authenticateUser);
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -84,6 +91,28 @@ router.get(
 router.get(
   "/tracking-search",
   searchTracking
+);
+
+// ======================================================
+// STATUS COUNTS
+// IMPORTANT:
+// Ye /:id se PEHLE hona chahiye.
+// ======================================================
+
+router.get(
+  "/status-counts",
+  getOrderStatusCounts
+);
+
+// ======================================================
+// DASHBOARD SUMMARY (FAST UNIFIED ENDPOINT)
+// IMPORTANT:
+// Ye /:id se PEHLE hona chahiye.
+// ======================================================
+
+router.get(
+  "/dashboard-summary",
+  getDashboardSummary
 );
 
 // ======================================================

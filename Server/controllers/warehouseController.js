@@ -111,11 +111,13 @@ const createWarehouse = async (
     } = req.body;
 
 
+    const effectiveUserId = Number(req.user?.id || user_id);
+
     // ==================================================
     // USER
     // ==================================================
 
-    if (!user_id) {
+    if (!effectiveUserId) {
 
       return sendError(
         res,
@@ -556,7 +558,7 @@ const createWarehouse = async (
           await returnAddressModel.createReturnAddress({
 
             user_id:
-              Number(user_id),
+              Number(effectiveUserId),
 
             name:
               String(
@@ -713,6 +715,7 @@ const getWarehouses = (
   try {
 
     const rawUserId =
+      req.user?.id ||
       req.query.user_id;
 
 
@@ -870,6 +873,7 @@ const getWarehouseById = (
 
     const userId =
       Number(
+        req.user?.id ||
         req.query.user_id
       );
 
@@ -1043,7 +1047,7 @@ const updateWarehouse = async (
 
 
     const userId =
-      Number(user_id);
+      Number(req.user?.id || user_id);
 
 
     if (
@@ -1507,6 +1511,7 @@ const deleteWarehouse = (
 
     const userId =
       Number(
+        req.user?.id ||
         req.body.user_id
       );
 
@@ -1637,7 +1642,7 @@ const deleteWarehouse = (
 
 const setDefaultWarehouse = (req, res) => {
   const warehouseId = Number(req.params.id);
-  const userId = Number(req.body.user_id);
+  const userId = Number(req.user?.id || req.body.user_id);
 
   if (
     !Number.isInteger(userId) ||

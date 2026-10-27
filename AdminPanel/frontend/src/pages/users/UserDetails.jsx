@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, Link } from "react-router-dom";
 import {
   HiOutlineArrowLeft,
   HiOutlineUserCircle,
@@ -12,7 +12,15 @@ import {
   HiOutlineMail,
   HiOutlinePhone,
   HiOutlineDocumentText,
+  HiOutlineSwitchHorizontal,
+  HiOutlineShieldCheck,
+  HiOutlineExclamation,
+  HiOutlineExternalLink,
+  HiOutlineCheckCircle,
+  HiOutlineLocationMarker,
+  HiOutlineIdentification,
 } from "react-icons/hi";
+import toast from "react-hot-toast";
 import { API_BASE_URL } from "../../config/api";
 
 function UserDetails() {
@@ -35,6 +43,9 @@ function UserDetails() {
   const [walletAmount, setWalletAmount] = useState("");
   const [walletDescription, setWalletDescription] = useState("");
   const [walletSaving, setWalletSaving] = useState(false);
+
+  // Impersonation state
+  const [isImpersonating, setIsImpersonating] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -273,6 +284,74 @@ function UserDetails() {
   };
 
   // =====================================================
+  // LOGIN AS USER (DIRECT IMPERSONATION - SAME TAB)
+  // =====================================================
+
+  const handleDirectLoginAsUser = async () => {
+    if (!user) return;
+    const toastId = toast.loading(`Logging in as ${user.full_name || "Merchant"}...`);
+
+    try {
+      setIsImpersonating(true);
+
+      const adminToken =
+        localStorage.getItem("adminToken") ||
+        localStorage.getItem("token") ||
+        localStorage.getItem("admin_token");
+
+      if (!adminToken) {
+        toast.error("Admin session not found. Please log in again.", { id: toastId });
+        return;
+      }
+
+      const origin = window.location.origin;
+      const userAppUrl = origin.includes("localhost")
+        ? origin.replace(":5174", ":5173")
+        : "https://parceldrop.in";
+
+      const response = await fetch(
+        `${API_BASE_URL}/admin/impersonate/start`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${adminToken}`,
+          },
+          body: JSON.stringify({
+            target_user_id: user.id,
+            reason: "Admin Support Access",
+            admin_return_url: window.location.href,
+            user_app_url: userAppUrl,
+          }),
+        }
+      );
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok || data.success === false) {
+        throw new Error(
+          data.message || `Failed to login as user (Status: ${response.status})`
+        );
+      }
+
+      toast.success(
+        `Redirecting to ${user.full_name || "Merchant"} dashboard...`,
+        { id: toastId }
+      );
+
+      if (data.redirect_url) {
+        // Direct navigation in the SAME TAB
+        window.location.href = data.redirect_url;
+      }
+    } catch (err) {
+      console.error("Direct impersonation error:", err);
+      toast.error(err.message || "Failed to switch to user dashboard", { id: toastId });
+    } finally {
+      setIsImpersonating(false);
+    }
+  };
+
+  // =====================================================
   // LOADING STATE
   // =====================================================
 
@@ -337,6 +416,27 @@ function UserDetails() {
             <p className="mt-0.5 text-xs text-slate-400">
               Manage merchant settings, assigned rates and credit ledger
             </p>
+          </div>
+
+          <div>
+            <button
+              type="button"
+              disabled={isImpersonating}
+              onClick={handleDirectLoginAsUser}
+              className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-[#008dd2]/30 bg-[#008dd2]/10 px-3.5 text-xs font-bold text-[#008dd2] transition hover:bg-[#008dd2] hover:text-white active:scale-95 shadow-2xs disabled:opacity-60"
+            >
+              {isImpersonating ? (
+                <>
+                  <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#008dd2]/30 border-t-[#008dd2]" />
+                  <span>Logging in...</span>
+                </>
+              ) : (
+                <>
+                  <HiOutlineSwitchHorizontal size={16} />
+                  <span>Login as User</span>
+                </>
+              )}
+            </button>
           </div>
         </div>
       </div>
@@ -441,6 +541,31 @@ function UserDetails() {
                   {user.rate_card_name || "Default / Unassigned"}
                 </span>
               </div>
+            </div>
+
+            {/* QUICK SHORTCUTS TO USER'S PICKUP HUBS & PARTIES */}
+            <div className="pt-3 border-t border-slate-100 flex flex-col gap-2">
+              <Link
+                to={`/pickup-addresses?user_id=${user.id}`}
+                className="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-50 hover:bg-sky-50 text-slate-700 hover:text-[#008dd2] border border-slate-200/80 transition text-xs font-semibold group/link"
+              >
+                <div className="flex items-center gap-2">
+                  <HiOutlineLocationMarker size={15} className="text-[#008dd2]" />
+                  <span>Pickup Locations</span>
+                </div>
+                <HiOutlineExternalLink size={13} className="text-slate-400 group-hover/link:text-[#008dd2]" />
+              </Link>
+
+              <Link
+                to={`/parties?user_id=${user.id}`}
+                className="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-50 hover:bg-purple-50 text-slate-700 hover:text-purple-600 border border-slate-200/80 transition text-xs font-semibold group/link"
+              >
+                <div className="flex items-center gap-2">
+                  <HiOutlineIdentification size={15} className="text-purple-600" />
+                  <span>Parties Info</span>
+                </div>
+                <HiOutlineExternalLink size={13} className="text-slate-400 group-hover/link:text-purple-600" />
+              </Link>
             </div>
           </div>
         </div>

@@ -1,10 +1,15 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import api from "../../services/api";
+import OrderDetailsModal from "../../components/Common/OrderDetailsModal";
+import { CardSkeleton } from "../../components/Common/TableSkeleton";
+import { notifyOrderChange, subscribeToOrderUpdates } from "../../services/orderEvents";
 import {
   printShippingLabels,
   downloadShippingLabels,
 } from "../../services/shippingLabelService";
+import OrderStatusNavTabs from "../../components/Common/OrderStatusNavTabs";
 
 // ======================================================
 // COLORS
@@ -163,6 +168,10 @@ const getCustomerName = (order) => {
   );
 };
 
+const getPartyName = (order) => {
+  return order?.party_reference_name || order?.party_name || order?.party_identity_name || order?.party || "—";
+};
+
 const getMobile = (order) => {
   return (
     order?.mobile ||
@@ -171,6 +180,11 @@ const getMobile = (order) => {
     order?.consignee_phone ||
     ""
   );
+};
+
+const isManualCarrierOrder = (order) => {
+  const carrier = order?.carrier;
+  return Boolean(carrier && String(carrier).trim().toLowerCase() !== "delivery");
 };
 
 const getAWB = (order) => {
@@ -183,11 +197,12 @@ const getOrderId = (order) => {
 
 const getShipmentName = (order) => {
   return (
-    order?.shipment ||
     order?.product_name ||
-    order?.service_name ||
     order?.product ||
-    "Shipment"
+    (Array.isArray(order?.products) && (order.products[0]?.product_name || order.products[0]?.product)) ||
+    order?.shipment ||
+    order?.service_name ||
+    "—"
   );
 };
 
@@ -223,7 +238,7 @@ const getServiceType = (order) => {
     return "ROAD";
   }
 
-  return "";
+  return "ROAD";
 };
 
 const getPaymentType = (order) => {
@@ -253,10 +268,16 @@ const getPaymentType = (order) => {
 
 const getAmount = (order) => {
   const amount = Number(
-    order?.total_amount ??
+    order?.shipping_charge ??
+      order?.shipping_charges ??
+      order?.charge ??
+      order?.shippingCharge ??
+      order?.final_rate ??
+      order?.manifest_shipping_charge ??
+      order?.total_amount ??
       order?.total ??
       order?.amount ??
-      order?.shipping_charges ??
+      order?.price ??
       0,
   );
   return Number.isFinite(amount) ? amount : 0;
@@ -371,7 +392,7 @@ const formatTime = (value) => {
 };
 
 const getStatus = (order) => {
-  return safeString(
+  const raw = safeString(
     order?.tracking_status ||
       order?.status ||
       order?.order_status ||
@@ -381,20 +402,46 @@ const getStatus = (order) => {
     .toUpperCase()
     .replace(/[-_]+/g, " ")
     .replace(/\s+/g, " ");
+
+  const trackingText = safeString(
+    order?.tracking_instructions ||
+      order?.tracking_raw_status ||
+      ""
+  ).toUpperCase();
+
+  if (
+    raw === "RETURN ACCEPTED" ||
+    raw.includes("RETURN ACCEPT") ||
+    raw.includes("RTO DELIVERED") ||
+    trackingText.includes("RETURN ACCEPT")
+  ) {
+    return "RTO DELIVERED";
+  }
+
+  return raw;
 };
 
 const getStatusLabel = (status) => {
-  return String(status || "PROCESSING")
+  const s = String(status || "PROCESSING")
     .trim()
     .toUpperCase()
     .replace(/[-_]+/g, " ")
     .replace(/\s+/g, " ");
+
+  if (s === "RETURN ACCEPTED" || s.includes("RETURN ACCEPT") || s === "RTO DELIVERED") {
+    return "RTO DELIVERED";
+  }
+
+  return s;
 };
 
 const StatusBadge = ({ status }) => {
   let className = "bg-slate-50 text-slate-600";
 
   switch (status) {
+    case "BOOKED":
+      className = "bg-emerald-50 text-emerald-700 border border-emerald-200/60";
+      break;
     case "MANIFESTED":
       className = "bg-sky-50 text-sky-600";
       break;
@@ -418,6 +465,8 @@ const StatusBadge = ({ status }) => {
       break;
     case "RTO DELIVERED":
     case "RTO_DELIVERED":
+    case "RETURN ACCEPTED":
+    case "RETURN_ACCEPTED":
       className = "bg-rose-50 text-rose-600";
       break;
     case "RETURNED":
@@ -450,22 +499,80 @@ const StatusBadge = ({ status }) => {
 // ======================================================
 
 function AllOrders() {
-  const [orders, setOrders] = useState([]);
+  const [orders, setOrders] = useState(() => {
+    try {
+      const cached = sessionStorage.getItem("shipdrop_all_orders_cache");
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalOrderCount, setTotalOrderCount] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [totalPages, setTotalPages] = useState(() => {
+    try {
+      return Number(sessionStorage.getItem("shipdrop_all_orders_pages")) || 1;
+    } catch {
+      return 1;
+    }
+  });
+  const [totalOrderCount, setTotalOrderCount] = useState(() => {
+    try {
+      return Number(sessionStorage.getItem("shipdrop_all_orders_total")) || 0;
+    } catch {
+      return 0;
+    }
+  });
+  const [loading, setLoading] = useState(() => {
+    try {
+      return !sessionStorage.getItem("shipdrop_all_orders_cache");
+    } catch {
+      return true;
+    }
+  });
 
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [searchParams] = useSearchParams();
+  const urlSearch = searchParams.get("search") || "";
+
+  const [search, setSearch] = useState(urlSearch);
+  const [debouncedSearch, setDebouncedSearch] = useState(urlSearch);
   const [isFetching, setIsFetching] = useState(false);
   const [statusFilter, setStatusFilter] = useState("ALL");
+  const [partyFilter, setPartyFilter] = useState("ALL");
   const [serviceFilter, setServiceFilter] = useState("ALL");
   const [paymentFilter, setPaymentFilter] = useState("ALL");
+  const [partyIdentities, setPartyIdentities] = useState([]);
+
+  // Sync search state if URL query param changes
+  useEffect(() => {
+    if (urlSearch && urlSearch !== search) {
+      setSearch(urlSearch);
+      setDebouncedSearch(urlSearch);
+    }
+  }, [urlSearch]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const loadPartyIdentities = async () => {
+      try {
+        const response = await api.get("/party-identities");
+        if (isMounted && response?.data?.success) {
+          setPartyIdentities(response.data.partyIdentities || []);
+        }
+      } catch (error) {
+        console.log("Unable to load party identities in AllOrders:", error);
+      }
+    };
+    loadPartyIdentities();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const [selectedIds, setSelectedIds] = useState([]);
   const [viewingOrder, setViewingOrder] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
   const [openActionMenuId, setOpenActionMenuId] = useState(null);
+  const actionMenuRef = useRef(null);
 
   // Mobile Touch tracking reference
   const lastTapRef = useRef({});
@@ -545,6 +652,14 @@ function AllOrders() {
       setTotalOrderCount(Number(data?.pagination?.totalOrders) || 0);
       setOrders(uniqueOrders);
       setSelectedIds([]);
+
+      if (currentPage === 1 && !debouncedSearch.trim()) {
+        try {
+          sessionStorage.setItem("shipdrop_all_orders_cache", JSON.stringify(uniqueOrders.slice(0, 50)));
+          sessionStorage.setItem("shipdrop_all_orders_pages", String(data?.pagination?.totalPages || 1));
+          sessionStorage.setItem("shipdrop_all_orders_total", String(data?.pagination?.totalOrders || 0));
+        } catch {}
+      }
     } catch (error) {
       if (requestId !== requestIdRef.current) return;
 
@@ -579,6 +694,35 @@ function AllOrders() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, debouncedSearch]);
 
+  useEffect(() => {
+    const unsubscribe = subscribeToOrderUpdates(() => {
+      fetchAllOrders();
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [currentPage, debouncedSearch]);
+
+  
+useEffect(() => {
+  const handleOutsideClick = (event) => {
+    if (
+      actionMenuRef.current &&
+      !actionMenuRef.current.contains(event.target)
+    ) {
+      setOpenActionMenuId(null);
+    }
+  };
+
+  document.addEventListener("mousedown", handleOutsideClick);
+
+  return () => {
+    document.removeEventListener("mousedown", handleOutsideClick);
+  };
+}, []);
+
+
   const isProcessingOrder = (order) => {
     const normalizeStatus = (value) =>
       safeString(value)
@@ -597,6 +741,32 @@ function AllOrders() {
     (order) => !isProcessingOrder(order),
   );
 
+  const partyOptions = useMemo(() => {
+    const map = new Map();
+
+    partyIdentities.forEach((p) => {
+      if (p?.id) {
+        map.set(String(p.id), {
+          id: String(p.id),
+          reference_name: p.reference_name || p.name || `Party #${p.id}`,
+          name: p.name || "",
+        });
+      }
+    });
+
+    orders.forEach((o) => {
+      if (o?.party_identity_id && !map.has(String(o.party_identity_id))) {
+        map.set(String(o.party_identity_id), {
+          id: String(o.party_identity_id),
+          reference_name: o.party_reference_name || o.party_name || `Party #${o.party_identity_id}`,
+          name: o.party_name || "",
+        });
+      }
+    });
+
+    return Array.from(map.values());
+  }, [partyIdentities, orders]);
+
   const filteredOrders = nonProcessingOrders.filter((order) => {
     const status = getStatus(order);
     const service = getServiceType(order);
@@ -608,8 +778,36 @@ function AllOrders() {
     const serviceMatch = serviceFilter === "ALL" || service === serviceFilter;
     const paymentMatch = paymentFilter === "ALL" || payment === paymentFilter;
 
-    return statusMatch && serviceMatch && paymentMatch;
+    const selectedParty =
+      partyFilter === "ALL"
+        ? null
+        : partyOptions.find((p) => String(p.id) === String(partyFilter));
+
+    const partyMatch =
+      partyFilter === "ALL" ||
+      (selectedParty &&
+        ((order?.party_identity_id &&
+          Number(order.party_identity_id) === Number(partyFilter)) ||
+          (order?.party_reference_name &&
+            selectedParty.reference_name &&
+            String(order.party_reference_name).trim().toLowerCase() ===
+              String(selectedParty.reference_name).trim().toLowerCase()) ||
+          (order?.party_name &&
+            selectedParty.name &&
+            String(order.party_name).trim().toLowerCase() ===
+              String(selectedParty.name).trim().toLowerCase())));
+
+    return statusMatch && serviceMatch && paymentMatch && partyMatch;
   });
+
+  const sortedFilteredOrders = useMemo(() => {
+  return [...filteredOrders].sort((a, b) => {
+    const dateA = new Date(getCreatedAt(a) || 0).getTime();
+    const dateB = new Date(getCreatedAt(b) || 0).getTime();
+
+    return dateB - dateA;
+  });
+}, [filteredOrders]);
 
   const getOrderKey = (order) => String(order?.id ?? order?.order_id);
 
@@ -645,13 +843,40 @@ function AllOrders() {
     });
   };
 
-  const handleView = (order) => {
+  const handleView = async (order) => {
     setViewingOrder(order);
+    const orderId = order?.id ?? order?.order_id;
+    const userId = getUserId();
+
+    if (!orderId || !userId) return;
+
+    setDetailLoading(true);
+    try {
+      const response = await api.get(`/orders/${orderId}`, {
+        params: { user_id: userId },
+      });
+      if (response?.data?.success && response?.data?.order) {
+        setViewingOrder((current) =>
+          current && String(current?.id ?? current?.order_id) === String(orderId)
+            ? { ...current, ...response.data.order }
+            : current
+        );
+      }
+    } catch (error) {
+      // Keep the list data visible if detailed data cannot be loaded.
+      console.error("Unable to load full order details:", error);
+    } finally {
+      setDetailLoading(false);
+    }
   };
 
   const handlePrintSingleLabel = async (order) => {
     if (!order) {
       toast.error("Unable to print this label");
+      return;
+    }
+    if (order.carrier && order.carrier !== "Delivery") {
+      toast.error("Courier labels are not available for manual carriers");
       return;
     }
 
@@ -664,8 +889,17 @@ function AllOrders() {
       return;
     }
 
+    const eligibleOrders = selectedOrders.filter(
+      (order) => !order.carrier || order.carrier === "Delivery"
+    );
+
+    if (eligibleOrders.length === 0) {
+      toast.error("Courier labels are only available for Delivery carrier orders");
+      return;
+    }
+
     await printShippingLabels(
-      selectedOrders,
+      eligibleOrders,
       "ParcelDrop Shipping Labels",
     );
   };
@@ -673,6 +907,10 @@ function AllOrders() {
   const handleDownloadSingleLabel = async (order) => {
     if (!order) {
       toast.error("Unable to download this label");
+      return;
+    }
+    if (order.carrier && order.carrier !== "Delivery") {
+      toast.error("Courier labels are not available for manual carriers");
       return;
     }
 
@@ -685,7 +923,16 @@ function AllOrders() {
       return;
     }
 
-    await downloadShippingLabels(selectedOrders);
+    const eligibleOrders = selectedOrders.filter(
+      (order) => !order.carrier || order.carrier === "Delivery"
+    );
+
+    if (eligibleOrders.length === 0) {
+      toast.error("Courier labels are only available for Delivery carrier orders");
+      return;
+    }
+
+    await downloadShippingLabels(eligibleOrders);
   };
 
   const handleExport = () => {
@@ -698,30 +945,40 @@ function AllOrders() {
       selectedOrders.length > 0 ? selectedOrders : nonProcessingOrders;
 
     const headers = [
+      "Carrier",
+      "Consignment No",
       "AWB",
       "Order ID",
+      "Party",
       "Customer",
       "Mobile",
       "Shipment",
+      "Package Type",
       "Service Type",
       "From",
       "To",
       "Payment",
+      "Amount (₹)",
       "Weight (Kg)",
       "Status",
       "Created",
     ];
 
     const rows = exportOrders.map((order) => [
+      order?.carrier || "Delivery",
+      order?.consignment_no || "—",
       getAWB(order),
       getOrderId(order),
+      getPartyName(order),
       getCustomerName(order),
       getMobile(order),
       getShipmentName(order),
+      order?.package_type || "Box",
       getServiceType(order),
       getPickupCity(order),
       getDeliveryCity(order),
       getPaymentType(order),
+      getAmount(order).toFixed(2),
       getWeight(order).toFixed(2),
       getStatus(order),
       getCreatedAt(order) || "",
@@ -795,6 +1052,7 @@ function AllOrders() {
         pickup_pincode: source?.pickup_pincode || null,
         pickup_city: source?.pickup_city || null,
         warehouse_id: warehouseId,
+        party_identity_id: source?.party_identity_id || order?.party_identity_id || null,
         pickup_address_id: source?.pickup_address_id || null,
         orderData: {
           consignee_name: source?.consignee_name || "",
@@ -814,6 +1072,7 @@ function AllOrders() {
           payment_type: source?.payment_type || "Prepaid",
           risk_type: source?.risk_type || "Owner Risk",
           warehouse_id: warehouseId,
+          party_identity_id: source?.party_identity_id || order?.party_identity_id || null,
         },
         products: Array.isArray(source?.products)
           ? source.products.map((product) => ({
@@ -846,6 +1105,7 @@ function AllOrders() {
         `Order duplicated successfully. New order #${createResult.order_id} is in Processing.`,
       );
       await fetchAllOrders();
+      notifyOrderChange({ type: "created", orderId: createResult.order_id });
     } catch (error) {
       toast.error(
         error?.response?.data?.message ||
@@ -855,28 +1115,10 @@ function AllOrders() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#f5f8fc] px-3.5 sm:px-4 py-4 sm:py-5">
-        <div className="mx-auto max-w-[1450px]">
-          <div className="mb-3 h-[92px] animate-pulse rounded-2xl border border-slate-200 bg-white" />
-          <div className="mb-3 h-[62px] animate-pulse rounded-2xl border border-slate-200 bg-white" />
-          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-            <div className="h-12 animate-pulse bg-slate-50" />
-            {[1, 2, 3, 4].map((item) => (
-              <div
-                key={item}
-                className="h-[86px] animate-pulse border-t border-slate-100"
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
+
 
   return (
-    <div className="min-h-screen bg-[#f5f8fc] px-3 sm:px-4 py-4 sm:py-5 pb-24 lg:pb-8">
+    <div className="min-h-screen bg-[#f6f8fb] dark:bg-[#090b10] px-3 sm:px-4 py-4 sm:py-5 pb-24 lg:pb-8">
       <div className="mx-auto max-w-[1450px]">
         {/* ==================================================
             TOP HEADER
@@ -885,11 +1127,7 @@ function AllOrders() {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
               <div
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
-                style={{
-                  background: "#edf8ff",
-                  color: PRIMARY,
-                }}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-50 dark:bg-sky-500/10 text-[#008dd2] dark:text-[#38bdf8] border border-sky-100 dark:border-sky-500/20 shadow-2xs"
               >
                 <Icon name="box" size={20} />
               </div>
@@ -956,7 +1194,7 @@ function AllOrders() {
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search customer, AWB, Order ID or mobile..."
+                placeholder="Search customer, AWB, Consignment, Order ID or mobile..."
                 className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-24 text-xs text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-[#008dd2] focus:ring-2 focus:ring-[#008dd2]/10"
               />
               {isFetching && hasLoadedRef.current && (
@@ -967,13 +1205,14 @@ function AllOrders() {
             </div>
 
             {/* FILTER DROPDOWNS */}
-            <div className="grid grid-cols-3 sm:flex sm:items-center gap-1.5 sm:gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 sm:flex sm:items-center gap-1.5 sm:gap-2">
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="h-10 w-full sm:min-w-[130px] rounded-xl border border-slate-200 bg-white px-2.5 text-xs text-slate-600 outline-none focus:border-[#008dd2]"
+                className="h-10 w-full sm:min-w-[125px] rounded-xl border border-slate-200 bg-white px-2.5 text-xs text-slate-600 outline-none focus:border-[#008dd2]"
               >
                 <option value="ALL">All Status</option>
+                <option value="BOOKED">Booked</option>
                 <option value="MANIFESTED">Manifested</option>
                 <option value="NOT PICKED">Not Picked</option>
                 <option value="PENDING">Pending</option>
@@ -982,24 +1221,37 @@ function AllOrders() {
                 <option value="DELIVERED">Delivered</option>
                 <option value="RTO IN TRANSIT">RTO In Transit</option>
                 <option value="RTO DELIVERED">RTO Delivered</option>
-                <option value="RETURNED">Returned</option>
                 <option value="CANCELLED">Cancelled</option>
+              </select>
+
+              <select
+                value={partyFilter}
+                onChange={(e) => setPartyFilter(e.target.value)}
+                className="h-10 w-full sm:min-w-[130px] max-w-[180px] rounded-xl border border-slate-200 bg-white px-2.5 text-xs text-slate-600 outline-none focus:border-[#008dd2] truncate"
+                title="Filter by Party Reference Name"
+              >
+                <option value="ALL">All Party</option>
+                {partyOptions.map((party) => (
+                  <option key={party.id} value={party.id}>
+                    {party.reference_name || party.name}
+                  </option>
+                ))}
               </select>
 
               <select
                 value={serviceFilter}
                 onChange={(e) => setServiceFilter(e.target.value)}
-                className="h-10 w-full sm:min-w-[110px] rounded-xl border border-slate-200 bg-white px-2.5 text-xs text-slate-600 outline-none focus:border-[#008dd2]"
+                className="h-10 w-full sm:min-w-[105px] rounded-xl border border-slate-200 bg-white px-2.5 text-xs text-slate-600 outline-none focus:border-[#008dd2]"
               >
                 <option value="ALL">All Mode</option>
-                <option value="ROAD">Road</option>
+                <option value="ROAD">Surface</option>
                 <option value="AIR">Air</option>
               </select>
 
               <select
                 value={paymentFilter}
                 onChange={(e) => setPaymentFilter(e.target.value)}
-                className="h-10 w-full sm:min-w-[110px] rounded-xl border border-slate-200 bg-white px-2.5 text-xs text-slate-600 outline-none focus:border-[#008dd2]"
+                className="h-10 w-full sm:min-w-[105px] rounded-xl border border-slate-200 bg-white px-2.5 text-xs text-slate-600 outline-none focus:border-[#008dd2]"
               >
                 <option value="ALL">All Pay</option>
                 <option value="PREPAID">Prepaid</option>
@@ -1047,11 +1299,16 @@ function AllOrders() {
           )}
         </div>
 
+        {/* ORDER STATUS TABS */}
+        <OrderStatusNavTabs />
+
         {/* ==================================================
             1. MOBILE VIEW: APP-STYLE CARD TILES (FIXED TRACKING)
         ================================================== */}
         <div className="space-y-3 sm:hidden">
-          {filteredOrders.length === 0 ? (
+          {loading ? (
+            <CardSkeleton count={4} />
+          ) : filteredOrders.length === 0 ? (
             <div className="flex min-h-[200px] flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white p-6 text-center text-slate-400">
               <Icon name="box" size={24} />
               <p className="mt-2 text-xs font-bold text-slate-700">
@@ -1061,7 +1318,7 @@ function AllOrders() {
               </p>
             </div>
           ) : (
-            filteredOrders.map((order) => {
+            sortedFilteredOrders.map((order) => {
               const id = getOrderKey(order);
               const selected = selectedIds.includes(id);
               const service = getServiceType(order);
@@ -1069,6 +1326,7 @@ function AllOrders() {
               const weight = getWeight(order);
               const status = getStatus(order);
               const awb = getAWB(order);
+              const isManual = isManualCarrierOrder(order);
 
               return (
                 <div
@@ -1094,9 +1352,15 @@ function AllOrders() {
                         <Icon name="check" size={11} />
                       </button>
 
-                      <span className="font-mono text-xs font-bold text-slate-800">
-                        #{getOrderId(order)}
-                      </span>
+                      {isManual ? (
+                        <span className="rounded bg-sky-50 border border-sky-200 px-2 py-0.5 text-[11px] font-bold text-[#008dd2]">
+                          {order.carrier}
+                        </span>
+                      ) : (
+                        <span className="font-mono text-xs font-bold text-slate-800">
+                          #{getOrderId(order)}
+                        </span>
+                      )}
                     </div>
 
                     <div className="flex items-center justify-center gap-1">
@@ -1124,7 +1388,16 @@ function AllOrders() {
                       </span>
                     </div>
 
-                    {/* AWB TOUCH/CLICK ACTION BAR */}
+                    {getPartyName(order) !== "—" && (
+                      <div className="flex items-center gap-1.5 pt-0.5">
+                        <span className="text-[10px] text-slate-400 font-medium">Party:</span>
+                        <span className="rounded bg-sky-50 px-2 py-0.5 text-[11px] font-bold text-sky-700 border border-sky-100">
+                          {getPartyName(order)}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* AWB ACTION BAR */}
                     <div className="flex items-center justify-between font-mono text-[11px] text-slate-600 bg-slate-50/70 px-2 py-1.5 rounded-lg border border-slate-100">
                       <span
                         onTouchEnd={() => handleTouchTracking(awb)}
@@ -1180,8 +1453,7 @@ function AllOrders() {
                     {/* SPECS */}
                     <div className="flex items-center justify-between text-[11px] text-slate-400 border-t border-slate-50 pt-1.5">
                       <span>
-                        {service === "AIR" ? "By Air" : "By Road"} •{" "}
-                        {weight.toFixed(2)} Kg
+                        {service === "AIR" ? "By Air" : "By Road"} • {weight.toFixed(2)} Kg
                       </span>
                       <span className="font-semibold text-slate-600">
                         {formatDate(getCreatedAt(order))}
@@ -1238,7 +1510,13 @@ function AllOrders() {
             2. TABLET & DESKTOP: STRUCTURED TABLE
         ================================================== */}
         <div className="hidden sm:block overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
-          <div className="max-h-[calc(100vh-180px)] overflow-y-auto overflow-x-hidden">
+          <div
+  className="orders-scrollbar max-h-[calc(100vh-180px)] overflow-y-auto overflow-x-hidden"
+  style={{
+    scrollbarWidth: "thin",
+    scrollbarColor: "#cbd5e1 transparent",
+  }}
+>
             <table className="w-full table-fixed border-collapse">
               <thead className="sticky top-0 z-20 bg-white">
                 <tr className="border-b border-slate-200 bg-white">
@@ -1256,40 +1534,72 @@ function AllOrders() {
                     </button>
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[17%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[7%] bg-white px-1.5 py-3 text-left text-[12px] font-medium text-slate-700">
+                    Party
+                  </th>
+
+                  <th className="sticky top-0 z-20 w-[18%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Customer
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[17%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[16%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Shipment
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[17%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[16%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Route
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[11%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[10%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Payment
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[9%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[8%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Weight
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[12%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[11%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Created
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[13%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[10%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Actions
                   </th>
                 </tr>
               </thead>
 
               <tbody>
-                {filteredOrders.length === 0 ? (
+                {loading ? (
+                  Array.from({ length: 6 }).map((_, i) => (
+                    <tr key={i} className="border-b border-slate-100" style={{ opacity: 1 - i * 0.12 }}>
+                      <td className="px-2 py-3.5"><div className="h-4 w-4 rounded bg-slate-200 skeleton-shimmer" /></td>
+                      <td className="px-1.5 py-3.5"><div className="h-5 w-14 rounded-md bg-slate-200 skeleton-shimmer" /></td>
+                      <td className="px-2 py-3.5 space-y-1.5">
+                        <div className="h-3.5 w-28 rounded bg-slate-200 skeleton-shimmer" />
+                        <div className="h-2.5 w-20 rounded bg-slate-100 skeleton-shimmer" />
+                      </td>
+                      <td className="px-2 py-3.5 space-y-1.5">
+                        <div className="h-3.5 w-24 rounded bg-slate-200 skeleton-shimmer" />
+                        <div className="h-2.5 w-16 rounded bg-slate-100 skeleton-shimmer" />
+                      </td>
+                      <td className="px-2 py-3.5 space-y-1.5">
+                        <div className="h-3.5 w-28 rounded bg-slate-200 skeleton-shimmer" />
+                        <div className="h-2.5 w-20 rounded bg-slate-100 skeleton-shimmer" />
+                      </td>
+                      <td className="px-2 py-3.5"><div className="h-5 w-16 rounded-full bg-slate-200 skeleton-shimmer" /></td>
+                      <td className="px-2 py-3.5"><div className="h-4 w-12 rounded bg-slate-200 skeleton-shimmer" /></td>
+                      <td className="px-2 py-3.5"><div className="h-4 w-16 rounded bg-slate-200 skeleton-shimmer" /></td>
+                      <td className="px-2 py-3.5">
+                        <div className="flex items-center gap-1.5">
+                          <div className="h-7 w-7 rounded-lg bg-slate-200 skeleton-shimmer" />
+                          <div className="h-7 w-7 rounded-lg bg-slate-200 skeleton-shimmer" />
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                ) : filteredOrders.length === 0 ? (
                   <tr>
-                    <td colSpan="8" className="h-[300px] px-6 text-center">
+                    <td colSpan="9" className="h-[300px] px-6 text-center">
                       <div className="flex flex-col items-center justify-center">
                         <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-50 text-slate-300">
                           <Icon name="box" size={21} />
@@ -1310,7 +1620,7 @@ function AllOrders() {
                     </td>
                   </tr>
                 ) : (
-                  filteredOrders.map((order) => {
+                  sortedFilteredOrders.map((order) => {
                     const id = getOrderKey(order);
                     const selected = selectedIds.includes(id);
                     const service = getServiceType(order);
@@ -1340,6 +1650,21 @@ function AllOrders() {
                           </button>
                         </td>
 
+                        <td className="px-1.5 py-2.5 break-words">
+                          <div className="min-w-0">
+                            {getPartyName(order) !== "—" ? (
+                              <span
+                                className="inline-block max-w-full truncate rounded-md bg-slate-100 px-1.5 py-0.5 text-[11px] font-semibold text-slate-700"
+                                title={order?.party_name && order?.party_reference_name ? `${order.party_reference_name} — ${order.party_name}` : getPartyName(order)}
+                              >
+                                {getPartyName(order)}
+                              </span>
+                            ) : (
+                              <span className="text-[12px] text-slate-400 font-normal">—</span>
+                            )}
+                          </div>
+                        </td>
+
                         <td className="px-2 py-2.5 break-words">
                           <div className="min-w-0">
                             <p className="truncate text-[13px] font-semibold text-slate-800">
@@ -1353,8 +1678,8 @@ function AllOrders() {
                             )}
 
                             <div className="mt-0.5 -ml-0.5">
-  <StatusBadge status={status} />
-</div>
+                              <StatusBadge status={status} />
+                            </div>
                           </div>
                         </td>
 
@@ -1366,7 +1691,7 @@ function AllOrders() {
                                   <p
                                     onClick={() => triggerTracking(awb)}
                                     title="click to track"
-                                    className="truncate text-[13px] font-semibold text-slate-800 cursor-pointer select-none"
+                                    className="truncate text-[13px] font-semibold text-slate-800 cursor-pointer select-none hover:text-[#008dd2]"
                                   >
                                     {awb}
                                   </p>
@@ -1393,50 +1718,81 @@ function AllOrders() {
                                   )}
                                 </div>
 
-                                <p className="mt-0.5 text-[10px] text-slate-400">
+                                <p className="mt-0.5 text-[11px] text-slate-500">
                                   Pickup ID:{" "}
                                   {order?.pickup_id || order?.pickupId || order?.pickup_request_id || "—"}
                                 </p>
                               </>
                             )}
 
-                            <p className="mt-0.5 text-[10px] text-slate-400">
+                            <p className="mt-0.5 text-[11px] text-slate-500">
                               {getShipmentName(order)} -{" "}
-                              {service === "AIR" ? "By Air" : "By Surface"}
+                              {service === "AIR" ? "Air" : "Surface"}
                             </p>
                           </div>
                         </td>
 
-                        <td className="px-2 py-2.5 break-words">
-                          <div>
-                            <p className="text-[12px] font-medium text-slate-700">
-                              {getPickupCity(order)}
-                              {getPickupPincode(order) && (
-                                <span className="text-[10px] text-slate-400">
-                                  {" "}
-                                  ({getPickupPincode(order)})
-                                </span>
-                              )}
-                            </p>
+                        <td className="px-2 py-2.5">
+                          <div className="flex flex-col gap-0">
+                            {/* Pickup */}
+                            <div className="flex min-w-0 items-center gap-1.5">
+                              <svg
+                                width="13"
+                                height="13"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="#008dd2"
+                                strokeWidth="1.8"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className="shrink-0"
+                              >
+                                <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" />
+                                <circle cx="12" cy="10" r="2.5" />
+                              </svg>
 
-                            <p className="my-0.5 text-[10px] text-slate-300">
-                              ↓
-                            </p>
+                              <p className="truncate text-[12px] font-medium text-slate-700">
+                                {getPickupCity(order)}
+                                {getPickupPincode(order) && (
+                                  <span className="ml-1 text-[10px] text-slate-400">
+                                    ({getPickupPincode(order)})
+                                  </span>
+                                )}
+                              </p>
+                            </div>
 
-                            <p className="text-[12px] font-medium text-slate-700">
-                              {getDeliveryCity(order)}
-                              {getDeliveryPincode(order) && (
-                                <span className="text-[10px] text-slate-400">
-                                  {" "}
-                                  ({getDeliveryPincode(order)})
-                                </span>
-                              )}
-                            </p>
+                            {/* Route connector */}
+                            <div className="ml-[5px] flex h-2.5 flex-col justify-between">
+                              <span className="h-1 border-l border-dashed border-slate-300" />
+                              <span className="h-1 border-l border-dashed border-slate-300" />
+                            </div>
 
-                            <p className="mt-1 text-[9px] text-slate-400">
-                              {getPickupPincode(order) || "—"} →{" "}
-                              {getDeliveryPincode(order) || "—"}
-                            </p>
+                            {/* Delivery */}
+                            <div className="flex min-w-0 items-center gap-1.5">
+                              <svg
+                                width="13"
+                                height="13"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="#94a3b8"
+                                strokeWidth="1.8"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className="shrink-0"
+                              >
+                                <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" />
+                                <circle cx="12" cy="10" r="2.5" />
+                              </svg>
+
+                              <p className="truncate text-[12px] font-medium text-slate-700">
+                                {getDeliveryCity(order)}
+                                {getDeliveryPincode(order) && (
+                                  <span className="ml-1 text-[10px] text-slate-400">
+                                    ({getDeliveryPincode(order)})
+                                  </span>
+                                )}
+                              </p>
+                            </div>
                           </div>
                         </td>
 
@@ -1490,40 +1846,38 @@ function AllOrders() {
                             {status === "MANIFESTED"
                               ? "Manifested: "
                               : "Created: "}
-                            {formatDate(getCreatedAt(order))}
-                          </p>
-
-                          <p className="text-[10px] text-slate-400">
-                            {formatTime(getCreatedAt(order))}
+                            {formatDate(getCreatedAt(order))}{" "}{formatTime(getCreatedAt(order))}
                           </p>
                         </td>
 
-                      
-<td className="px-1 py-2.5">
-  <div className="flex items-center justify-start gap-1">
-    {/* Print */}
-    <button
-      type="button"
-      onClick={() => handlePrintSingleLabel(order)}
-      title="Print Shipping Label"
-      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[#008dd2] bg-[#008dd2] text-white transition hover:bg-[#007dbb]"
-    >
-      <Icon name="printer" size={15} />
-    </button>
+                        <td className="px-1 py-2.5">
+                          <div className="flex items-center justify-start gap-1">
+                            {/* Print */}
+                            <button
+                              type="button"
+                              onClick={() => handlePrintSingleLabel(order)}
+                              title="Print Shipping Label"
+                              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[#008dd2] bg-[#008dd2] text-white transition hover:bg-[#007dbb]"
+                            >
+                              <Icon name="printer" size={15} />
+                            </button>
 
-    {/* Download */}
-    <button
-      type="button"
-      onClick={() => handleDownloadSingleLabel(order)}
-      title="Download Shipping Label"
-      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[#008dd2] bg-[#008dd2] text-white transition hover:bg-[#007dbb]"
-    >
-      <Icon name="download" size={13} />
-    </button>
+                            {/* Download */}
+                            <button
+                              type="button"
+                              onClick={() => handleDownloadSingleLabel(order)}
+                              title="Download Shipping Label"
+                              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[#008dd2] bg-[#008dd2] text-white transition hover:bg-[#007dbb]"
+                            >
+                              <Icon name="download" size={13} />
+                            </button>
 
     {/* More Actions */}
-    <div className="relative">
-      <button
+<div
+      ref={actionMenuRef}
+      className="relative"
+      onMouseDown={(event) => event.stopPropagation()}
+    >      <button
         type="button"
         onClick={() =>
           setOpenActionMenuId((prev) => (prev === id ? null : id))
@@ -1638,175 +1992,14 @@ function AllOrders() {
         </div>
       </div>
 
-      {/* ====================================================
-          VIEW ORDER MODAL (RESPONSIVE)
-      ==================================================== */}
-      {viewingOrder && (
-        <div
-          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-slate-900/40 p-0 sm:p-4 backdrop-blur-[2px]"
-          onClick={() => setViewingOrder(null)}
-        >
-          <div
-            className="w-full max-w-[620px] max-h-[90vh] flex flex-col rounded-t-3xl sm:rounded-2xl border border-slate-200 bg-white shadow-2xl overflow-hidden animate-in slide-in-from-bottom duration-200"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* MODAL HEADER */}
-            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-              <div>
-                <h2 className="text-base font-semibold text-slate-900">
-                  Order Details
-                </h2>
-                <p className="mt-0.5 text-[11px] text-slate-400">
-                  Order #{getOrderId(viewingOrder)}
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setViewingOrder(null)}
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
-              >
-                <Icon name="x" size={17} />
-              </button>
-            </div>
-
-            {/* MODAL BODY */}
-            <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3">
-              <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-                <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
-                  <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
-                    Customer
-                  </p>
-                  <p className="mt-1 text-[13px] font-semibold text-slate-800">
-                    {getCustomerName(viewingOrder)}
-                  </p>
-                  <p className="mt-0.5 text-[11px] text-slate-500">
-                    {getMobile(viewingOrder)}
-                  </p>
-                </div>
-
-                <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
-                  <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
-                    AWB
-                  </p>
-                  <p className="mt-1 text-[13px] font-semibold text-slate-800 font-mono">
-                    {getAWB(viewingOrder)}
-                  </p>
-                </div>
-
-                <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
-                  <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
-                    Shipment
-                  </p>
-                  <p className="mt-1 text-[13px] font-semibold text-slate-800">
-                    {getShipmentName(viewingOrder)}
-                  </p>
-                  <p className="mt-0.5 text-[11px] text-slate-500">
-                    {getServiceType(viewingOrder) === "AIR"
-                      ? "By Air"
-                      : "By Road"}
-                  </p>
-                </div>
-
-                <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
-                  <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
-                    Payment
-                  </p>
-                  <p className="mt-1 text-[13px] font-semibold text-slate-800">
-                    {getPaymentType(viewingOrder)}
-                  </p>
-                  <p className="mt-0.5 text-[11px] text-slate-500">
-                    ₹{getAmount(viewingOrder).toFixed(2)}
-                  </p>
-                </div>
-              </div>
-
-              {/* ADDRESS */}
-              <div className="rounded-xl border border-slate-200 bg-white p-3.5">
-                <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
-                  Delivery Address
-                </p>
-                <p className="mt-1 text-[13px] font-medium leading-6 text-slate-700">
-                  {[
-                    viewingOrder?.address_line1,
-                    viewingOrder?.address_line2,
-                    viewingOrder?.city,
-                    viewingOrder?.state,
-                  ]
-                    .filter(Boolean)
-                    .join(", ") || "—"}
-                  {viewingOrder?.pincode ? ` - ${viewingOrder.pincode}` : ""}
-                </p>
-              </div>
-
-              {/* ROUTE */}
-              <div className="rounded-xl border border-slate-200 bg-white p-3.5">
-                <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
-                  Route
-                </p>
-                <div className="mt-2 flex items-center gap-2.5">
-                  <div className="rounded-lg bg-[#edf8ff] px-2.5 py-1.5 text-xs font-semibold text-[#008dd2]">
-                    {getPickupCity(viewingOrder)}
-                  </div>
-                  <span className="text-slate-300 font-bold">→</span>
-                  <div className="rounded-lg bg-[#f0ecff] px-2.5 py-1.5 text-xs font-semibold text-[#7052ff]">
-                    {getDeliveryCity(viewingOrder)}
-                  </div>
-                </div>
-              </div>
-
-              {/* WEIGHT & STATUS */}
-              <div className="grid grid-cols-2 gap-2.5">
-                <div className="rounded-xl border border-slate-200 p-3">
-                  <p className="text-[10px] uppercase tracking-wide text-slate-400">
-                    Weight
-                  </p>
-                  <p className="mt-1 text-sm font-semibold text-slate-800">
-                    {getWeight(viewingOrder).toFixed(2)} Kg
-                  </p>
-                </div>
-
-                <div className="rounded-xl border border-slate-200 p-3">
-                  <p className="text-[10px] uppercase tracking-wide text-slate-400">
-                    Status
-                  </p>
-                  <div className="mt-1">
-                    <StatusBadge status={getStatus(viewingOrder)} />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* MODAL FOOTER */}
-            <div className="flex items-center justify-end gap-2 border-t border-slate-100 bg-[#fafbfc] px-4 sm:px-5 py-3">
-              <button
-                type="button"
-                onClick={() => setViewingOrder(null)}
-                className="h-9.5 rounded-xl border border-slate-200 bg-white px-4 text-xs font-medium text-slate-600 hover:bg-slate-50"
-              >
-                Close
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleDownloadSingleLabel(viewingOrder)}
-                className="inline-flex h-9.5 items-center gap-1.5 rounded-xl border border-[#b9dff0] bg-white px-4 text-xs font-bold text-[#008dd2] hover:bg-[#edf8ff] active:scale-95"
-              >
-                <Icon name="download" size={14} />
-                Download Label
-              </button>
-              <button
-                type="button"
-                onClick={() => handlePrintSingleLabel(viewingOrder)}
-                className="inline-flex h-9.5 items-center gap-1.5 rounded-xl bg-[#008dd2] px-4 text-xs font-bold text-white shadow-xs hover:bg-[#007dbb] active:scale-95"
-              >
-                <Icon name="printer" size={14} />
-                Print Label
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <OrderDetailsModal
+        order={viewingOrder}
+        loading={detailLoading}
+        onClose={() => setViewingOrder(null)}
+        onTrack={triggerTracking}
+        onDownload={handleDownloadSingleLabel}
+        onPrint={handlePrintSingleLabel}
+      />
     </div>
   );
 }

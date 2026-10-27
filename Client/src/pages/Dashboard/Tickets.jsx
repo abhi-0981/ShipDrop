@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams, useLocation } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { API_BASE_URL } from "../../services/api";
+import { CardSkeleton, TableRowSkeleton } from "../../components/Common/TableSkeleton";
 
 /* =========================================================
    OPTIONS
@@ -193,19 +195,32 @@ const Icon = ({
 const getUserId = () => {
   try {
     const raw = localStorage.getItem("user");
-    if (!raw) return null;
-    const user = JSON.parse(raw);
-    return user?.id || user?.user_id || null;
+    if (raw) {
+      const user = JSON.parse(raw);
+      if (user?.id || user?.user_id) return user.id || user.user_id;
+    }
+    const token = localStorage.getItem("token");
+    if (token) {
+      const parts = token.split(".");
+      if (parts.length === 3) {
+        const payload = JSON.parse(atob(parts[1]));
+        return payload?.id || payload?.user_id || null;
+      }
+    }
+    return null;
   } catch {
     return null;
   }
 };
 
 const apiRequest = async (endpoint, options = {}) => {
+  const token = localStorage.getItem("token");
+
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(options.headers || {}),
     },
   });
@@ -279,10 +294,10 @@ const StatusBadge = ({ status }) => {
   const value = String(status || "").toUpperCase();
 
   const styles = {
-    OPEN: "bg-blue-50 text-blue-700 border-blue-200",
-    IN_PROGRESS: "bg-amber-50 text-amber-700 border-amber-200",
-    WAITING_FOR_USER: "bg-violet-50 text-violet-700 border-violet-200",
-    RESOLVED: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    OPEN: "bg-blue-50 text-blue-700 border-blue-200/90",
+    IN_PROGRESS: "bg-amber-50 text-amber-700 border-amber-200/90",
+    WAITING_FOR_USER: "bg-violet-50 text-violet-700 border-violet-200/90",
+    RESOLVED: "bg-emerald-50 text-emerald-700 border-emerald-200/90",
     CLOSED: "bg-slate-100 text-slate-600 border-slate-200",
   };
 
@@ -296,14 +311,14 @@ const StatusBadge = ({ status }) => {
 
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[10.5px] font-bold tracking-tight shadow-2xs ${
         styles[value] || "border-slate-200 bg-slate-50 text-slate-600"
       }`}
     >
       <span
         className={`h-1.5 w-1.5 rounded-full ${
           dots[value] || "bg-slate-400"
-        }`}
+        } ${value === "IN_PROGRESS" || value === "OPEN" ? "animate-pulse" : ""}`}
       />
       {statusLabel(value)}
     </span>
@@ -315,14 +330,14 @@ const PriorityBadge = ({ priority }) => {
 
   const styles = {
     LOW: "bg-slate-50 text-slate-600 border-slate-200",
-    NORMAL: "bg-blue-50 text-blue-700 border-blue-200",
-    HIGH: "bg-orange-50 text-orange-700 border-orange-200",
-    URGENT: "bg-rose-50 text-rose-700 border-rose-200",
+    NORMAL: "bg-sky-50 text-[#008dd2] border-sky-200/80 font-semibold",
+    HIGH: "bg-amber-50 text-amber-700 border-amber-200/90 font-bold",
+    URGENT: "bg-rose-50 text-rose-700 border-rose-200/90 font-bold animate-pulse",
   };
 
   return (
     <span
-      className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${
+      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-wider ${
         styles[value] || "border-slate-200 bg-slate-50 text-slate-600"
       }`}
     >
@@ -355,29 +370,48 @@ const DetailRow = ({ icon, label, children }) => (
    STAT CARD
 ========================================================= */
 
-const StatCard = ({ label, value, active, onClick, dotClass }) => (
+const StatCard = ({
+  label,
+  value,
+  subtitle,
+  icon,
+  iconClass,
+  active,
+  onClick,
+  activeClass,
+}) => (
   <button
     type="button"
     onClick={onClick}
-    className={`relative flex h-18 sm:h-20 flex-col justify-center border-r border-b sm:border-b-0 border-slate-100 px-4 sm:px-5 text-left transition last:border-r-0 ${
-      active ? "bg-white" : "bg-white/80 hover:bg-slate-50"
+    className={`group relative flex flex-col justify-between rounded-2xl border p-3.5 sm:p-4 text-left transition-all duration-200 active:scale-[0.98] cursor-pointer ${
+      active
+        ? `${activeClass} shadow-xs`
+        : "bg-white border-slate-200/80 hover:border-slate-300 hover:shadow-xs"
     }`}
   >
     <div className="flex items-center justify-between">
-      <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-400">
+      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 group-hover:text-slate-600 transition">
         {label}
       </span>
 
-      <span
-        className={`h-2 w-2 rounded-full ${
-          active ? dotClass : "bg-slate-200"
-        }`}
-      />
+      <div
+        className={`flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-xl transition ${iconClass}`}
+      >
+        <Icon name={icon} size={15} />
+      </div>
     </div>
 
-    <span className="mt-1 text-xl sm:text-2xl font-black tracking-tight text-slate-900">
-      {value}
-    </span>
+    <div className="mt-2.5">
+      <span className="text-2xl sm:text-[26px] font-black tracking-tight text-slate-900 font-mono">
+        {value}
+      </span>
+
+      {subtitle && (
+        <p className="mt-0.5 text-[10.5px] font-medium text-slate-400 truncate">
+          {subtitle}
+        </p>
+      )}
+    </div>
   </button>
 );
 
@@ -430,14 +464,17 @@ function Tickets() {
     }
   }, [selectedTicket?.messages]);
 
+  const getActiveUserId = () => userId || getUserId();
+
   const fetchTickets = async ({
     searchValue = search,
     statusValue = statusFilter,
   } = {}) => {
-    if (!userId) throw new Error("Please login again to continue");
+    const activeUserId = getActiveUserId();
+    if (!activeUserId) throw new Error("Please login again to continue");
 
     const params = new URLSearchParams();
-    params.set("user_id", userId);
+    params.set("user_id", activeUserId);
     if (searchValue.trim()) params.set("search", searchValue.trim());
     if (statusValue) params.set("status", statusValue);
 
@@ -473,8 +510,9 @@ function Tickets() {
       await fetchTickets();
 
       if (selectedTicket?.id) {
+        const activeUserId = getActiveUserId();
         const data = await apiRequest(
-          `/tickets/${selectedTicket.id}?user_id=${userId}`
+          `/tickets/${selectedTicket.id}?user_id=${activeUserId}`
         );
         setSelectedTicket(data.ticket);
       }
@@ -486,10 +524,14 @@ function Tickets() {
     }
   };
 
+  const [searchParams] = useSearchParams();
+  const location = useLocation();
+
   const openTicket = async (ticketId) => {
     try {
       setDetailLoading(true);
-      const data = await apiRequest(`/tickets/${ticketId}?user_id=${userId}`);
+      const activeUserId = getActiveUserId();
+      const data = await apiRequest(`/tickets/${ticketId}?user_id=${activeUserId}`);
       setSelectedTicket(data.ticket);
       setReply("");
       setShowMobileInfo(false);
@@ -500,6 +542,14 @@ function Tickets() {
       setDetailLoading(false);
     }
   };
+
+  // Auto-open ticket if ticket_id is present in URL params or router location state (e.g. from Notification click)
+  useEffect(() => {
+    const targetTicketId = searchParams.get("ticket_id") || location.state?.ticketId;
+    if (targetTicketId) {
+      openTicket(Number(targetTicketId));
+    }
+  }, [searchParams, location.state]);
 
   const goBack = () => {
     setSelectedTicket(null);
@@ -514,8 +564,9 @@ function Tickets() {
 
     try {
       setCreating(true);
+      const activeUserId = getActiveUserId();
       const payload = {
-        user_id: Number(userId),
+        user_id: Number(activeUserId),
         category: newTicket.category,
         priority: newTicket.priority,
         subject: newTicket.subject.trim(),
@@ -569,17 +620,18 @@ function Tickets() {
 
     try {
       setSendingReply(true);
+      const activeUserId = getActiveUserId();
       await apiRequest(`/tickets/${selectedTicket.id}/reply`, {
         method: "POST",
         body: JSON.stringify({
-          user_id: Number(userId),
+          user_id: Number(activeUserId),
           message,
         }),
       });
 
       setReply("");
       const data = await apiRequest(
-        `/tickets/${selectedTicket.id}?user_id=${userId}`
+        `/tickets/${selectedTicket.id}?user_id=${activeUserId}`
       );
       setSelectedTicket(data.ticket);
       await fetchTickets();
@@ -597,13 +649,14 @@ function Tickets() {
 
     try {
       setClosing(true);
+      const activeUserId = getActiveUserId();
       await apiRequest(`/tickets/${selectedTicket.id}/close`, {
         method: "POST",
-        body: JSON.stringify({ user_id: Number(userId) }),
+        body: JSON.stringify({ user_id: Number(activeUserId) }),
       });
 
       const data = await apiRequest(
-        `/tickets/${selectedTicket.id}?user_id=${userId}`
+        `/tickets/${selectedTicket.id}?user_id=${activeUserId}`
       );
       setSelectedTicket(data.ticket);
       await fetchTickets();
@@ -669,7 +722,7 @@ function Tickets() {
       selectedTicket.awb;
 
     return (
-      <div className="fixed inset-x-0 top-[64px] bottom-16 lg:bottom-0 z-20 flex flex-col bg-[#f6f8fb] text-slate-800 overflow-hidden lg:pl-[250px]">
+      <div className="fixed inset-x-0 top-[64px] bottom-16 lg:bottom-0 z-20 flex flex-col bg-[#f6f8fb] dark:bg-[#090b10] text-slate-800 dark:text-slate-100 overflow-hidden lg:pl-[250px]">
         {/* ULTRA-COMPACT SLIM HEADER */}
         <div className="shrink-0 border-b border-slate-200 bg-white px-3 sm:px-6 py-2 shadow-xs">
           <div className="flex items-center justify-between gap-2 max-w-[1500px] mx-auto">
@@ -765,8 +818,16 @@ function Tickets() {
               {/* MESSAGES SCROLL VIEW: TIGHTER SPACING FOR MORE VISIBLE MESSAGES */}
               <div className="flex-1 min-h-0 overflow-y-auto p-2.5 sm:p-4 space-y-2.5 [scrollbar-width:thin]">
                 {detailLoading ? (
-                  <div className="flex h-full items-center justify-center text-xs font-medium text-slate-400">
-                    Loading conversation...
+                  <div className="space-y-3 py-2">
+                    <div className="flex justify-start">
+                      <div className="h-10 w-48 rounded-2xl rounded-bl-sm bg-slate-100 skeleton-shimmer" />
+                    </div>
+                    <div className="flex justify-end">
+                      <div className="h-12 w-56 rounded-2xl rounded-br-sm bg-slate-200 skeleton-shimmer" />
+                    </div>
+                    <div className="flex justify-start">
+                      <div className="h-8 w-40 rounded-2xl rounded-bl-sm bg-slate-100 skeleton-shimmer" />
+                    </div>
                   </div>
                 ) : messages.length === 0 ? (
                   <div className="flex h-full flex-col items-center justify-center text-center p-6 text-slate-400">
@@ -971,103 +1032,162 @@ function Tickets() {
   ========================================================= */
 
   return (
-    <div className="min-h-full w-full bg-[#f6f8fb] p-3 sm:p-5 md:p-6 pb-20 lg:pb-8">
-      {/* HEADER */}
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between max-w-[1500px] mx-auto">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-[#008dd2]">
-            <Icon name="ticket" size={18} />
+    <div className="min-h-full w-full bg-[#f6f8fb] dark:bg-[#090b10] p-3 sm:p-5 md:p-6 pb-20 lg:pb-8">
+      {/* ==================================================
+          PAGE HEADER (MATCHES ALLORDERS & DASHBOARD)
+      ================================================== */}
+      <div className="mb-4 rounded-2xl border border-slate-200/90 bg-white p-4 sm:p-5 shadow-[0_1px_3px_rgba(15,23,42,0.03)] max-w-[1500px] mx-auto">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-sky-50 text-[#008dd2] ring-1 ring-sky-100 shadow-2xs">
+              <Icon name="ticket" size={20} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-base sm:text-lg font-bold tracking-tight text-slate-900">
+                  Support & Helpdesk
+                </h1>
+                <span className="rounded-full bg-sky-50 px-2 py-0.5 text-[10px] font-bold text-[#008dd2] border border-sky-100">
+                  Live Operations
+                </span>
+              </div>
+              <p className="mt-0.5 text-xs text-slate-400">
+                Manage inquiries, claim missing parcels, or reach out to our dedicated operations desk.
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-lg sm:text-xl font-bold tracking-tight text-slate-900">
-              Support Tickets
-            </h1>
-            <p className="text-[11px] text-slate-400">
-              Manage your technical and shipment-related support inquiries
-            </p>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={refresh}
+              disabled={refreshing}
+              className="flex h-9.5 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-2xs transition hover:bg-slate-50 active:scale-95 disabled:opacity-50 cursor-pointer"
+              title="Refresh tickets"
+            >
+              <Icon
+                name="refresh"
+                size={13}
+                className={refreshing ? "animate-spin text-[#008dd2]" : "text-slate-400"}
+              />
+              <span className="hidden sm:inline">Refresh</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setShowCreate(true)}
+              className="flex h-9.5 items-center justify-center gap-1.5 rounded-xl bg-[#008dd2] px-4 text-xs font-bold text-white shadow-sm shadow-[#008dd2]/20 transition hover:bg-[#007ab6] active:scale-95 cursor-pointer"
+            >
+              <Icon name="plus" size={14} />
+              <span>New Ticket</span>
+            </button>
           </div>
         </div>
-
-        <button
-          type="button"
-          onClick={() => setShowCreate(true)}
-          className="flex h-10 items-center justify-center gap-1.5 rounded-xl bg-slate-900 px-4 text-xs font-bold text-white shadow-xs transition hover:bg-slate-800 active:scale-95"
-        >
-          <Icon name="plus" size={14} />
-          <span>New Ticket</span>
-        </button>
       </div>
 
       <div className="max-w-[1500px] mx-auto space-y-3.5">
-        {/* STAT TILES */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs">
+        {/* ==================================================
+            STAT TILES (PREMIUM METRIC CARDS)
+        ================================================== */}
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-3.5">
           <StatCard
-            label="All"
+            label="All Tickets"
             value={counts.total}
+            subtitle="All logged issues"
+            icon="ticket"
+            iconClass="bg-sky-50 text-[#008dd2]"
             active={!statusFilter}
-            dotClass="bg-blue-500"
+            activeClass="bg-gradient-to-br from-white to-sky-50/50 border-[#008dd2]/40 ring-2 ring-[#008dd2]/20"
             onClick={() => applyStatus("")}
           />
           <StatCard
             label="Open"
             value={counts.open}
+            subtitle="Awaiting review"
+            icon="chat"
+            iconClass="bg-blue-50 text-blue-600"
             active={statusFilter === "OPEN"}
-            dotClass="bg-blue-500"
+            activeClass="bg-gradient-to-br from-white to-blue-50/50 border-blue-400 ring-2 ring-blue-500/20"
             onClick={() => applyStatus("OPEN")}
           />
           <StatCard
-            label="Pending"
+            label="In Progress"
             value={counts.pending}
+            subtitle="Under investigation"
+            icon="clock"
+            iconClass="bg-amber-50 text-amber-600"
             active={statusFilter === "PENDING"}
-            dotClass="bg-amber-500"
+            activeClass="bg-gradient-to-br from-white to-amber-50/50 border-amber-400 ring-2 ring-amber-500/20"
             onClick={() => applyStatus("PENDING")}
           />
           <StatCard
             label="Resolved"
             value={counts.resolved}
+            subtitle="Closed & completed"
+            icon="check"
+            iconClass="bg-emerald-50 text-emerald-600"
             active={statusFilter === "RESOLVED"}
-            dotClass="bg-emerald-500"
+            activeClass="bg-gradient-to-br from-white to-emerald-50/50 border-emerald-400 ring-2 ring-emerald-500/20"
             onClick={() => applyStatus("RESOLVED")}
           />
         </div>
 
-        {/* SEARCH & FILTERS */}
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center rounded-2xl border border-slate-200/80 bg-white p-3 shadow-xs">
+        {/* ==================================================
+            SEARCH & FILTERS BAR
+        ================================================== */}
+        <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center justify-between rounded-2xl border border-slate-200/90 bg-white p-3 shadow-[0_1px_3px_rgba(15,23,42,0.02)]">
           <div className="relative flex-1">
             <Icon
               name="search"
-              size={14}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+              size={15}
+              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
             />
             <input
               type="text"
               value={search}
               onChange={handleSearchChange}
               onKeyDown={handleSearch}
-              placeholder="Search by ticket #, subject or AWB..."
-              className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-8.5 pr-3 text-xs text-slate-700 outline-none focus:border-[#008dd2] focus:bg-white focus:ring-2 focus:ring-[#008dd2]/10 transition"
+              placeholder="Search by ticket #, subject, AWB, or order ID"
+              className="h-10 w-full rounded-xl border border-slate-200/90 bg-slate-50/60 pl-10 pr-9 text-xs font-medium text-slate-800 placeholder:text-slate-400 outline-none transition focus:border-[#008dd2] focus:bg-white focus:ring-4 focus:ring-[#008dd2]/10"
             />
+            {search && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearch("");
+                  runSearch("");
+                }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs font-bold"
+              >
+                ✕
+              </button>
+            )}
           </div>
 
-          <div className="flex items-center gap-2">
-            <select
-              value={statusFilter}
-              onChange={(e) => applyStatus(e.target.value)}
-              className="h-10 flex-1 sm:w-40 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 outline-none"
-            >
-              {STATUS_OPTIONS.map((st) => (
-                <option key={st.value} value={st.value}>
-                  {st.label}
-                </option>
-              ))}
-            </select>
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="relative">
+              <select
+                value={statusFilter}
+                onChange={(e) => applyStatus(e.target.value)}
+                className="h-10 appearance-none rounded-xl border border-slate-200/90 bg-slate-50/60 hover:bg-slate-50 pl-3.5 pr-8 text-xs font-semibold text-slate-700 outline-none transition focus:border-[#008dd2] focus:bg-white focus:ring-4 focus:ring-[#008dd2]/10 cursor-pointer"
+              >
+                {STATUS_OPTIONS.map((st) => (
+                  <option key={st.value} value={st.value}>
+                    {st.label}
+                  </option>
+                ))}
+              </select>
+              <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400">
+                <Icon name="chevron" size={12} className="rotate-90" />
+              </div>
+            </div>
 
             <button
               type="button"
               onClick={refresh}
               disabled={refreshing}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 active:scale-95 disabled:opacity-50"
-              title="Refresh"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200/90 bg-slate-50/60 text-slate-600 transition hover:bg-slate-100 hover:text-slate-800 active:scale-95 disabled:opacity-50 cursor-pointer"
+              title="Refresh list"
             >
               <Icon
                 name="refresh"
@@ -1078,12 +1198,12 @@ function Tickets() {
           </div>
         </div>
 
-        {/* MOBILE TICKET CARDS */}
+        {/* ==================================================
+            MOBILE TICKET CARDS
+        ================================================== */}
         <div className="space-y-2.5 sm:hidden">
           {loading ? (
-            <div className="py-12 text-center text-xs text-slate-400">
-              Loading tickets...
-            </div>
+            <CardSkeleton count={4} />
           ) : tickets.length === 0 ? (
             <div className="flex min-h-[180px] flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white p-6 text-center text-slate-400">
               <Icon name="ticket" size={24} />
@@ -1097,12 +1217,17 @@ function Tickets() {
                 key={ticket.id}
                 type="button"
                 onClick={() => openTicket(ticket.id)}
-                className="w-full rounded-2xl border border-slate-200/80 bg-white p-3.5 text-left shadow-xs active:scale-[0.99] transition"
+                className="w-full rounded-2xl border border-slate-200/90 bg-white p-3.5 text-left shadow-xs active:scale-[0.99] transition hover:border-[#008dd2]/40"
               >
-                <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                  <span className="font-mono text-xs font-black text-[#008dd2]">
-                    #{ticket.ticket_number}
-                  </span>
+                <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-xs font-black text-[#008dd2]">
+                      #{ticket.ticket_number}
+                    </span>
+                    <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[9.5px] font-semibold text-slate-600">
+                      {categoryLabel(ticket.category)}
+                    </span>
+                  </div>
                   <div className="flex items-center gap-1.5">
                     <StatusBadge status={ticket.status} />
                     <PriorityBadge priority={ticket.priority} />
@@ -1114,8 +1239,8 @@ function Tickets() {
                     {ticket.subject}
                   </p>
                   <p className="text-[11px] text-slate-400 mt-0.5">
-                    Category: {categoryLabel(ticket.category)}
-                    {ticket.public_order_id && ` • Order #${ticket.public_order_id}`}
+                    {ticket.awb && <span className="font-mono text-slate-500">AWB: {ticket.awb} • </span>}
+                    {ticket.public_order_id && `Order #${ticket.public_order_id}`}
                   </p>
                 </div>
 
@@ -1131,11 +1256,13 @@ function Tickets() {
           )}
         </div>
 
-        {/* DESKTOP TABLE */}
-        <div className="hidden sm:block overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs">
+        {/* ==================================================
+            DESKTOP TABLE
+        ================================================== */}
+        <div className="hidden sm:block overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.02)]">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-slate-100 bg-slate-50/70 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              <tr className="border-b border-slate-100 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500">
                 <th className="py-3.5 px-5">Ticket</th>
                 <th className="py-3.5 px-5">Subject</th>
                 <th className="py-3.5 px-5">Category</th>
@@ -1148,15 +1275,42 @@ function Tickets() {
 
             <tbody className="divide-y divide-slate-100 text-xs">
               {loading ? (
-                <tr>
-                  <td colSpan="7" className="py-12 text-center text-slate-400">
-                    Loading tickets...
-                  </td>
-                </tr>
+                <TableRowSkeleton rows={5} cols={7} />
               ) : tickets.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="py-12 text-center text-slate-400">
-                    No tickets found.
+                  <td colSpan="7" className="py-14 text-center">
+                    <div className="flex flex-col items-center justify-center max-w-sm mx-auto">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-50 text-[#008dd2] ring-8 ring-sky-50/50 mb-3">
+                        <Icon name="ticket" size={24} />
+                      </div>
+                      <h3 className="text-sm font-bold text-slate-800">No support tickets found</h3>
+                      <p className="mt-1 text-xs text-slate-400 text-center leading-relaxed">
+                        {search || statusFilter
+                          ? "No tickets match your active search and filter criteria. Try clearing filters."
+                          : "Need assistance with an order, NDR, or pickup? Create a new support ticket and our team will get right on it."}
+                      </p>
+                      {search || statusFilter ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSearch("");
+                            applyStatus("");
+                          }}
+                          className="mt-3.5 inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition active:scale-95 shadow-2xs cursor-pointer"
+                        >
+                          Clear Filters
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setShowCreate(true)}
+                          className="mt-3.5 inline-flex items-center gap-1.5 rounded-xl bg-[#008dd2] px-4 py-2 text-xs font-bold text-white hover:bg-[#007ab6] transition active:scale-95 shadow-sm shadow-[#008dd2]/20 cursor-pointer"
+                        >
+                          <Icon name="plus" size={13} />
+                          <span>Create New Ticket</span>
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ) : (
@@ -1164,32 +1318,42 @@ function Tickets() {
                   <tr
                     key={ticket.id}
                     onClick={() => openTicket(ticket.id)}
-                    className="cursor-pointer transition hover:bg-slate-50/70"
+                    className="group cursor-pointer transition-all duration-150 hover:bg-sky-50/40"
                   >
                     <td className="py-3.5 px-5">
-                      <div className="font-mono font-bold text-[#008dd2]">
-                        #{ticket.ticket_number}
-                      </div>
-                      {ticket.awb && (
-                        <div className="font-mono text-[10px] text-slate-400">
-                          {ticket.awb}
+                      <div className="flex items-center gap-2.5">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sky-50 text-[#008dd2] group-hover:bg-[#008dd2] group-hover:text-white transition-colors duration-200 shadow-2xs">
+                          <Icon name="ticket" size={15} />
                         </div>
-                      )}
+                        <div>
+                          <div className="font-mono font-bold text-slate-900 group-hover:text-[#008dd2] transition-colors">
+                            #{ticket.ticket_number}
+                          </div>
+                          {ticket.awb && (
+                            <div className="font-mono text-[10.5px] text-slate-400 font-medium">
+                              AWB: {ticket.awb}
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </td>
 
                     <td className="py-3.5 px-5">
-                      <div className="font-bold text-slate-800 truncate max-w-sm">
+                      <div className="font-bold text-slate-800 group-hover:text-[#008dd2] transition-colors truncate max-w-sm">
                         {ticket.subject}
                       </div>
                       {ticket.public_order_id && (
-                        <div className="text-[10px] text-slate-400 font-medium">
-                          Order #{ticket.public_order_id}
+                        <div className="inline-flex items-center gap-1 rounded bg-slate-100 px-1.5 py-0.5 text-[9.5px] font-semibold text-slate-600 mt-0.5">
+                          <Icon name="box" size={10} />
+                          <span>Order #{ticket.public_order_id}</span>
                         </div>
                       )}
                     </td>
 
-                    <td className="py-3.5 px-5 text-slate-600 font-semibold">
-                      {categoryLabel(ticket.category)}
+                    <td className="py-3.5 px-5">
+                      <span className="inline-flex items-center rounded-lg bg-slate-100/80 px-2.5 py-1 text-[11px] font-semibold text-slate-700">
+                        {categoryLabel(ticket.category)}
+                      </span>
                     </td>
 
                     <td className="py-3.5 px-5">
@@ -1200,12 +1364,15 @@ function Tickets() {
                       <StatusBadge status={ticket.status} />
                     </td>
 
-                    <td className="py-3.5 px-5 text-slate-400">
+                    <td className="py-3.5 px-5 text-slate-500 font-medium">
                       {formatDate(ticket.created_at)}
                     </td>
 
-                    <td className="py-3.5 px-5 text-right text-slate-300">
-                      <Icon name="chevron" size={14} />
+                    <td className="py-3.5 px-5 text-right">
+                      <span className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-bold text-[#008dd2] bg-sky-50 opacity-80 group-hover:opacity-100 group-hover:bg-[#008dd2] group-hover:text-white transition-all shadow-2xs">
+                        View
+                        <Icon name="chevron" size={11} className="group-hover:translate-x-0.5 transition-transform" />
+                      </span>
                     </td>
                   </tr>
                 ))
@@ -1380,7 +1547,7 @@ function Tickets() {
                     !newTicket.subject.trim() ||
                     !newTicket.description.trim()
                   }
-                  className="h-10 rounded-xl bg-slate-900 px-5 text-xs font-bold text-white shadow-xs disabled:opacity-50 transition active:scale-95"
+                  className="h-10 rounded-xl bg-[#008dd2] hover:bg-[#007ab6] px-5 text-xs font-bold text-white shadow-sm shadow-[#008dd2]/20 disabled:opacity-50 transition active:scale-95 cursor-pointer"
                 >
                   {creating ? "Submitting..." : "Submit Ticket"}
                 </button>

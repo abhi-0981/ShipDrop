@@ -9,7 +9,18 @@ import {
   HiOutlinePhone,
   HiOutlineOfficeBuilding,
   HiOutlineCreditCard,
+  HiOutlineDotsVertical,
+  HiOutlineEye,
+  HiOutlineSwitchHorizontal,
+  HiOutlineShieldCheck,
+  HiOutlineX,
+  HiOutlineExclamation,
+  HiOutlineExternalLink,
+  HiOutlineCheckCircle,
+  HiOutlineLocationMarker,
+  HiOutlineIdentification,
 } from "react-icons/hi";
+import toast from "react-hot-toast";
 import { API_BASE_URL } from "../../config/api";
 
 function Users() {
@@ -23,6 +34,20 @@ function Users() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
+
+  // Action dropdown state
+  const [openMenuId, setOpenMenuId] = useState(null);
+
+  // Close open dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (!e.target.closest(".action-menu-container")) {
+        setOpenMenuId(null);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // =====================================================
   // FETCH USERS
@@ -93,6 +118,70 @@ function Users() {
 
   const openUser = (userId) => {
     navigate(`/users/${userId}`);
+  };
+
+  // =====================================================
+  // LOGIN AS USER (DIRECT IMPERSONATION - SAME TAB)
+  // =====================================================
+
+  const handleDirectLoginAsUser = async (user) => {
+    if (!user) return;
+    const toastId = toast.loading(`Logging in as ${user.full_name || "Merchant"}...`);
+
+    try {
+      const adminToken =
+        localStorage.getItem("adminToken") ||
+        localStorage.getItem("token") ||
+        localStorage.getItem("admin_token");
+
+      if (!adminToken) {
+        toast.error("Admin session not found. Please log in again.", { id: toastId });
+        return;
+      }
+
+      const origin = window.location.origin;
+      const userAppUrl = origin.includes("localhost")
+        ? origin.replace(":5174", ":5173")
+        : "https://parceldrop.in";
+
+      const response = await fetch(
+        `${API_BASE_URL}/admin/impersonate/start`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${adminToken}`,
+          },
+          body: JSON.stringify({
+            target_user_id: user.id,
+            reason: "Admin Support Access",
+            admin_return_url: window.location.href,
+            user_app_url: userAppUrl,
+          }),
+        }
+      );
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok || data.success === false) {
+        throw new Error(
+          data.message || `Failed to login as user (Status: ${response.status})`
+        );
+      }
+
+      toast.success(
+        `Redirecting to ${user.full_name || "Merchant"} dashboard...`,
+        { id: toastId }
+      );
+
+      if (data.redirect_url) {
+        // Direct navigation in the SAME TAB
+        window.location.href = data.redirect_url;
+      }
+    } catch (err) {
+      console.error("Direct impersonation error:", err);
+      toast.error(err.message || "Failed to switch to user dashboard", { id: toastId });
+    }
   };
 
   // =====================================================
@@ -242,7 +331,73 @@ function Users() {
                   <span className="inline-flex rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-bold capitalize text-slate-600">
                     {user.role || "user"}
                   </span>
-                  <HiOutlineChevronRight size={15} className="text-slate-300" />
+                  <div className="relative action-menu-container">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setOpenMenuId(
+                          openMenuId === `m-${user.id}` ? null : `m-${user.id}`
+                        );
+                      }}
+                      className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 shadow-2xs transition hover:text-[#008dd2]"
+                      title="Actions"
+                    >
+                      <HiOutlineDotsVertical size={14} />
+                    </button>
+
+                    {openMenuId === `m-${user.id}` && (
+                      <div
+                        onClick={(e) => e.stopPropagation()}
+                        className="absolute right-0 z-50 mt-1 w-44 rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg animate-in fade-in zoom-in-95 duration-100"
+                      >
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setOpenMenuId(null);
+                            openUser(user.id);
+                          }}
+                          className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-[#008dd2]"
+                        >
+                          <HiOutlineEye size={15} className="text-slate-400" />
+                          View Profile
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setOpenMenuId(null);
+                            navigate(`/pickup-addresses?user_id=${user.id}`);
+                          }}
+                          className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-[#008dd2]"
+                        >
+                          <HiOutlineLocationMarker size={15} className="text-slate-400" />
+                          Pickup Locations
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setOpenMenuId(null);
+                            navigate(`/parties?user_id=${user.id}`);
+                          }}
+                          className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-[#008dd2]"
+                        >
+                          <HiOutlineIdentification size={15} className="text-slate-400" />
+                          Parties Info
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setOpenMenuId(null);
+                            handleOpenImpersonateModal(user);
+                          }}
+                          className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-[#008dd2] hover:bg-[#008dd2]/10"
+                        >
+                          <HiOutlineSwitchHorizontal size={15} />
+                          Login as User
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -393,18 +548,75 @@ function Users() {
                     </td>
 
                     {/* ACTION */}
-                    <td className="px-5 py-3.5 text-right">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openUser(user.id);
-                        }}
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-[#008dd2]/10 hover:text-[#008dd2]"
-                        title="View Profile"
-                      >
-                        <HiOutlineChevronRight size={16} />
-                      </button>
+                    <td className="px-5 py-3.5 text-right relative">
+                      <div className="relative inline-block text-left action-menu-container">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setOpenMenuId(openMenuId === user.id ? null : user.id);
+                          }}
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 shadow-2xs transition hover:border-[#008dd2]/40 hover:text-[#008dd2] active:scale-95"
+                          title="Actions Menu"
+                        >
+                          <HiOutlineDotsVertical size={16} />
+                        </button>
+
+                        {openMenuId === user.id && (
+                          <div
+                            onClick={(e) => e.stopPropagation()}
+                            className="absolute right-0 z-50 mt-1 w-48 rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg animate-in fade-in zoom-in-95 duration-100 text-left"
+                          >
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setOpenMenuId(null);
+                                openUser(user.id);
+                              }}
+                              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-[#008dd2]"
+                            >
+                              <HiOutlineEye size={15} className="text-slate-400" />
+                              View Profile
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setOpenMenuId(null);
+                                navigate(`/pickup-addresses?user_id=${user.id}`);
+                              }}
+                              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-[#008dd2]"
+                            >
+                              <HiOutlineLocationMarker size={15} className="text-slate-400" />
+                              Pickup Locations
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setOpenMenuId(null);
+                                navigate(`/parties?user_id=${user.id}`);
+                              }}
+                              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-[#008dd2]"
+                            >
+                              <HiOutlineIdentification size={15} className="text-slate-400" />
+                              Parties Info
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setOpenMenuId(null);
+                                handleDirectLoginAsUser(user);
+                              }}
+                              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-[#008dd2] transition hover:bg-[#008dd2]/10"
+                            >
+                              <HiOutlineSwitchHorizontal size={15} />
+                              Login as User
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))

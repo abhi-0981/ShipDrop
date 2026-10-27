@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import api from "../../services/api";
+import { subscribeToOrderUpdates } from "../../services/orderEvents";
 import { useNavigate } from "react-router-dom";
+import { DashboardSkeleton } from "../../components/Common/TableSkeleton";
+import { toast } from "react-hot-toast";
 
 // ======================================================
 // ICONS
@@ -117,6 +120,15 @@ const Icon = ({ name, size = 18 }) => {
     );
   }
 
+  if (name === "copy") {
+    return (
+      <svg {...common}>
+        <rect x="9" y="9" width="10" height="10" rx="2" />
+        <path d="M15 9V7a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2" />
+      </svg>
+    );
+  }
+
   if (name === "close-circle") {
     return (
       <svg {...common}>
@@ -134,9 +146,11 @@ const Icon = ({ name, size = 18 }) => {
 // ======================================================
 
 const getStatus = (order) =>
-  String(order?.status || "")
+  String(order?.status || order?.order_status || "")
     .trim()
-    .toUpperCase();
+    .toUpperCase()
+    .replace(/\s+/g, " ")
+    .replace(/_/g, " ");
 
 const getOrderId = (order) =>
   String(
@@ -204,30 +218,47 @@ const StatCard = ({
   iconClass,
   onClick,
   isWide = false,
+  valueClassName,
 }) => {
+  const isCurrency = typeof value === "string" && value.includes("₹");
+  const valueLength = String(value || "").length;
+
+  const fontClass = valueClassName || (
+    isCurrency
+      ? "text-[18px]"
+      : valueLength > 6
+        ? "text-[18px] sm:text-[20px]"
+        : "text-[19px] sm:text-[22px]"
+  );
+
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={!onClick}
-      className={`w-full text-left rounded-2xl border border-slate-200/80 bg-white p-3.5 sm:p-4 shadow-[0_1px_4px_rgba(15,23,42,0.03)] transition-all duration-200 active:scale-[0.98] ${isWide ? "col-span-2 sm:col-span-1" : ""
-        } ${onClick
+      className={`w-full text-left rounded-2xl border border-slate-200/80 bg-white p-3.5 sm:p-4 shadow-[0_1px_4px_rgba(15,23,42,0.03)] transition-all duration-200 active:scale-[0.98] ${
+        isWide ? "col-span-2 sm:col-span-1" : ""
+      } ${
+        onClick
           ? "cursor-pointer hover:border-slate-300 hover:shadow-[0_4px_12px_rgba(15,23,42,0.06)]"
           : "cursor-default"
-        }`}
+      }`}
     >
       <div className="flex items-start justify-between">
-        <div className="min-w-0 flex-1 pr-2">
-          <p className="text-[11px] sm:text-[12px] font-medium text-slate-400 truncate">
+        <div className="min-w-0 flex-1 pr-1.5 sm:pr-2">
+          <p className="text-[12px] sm:text-[13px] font-semibold text-slate-600 truncate">
             {title}
           </p>
 
-          <p className="mt-1 text-[19px] sm:text-[22px] font-bold tracking-tight text-slate-800 truncate">
+          <p
+            className={`mt-1 font-bold tracking-tight text-slate-900 truncate ${fontClass}`}
+            title={typeof value === "string" ? value : undefined}
+          >
             {value}
           </p>
 
           {subtitle && (
-            <p className="mt-0.5 text-[10px] sm:text-[11px] text-slate-400 truncate">
+            <p className="mt-0.5 text-[11px] sm:text-[12px] font-medium text-slate-500 truncate">
               {subtitle}
             </p>
           )}
@@ -250,10 +281,50 @@ const StatCard = ({
 function Dashboard() {
   const navigate = useNavigate();
 
-  const [user, setUser] = useState(null);
-  const [orders, setOrders] = useState([]);
-  const [walletBalance, setWalletBalance] = useState(0);
-  const [pageLoading, setPageLoading] = useState(true);
+  const [user, setUser] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("user") || "null");
+    } catch {
+      return null;
+    }
+  });
+
+  const [orders, setOrders] = useState(() => {
+    try {
+      const cached = sessionStorage.getItem("shipdrop_dash_orders");
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const [statusCounts, setStatusCounts] = useState(() => {
+    try {
+      const cached = sessionStorage.getItem("shipdrop_dash_counts");
+      return cached ? JSON.parse(cached) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const [walletBalance, setWalletBalance] = useState(() => {
+    try {
+      const cached = sessionStorage.getItem("shipdrop_dash_wallet");
+      return cached ? Number(cached) : 0;
+    } catch {
+      return 0;
+    }
+  });
+
+  // If cached data is present, render immediately without full-screen loading spinner
+  const [pageLoading, setPageLoading] = useState(() => {
+    try {
+      return !sessionStorage.getItem("shipdrop_dash_counts");
+    } catch {
+      return true;
+    }
+  });
+
   const [refreshing, setRefreshing] = useState(false);
   const [dashboardError, setDashboardError] = useState("");
 
@@ -267,21 +338,7 @@ function Dashboard() {
   const [rateError, setRateError] = useState("");
   const [shippingOptions, setShippingOptions] = useState(null);
 
-  useEffect(() => {
-    try {
-      const savedUser = JSON.parse(
-        localStorage.getItem("user") || "null"
-      );
-
-      if (savedUser?.id) {
-        setUser(savedUser);
-      }
-    } catch (error) {
-      console.error("Dashboard user error:", error);
-    }
-  }, []);
-
-  const loadDashboard = async (showLoader = true) => {
+  const loadDashboard = async (showLoader = false) => {
     let currentUser = user;
 
     try {
@@ -305,34 +362,77 @@ function Dashboard() {
     setDashboardError("");
 
     try {
-      const [ordersResponse, walletResponse] = await Promise.all([
-        api.get("/orders/all", {
-  params: {
-    user_id: currentUser.id,
-    include_tracking: false,
-  },
-}),
-        api.get(`/payments/wallet?user_id=${currentUser.id}`),
-      ]);
-
-      const ordersData = ordersResponse?.data;
-      const walletData = walletResponse?.data;
-
-      if (!ordersData?.success) {
-        throw new Error(
-          ordersData?.message || "Unable to load orders"
-        );
+      // 1. Try unified fast summary endpoint (single HTTP request + single DB query roundtrip)
+      let summaryData = null;
+      try {
+        const summaryResponse = await api.get("/orders/dashboard-summary", {
+          params: { user_id: currentUser.id },
+        });
+        if (summaryResponse?.data?.success) {
+          summaryData = summaryResponse.data;
+        }
+      } catch (e) {
+        // Fallback gracefully if summary endpoint is temporarily unavailable
       }
 
-      const orderList = Array.isArray(ordersData?.orders)
-        ? ordersData.orders
-        : [];
+      if (summaryData) {
+        const orderList = Array.isArray(summaryData.orders) ? summaryData.orders : [];
+        const counts = summaryData.statusCounts || null;
+        const balance = Number(summaryData.walletBalance || 0);
 
-      setOrders(orderList);
-      setWalletBalance(Number(walletData?.balance || 0));
+        setOrders(orderList);
+        setStatusCounts(counts);
+        setWalletBalance(balance);
+
+        try {
+          sessionStorage.setItem("shipdrop_dash_orders", JSON.stringify(orderList));
+          sessionStorage.setItem("shipdrop_dash_counts", JSON.stringify(counts));
+          sessionStorage.setItem("shipdrop_dash_wallet", String(balance));
+        } catch {}
+      } else {
+        // Fallback: Parallelize fast status counts, recent 6 orders, and wallet balance
+        const [ordersResponse, countsResponse, walletResponse] = await Promise.all([
+          api.get("/orders/all", {
+            params: {
+              user_id: currentUser.id,
+              limit: 20,
+              include_tracking: false,
+            },
+          }),
+          api.get(`/orders/status-counts?user_id=${currentUser.id}`),
+          api.get(`/payments/wallet?user_id=${currentUser.id}`),
+        ]);
+
+        const ordersData = ordersResponse?.data;
+        const countsData = countsResponse?.data?.counts || null;
+        const walletData = walletResponse?.data;
+
+        if (!ordersData?.success) {
+          throw new Error(
+            ordersData?.message || "Unable to load orders"
+          );
+        }
+
+        const orderList = Array.isArray(ordersData?.orders)
+          ? ordersData.orders
+          : [];
+
+        const balance = Number(walletData?.balance || 0);
+
+        setOrders(orderList);
+        setStatusCounts(countsData);
+        setWalletBalance(balance);
+
+        try {
+          sessionStorage.setItem("shipdrop_dash_orders", JSON.stringify(orderList));
+          sessionStorage.setItem("shipdrop_dash_counts", JSON.stringify(countsData));
+          sessionStorage.setItem("shipdrop_dash_wallet", String(balance));
+        } catch {}
+      }
     } catch (error) {
       console.error("Dashboard loading error:", error);
       setDashboardError(
+        error?.userFriendlyMessage ||
         error?.response?.data?.message ||
         error?.message ||
         "Unable to load dashboard"
@@ -344,10 +444,9 @@ function Dashboard() {
   };
 
   useEffect(() => {
-    if (user?.id) {
-      loadDashboard(true);
-    }
-  }, [user]);
+    // Initial fetch on mount
+    loadDashboard(pageLoading);
+  }, []);
 
   useEffect(() => {
     const handleWalletUpdated = (event) => {
@@ -366,47 +465,65 @@ function Dashboard() {
     };
   }, []);
 
+  useEffect(() => {
+    const unsubscribe = subscribeToOrderUpdates(() => {
+      loadDashboard(false);
+    });
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+
   const handleRefresh = () => {
     setRefreshing(true);
     loadDashboard(false);
   };
 
   const statistics = useMemo(() => {
-    const total = orders.length;
-
-    const processing = orders.filter(
-      (order) => getStatus(order) === "PROCESSING"
-    ).length;
-
-    const manifested = orders.filter((order) => {
-      const status = getStatus(order);
-      return (
-        status === "MANIFESTED" ||
-        status === "SHIPPED" ||
-        status === "IN_TRANSIT" ||
-        status === "DELIVERED"
-      );
-    }).length;
-
-    const cancelled = orders.filter(
-      (order) =>
-        getStatus(order) === "CANCELLED" ||
-        getStatus(order) === "CANCELED"
-    ).length;
+    // Derive exact counts directly from fast indexed DB status-counts query
+    const total = statusCounts?.ALL ?? (orders.length > 0 ? orders.length : 0);
+    const processing = statusCounts?.PROCESSING ?? 0;
+    const manifested = statusCounts?.MANIFESTED ?? 0;
+    const pending = statusCounts?.PENDING ?? 0;
 
     return {
       total,
       processing,
       manifested,
-      cancelled,
+      pending,
     };
-  }, [orders]);
+  }, [orders, statusCounts]);
 
   const recentOrders = useMemo(() => {
     return [...orders]
+      .filter((order) => {
+        const status = getStatus(order);
+        const trackingStatus = String(order?.tracking_status || "")
+          .trim()
+          .toUpperCase()
+          .replace(/\s+/g, " ")
+          .replace(/_/g, " ");
+
+        return (
+          status !== "PROCESSING" &&
+          status !== "BOOKED" &&
+          trackingStatus !== "PROCESSING" &&
+          trackingStatus !== "BOOKED"
+        );
+      })
       .sort((a, b) => Number(b?.id || 0) - Number(a?.id || 0))
       .slice(0, 6);
   }, [orders]);
+
+  const handleResetRateCalculator = () => {
+    setPickupPincode("");
+    setDeliveryPincode("");
+    setWeight("");
+    setProductPrice("");
+    setPaymentType("PREPAID");
+    setRateError("");
+    setShippingOptions(null);
+  };
 
   const handleCalculateRate = async (event) => {
     event.preventDefault();
@@ -513,20 +630,54 @@ function Dashboard() {
     return "—";
   };
 
+  const triggerTracking = (awb) => {
+    if (!awb || awb === "—") return;
+    window.dispatchEvent(
+      new CustomEvent("shipdrop:openTracking", {
+        detail: String(awb).trim(),
+      })
+    );
+  };
+
+  const handleCopyAwb = async (e, awb) => {
+    e.stopPropagation();
+    if (!awb || awb === "—") return;
+    try {
+      await navigator.clipboard.writeText(String(awb).trim());
+      toast.success("AWB copied to clipboard", { id: "awb-copy", duration: 1500 });
+    } catch {
+      toast.error("Unable to copy AWB");
+    }
+  };
+
   const getStatusClass = (status) => {
-    switch (String(status).toUpperCase()) {
-      case "PROCESSING":
-        return "border-amber-100 bg-amber-50 text-amber-600";
-      case "MANIFESTED":
-      case "SHIPPED":
-      case "IN_TRANSIT":
+    const s = String(status || "").trim().toUpperCase().replace(/[-_]+/g, " ");
+
+    switch (s) {
       case "DELIVERED":
-        return "border-emerald-100 bg-emerald-50 text-emerald-600";
+        return "border-emerald-200 bg-emerald-50 text-emerald-700 font-bold";
+      case "MANIFESTED":
+        return "border-sky-200 bg-sky-50 text-sky-700 font-bold";
+      case "NOT PICKED":
+        return "border-orange-200 bg-orange-50 text-orange-700 font-bold";
+      case "IN TRANSIT":
+        return "border-indigo-200 bg-indigo-50 text-indigo-700 font-bold";
+      case "OUT FOR DELIVERY":
+      case "OFD":
+        return "border-cyan-200 bg-cyan-50 text-cyan-700 font-bold";
       case "CANCELLED":
       case "CANCELED":
-        return "border-rose-100 bg-rose-50 text-rose-600";
+        return "border-rose-200 bg-rose-50 text-rose-700 font-bold";
+      case "RTO IN TRANSIT":
+        return "border-amber-200 bg-amber-50 text-amber-700 font-bold";
+      case "RTO DELIVERED":
+      case "RETURN ACCEPTED":
+        return "border-red-200 bg-red-50 text-red-700 font-bold";
+      case "PROCESSING":
+      case "PENDING":
+        return "border-amber-200 bg-amber-50 text-amber-700 font-bold";
       default:
-        return "border-slate-200 bg-slate-50 text-slate-500";
+        return "border-slate-200 bg-slate-100 text-slate-700 font-semibold";
     }
   };
 
@@ -534,141 +685,34 @@ function Dashboard() {
     const value = String(status || "").trim().toUpperCase();
     if (!value) return "Unknown";
 
-    return value
+    const normalized = value.replace(/[-_]+/g, " ");
+    if (normalized === "RTO DELIVERED" || normalized === "RETURN ACCEPTED") {
+      return "RTO Delivered";
+    }
+    if (normalized === "RTO IN TRANSIT") {
+      return "RTO In Transit";
+    }
+    if (normalized === "OUT FOR DELIVERY" || normalized === "OFD") {
+      return "Out For Delivery";
+    }
+
+    return normalized
       .toLowerCase()
-      .replace(/_/g, " ")
       .replace(/\b\w/g, (char) => char.toUpperCase());
   };
 
   const handleCreateOrder = () => {
+    sessionStorage.removeItem("editingProcessingOrder");
+    window.dispatchEvent(new Event("shipdrop:resetCreateOrder"));
     navigate("/create-order");
   };
 
-if (pageLoading && !orders.length) {
-  return (
-    <div className="min-h-full bg-[#f6f8fb] p-4 sm:p-6">
-      <div className="flex min-h-[65vh] items-center justify-center">
-        <div className="flex w-full max-w-[360px] flex-col items-center">
-
-          {/* ================= TRUCK LOADER ================= */}
-          <div className="relative h-[100px] w-full overflow-hidden">
-
-            {/* Road */}
-            <div className="absolute bottom-4 left-0 right-0 h-[2px] bg-slate-200" />
-
-            {/* Moving Road Lines */}
-            <div className="absolute bottom-[11px] left-0 flex w-[200%] animate-[roadMove_1s_linear_infinite] gap-7">
-              {Array.from({ length: 14 }).map((_, index) => (
-                <span
-                  key={index}
-                  className="h-[3px] w-8 rounded-full bg-slate-300"
-                />
-              ))}
-            </div>
-
-            {/* Truck Track */}
-            <div className="absolute inset-x-4 bottom-4 h-[58px]">
-
-              {/* Moving Truck */}
-              <div className="absolute bottom-0 left-0 animate-[truckDrive_2.2s_ease-in-out_infinite]">
-
-                <div className="relative h-[42px] w-[82px]">
-
-                  {/* Cargo Body */}
-                  <div className="absolute left-0 top-0 h-[34px] w-[55px] rounded-[4px] border border-sky-600 bg-[#008dd2] shadow-sm">
-
-                    {/* Cargo Details */}
-                    <div className="absolute left-2 top-2 h-[2px] w-9 rounded bg-white/40" />
-
-                    <div className="absolute left-2 top-5 h-[2px] w-11 rounded bg-white/25" />
-
-                    {/* Door Line */}
-                    <div className="absolute right-2 top-0 h-full w-[1px] bg-sky-700/30" />
-
-                  </div>
-
-                  {/* Cabin */}
-                  <div className="absolute bottom-[8px] right-0 h-[27px] w-[30px] rounded-r-[5px] rounded-t-[6px] border border-sky-600 bg-[#008dd2]">
-
-                    {/* Window */}
-                    <div className="absolute left-[5px] top-[5px] h-[10px] w-[18px] rounded-[2px] bg-sky-100/90" />
-
-                    {/* Window Divider */}
-                    <div className="absolute left-[13px] top-[5px] h-[10px] w-[1px] bg-sky-300" />
-
-                    {/* Headlight */}
-                    <div className="absolute -right-[2px] bottom-[5px] h-[4px] w-[3px] rounded-full bg-white" />
-
-                  </div>
-
-                  {/* Front Bumper */}
-                  <div className="absolute -right-[3px] bottom-[8px] h-[5px] w-[4px] rounded-r bg-slate-500" />
-
-                  {/* Back Wheel */}
-                  <div className="absolute bottom-0 left-[9px] h-[14px] w-[14px] rounded-full border-[2px] border-slate-700 bg-white">
-
-                    <div className="absolute left-1/2 top-1/2 h-[4px] w-[4px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-slate-600" />
-
-                  </div>
-
-                  {/* Front Wheel */}
-                  <div className="absolute bottom-0 right-[5px] h-[14px] w-[14px] rounded-full border-[2px] border-slate-700 bg-white">
-
-                    <div className="absolute left-1/2 top-1/2 h-[4px] w-[4px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-slate-600" />
-
-                  </div>
-
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Loading Text */}
-          <div className="mt-1 text-center">
-            <p className="text-[14px] font-bold text-slate-700">
-              Loading dashboard...
-            </p>
-
-            <p className="mt-1 text-[11px] text-slate-400">
-              Getting your shipments ready
-            </p>
-          </div>
-
-        </div>
-      </div>
-
-      {/* ================= ANIMATIONS ================= */}
-      <style>{`
-        @keyframes truckDrive {
-          0% {
-            transform: translateX(0);
-          }
-
-          50% {
-            transform: translateX(calc(100% - 82px));
-          }
-
-          100% {
-            transform: translateX(0);
-          }
-        }
-
-        @keyframes roadMove {
-          from {
-            transform: translateX(0);
-          }
-
-          to {
-            transform: translateX(-72px);
-          }
-        }
-      `}</style>
-    </div>
-  );
-}
+  if (pageLoading && !orders.length) {
+    return <DashboardSkeleton />;
+  }
 
   return (
-    <div className="min-h-full w-full overflow-x-hidden bg-[#f6f8fb] p-3.5 sm:p-5 md:p-6 pb-24 lg:pb-8">
+    <div className="min-h-full w-full overflow-x-hidden bg-[#f6f8fb] dark:bg-[#090b10] p-3.5 sm:p-5 md:p-6 pb-24 lg:pb-8">
       {/* ==================================================
           HEADER
       ================================================== */}
@@ -729,7 +773,7 @@ if (pageLoading && !orders.length) {
         />
 
         <StatCard
-          title="Processing"
+          title="Ready To Ship"
           value={statistics.processing}
           subtitle="Awaiting shipment"
           icon="clock"
@@ -747,12 +791,12 @@ if (pageLoading && !orders.length) {
         />
 
         <StatCard
-          title="Cancelled"
-          value={statistics.cancelled}
-          subtitle="Cancelled orders"
-          icon="close-circle"
-          iconClass="bg-rose-50 text-rose-600"
-          onClick={() => navigate("/all-orders")}
+          title="UnDelivered"
+          value={statistics.pending}
+          subtitle="UnDelivered orders"
+          icon="clock"
+          iconClass="bg-amber-50 text-amber-600"
+          onClick={() => navigate("/pending")}
         />
 
         <StatCard
@@ -763,6 +807,7 @@ if (pageLoading && !orders.length) {
           iconClass="bg-violet-50 text-violet-600"
           onClick={() => navigate("/wallet")}
           isWide={true}
+          valueClassName="text-[18px]"
         />
       </div>
 
@@ -776,10 +821,10 @@ if (pageLoading && !orders.length) {
           <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_1px_4px_rgba(15,23,42,0.03)]">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <p className="text-[14px] font-bold text-slate-800">
+                <p className="text-[14px] font-bold text-slate-900">
                   Ship something today?
                 </p>
-                <p className="mt-0.5 text-[12px] text-slate-400">
+                <p className="mt-0.5 text-[12px] font-medium text-slate-500">
                   Create a new shipment and get it moving.
                 </p>
               </div>
@@ -787,22 +832,22 @@ if (pageLoading && !orders.length) {
               <button
                 type="button"
                 onClick={handleCreateOrder}
-                className="flex h-10 sm:h-9 items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 text-[13px] sm:text-[12px] font-semibold text-white transition hover:bg-slate-800 active:scale-95"
+                className="flex h-9 items-center justify-center gap-1.5 rounded-xl bg-[#111827] px-3 text-[12px] font-semibold text-white shadow-sm transition hover:bg-[#1f2937] active:scale-95"
               >
-                <Icon name="plus" size={15} />
+                <Icon name="plus" size={14} />
                 <span>Create Order</span>
               </button>
             </div>
           </div>
 
           {/* RECENT ORDERS CONTAINER */}
-          <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_4px_rgba(15,23,42,0.03)]">
-            <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3.5">
+          <div className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-[0_2px_8px_rgba(15,23,42,0.04)]">
+            <div className="flex items-center justify-between border-b border-slate-100 bg-white px-4 sm:px-5 py-3.5">
               <div>
-                <h2 className="text-[14px] font-bold text-slate-800">
+                <h2 className="text-[15px] font-bold tracking-tight text-slate-900">
                   Recent Orders
                 </h2>
-                <p className="mt-0.5 text-[11px] text-slate-400">
+                <p className="mt-0.5 text-[11px] sm:text-[12px] font-medium text-slate-500">
                   Your latest shipment activity
                 </p>
               </div>
@@ -810,10 +855,12 @@ if (pageLoading && !orders.length) {
               <button
                 type="button"
                 onClick={() => navigate("/all-orders")}
-                className="flex items-center gap-1 text-[12px] font-bold text-[#008dd2] transition hover:opacity-80"
+                className="group flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[12px] font-bold text-[#008dd2] transition hover:bg-sky-50 hover:text-[#0073ab]"
               >
-                View all
-                <Icon name="arrow-right" size={13} />
+                <span>View all</span>
+                <span className="transition-transform group-hover:translate-x-0.5">
+                  <Icon name="arrow-right" size={13} />
+                </span>
               </button>
             </div>
 
@@ -842,17 +889,21 @@ if (pageLoading && !orders.length) {
                 <div className="divide-y divide-slate-100 md:hidden">
                   {recentOrders.map((order) => {
                     const status = getStatus(order);
+                    const awb = getAWB(order);
+                    const payment = getPayment(order);
+                    const customer = getCustomer(order);
+
                     return (
                       <div
                         key={order?.id ?? order?.order_id}
-                        className="p-3.5 space-y-2 hover:bg-slate-50/50 transition-colors"
+                        className="p-3.5 space-y-2.5 hover:bg-slate-50/60 transition-colors"
                       >
                         <div className="flex items-center justify-between">
-                          <span className="text-[13px] font-bold text-slate-800">
+                          <span className="text-[13px] font-bold text-slate-900 tracking-tight">
                             #{getOrderId(order)}
                           </span>
                           <span
-                            className={`inline-flex rounded-md border px-2 py-0.5 text-[10px] font-semibold ${getStatusClass(
+                            className={`inline-flex rounded-md border px-2 py-0.5 text-[10px] ${getStatusClass(
                               status
                             )}`}
                           >
@@ -860,25 +911,52 @@ if (pageLoading && !orders.length) {
                           </span>
                         </div>
 
-                        <div className="flex items-center justify-between text-[12px] text-slate-600">
-                          <span className="font-medium truncate max-w-[180px]">
-                            {getCustomer(order)}
+                        <div className="flex items-center justify-between text-[12px]">
+                          <span
+                            className="font-semibold text-slate-800 text-[11.5px] leading-snug break-words max-w-[200px]"
+                            title={customer}
+                          >
+                            {customer}
                           </span>
                           <span
-                            className={`rounded px-1.5 py-0.5 text-[10px] font-semibold border ${getPayment(order) === "COD"
-                              ? "border-violet-100 bg-violet-50 text-violet-600"
-                              : "border-slate-200 bg-slate-50 text-slate-500"
-                              }`}
+                            className={`rounded-md px-2 py-0.5 text-[10px] font-bold border ${
+                              payment === "COD"
+                                ? "border-violet-200 bg-violet-50 text-violet-700"
+                                : "border-sky-200 bg-sky-50 text-sky-700"
+                            }`}
                           >
-                            {getPayment(order)}
+                            {payment}
                           </span>
                         </div>
 
-                        <div className="flex items-center justify-between text-[11px] text-slate-400 border-t border-slate-50 pt-1.5">
-                          <span className="font-mono">
-                            AWB: {getAWB(order) || "—"}
+                        <div className="flex items-center justify-between text-[11px] border-t border-slate-100 pt-2">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-slate-500 font-medium">AWB:</span>
+                            {awb && awb !== "—" ? (
+                              <div className="flex items-center gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => triggerTracking(awb)}
+                                  className="font-mono font-semibold text-slate-800 hover:text-[#008dd2] transition"
+                                >
+                                  {awb}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(e) => handleCopyAwb(e, awb)}
+                                  title="Copy AWB"
+                                  className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded transition"
+                                >
+                                  <Icon name="copy" size={12} />
+                                </button>
+                              </div>
+                            ) : (
+                              <span className="text-slate-400">—</span>
+                            )}
+                          </div>
+                          <span className="text-slate-500 font-medium">
+                            {formatDate(order?.created_at)}
                           </span>
-                          <span>{formatDate(order?.created_at)}</span>
                         </div>
                       </div>
                     );
@@ -886,67 +964,98 @@ if (pageLoading && !orders.length) {
                 </div>
 
                 {/* 2. TABLET & DESKTOP: Traditional Table View */}
-                <div className="hidden md:block overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="border-b border-slate-100 bg-slate-50/70">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                <div className="hidden md:block w-full overflow-hidden">
+                  <table className="w-full table-fixed border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-200 bg-slate-50/80">
+                        <th className="w-[14%] px-2.5 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-slate-600">
                           Order
                         </th>
-                        <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                        <th className="w-[24%] px-2.5 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-slate-600">
                           Customer
                         </th>
-                        <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                        <th className="w-[23%] px-2.5 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-slate-600">
                           AWB
                         </th>
-                        <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                        <th className="w-[12%] px-2 py-2.5 text-center text-[11px] font-bold uppercase tracking-wider text-slate-600">
                           Payment
                         </th>
-                        <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                        <th className="w-[14%] px-2 py-2.5 text-center text-[11px] font-bold uppercase tracking-wider text-slate-600">
                           Status
                         </th>
-                        <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                        <th className="w-[13%] px-2.5 py-2.5 text-right text-[11px] font-bold uppercase tracking-wider text-slate-600">
                           Date
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100 text-[12px]">
+                    <tbody className="divide-y divide-slate-100 text-[13px]">
                       {recentOrders.map((order) => {
                         const status = getStatus(order);
+                        const awb = getAWB(order);
+                        const customer = getCustomer(order);
+                        const payment = getPayment(order);
+
                         return (
                           <tr
                             key={order?.id ?? order?.order_id}
-                            className="transition-colors hover:bg-slate-50/60"
+                            className="transition-colors hover:bg-slate-50/80 group"
                           >
-                            <td className="px-4 py-3 font-semibold text-slate-800">
+                            <td className="px-2.5 py-2.5 font-bold text-slate-900 text-[12px] truncate">
                               #{getOrderId(order)}
                             </td>
-                            <td className="max-w-[140px] px-4 py-3 truncate font-medium text-slate-700">
-                              {getCustomer(order)}
-                            </td>
-                            <td className="px-4 py-3 text-slate-500 font-mono text-[11px]">
-                              {getAWB(order) || "—"}
-                            </td>
-                            <td className="px-4 py-3">
-                              <span
-                                className={`inline-flex rounded-md border px-2 py-0.5 text-[10px] font-semibold ${getPayment(order) === "COD"
-                                  ? "border-violet-100 bg-violet-50 text-violet-600"
-                                  : "border-slate-200 bg-slate-50 text-slate-500"
-                                  }`}
+                            <td className="px-2.5 py-2">
+                              <p
+                                className="text-[11px] font-semibold text-slate-800 leading-snug break-words line-clamp-2"
+                                title={customer}
                               >
-                                {getPayment(order)}
+                                {customer}
+                              </p>
+                            </td>
+                            <td className="px-2.5 py-2.5">
+                              {awb && awb !== "—" ? (
+                                <div className="flex items-center gap-1 min-w-0">
+                                  <button
+                                    type="button"
+                                    onClick={() => triggerTracking(awb)}
+                                    title="Click to track shipment"
+                                    className="truncate font-mono text-[11px] font-semibold text-slate-800 hover:text-[#008dd2] transition cursor-pointer select-none"
+                                  >
+                                    {awb}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => handleCopyAwb(e, awb)}
+                                    title="Copy AWB"
+                                    className="shrink-0 p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 rounded transition"
+                                  >
+                                    <Icon name="copy" size={12} />
+                                  </button>
+                                </div>
+                              ) : (
+                                <span className="text-slate-400 font-medium text-[11px]">—</span>
+                              )}
+                            </td>
+                            <td className="px-2 py-2.5 text-center">
+                              <span
+                                className={`inline-flex items-center justify-center rounded-md border px-2 py-0.5 text-[10px] font-bold tracking-wide uppercase ${
+                                  payment === "COD"
+                                    ? "border-violet-200 bg-violet-50 text-violet-700"
+                                    : "border-sky-200 bg-sky-50 text-sky-700"
+                                }`}
+                              >
+                                {payment}
                               </span>
                             </td>
-                            <td className="px-4 py-3">
+                            <td className="px-2 py-2.5 text-center">
                               <span
-                                className={`inline-flex rounded-md border px-2 py-0.5 text-[10px] font-semibold ${getStatusClass(
+                                className={`inline-flex items-center justify-center rounded-md border px-2 py-0.5 text-[10px] whitespace-nowrap ${getStatusClass(
                                   status
                                 )}`}
                               >
                                 {getStatusLabel(status)}
                               </span>
                             </td>
-                            <td className="px-4 py-3 text-[11px] text-slate-400">
+                            <td className="px-2.5 py-2.5 text-right text-[11px] font-medium text-slate-500 whitespace-nowrap">
                               {formatDate(order?.created_at)}
                             </td>
                           </tr>
@@ -967,25 +1076,34 @@ if (pageLoading && !orders.length) {
               <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-sky-50 text-sky-600">
                 <Icon name="calculator" size={16} />
               </div>
-              <div>
-                <h2 className="text-[14px] font-bold text-slate-800">
+              <div className="min-w-0 flex-1">
+                <h2 className="text-[14.5px] font-bold text-slate-900">
                   Calculate Shipping Rate
                 </h2>
-                <p className="mt-0.5 text-[11px] text-slate-400">
-                  Get your assigned rate instantly
+                <p className="mt-0.5 text-[11.5px] font-medium text-slate-500">
+                  Get your rate instantly
                 </p>
               </div>
+              <button
+                type="button"
+                onClick={handleResetRateCalculator}
+                title="Reset calculator"
+                aria-label="Reset calculator"
+                className="ml-auto flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800 active:scale-95"
+              >
+                <Icon name="refresh" size={15} />
+              </button>
             </div>
           </div>
 
           <form onSubmit={handleCalculateRate} className="p-4">
             <div className="grid grid-cols-2 gap-2.5">
               <div>
-                <label className="mb-1.5 block text-[11px] font-semibold text-slate-500">
+                <label className="mb-1.5 block text-[11.5px] font-bold text-slate-700">
                   Pickup Pincode
                 </label>
                 <div className="relative">
-                  <div className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400">
+                  <div className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500">
                     <Icon name="location" size={14} />
                   </div>
                   <input
@@ -999,17 +1117,17 @@ if (pageLoading && !orders.length) {
                       )
                     }
                     placeholder="302001"
-                    className="h-9.5 w-full rounded-xl border border-slate-200 bg-slate-50 pl-8 pr-2.5 text-[12px] text-slate-700 outline-none transition placeholder:text-slate-300 focus:border-[#008dd2] focus:bg-white"
+                    className="h-9.5 w-full rounded-xl border border-slate-200/90 bg-white pl-8 pr-2.5 text-[12.5px] font-semibold text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-[#008dd2] focus:ring-2 focus:ring-[#008dd2]/10 shadow-2xs"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="mb-1.5 block text-[11px] font-semibold text-slate-500">
+                <label className="mb-1.5 block text-[11.5px] font-bold text-slate-700">
                   Delivery Pincode
                 </label>
                 <div className="relative">
-                  <div className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400">
+                  <div className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500">
                     <Icon name="location" size={14} />
                   </div>
                   <input
@@ -1023,7 +1141,7 @@ if (pageLoading && !orders.length) {
                       )
                     }
                     placeholder="110001"
-                    className="h-9.5 w-full rounded-xl border border-slate-200 bg-slate-50 pl-8 pr-2.5 text-[12px] text-slate-700 outline-none transition placeholder:text-slate-300 focus:border-[#008dd2] focus:bg-white"
+                    className="h-9.5 w-full rounded-xl border border-slate-200/90 bg-white pl-8 pr-2.5 text-[12.5px] font-semibold text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-[#008dd2] focus:ring-2 focus:ring-[#008dd2]/10 shadow-2xs"
                   />
                 </div>
               </div>
@@ -1031,7 +1149,7 @@ if (pageLoading && !orders.length) {
 
             <div className="mt-3 grid grid-cols-2 gap-2.5">
               <div>
-                <label className="mb-1.5 block text-[11px] font-semibold text-slate-500">
+                <label className="mb-1.5 block text-[11.5px] font-bold text-slate-700">
                   Weight
                 </label>
                 <div className="relative">
@@ -1042,20 +1160,20 @@ if (pageLoading && !orders.length) {
                     value={weight}
                     onChange={(e) => setWeight(e.target.value)}
                     placeholder="1.00"
-                    className="h-9.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 pr-8 text-[12px] text-slate-700 outline-none transition placeholder:text-slate-300 focus:border-[#008dd2] focus:bg-white"
+                    className="h-9.5 w-full rounded-xl border border-slate-200/90 bg-white px-3 pr-8 text-[12.5px] font-semibold text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-[#008dd2] focus:ring-2 focus:ring-[#008dd2]/10 shadow-2xs"
                   />
-                  <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-medium text-slate-400">
+                  <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] font-bold text-slate-500">
                     kg
                   </span>
                 </div>
               </div>
 
               <div>
-                <label className="mb-1.5 block text-[11px] font-semibold text-slate-500">
+                <label className="mb-1.5 block text-[11.5px] font-bold text-slate-700">
                   Product Price
                 </label>
                 <div className="relative">
-                  <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-[11px] text-slate-400 font-medium">
+                  <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-[12px] text-slate-600 font-bold">
                     ₹
                   </span>
                   <input
@@ -1065,23 +1183,23 @@ if (pageLoading && !orders.length) {
                     value={productPrice}
                     onChange={(e) => setProductPrice(e.target.value)}
                     placeholder="500"
-                    className="h-9.5 w-full rounded-xl border border-slate-200 bg-slate-50 pl-6 pr-2.5 text-[12px] text-slate-700 outline-none transition placeholder:text-slate-300 focus:border-[#008dd2] focus:bg-white"
+                    className="h-9.5 w-full rounded-xl border border-slate-200/90 bg-white pl-6 pr-2.5 text-[12.5px] font-semibold text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-[#008dd2] focus:ring-2 focus:ring-[#008dd2]/10 shadow-2xs"
                   />
                 </div>
               </div>
             </div>
 
             <div className="mt-3">
-              <label className="mb-1.5 block text-[11px] font-semibold text-slate-500">
+              <label className="mb-1.5 block text-[11.5px] font-bold text-slate-700">
                 Payment Mode
               </label>
               <div className="grid grid-cols-2 rounded-xl border border-slate-200 bg-slate-50 p-1">
                 <button
                   type="button"
                   onClick={() => setPaymentType("PREPAID")}
-                  className={`h-8 rounded-lg text-[11px] font-bold transition ${paymentType === "PREPAID"
-                    ? "bg-white text-slate-800 shadow-xs"
-                    : "text-slate-400 hover:text-slate-600"
+                  className={`h-8 rounded-lg text-[11.5px] font-bold transition ${paymentType === "PREPAID"
+                    ? "bg-white text-slate-900 shadow-xs"
+                    : "text-slate-600 hover:text-slate-800"
                     }`}
                 >
                   Prepaid
@@ -1089,9 +1207,9 @@ if (pageLoading && !orders.length) {
                 <button
                   type="button"
                   onClick={() => setPaymentType("COD")}
-                  className={`h-8 rounded-lg text-[11px] font-bold transition ${paymentType === "COD"
-                    ? "bg-white text-slate-800 shadow-xs"
-                    : "text-slate-400 hover:text-slate-600"
+                  className={`h-8 rounded-lg text-[11.5px] font-bold transition ${paymentType === "COD"
+                    ? "bg-white text-slate-900 shadow-xs"
+                    : "text-slate-600 hover:text-slate-800"
                     }`}
                 >
                   COD
@@ -1239,79 +1357,6 @@ if (pageLoading && !orders.length) {
         </div>
       </div>
 
-      {/* ==================================================
-          BOTTOM SHORTCUT CARDS
-      ================================================== */}
-      <div className="mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-3 sm:gap-3">
-        <button
-          type="button"
-          onClick={() => navigate("/create-order")}
-          className="group rounded-2xl border border-slate-200/80 bg-white p-3.5 sm:p-4 text-left shadow-[0_1px_4px_rgba(15,23,42,0.03)] transition hover:border-sky-200 active:scale-[0.98]"
-        >
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-50 text-sky-600">
-              <Icon name="plus" size={16} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-[13px] font-bold text-slate-700 truncate">
-                Create New Order
-              </p>
-              <p className="text-[10px] text-slate-400 truncate">
-                Start a new shipment
-              </p>
-            </div>
-            <div className="text-slate-300 transition group-hover:text-sky-500">
-              <Icon name="arrow-right" size={14} />
-            </div>
-          </div>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => navigate("/wallet")}
-          className="group rounded-2xl border border-slate-200/80 bg-white p-3.5 sm:p-4 text-left shadow-[0_1px_4px_rgba(15,23,42,0.03)] transition hover:border-violet-200 active:scale-[0.98]"
-        >
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-50 text-violet-600">
-              <Icon name="wallet" size={16} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-[13px] font-bold text-slate-700 truncate">
-                Wallet History
-              </p>
-              <p className="text-[10px] text-slate-400 truncate">
-                View wallet balance & credits
-              </p>
-            </div>
-            <div className="text-slate-300 transition group-hover:text-violet-500">
-              <Icon name="arrow-right" size={14} />
-            </div>
-          </div>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => navigate("/manifested")}
-          className="group rounded-2xl border border-slate-200/80 bg-white p-3.5 sm:p-4 text-left shadow-[0_1px_4px_rgba(15,23,42,0.03)] transition hover:border-emerald-200 active:scale-[0.98]"
-        >
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
-              <Icon name="truck" size={16} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-[13px] font-bold text-slate-700 truncate">
-                Manifested Shipments
-              </p>
-              <p className="text-[10px] text-slate-400 truncate">
-                Track active orders
-              </p>
-            </div>
-            <div className="text-slate-300 transition group-hover:text-emerald-500">
-              <Icon name="arrow-right" size={14} />
-            </div>
-          </div>
-        </button>
-      </div>
     </div>
   );
 }

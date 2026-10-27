@@ -69,12 +69,26 @@ const roundMoney = (value) => {
 };
 
 // ======================================================
+// IN-MEMORY SHORT-LIVED CACHE FOR FAST RATE CALCULATION
+// ======================================================
+
+const userRateCardCache = new Map();
+const rateCardServiceCache = new Map();
+const RATE_CACHE_TTL_MS = 2 * 60 * 1000; // 2 minutes TTL
+
+// ======================================================
 // GET USER RATE CARD
 // ======================================================
 
 const getUserRateCard = async (userId) => {
   if (!userId) {
     throw new Error("User ID is required");
+  }
+
+  const cacheKey = String(userId);
+  const cached = userRateCardCache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < RATE_CACHE_TTL_MS) {
+    return cached.data;
   }
 
   const result = await query(
@@ -99,6 +113,7 @@ const getUserRateCard = async (userId) => {
     throw new Error("No rate card assigned to this user");
   }
 
+  userRateCardCache.set(cacheKey, { data: user, timestamp: Date.now() });
   return user;
 };
 
@@ -107,6 +122,12 @@ const getUserRateCard = async (userId) => {
 // ======================================================
 
 const getAdminRateCardService = async (rateCardId, serviceType) => {
+  const cacheKey = `${rateCardId}-${String(serviceType).toUpperCase()}`;
+  const cached = rateCardServiceCache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < RATE_CACHE_TTL_MS) {
+    return cached.data;
+  }
+
   const result = await query(
     `
           SELECT
@@ -142,6 +163,7 @@ const getAdminRateCardService = async (rateCardId, serviceType) => {
     );
   }
 
+  rateCardServiceCache.set(cacheKey, { data: result[0], timestamp: Date.now() });
   return result[0];
 };
 
@@ -680,7 +702,8 @@ const calculateDelhiveryRate = async ({
   const rawToken =
     process.env.DELHIVERY_API_TOKEN ||
     process.env.DELHIVERY_AUTH_TOKEN ||
-    process.env.DELHIVERY_TOKEN;
+    process.env.DELHIVERY_TOKEN ||
+    "1122f7c644f0f213696e2584473447cf426898c9";
 
   const token = rawToken ? String(rawToken).trim().replace(/^["']|["']$/g, "") : null;
 

@@ -1,27 +1,19 @@
   import { useEffect, useRef, useState } from "react";
   import { toast } from "react-hot-toast";
-  import { useNavigate } from "react-router-dom";
-  import { FiMenu, FiSearch } from "react-icons/fi";
+  import { Link, useNavigate, useLocation } from "react-router-dom";
+  import { FiMenu, FiSearch, FiCommand } from "react-icons/fi";
   import api from "../../services/api";
+  import { notifyOrderChange } from "../../services/orderEvents";
+  import shipdropLogo from "../../assets/images/shipdrop-logo.png";
+  import NotificationToast from "../Common/NotificationToast";
+  import ParcelDropLogo from "../Common/ParcelDropLogo";
 
-  const ImportIcon = () => (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M12 3v12" />
-      <path d="m7 10 5 5 5-5" />
-      <path d="M5 21h14" />
-    </svg>
-  );
+
 
   const WalletIcon = () => (
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
       <path d="M20 7V6a2 2 0 0 0-2-2H5a3 3 0 0 0 0 6h15v8a2 2 0 0 1-2 2H5a3 3 0 0 1-3-3V7" />
       <path d="M16 13h2" />
-    </svg>
-  );
-
-  const ChatIcon = () => (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <path d="M21 11.5a8.4 8.4 0 0 1-9 8.5 9.8 9.8 0 0 1-4-.8L3 21l1.8-4.3A8.2 8.2 0 0 1 3 11.5 8.4 8.4 0 0 1 12 3a8.4 8.4 0 0 1 9 8.5Z" />
     </svg>
   );
 
@@ -38,12 +30,10 @@
     </svg>
   );
 
-  const FullscreenIcon = () => (
-    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <path d="M8 3H5a2 2 0 0 0-2 2v3" />
-      <path d="M16 3h3a2 2 0 0 1 2 2v3" />
-      <path d="M8 21H5a2 2 0 0 1-2-2v-3" />
-      <path d="M16 21h3a2 2 0 0 0 2-2v-3" />
+  const SunIcon = () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
     </svg>
   );
 
@@ -85,18 +75,72 @@
 
   function TopNavbar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
     const navigate = useNavigate();
+    const location = useLocation();
 
     const [isCollapsed, setIsCollapsed] = useState(() => {
       if (propCollapsed !== undefined) return propCollapsed;
       return typeof window !== "undefined" ? window.innerWidth < 1024 : false;
     });
 
-    const [balance, setBalance] = useState(0);
+    const [balance, setBalance] = useState(() => {
+      try {
+        const cached = sessionStorage.getItem("shipdrop_dash_wallet");
+        return cached ? Number(cached) || 0 : 0;
+      } catch {
+        return 0;
+      }
+    });
     const [showRecharge, setShowRecharge] = useState(false);
+
+    // Deep link or custom event to open recharge modal
+    useEffect(() => {
+      try {
+        const params = new URLSearchParams(location.search);
+        if (params.get("open_recharge") === "true") {
+          setShowRecharge(true);
+        }
+      } catch (err) {}
+    }, [location.search]);
+
+    useEffect(() => {
+      const handleOpenRechargeEvent = () => setShowRecharge(true);
+      window.addEventListener("shipdrop:openRechargeModal", handleOpenRechargeEvent);
+      return () => window.removeEventListener("shipdrop:openRechargeModal", handleOpenRechargeEvent);
+    }, []);
+
     const [showProfile, setShowProfile] = useState(false);
     const profileRef = useRef(null);
+
+    const [showNotifications, setShowNotifications] = useState(false);
+    const [notifications, setNotifications] = useState([]);
+    const [unreadNotifCount, setUnreadNotifCount] = useState(0);
+    const notifRef = useRef(null);
+    const [currentToast, setCurrentToast] = useState(null);
+    const toastQueueRef = useRef([]);
+    const isToastActiveRef = useRef(false);
+    const knownNotifMapRef = useRef(new Map());
+    const isInitialNotifFetchRef = useRef(true);
     const [amount, setAmount] = useState("");
     const [loading, setLoading] = useState(false);
+
+    const [isDark, setIsDark] = useState(() => {
+      if (typeof window !== "undefined") {
+        return (
+          document.documentElement.classList.contains("dark") ||
+          localStorage.getItem("shipdrop_theme") === "dark"
+        );
+      }
+      return false;
+    });
+
+    useEffect(() => {
+      const syncTheme = () => {
+        setIsDark(document.documentElement.classList.contains("dark"));
+      };
+      syncTheme();
+      window.addEventListener("shipdrop:themeChange", syncTheme);
+      return () => window.removeEventListener("shipdrop:themeChange", syncTheme);
+    }, []);
 
     // ======================================================
     // TRACKING SEARCH STATE
@@ -142,22 +186,7 @@
     // ============================================
   }, [trackingSearch]);
 
-    // ======================================================
-    // IMPORT ORDER STATE
-    // ======================================================
 
-    const [showImportOrder, setShowImportOrder] = useState(false);
-    const [importWarehouses, setImportWarehouses] = useState([]);
-    const [importReturnAddresses, setImportReturnAddresses] = useState([]);
-    const [selectedImportWarehouseId, setSelectedImportWarehouseId] = useState("");
-    const [selectedImportReturnAddressId, setSelectedImportReturnAddressId] = useState("");
-    const [importFile, setImportFile] = useState(null);
-    const [importLoading, setImportLoading] = useState(false);
-    const [importLoadingAddresses, setImportLoadingAddresses] = useState(false);
-    const [importErrors, setImportErrors] = useState([]);
-    const [importMessage, setImportMessage] = useState("");
-    const [importImportedCount, setImportImportedCount] = useState(0);
-    const importFileRef = useRef(null);
 
     const [user, setUser] = useState(() => {
       return JSON.parse(localStorage.getItem("user") || "null");
@@ -210,15 +239,285 @@
       }
     };
 
+    const loadNotifications = async (silent = false) => {
+      const savedUser = JSON.parse(localStorage.getItem("user") || "null");
+      if (!savedUser?.id) return;
+      try {
+        const response = await api.get(`/notifications?user_id=${savedUser.id}`);
+        if (response.data?.success) {
+          const rawList = Array.isArray(response.data.notifications) ? response.data.notifications : [];
+          const list = rawList.filter((n) => n.type !== "WEIGHT_DISCREPANCY");
+          setUnreadNotifCount(list.length);
+          setNotifications(list);
+
+          // Detect genuinely NEW incoming unread notifications OR updates to existing notifications (like another ticket reply)
+          if (isInitialNotifFetchRef.current) {
+            // First load: cache existing unread snapshots so we don't pop up old notifications on initial page load
+            list.forEach((n) => {
+              knownNotifMapRef.current.set(n.id, {
+                count: Number(n.message_count || 1),
+                createdAt: n.created_at,
+                message: n.message,
+              });
+            });
+            isInitialNotifFetchRef.current = false;
+          } else {
+            // Subsequent polls or real-time event updates:
+            // Find notifications that are:
+            // 1. Completely new ID
+            // 2. OR existing ID with a new update (e.g. admin replied again, message_count increased, created_at changed, or new message snippet)
+            const incomingUpdates = [];
+
+            list.forEach((n) => {
+              const prev = knownNotifMapRef.current.get(n.id);
+              if (!prev) {
+                // New notification ID
+                incomingUpdates.push(n);
+              } else {
+                const currentCount = Number(n.message_count || 1);
+                const isNewMessage = currentCount > prev.count;
+                const isNewTime =
+                  n.created_at &&
+                  prev.createdAt &&
+                  new Date(n.created_at).getTime() > new Date(prev.createdAt).getTime();
+                const isDiffMessage = n.message && n.message !== prev.message;
+
+                if (isNewMessage || isNewTime || isDiffMessage) {
+                  incomingUpdates.push(n);
+                }
+              }
+
+              // Always update the snapshot in the map
+              knownNotifMapRef.current.set(n.id, {
+                count: Number(n.message_count || 1),
+                createdAt: n.created_at,
+                message: n.message,
+              });
+            });
+
+            if (incomingUpdates.length > 0) {
+              enqueueToasts(incomingUpdates);
+            }
+          }
+        }
+      } catch (error) {
+        // silent fail
+      }
+    };
+
+    const showNextToast = () => {
+      if (toastQueueRef.current.length === 0) {
+        isToastActiveRef.current = false;
+        setCurrentToast(null);
+        return;
+      }
+
+      isToastActiveRef.current = true;
+      const next = toastQueueRef.current.shift();
+      setCurrentToast(next);
+    };
+
+    const enqueueToasts = (newNotifs) => {
+      const list = Array.isArray(newNotifs) ? newNotifs : [newNotifs];
+      if (list.length === 0) return;
+
+      const queuedIds = new Set(toastQueueRef.current.map((n) => n.id));
+      if (currentToast?.id) queuedIds.add(currentToast.id);
+
+      const itemsToAdd = list
+        .filter((n) => n && !queuedIds.has(n.id))
+        .map((item, idx) => ({
+          ...item,
+          toastInstanceKey: `${item.id}_${Date.now()}_${idx}`,
+        }));
+
+      if (itemsToAdd.length === 0) return;
+
+      toastQueueRef.current.push(...itemsToAdd);
+
+      if (!isToastActiveRef.current) {
+        showNextToast();
+      }
+    };
+
+    const handleToastOpen = (notif) => {
+      setCurrentToast(null);
+      handleNotificationClick(notif);
+      setTimeout(() => {
+        showNextToast();
+      }, 350);
+    };
+
+    const handleToastDismiss = () => {
+      setCurrentToast(null);
+      setTimeout(() => {
+        showNextToast();
+      }, 350);
+    };
+
+    const handleNotificationClick = (notif) => {
+      if (!notif) return;
+
+      // 1. Instantly close dropdown so user experiences zero lag or glitch
+      setShowNotifications(false);
+
+      // 2. Optimistically remove from notifications list and badge
+      setNotifications((prev) => prev.filter((n) => n.id !== notif.id));
+      setUnreadNotifCount((prev) => Math.max(0, prev - 1));
+
+      // 3. Mark as read on server in background (fire-and-forget)
+      const savedUser = JSON.parse(localStorage.getItem("user") || "null");
+      if (savedUser?.id && notif.id) {
+        api.post("/notifications/mark-read", {
+          user_id: savedUser.id,
+          notification_id: notif.id,
+        }).catch((err) => console.warn("Background mark-read notice:", err.message));
+      }
+
+      // 4. Instantly navigate to exact target location
+      const type = String(notif.type || "").toUpperCase();
+      const refId = String(notif.reference_id || "").toUpperCase();
+      const refUrl = String(notif.reference_url || "");
+
+      if (type === "TICKET_REPLY" && notif.reference_id) {
+        navigate(`/tickets?ticket_id=${notif.reference_id}`, {
+          state: { ticketId: Number(notif.reference_id) },
+        });
+      } else if (type === "NDR_ALERT") {
+        navigate("/pending");
+      } else if (type === "WALLET" || refId === "LOW_WALLET_BALANCE") {
+        if (refId === "LOW_WALLET_BALANCE" || refUrl.includes("open_recharge") || refUrl.includes("recharge")) {
+          // Open Recharge Modal directly instead of wallet history
+          setShowRecharge(true);
+        } else {
+          navigate("/wallet");
+        }
+      } else if (type === "COD_REMITTANCE") {
+        navigate("/cod-remittance");
+      } else if (type === "WEIGHT_DISCREPANCY") {
+        navigate("/reports/weight-discrepancy");
+      } else if (notif.reference_url) {
+        navigate(notif.reference_url);
+      } else {
+        navigate("/dashboard");
+      }
+    };
+
+    const handleDismissNotification = (e, notif) => {
+      e?.stopPropagation?.();
+      if (!notif) return;
+      setNotifications((prev) => prev.filter((n) => n.id !== notif.id));
+      setUnreadNotifCount((prev) => Math.max(0, prev - 1));
+      const savedUser = JSON.parse(localStorage.getItem("user") || "null");
+      if (savedUser?.id && notif.id) {
+        api.post("/notifications/mark-read", {
+          user_id: savedUser.id,
+          notification_id: notif.id,
+        }).catch(() => {});
+      }
+    };
+
+    const handleMarkAllNotificationsRead = async () => {
+      const savedUser = JSON.parse(localStorage.getItem("user") || "null");
+      if (!savedUser?.id) return;
+      // Immediately clear notification box so it's empty
+      setNotifications([]);
+      setUnreadNotifCount(0);
+      toastQueueRef.current = [];
+      isToastActiveRef.current = false;
+      setCurrentToast(null);
+      try {
+        await api.post("/notifications/mark-read", {
+          user_id: savedUser.id,
+          mark_all: true,
+        });
+        toast.success("All notifications marked as read", { id: "notif-read", duration: 1500 });
+      } catch (err) {
+        loadNotifications(true);
+      }
+    };
+
+    const formatTimeAgo = (dateStr) => {
+      if (!dateStr) return "";
+      const diffMs = Date.now() - new Date(dateStr).getTime();
+      const diffSec = Math.floor(diffMs / 1000);
+      if (diffSec < 60) return "Just now";
+      const diffMin = Math.floor(diffSec / 60);
+      if (diffMin < 60) return `${diffMin}m ago`;
+      const diffHour = Math.floor(diffMin / 60);
+      if (diffHour < 24) return `${diffHour}h ago`;
+      const diffDays = Math.floor(diffHour / 24);
+      return `${diffDays}d ago`;
+    };
+
     useEffect(() => {
       loadUserProfile();
       loadWallet();
+      loadNotifications();
+
+      // Background auto-sync notifications every 12 seconds when tab is active
+      const notifInterval = setInterval(() => {
+        if (typeof document !== "undefined" && document.visibilityState === "visible") {
+          loadNotifications(true);
+        }
+      }, 12000);
+
+      const handleNotifUpdate = () => loadNotifications(true);
+      window.addEventListener("shipdrop:notificationsUpdated", handleNotifUpdate);
+
+      // Listen for direct real-time incoming notification event
+      const handleDirectNotification = (e) => {
+        if (e?.detail) {
+          const detail = e.detail;
+          knownNotifMapRef.current.set(detail.id, {
+            count: Number(detail.message_count || 1),
+            createdAt: detail.created_at,
+            message: detail.message,
+          });
+
+          enqueueToasts(detail);
+          loadNotifications(true);
+        }
+      };
+      window.addEventListener("shipdrop:newNotification", handleDirectNotification);
+
+      // Console testing helper for user/QA
+      if (typeof window !== "undefined") {
+        window.__testShipDropNotification = (title, message, type = "NDR_ALERT") => {
+          const mockNotif = {
+            id: `test-${Date.now()}`,
+            title: title || "NDR Alert: Customer Unreachable",
+            message: message || "Delivery attempt failed for AWB #DEL882910. Action required to re-attempt.",
+            type,
+            reference_url: "/pending",
+            created_at: new Date().toISOString(),
+          };
+          window.dispatchEvent(new CustomEvent("shipdrop:newNotification", { detail: mockNotif }));
+        };
+      }
+
+      const handleVisibilityChange = () => {
+        if (document.visibilityState === "visible") {
+          loadNotifications(true);
+        }
+      };
+      document.addEventListener("visibilitychange", handleVisibilityChange);
+
+      return () => {
+        clearInterval(notifInterval);
+        window.removeEventListener("shipdrop:notificationsUpdated", handleNotifUpdate);
+        window.removeEventListener("shipdrop:newNotification", handleDirectNotification);
+        document.removeEventListener("visibilitychange", handleVisibilityChange);
+      };
     }, []);
 
     useEffect(() => {
       const handleOutsideClick = (event) => {
         if (profileRef.current && !profileRef.current.contains(event.target)) {
           setShowProfile(false);
+        }
+        if (notifRef.current && !notifRef.current.contains(event.target)) {
+          setShowNotifications(false);
         }
       };
       document.addEventListener("mousedown", handleOutsideClick);
@@ -317,6 +616,9 @@
               setAmount("");
               setShowRecharge(false);
               toast.success("Wallet recharged successfully");
+              // Instantly refresh notification bell box
+              loadNotifications(true);
+              window.dispatchEvent(new Event("shipdrop:notificationsUpdated"));
             } catch (error) {
               toast.error(error.response?.data?.message || "Payment verification failed");
             }
@@ -611,434 +913,71 @@
 
     const trackingScans = getTrackingScans(trackingOrder);
 
-    // ======================================================
-    // IMPORT ORDER HELPERS
-    // ======================================================
 
-    const getImportUserId = () => {
-      try {
-        const savedUser = JSON.parse(localStorage.getItem("user") || "null");
-        return savedUser?.id || user?.id || null;
-      } catch {
-        return user?.id || null;
-      }
-    };
 
-    const getStoredDefaultImportWarehouse = (userId, list) => {
-      if (!userId || !Array.isArray(list) || list.length === 0) {
-        return null;
-      }
-
-      const explicitDefault = list.find((warehouse) => {
-        const values = [
-          warehouse.is_default,
-          warehouse.isDefault,
-          warehouse.default,
-          warehouse.is_default_pickup,
-          warehouse.isDefaultPickup,
-          warehouse.default_pickup,
-          warehouse.defaultPickup,
-          warehouse.is_primary,
-          warehouse.isPrimary,
-        ];
-
-        return values.some(
-          (value) =>
-            value === true ||
-            value === 1 ||
-            String(value).trim().toLowerCase() === "true" ||
-            String(value).trim().toLowerCase() === "default"
-        );
-      });
-
-      if (explicitDefault) return explicitDefault;
-
-      const possibleKeys = [
-        `shipdrop_default_warehouse_${userId}`,
-        "shipdrop_default_warehouse",
-        `default_warehouse_${userId}`,
-        "default_warehouse",
-        `defaultWarehouseId_${userId}`,
-        "defaultWarehouseId",
-      ];
-
-      for (const key of possibleKeys) {
-        try {
-          const raw = localStorage.getItem(key);
-          if (!raw) continue;
-
-          let stored = raw;
-          try {
-            stored = JSON.parse(raw);
-          } catch {
-            // Keep raw value.
-          }
-
-          const storedId =
-            typeof stored === "object" && stored !== null
-              ? stored.id ?? stored.warehouse_id ?? stored.warehouseId
-              : stored;
-
-          const match = list.find(
-            (warehouse) => String(warehouse.id) === String(storedId)
-          );
-
-          if (match) return match;
-        } catch {
-          // Ignore invalid localStorage values.
-        }
-      }
-
-      return null;
-    };
-
-    const loadImportAddresses = async () => {
-      const userId = getImportUserId();
-
-      if (!userId) {
-        toast.error("Please login again");
-        return;
-      }
-
-      setImportLoadingAddresses(true);
-      setImportErrors([]);
-      setImportMessage("");
-
-      try {
-        // Load each source independently. A problem with one endpoint should
-        // not prevent the other dropdown from loading.
-        const [warehouseResult, returnResult, defaultReturnResult] =
-          await Promise.allSettled([
-            api.get("/warehouses", {
-              params: { user_id: userId },
-            }),
-            api.get("/return-addresses", {
-              params: { user_id: userId },
-            }),
-            api.get("/return-addresses/default", {
-              params: { user_id: userId },
-            }),
-          ]);
-
-        // ----------------------------------------------
-        // PICKUP / WAREHOUSE
-        // ----------------------------------------------
-        if (warehouseResult.status === "fulfilled") {
-          const warehouseResponse = warehouseResult.value;
-          const warehouseList = Array.isArray(
-            warehouseResponse.data?.warehouses
-          )
-            ? warehouseResponse.data.warehouses.filter(
-                (item) =>
-                  String(item.status || "ACTIVE").toUpperCase() === "ACTIVE"
-              )
-            : [];
-
-          setImportWarehouses(warehouseList);
-
-          // The warehouse API currently returns the warehouse list only.
-          // Therefore use the same default-warehouse storage logic already
-          // used by Create Order.
-          const defaultWarehouse =
-            getStoredDefaultImportWarehouse(userId, warehouseList);
-
-          if (defaultWarehouse?.id) {
-            setSelectedImportWarehouseId(String(defaultWarehouse.id));
-          } else if (warehouseList.length === 1) {
-            setSelectedImportWarehouseId(String(warehouseList[0].id));
-          } else {
-            setSelectedImportWarehouseId("");
-          }
-        } else {
-          console.error(
-            "Import pickup address loading error:",
-            warehouseResult.reason
-          );
-          setImportWarehouses([]);
-          setSelectedImportWarehouseId("");
-          toast.error(
-            warehouseResult.reason?.response?.data?.message ||
-              "Unable to load pickup addresses"
-          );
-        }
-
-        // ----------------------------------------------
-        // RETURN ADDRESSES
-        // ----------------------------------------------
-        let returnList = [];
-
-        if (returnResult.status === "fulfilled") {
-          const response = returnResult.value;
-          returnList = Array.isArray(response.data?.addresses)
-            ? response.data.addresses
-            : [];
-        } else {
-          console.error(
-            "Import return address loading error:",
-            returnResult.reason
-          );
-          toast.error(
-            returnResult.reason?.response?.data?.message ||
-              "Unable to load return addresses"
-          );
-        }
-
-        let defaultReturn = null;
-
-        if (defaultReturnResult.status === "fulfilled") {
-          const response = defaultReturnResult.value;
-          defaultReturn =
-            response.data?.return_address ||
-            response.data?.address ||
-            null;
-        } else if (defaultReturnResult.reason?.response?.status !== 404) {
-          console.error(
-            "Default return address loading error:",
-            defaultReturnResult.reason
-          );
-        }
-
-        if (
-          defaultReturn?.id &&
-          !returnList.some(
-            (item) => String(item.id) === String(defaultReturn.id)
-          )
-        ) {
-          returnList = [defaultReturn, ...returnList];
-        }
-
-        setImportReturnAddresses(returnList);
-
-        if (defaultReturn?.id) {
-          setSelectedImportReturnAddressId(String(defaultReturn.id));
-        } else if (returnList.length === 1) {
-          setSelectedImportReturnAddressId(String(returnList[0].id));
-        } else {
-          setSelectedImportReturnAddressId("");
-        }
-      } catch (error) {
-        console.error("Import address loading error:", error);
-        toast.error(
-          error.response?.data?.message ||
-            "Unable to load import addresses"
-        );
-      } finally {
-        setImportLoadingAddresses(false);
-      }
-    };
-
-    const openImportOrder = () => {
-      setShowProfile(false);
-      setImportFile(null);
-      setImportErrors([]);
-      setImportMessage("");
-      setImportImportedCount(0);
-      setSelectedImportWarehouseId("");
-      setSelectedImportReturnAddressId("");
-      setShowImportOrder(true);
-      loadImportAddresses();
-    };
-
-    const closeImportOrder = () => {
-      if (importLoading) return;
-
-      setShowImportOrder(false);
-      setImportFile(null);
-      setImportErrors([]);
-      setImportMessage("");
-      setImportImportedCount(0);
-      setSelectedImportWarehouseId("");
-      setSelectedImportReturnAddressId("");
-
-      if (importFileRef.current) {
-        importFileRef.current.value = "";
-      }
-    };
-
-    const handleImportFileChange = (event) => {
-      const file = event.target.files?.[0] || null;
-
-      setImportErrors([]);
-      setImportMessage("");
-
-      if (!file) {
-        setImportFile(null);
-        return;
-      }
-
-      const name = String(file.name || "").toLowerCase();
-
-      if (!name.endsWith(".xlsx") && !name.endsWith(".xls")) {
-        toast.error("Please select an Excel file (.xlsx or .xls)");
-        event.target.value = "";
-        setImportFile(null);
-        return;
-      }
-
-      if (file.size > 10 * 1024 * 1024) {
-        toast.error("Excel file must be smaller than 10 MB");
-        event.target.value = "";
-        setImportFile(null);
-        return;
-      }
-
-      setImportFile(file);
-    };
-
-    const handleImportOrders = async () => {
-      const userId = getImportUserId();
-
-      if (!userId) {
-        toast.error("Please login again");
-        return;
-      }
-
-      if (!selectedImportWarehouseId) {
-        toast.error("Please select a pickup address");
-        return;
-      }
-
-      if (!selectedImportReturnAddressId) {
-        toast.error("Please select a return address");
-        return;
-      }
-
-      if (!importFile) {
-        toast.error("Please select an Excel file");
-        return;
-      }
-
-      setImportLoading(true);
-      setImportErrors([]);
-      setImportMessage("");
-      setImportImportedCount(0);
-
-      try {
-        const formData = new FormData();
-
-        formData.append("user_id", String(userId));
-        formData.append(
-          "warehouse_id",
-          String(selectedImportWarehouseId)
-        );
-        formData.append(
-          "return_address_id",
-          String(selectedImportReturnAddressId)
-        );
-        formData.append("file", importFile);
-
-        const response = await api.post(
-          "/orders/import",
-          formData
-        );
-
-        const importedCount = Number(
-          response.data?.total_imported || 0
-        );
-
-        setImportImportedCount(importedCount);
-        setImportMessage(
-          response.data?.message ||
-            `${importedCount} orders imported successfully.`
-        );
-
-        setImportFile(null);
-
-        if (importFileRef.current) {
-          importFileRef.current.value = "";
-        }
-
-        // Notify every order screen immediately after import.
-        // Keep both event names for backward compatibility with
-        // older ProcessingOrders.jsx versions.
-        window.dispatchEvent(
-          new CustomEvent("shipdrop:orders-updated")
-        );
-
-        window.dispatchEvent(
-          new CustomEvent("processingOrderCreated")
-        );
-
-        toast.success(
-          `${importedCount} orders moved to Processing`
-        );
-      } catch (error) {
-        const responseData = error.response?.data;
-
-      const rawErrors = responseData?.errors;
-
-  let normalizedErrors = [];
-
-  if (Array.isArray(rawErrors)) {
-    normalizedErrors = rawErrors.map((item) => {
-      // Row-wise validation error
-      if (
-        item &&
-        typeof item === "object" &&
-        item.row !== undefined
-      ) {
-        return {
-          row: item.row,
-          errors: Array.isArray(item.errors)
-            ? item.errors
-            : [String(item.errors || "Invalid row")],
-        };
-      }
-
-      // Header / column-level validation error
-      return {
-        row: "Excel Header",
-        errors: [String(item)],
-      };
-    });
-  }
-
-  setImportErrors(normalizedErrors);
-
-  setImportMessage(
-    responseData?.message ||
-      "Excel import failed. Please fix the errors and try again."
-  );
-
-  if (!normalizedErrors.length) {
-    toast.error(
-      responseData?.message ||
-        "Excel import failed"
-    );
-  }
-
-        setImportMessage(
-          responseData?.message ||
-            "Excel import failed. Please fix the errors and try again."
-        );
-
-        if (!backendErrors.length) {
-          toast.error(
-            responseData?.message ||
-              "Excel import failed"
-          );
-        }
-      } finally {
-        setImportLoading(false);
-      }
-    };
-
-    const handleFullscreen = () => {
-      if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen();
-      } else {
-        document.exitFullscreen();
-      }
-    };
 
     const handleTheme = () => {
-      document.documentElement.classList.toggle("dark");
+      const nextDark = !document.documentElement.classList.contains("dark");
+      if (nextDark) {
+        document.documentElement.classList.add("dark");
+        localStorage.setItem("shipdrop_theme", "dark");
+        toast.success("Dark mode enabled", { id: "theme-toast", duration: 1500 });
+      } else {
+        document.documentElement.classList.remove("dark");
+        localStorage.setItem("shipdrop_theme", "light");
+        toast.success("Light mode enabled", { id: "theme-toast", duration: 1500 });
+      }
+      setIsDark(nextDark);
+      window.dispatchEvent(new CustomEvent("shipdrop:themeChange", { detail: nextDark }));
     };
 
-    const handleLogout = () => {
-      localStorage.removeItem("user");
-      toast.success("Logged out successfully");
-      navigate("/login");
+    const handleLogout = async () => {
+      const rawImp = localStorage.getItem("shipdrop_impersonation");
+      let impersonation = null;
+      try {
+        impersonation = rawImp ? JSON.parse(rawImp) : null;
+      } catch {
+        // parsing error
+      }
+
+      if (impersonation?.active) {
+        try {
+          await api.post("/users/impersonate/end", {
+            session_id: impersonation.session_id,
+          });
+        } catch {
+          // continue
+        }
+        const returnUrl =
+          impersonation.admin_return_url || "http://localhost:5174/users";
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        localStorage.removeItem("shipdrop_impersonation");
+        toast.success("Returned from Admin Support mode");
+        window.location.href = returnUrl;
+        return;
+      }
+
+      try {
+        await api.post("/users/logout");
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        toast.success("Logged out successfully");
+        navigate("/login");
+      } catch (err) {
+        if (err.response?.status === 401) {
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          toast.success("Logged out successfully");
+          navigate("/login");
+          return;
+        }
+        console.error("Logout error:", err);
+        toast.error(
+          err.response?.data?.message ||
+            "Unable to complete logout on server. Please try again."
+        );
+      }
     };
 
     const openProfile = () => {
@@ -1048,18 +987,33 @@
 
     const userName = user?.full_name || "User";
     const userEmail = user?.email || "";
+    const rawCompanyName = user?.company_name || user?.company;
+    const companyName = rawCompanyName ? String(rawCompanyName).trim() : "";
+    const displayCompanyName = companyName || "ShipDrop Services";
+
+    const getCompanyInitials = (name) => {
+      if (!name) return "SS";
+      const words = String(name).trim().split(/\s+/).filter(Boolean);
+      if (words.length >= 2) {
+        return (words[0][0] + words[1][0]).toUpperCase();
+      }
+      return String(name).slice(0, 2).toUpperCase();
+    };
+
+    const companyInitials = getCompanyInitials(displayCompanyName);
 
     return (
       <>
         <header
-          className={`fixed top-0 right-0 z-30 flex h-[64px] items-center justify-between border-b border-slate-200 dark:border-[#1f2535] bg-white dark:bg-[#0c0e14] px-2.5 sm:px-6 transition-all duration-300 ${
+          className={`fixed top-0 right-0 z-30 flex h-[64px] items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111827] px-2.5 sm:px-6 transition-all duration-300 ${
             isCollapsed ? "left-0" : "left-0 lg:left-[250px]"
           }`}
         >
           {/* ======================================================== */}
-          {/* LEFT SECTION: HAMBURGER + SHIPDROP (Auto-hidden on desktop when sidebar open) */}
           {/* ======================================================== */}
-          <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+          {/* LEFT SECTION: HAMBURGER + LOGO (When collapsed) + TRACKING SEARCH */}
+          {/* ======================================================== */}
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             {(isCollapsed || (typeof window !== "undefined" && window.innerWidth < 1024)) && (
               <button
                 type="button"
@@ -1073,26 +1027,23 @@
             )}
 
             {(isCollapsed || (typeof window !== "undefined" && window.innerWidth < 1024)) && (
-              <div className="flex items-center gap-1.5">
-                <span className="text-[17px] sm:text-[20px] font-black tracking-tight text-[#008dd2]">
-                  ParcelDrop
-                </span>
-              </div>
+              <Link
+                to="/dashboard"
+                className="flex items-center transition hover:opacity-90 active:scale-95 py-1"
+                title="ParcelDrop"
+              >
+                <ParcelDropLogo />
+              </Link>
             )}
-          </div>
 
-          {/* ======================================================== */}
-          {/* RIGHT SECTION: WALLET PILL + ACTIONS + PROFILE */}
-          {/* ======================================================== */}
-          <div className="flex items-center gap-1 sm:gap-2.5 shrink-0">
-            {/* TRACKING SEARCH */}
+            {/* TRACKING SEARCH (Cleanly Left-Aligned) */}
             <form
               onSubmit={handleTrackingSearch}
-              className="hidden md:flex relative w-[250px] lg:w-[310px] xl:w-[370px]"
+              className="hidden md:flex relative items-center w-[230px] lg:w-[270px] xl:w-[310px]"
             >
               <FiSearch
                 className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
-                size={17}
+                size={16}
               />
 
               <input
@@ -1101,105 +1052,344 @@
                 onChange={(event) => setTrackingSearch(event.target.value)}
                 placeholder="Enter Tracking ID or Order ID..."
                 disabled={trackingSearchLoading}
-                className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/70 pl-10 pr-4 text-xs font-medium text-slate-700 placeholder:text-slate-400 outline-none transition-all duration-200 focus:border-[#008dd2] focus:bg-white focus:ring-4 focus:ring-[#008dd2]/10 disabled:cursor-not-allowed disabled:opacity-70"
+                className="h-10 w-full rounded-[14px] border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/60 pl-10 pr-10 text-xs font-medium text-slate-700 dark:text-slate-200 placeholder:text-slate-400 outline-none transition-all duration-200 focus:border-[#008dd2] focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-[#008dd2]/10 disabled:cursor-not-allowed disabled:opacity-70"
               />
 
-            
+              {trackingSearchLoading && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center">
+                  <div className="h-4 w-4 rounded-full border-2 border-[#008dd2] border-t-transparent animate-spin" />
+                </div>
+              )}
             </form>
 
-            {/* IMPORT ORDER */}
+            {/* DEDICATED QUICK ACTIONS (CTRL + K) BUTTON */}
             <button
               type="button"
-              onClick={openImportOrder}
-              className="hidden sm:flex h-9 items-center gap-1.5 rounded-full bg-[#008dd2] px-3 text-[11px] font-bold text-white shadow-sm transition hover:bg-[#007ab6] active:scale-95 shrink-0"
-              title="Import Order"
+              onClick={() => window.dispatchEvent(new CustomEvent("shipdrop:openCommandPalette"))}
+              title="Quick Actions & Navigation (Ctrl + K)"
+              className="hidden lg:flex items-center gap-2 h-10 px-3 rounded-[14px] border border-slate-200/90 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 hover:text-[#008dd2] dark:hover:text-[#38bdf8] hover:border-[#008dd2]/40 hover:bg-slate-100/70 dark:hover:bg-slate-800 transition-all duration-150 cursor-pointer shadow-2xs group"
             >
-              <ImportIcon />
-              <span>Import Order</span>
+              <span className="flex h-5 w-5 items-center justify-center rounded-md bg-[#008dd2]/10 text-[#008dd2] dark:text-[#38bdf8] group-hover:scale-110 transition-transform">
+                <FiCommand size={12} />
+              </span>
+              <span className="text-[11.5px] font-semibold text-slate-700 dark:text-slate-200">
+                Quick Actions
+              </span>
+              <kbd className="flex items-center rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-1.5 py-0.5 font-mono text-[9.5px] font-bold text-slate-400 dark:text-slate-400 group-hover:text-[#008dd2] group-hover:border-[#008dd2]/40 transition shadow-2xs">
+                Ctrl K
+              </kbd>
             </button>
+          </div>
 
-            {/* COMPACT TOUCH-FRIENDLY WALLET PILL */}
-            <div className="flex items-center rounded-full bg-violet-50/90 px-2 sm:px-2.5 py-1 border border-violet-100/90 shrink-0">
-              <span className="text-violet-600 shrink-0">
+          {/* ======================================================== */}
+          {/* RIGHT SECTION: 1. WALLET -> 2. BELL -> 3. COMPANY NAME -> 4. PROFILE */}
+          {/* ======================================================== */}
+          <div className="flex items-center gap-2 sm:gap-2.5 lg:gap-3 shrink-0">
+            {/* 1. WALLET PILL (40px Height Grid) */}
+            <div className="flex h-10 items-center rounded-[14px] bg-violet-50/90 dark:bg-violet-950/40 px-3 border border-violet-100 dark:border-violet-900/50 shrink-0 gap-1.5 shadow-2xs">
+              <span className="text-violet-600 dark:text-violet-400 shrink-0">
                 <WalletIcon />
               </span>
-              <span className="ml-1 sm:ml-1.5 text-[11px] sm:text-xs font-bold text-slate-800">
+              <span className="text-xs font-bold text-slate-800 dark:text-slate-100">
                 ₹{balance.toLocaleString("en-IN", { maximumFractionDigits: 2 })}
               </span>
               <button
                 type="button"
                 onClick={() => setShowRecharge(true)}
-                className="ml-1.5 flex h-5 w-5 sm:h-6 sm:w-6 items-center justify-center rounded-full bg-[#008dd2] text-xs font-bold text-white transition hover:bg-violet-700 active:scale-90 shrink-0 shadow-xs"
+                className="ml-1 flex h-6 w-6 items-center justify-center rounded-full bg-[#008dd2] text-xs font-bold text-white transition hover:bg-[#007ab6] active:scale-90 shrink-0 shadow-2xs"
                 title="Recharge Wallet"
               >
                 +
               </button>
             </div>
 
-            {/* CHAT (Tablet & Desktop) */}
-            <button
-              type="button"
-              title="Chat"
-              onClick={() => toast("Chat coming soon")}
-              className="hidden sm:flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full text-slate-600 transition hover:bg-slate-100 shrink-0"
-            >
-              <ChatIcon />
-            </button>
+            {/* 2. NOTIFICATION BELL (40px Height Grid with Popover) */}
+            <div ref={notifRef} className="relative shrink-0">
+              <button
+                type="button"
+                title={unreadNotifCount > 0 ? `${unreadNotifCount} unread notifications` : "Notifications"}
+                onClick={() => setShowNotifications((prev) => !prev)}
+                className="relative flex h-10 w-10 items-center justify-center rounded-full text-slate-600 dark:text-slate-300 transition hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-90 shrink-0 cursor-pointer"
+              >
+                <BellIcon />
+                {unreadNotifCount > 0 && (
+                  <span className="absolute right-2.5 top-2.5 flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500 ring-2 ring-white dark:ring-[#111827]"></span>
+                  </span>
+                )}
+              </button>
 
-            {/* NOTIFICATION */}
-            <button
-              type="button"
-              title="Notifications"
-              onClick={() => toast("No new notifications")}
-              className="relative flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full text-slate-600 transition hover:bg-slate-100 active:scale-90 shrink-0"
-            >
-              <BellIcon />
-              <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white"></span>
-            </button>
+              {/* NOTIFICATIONS DROPDOWN */}
+              {showNotifications && (
+                <div className="absolute right-[-70px] sm:right-[-20px] md:right-0 top-12 w-[310px] sm:w-[330px] overflow-hidden rounded-xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-[#111827] shadow-xl dark:shadow-2xl z-50 animate-in fade-in-0 zoom-in-95 duration-100 origin-top-right">
+                  {/* HEADER */}
+                  <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 px-3.5 py-2.5 bg-slate-50/70 dark:bg-slate-850/60">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs font-semibold text-slate-900 dark:text-slate-100">
+                        Notifications
+                      </span>
+                      {unreadNotifCount > 0 && (
+                        <span className="rounded-full bg-rose-50 dark:bg-rose-950/60 border border-rose-200/80 dark:border-rose-900/60 px-1.5 py-0.2 text-[10px] font-bold text-rose-600 dark:text-rose-400">
+                          {unreadNotifCount}
+                        </span>
+                      )}
+                    </div>
+                    {unreadNotifCount > 0 && (
+                      <button
+                        type="button"
+                        onClick={handleMarkAllNotificationsRead}
+                        className="text-[11px] font-medium text-slate-500 hover:text-[#008dd2] dark:text-slate-400 dark:hover:text-[#38bdf8] transition-colors cursor-pointer"
+                      >
+                        Mark all as read
+                      </button>
+                    )}
+                  </div>
 
-            {/* THEME (Tablet & Desktop) */}
-            <button
-              type="button"
-              title="Theme"
-              onClick={handleTheme}
-              className="hidden sm:flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full text-slate-600 transition hover:bg-slate-100 shrink-0"
-            >
-              <MoonIcon />
-            </button>
+                  {/* NOTIFICATION LIST */}
+                  <div className="max-h-[300px] overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/60 [scrollbar-width:thin]">
+                    {notifications.length === 0 ? (
+                      <div className="py-7 px-4 text-center select-none">
+                        <div className="mx-auto mb-2 flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500">
+                          <svg
+                            width="15"
+                            height="15"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                          </svg>
+                        </div>
+                        <p className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                          No notifications
+                        </p>
+                        <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
+                          You're all caught up
+                        </p>
+                      </div>
+                    ) : (
+                      notifications.map((notif) => {
+                        const notifType = String(notif.type || "").toUpperCase();
+                        let badgeBg = "bg-sky-50 dark:bg-sky-950/60 text-[#008dd2] dark:text-[#38bdf8] border-sky-100 dark:border-sky-900/50";
+                        let dotColor = "bg-[#008dd2]";
+                        let itemBg = "hover:bg-slate-50 dark:hover:bg-slate-800/60 bg-sky-50/20 dark:bg-sky-950/10";
+                        let tagLabel = "Support";
+                        let tagStyle = "bg-sky-100 text-[#008dd2]";
+                        let iconSvg = (
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                          </svg>
+                        );
 
-            {/* FULLSCREEN (Desktop) */}
-            <button
-              type="button"
-              title="Fullscreen"
-              onClick={handleFullscreen}
-              className="hidden md:flex h-9 w-9 items-center justify-center rounded-full text-slate-600 transition hover:bg-slate-100 shrink-0"
-            >
-              <FullscreenIcon />
-            </button>
+                        if (notifType === "NDR_ALERT") {
+                          badgeBg = "bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-900/50";
+                          dotColor = "bg-rose-500";
+                          itemBg = "hover:bg-rose-50/40 dark:hover:bg-rose-950/30 bg-rose-50/20 dark:bg-rose-950/10";
+                          tagLabel = "NDR";
+                          tagStyle = "bg-rose-100 text-rose-700";
+                          iconSvg = (
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                              <circle cx="12" cy="12" r="10" />
+                              <line x1="12" y1="8" x2="12" y2="12" />
+                              <line x1="12" y1="16" x2="12.01" y2="16" />
+                            </svg>
+                          );
+                        } else if (notifType === "WALLET") {
+                          const isLowBal = String(notif.reference_id || "").toUpperCase() === "LOW_WALLET_BALANCE";
+                          if (isLowBal) {
+                            badgeBg = "bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-900/50";
+                            dotColor = "bg-rose-500";
+                            itemBg = "hover:bg-rose-50/40 dark:hover:bg-rose-950/30 bg-rose-50/20 dark:bg-rose-950/10";
+                            tagLabel = "Low Balance";
+                            tagStyle = "bg-rose-100 text-rose-700";
+                            iconSvg = (
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                                <circle cx="12" cy="12" r="10" />
+                                <line x1="12" y1="8" x2="12" y2="12" />
+                                <line x1="12" y1="16" x2="12.01" y2="16" />
+                              </svg>
+                            );
+                          } else {
+                            badgeBg = "bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-900/50";
+                            dotColor = "bg-amber-500";
+                            itemBg = "hover:bg-amber-50/40 dark:hover:bg-amber-950/30 bg-amber-50/20 dark:bg-amber-950/10";
+                            tagLabel = "Wallet";
+                            tagStyle = "bg-amber-100 text-amber-800";
+                            iconSvg = (
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                                <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" />
+                                <path d="M3 5v14a2 2 0 0 0 2 2h16v-5" />
+                                <path d="M18 12a2 2 0 0 0 0 4h4v-4z" />
+                              </svg>
+                            );
+                          }
+                        } else if (notifType === "COD_REMITTANCE") {
+                          badgeBg = "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900/50";
+                          dotColor = "bg-emerald-500";
+                          itemBg = "hover:bg-emerald-50/40 dark:hover:bg-emerald-950/30 bg-emerald-50/20 dark:bg-emerald-950/10";
+                          tagLabel = "Payout";
+                          tagStyle = "bg-emerald-100 text-emerald-800";
+                          iconSvg = (
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                              <rect x="2" y="6" width="20" height="12" rx="2" />
+                              <circle cx="12" cy="12" r="2" />
+                              <path d="M6 12h.01M18 12h.01" />
+                            </svg>
+                          );
+                        } else if (notifType === "WEIGHT_DISCREPANCY") {
+                          badgeBg = "bg-orange-50 dark:bg-orange-950/60 text-orange-600 dark:text-orange-400 border-orange-200 dark:border-orange-900/50";
+                          dotColor = "bg-orange-500";
+                          itemBg = "hover:bg-orange-50/40 dark:hover:bg-orange-950/30 bg-orange-50/20 dark:bg-orange-950/10";
+                          tagLabel = "Weight";
+                          tagStyle = "bg-orange-100 text-orange-800";
+                          iconSvg = (
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                              <path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" />
+                              <path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" />
+                              <path d="M7 21h10" />
+                              <path d="M12 3v18" />
+                            </svg>
+                          );
+                        }
 
-            {/* PROFILE AVATAR & DROPDOWN */}
-            <div ref={profileRef} className="relative shrink-0">
+                        return (
+                          <div
+                            key={notif.id}
+                            onClick={() => handleNotificationClick(notif)}
+                            className={`flex items-start gap-2.5 px-3.5 py-2.5 transition-colors cursor-pointer ${itemBg}`}
+                          >
+                            {/* ICON BADGE */}
+                            <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg mt-0.5 border ${badgeBg}`}>
+                              {iconSvg}
+                            </div>
+
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center justify-between gap-1.5">
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                  <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded uppercase shrink-0 ${tagStyle}`}>
+                                    {tagLabel}
+                                  </span>
+                                  <p className="text-xs truncate font-semibold text-slate-800 dark:text-slate-200">
+                                    {notif.title}
+                                  </p>
+                                </div>
+                                <div className="flex items-center gap-1 shrink-0">
+                                  {Number(notif.message_count) > 1 && (
+                                    <span className="rounded bg-[#008dd2]/10 text-[#008dd2] dark:text-[#38bdf8] font-bold text-[10px] px-1.5 py-0.2 border border-[#008dd2]/20">
+                                      {notif.message_count}
+                                    </span>
+                                  )}
+                                  <span className={`h-1.5 w-1.5 rounded-full ${dotColor}`}></span>
+                                </div>
+                              </div>
+
+                              <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1 mt-0.5 leading-normal">
+                                {notif.message}
+                              </p>
+
+                              <div className="flex items-center justify-between mt-1">
+                                <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
+                                  {formatTimeAgo(notif.created_at)}
+                                </span>
+                                <button
+                                  type="button"
+                                  title="Dismiss notification"
+                                  onClick={(e) => handleDismissNotification(e, notif)}
+                                  className="text-[10px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 font-medium transition-colors cursor-pointer"
+                                >
+                                  Dismiss
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+
+                  {/* FOOTER */}
+                  <div className="border-t border-slate-100 dark:border-slate-800 px-3 py-2 bg-slate-50/60 dark:bg-slate-850/40 flex items-center justify-between text-[11px]">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowNotifications(false);
+                        navigate("/tickets");
+                      }}
+                      className="font-medium text-[#008dd2] dark:text-[#38bdf8] hover:underline cursor-pointer"
+                    >
+                      Support Tickets →
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowNotifications(false);
+                        navigate("/pending");
+                      }}
+                      className="font-medium text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition cursor-pointer"
+                    >
+                      Pending NDRs →
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* 3. COMPANY NAME & 4. PROFILE (Grouped together with Dropdown) */}
+            <div ref={profileRef} className="relative flex items-center gap-2 sm:gap-2.5 shrink-0">
+              {/* 3. COMPANY NAME BADGE */}
               <button
                 type="button"
                 onClick={() => setShowProfile((prev) => !prev)}
-                className="flex items-center gap-2 rounded-full p-0.5 sm:p-1 transition hover:bg-slate-100 active:scale-95"
+                className="flex h-10 items-center gap-2.5 rounded-[14px] border border-slate-200/90 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/60 pl-1.5 pr-3.5 shadow-2xs transition-all duration-150 hover:bg-slate-100/70 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shrink-0 cursor-pointer text-left"
+                title={`Company: ${displayCompanyName} (Click to open menu)`}
               >
-                <div className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center overflow-hidden rounded-full bg-slate-200 text-slate-600 ring-2 ring-slate-100 shrink-0">
-                  {user?.profile_image ? (
-                    <img src={user.profile_image} alt="Profile" className="h-full w-full object-cover" />
-                  ) : (
-                    <UserIcon />
-                  )}
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#008dd2] text-[11px] font-black text-white uppercase tracking-wider shadow-xs shadow-[#008dd2]/20">
+                  {companyInitials}
                 </div>
-                <span className="hidden max-w-[120px] truncate text-xs font-semibold text-slate-700 lg:block">
-                  {userName}
+                <span className="hidden sm:inline-block text-[12px] font-bold uppercase tracking-wide text-slate-800 dark:text-slate-100 truncate max-w-[130px] md:max-w-[190px] lg:max-w-[240px]">
+                  {displayCompanyName}
                 </span>
               </button>
 
+              {/* 4. PROFILE AVATAR */}
+              <button
+                type="button"
+                onClick={() => setShowProfile((prev) => !prev)}
+                title={userName}
+                aria-label="User Profile Menu"
+                className="flex h-10 w-10 items-center justify-center rounded-full transition-transform active:scale-90"
+              >
+                <div
+                  className={`flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800 transition-all duration-200 ${
+                    showProfile
+                      ? "ring-2 ring-[#008dd2] ring-offset-2 ring-offset-white dark:ring-offset-[#111827] shadow-sm shadow-[#008dd2]/30 scale-105"
+                      : "ring-1.5 ring-slate-200/90 dark:ring-slate-700/80 hover:ring-2 hover:ring-[#008dd2]/70 hover:scale-105 hover:shadow-sm"
+                  }`}
+                >
+                  {user?.profile_image ? (
+                    <img
+                      src={user.profile_image}
+                      alt={userName}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#008dd2] to-sky-600 text-[13px] font-bold text-white uppercase tracking-wider">
+                      {userName?.charAt(0) || <UserIcon />}
+                    </div>
+                  )}
+                </div>
+              </button>
+
+              {/* PROFILE DROPDOWN MENU */}
               {showProfile && (
-                <div className="absolute right-0 top-11 sm:top-12 w-60 overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-2xl z-50 animate-in fade-in duration-100">
-                  <div className="flex items-center gap-3 border-b border-slate-100 px-4 py-3 bg-slate-50/70">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-200 text-slate-500">
+                <div className="absolute right-0 top-12 w-64 overflow-hidden rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-[#111827] shadow-2xl z-50 animate-in fade-in duration-100">
+                  <div className="flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 px-4 py-3 bg-slate-50/70 dark:bg-slate-800/60">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-300">
                       {user?.profile_image ? (
                         <img src={user.profile_image} alt="Profile" className="h-full w-full object-cover" />
                       ) : (
@@ -1207,18 +1397,45 @@
                       )}
                     </div>
                     <div className="min-w-0">
-                      <p className="truncate text-xs font-bold text-slate-900">{userName}</p>
-                      <p className="truncate text-[11px] text-slate-400">{userEmail}</p>
+                      <p className="truncate text-xs font-bold text-slate-900 dark:text-slate-100">{userName}</p>
+                      {companyName && (
+                        <p className="truncate text-[10.5px] font-bold uppercase tracking-wider text-[#008dd2] dark:text-[#38bdf8]">
+                          {companyName}
+                        </p>
+                      )}
+                      <p className="truncate text-[11px] text-slate-400 dark:text-slate-400">{userEmail}</p>
                     </div>
                   </div>
 
                   <button
                     type="button"
                     onClick={openProfile}
-                    className="flex w-full items-center gap-2.5 border-b border-slate-50 px-4 py-2.5 text-left text-xs font-medium text-slate-600 transition hover:bg-slate-50"
+                    className="flex w-full items-center gap-2.5 border-b border-slate-50 dark:border-slate-800/60 px-4 py-2.5 text-left text-xs font-medium text-slate-600 dark:text-slate-300 transition hover:bg-slate-50 dark:hover:bg-slate-800/80"
                   >
                     <ProfileIcon />
                     <span>Profile</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleTheme}
+                    className="flex w-full items-center justify-between border-b border-slate-50 dark:border-slate-800/60 px-4 py-2.5 text-left text-xs font-medium text-slate-600 dark:text-slate-300 transition hover:bg-slate-50 dark:hover:bg-slate-800/80"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <span className={isDark ? "text-amber-400" : "text-slate-600 dark:text-slate-300"}>
+                        {isDark ? <SunIcon /> : <MoonIcon />}
+                      </span>
+                      <span>{isDark ? "Light Mode" : "Dark Mode"}</span>
+                    </div>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-[10px] font-semibold transition ${
+                        isDark
+                          ? "bg-amber-400/15 text-amber-400 border border-amber-400/30"
+                          : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700"
+                      }`}
+                    >
+                      {isDark ? "Dark" : "Light"}
+                    </span>
                   </button>
 
                   <button
@@ -1227,7 +1444,7 @@
                       setShowProfile(false);
                       navigate("/dashboard");
                     }}
-                    className="flex w-full items-center gap-2.5 border-b border-slate-50 px-4 py-2.5 text-left text-xs font-medium text-slate-600 transition hover:bg-slate-50"
+                    className="flex w-full items-center gap-2.5 border-b border-slate-50 dark:border-slate-800/60 px-4 py-2.5 text-left text-xs font-medium text-slate-600 dark:text-slate-300 transition hover:bg-slate-50 dark:hover:bg-slate-800/80"
                   >
                     <DashboardIcon />
                     <span>User Dashboard</span>
@@ -1239,7 +1456,7 @@
                       setShowProfile(false);
                       toast("Password page coming soon");
                     }}
-                    className="flex w-full items-center gap-2.5 border-b border-slate-50 px-4 py-2.5 text-left text-xs font-medium text-slate-600 transition hover:bg-slate-50"
+                    className="flex w-full items-center gap-2.5 border-b border-slate-50 dark:border-slate-800/60 px-4 py-2.5 text-left text-xs font-medium text-slate-600 dark:text-slate-300 transition hover:bg-slate-50 dark:hover:bg-slate-800/80"
                   >
                     <LockIcon />
                     <span>Password</span>
@@ -1248,7 +1465,7 @@
                   <button
                     type="button"
                     onClick={handleLogout}
-                    className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-xs font-bold text-rose-500 transition hover:bg-rose-50"
+                    className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-xs font-bold text-rose-500 transition hover:bg-rose-50 dark:hover:bg-rose-950/30"
                   >
                     <LogoutIcon />
                     <span>Logout</span>
@@ -1473,297 +1690,7 @@
           </div>
         )}
 
-        {/* IMPORT ORDER MODAL */}
-        {showImportOrder && (
-          <div
-            className="fixed inset-0 z-[70] flex items-center justify-center bg-black/55 px-3 py-4 backdrop-blur-[2px]"
-            onMouseDown={(event) => {
-              if (event.target === event.currentTarget) {
-                closeImportOrder();
-              }
-            }}
-          >
-            <div className="flex max-h-[86vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
-              {/* HEADER */}
-              <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4 sm:px-6">
-                <div>
-                  <h2 className="text-base font-bold text-slate-800 sm:text-lg">
-                    Import Orders
-                  </h2>
-                  <p className="mt-0.5 text-[11px] text-slate-400 sm:text-xs">
-                    Upload your Excel file to create multiple orders in Processing
-                  </p>
-                </div>
 
-                <button
-                  type="button"
-                  onClick={closeImportOrder}
-                  disabled={importLoading}
-                  className="flex h-8 w-8 items-center justify-center rounded-full text-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
-                  aria-label="Close"
-                >
-                  ×
-                </button>
-              </div>
-
-              {/* BODY */}
-              <div className="overflow-y-auto px-5 py-4 sm:px-6">
-                {/* ADDRESS SELECTION */}
-                <div className="flex flex-col gap-4">
-                  <div>
-                    <label className="mb-1.5 block text-xs font-semibold text-slate-700">
-                      Pickup Address <span className="text-red-500">*</span>
-                    </label>
-
-                    <select
-                      value={selectedImportWarehouseId}
-                      onChange={(event) =>
-                        setSelectedImportWarehouseId(event.target.value)
-                      }
-                      disabled={importLoadingAddresses || importLoading}
-                      className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 outline-none transition focus:border-[#008dd2] disabled:bg-slate-50"
-                    >
-                      <option value="">
-                        {importLoadingAddresses
-                          ? "Loading pickup addresses..."
-                          : "Select pickup address"}
-                      </option>
-
-                      {importWarehouses.map((warehouse) => (
-                        <option
-                          key={warehouse.id}
-                          value={warehouse.id}
-                        >
-                          {warehouse.warehouse_name || "Warehouse"} —{" "}
-                          {warehouse.address_line1 || ""}{" "}
-                          {warehouse.city || ""}{" "}
-                          {warehouse.pincode || ""}
-                        </option>
-                      ))}
-                    </select>
-
-                    {selectedImportWarehouseId && (
-                      <p className="mt-1.5 text-[10px] text-slate-400">
-                        Default pickup address is selected automatically.
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="mb-1.5 block text-xs font-semibold text-slate-700">
-                      Return Address <span className="text-red-500">*</span>
-                    </label>
-
-                    <select
-                      value={selectedImportReturnAddressId}
-                      onChange={(event) =>
-                        setSelectedImportReturnAddressId(event.target.value)
-                      }
-                      disabled={importLoadingAddresses || importLoading}
-                      className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 outline-none transition focus:border-[#008dd2] disabled:bg-slate-50"
-                    >
-                      <option value="">
-                        {importLoadingAddresses
-                          ? "Loading return addresses..."
-                          : "Select return address"}
-                      </option>
-
-                      {importReturnAddresses.map((address) => (
-                        <option
-                          key={address.id}
-                          value={address.id}
-                        >
-                          {address.name || "Return Address"} —{" "}
-                          {address.address_line1 || ""}{" "}
-                          {address.city || ""}{" "}
-                          {address.pincode || ""}
-                        </option>
-                      ))}
-                    </select>
-
-                    {selectedImportReturnAddressId && (
-                      <p className="mt-1.5 text-[10px] text-slate-400">
-                        Default return address is selected automatically.
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {/* EXCEL UPLOAD */}
-                <div className="mt-4">
-                  <label className="mb-1.5 block text-xs font-semibold text-slate-700">
-                    Excel File <span className="text-red-500">*</span>
-                  </label>
-
-                  <input
-                    ref={importFileRef}
-                    type="file"
-                    accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
-                    onChange={handleImportFileChange}
-                    disabled={importLoading}
-                    className="hidden"
-                  />
-
-                  <button
-                    type="button"
-                    onClick={() => importFileRef.current?.click()}
-                    disabled={importLoading}
-                    className="flex min-h-[86px] w-full flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/60 px-4 text-center transition hover:border-[#008dd2] hover:bg-sky-50/30 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    <div className="mb-1.5 flex h-8 w-8 items-center justify-center rounded-lg bg-sky-100 text-[#008dd2]">
-                      <ImportIcon />
-                    </div>
-
-                    {importFile ? (
-                      <>
-                        <p className="max-w-full truncate text-xs font-bold text-slate-700">
-                          {importFile.name}
-                        </p>
-                        <p className="mt-1 text-[10px] text-slate-400">
-                          {(importFile.size / 1024).toFixed(1)} KB
-                        </p>
-                      </>
-                    ) : (
-                      <>
-                        <p className="text-xs font-bold text-slate-700">
-                          Click to select Excel file
-                        </p>
-                        <p className="mt-1 text-[10px] text-slate-400">
-                          .xlsx / .xls — maximum 10 MB
-                        </p>
-                      </>
-                    )}
-                  </button>
-                </div>
-
-                {/* ERROR BOX */}
-                {importMessage && (
-                  <div
-                    className={`mt-5 rounded-xl border p-4 ${
-                      importErrors.length
-                        ? "border-rose-200 bg-rose-50"
-                        : "border-emerald-200 bg-emerald-50"
-                    }`}
-                  >
-                    <p
-                      className={`text-xs font-bold ${
-                        importErrors.length
-                          ? "text-rose-700"
-                          : "text-emerald-700"
-                      }`}
-                    >
-                      {importMessage}
-                    </p>
-                  </div>
-                )}
-
-                {importErrors.length > 0 && (
-                  <div className="mt-3 max-h-64 overflow-y-auto rounded-xl border border-rose-200 bg-white">
-                    <div className="sticky top-0 border-b border-rose-100 bg-rose-50 px-4 py-2.5">
-                      <p className="text-xs font-bold text-rose-700">
-                        Excel Errors — fix all rows before importing
-                      </p>
-                    </div>
-
-                    <div className="divide-y divide-slate-100">
-                      {importErrors.map((item, index) => (
-                        <div
-                          key={`${item.row}-${index}`}
-                          className="px-4 py-3"
-                        >
-                          <p className="text-[11px] font-bold text-slate-800">
-                            Row {item.row}
-                          </p>
-
-                          <ul className="mt-1 space-y-1">
-                            {(Array.isArray(item.errors)
-                              ? item.errors
-                              : [String(item.errors || "Invalid row")]
-                            ).map((errorText, errorIndex) => (
-                              <li
-                                key={`${item.row}-${errorIndex}`}
-                                className="text-[10px] leading-4 text-rose-600"
-                              >
-                                • {errorText}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* SUCCESS */}
-                {importImportedCount > 0 && !importErrors.length && (
-                  <div className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
-                    <p className="text-xs font-bold text-emerald-700">
-                      {importImportedCount} orders are now in Processing.
-                    </p>
-                    <p className="mt-1 text-[10px] text-emerald-600">
-                      No Delhivery manifest or wallet deduction is performed by
-                      this import.
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {/* FOOTER */}
-              <div className="flex flex-col-reverse gap-2 border-t border-slate-100 bg-slate-50/70 px-5 py-4 sm:flex-row sm:items-center sm:justify-end sm:px-6">
-                {importImportedCount > 0 && !importErrors.length ? (
-                  <>
-                    <button
-                      type="button"
-                      onClick={closeImportOrder}
-                      className="h-10 rounded-xl border border-slate-200 bg-white px-5 text-xs font-bold text-slate-600 transition hover:bg-slate-100"
-                    >
-                      Close
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        closeImportOrder();
-                        navigate("/orders/processing");
-                      }}
-                      className="h-10 rounded-xl bg-[#008dd2] px-5 text-xs font-bold text-white transition hover:bg-[#007ab6]"
-                    >
-                      View Processing Orders
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button
-                      type="button"
-                      onClick={closeImportOrder}
-                      disabled={importLoading}
-                      className="h-10 rounded-xl border border-slate-200 bg-white px-5 text-xs font-bold text-slate-600 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      Cancel
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={handleImportOrders}
-                      disabled={
-                        importLoading ||
-                        importLoadingAddresses ||
-                        !selectedImportWarehouseId ||
-                        !selectedImportReturnAddressId ||
-                        !importFile
-                      }
-                      className="h-10 rounded-xl bg-[#008dd2] px-6 text-xs font-bold text-white shadow-sm transition hover:bg-[#007ab6] disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {importLoading
-                        ? "Importing Orders..."
-                        : "Import Orders"}
-                    </button>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* RECHARGE MODAL */}
         {showRecharge && (
@@ -1821,6 +1748,18 @@
                 Secure payments powered by Razorpay
               </p>
             </div>
+          </div>
+        )}
+        {/* SLIDE-IN DESKTOP / MOBILE PUSH NOTIFICATION TOAST (ONE-BY-ONE QUEUE) */}
+        {currentToast && (
+          <div className="fixed top-18 right-4 sm:right-6 z-[99999] w-[calc(100vw-2rem)] sm:w-[380px] md:w-[410px]">
+            <NotificationToast
+              key={currentToast.toastInstanceKey || currentToast.id}
+              notification={currentToast}
+              onOpen={handleToastOpen}
+              onDismiss={handleToastDismiss}
+              duration={5500}
+            />
           </div>
         )}
       </>

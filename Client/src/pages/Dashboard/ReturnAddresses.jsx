@@ -833,7 +833,7 @@ function ReturnAddresses() {
 
   return (
 
-    <div className="min-h-screen bg-[#F8FAFC] px-4 py-5 sm:px-6 lg:px-7">
+    <div className="min-h-screen bg-[#f6f8fb] dark:bg-[#090b10] px-4 py-5 sm:px-6 lg:px-7">
 
       <div className="mx-auto w-full max-w-[1450px]">
 
@@ -846,7 +846,7 @@ function ReturnAddresses() {
 
           <div className="min-w-0">
 
-            <h1 className="text-[23px] font-bold tracking-tight text-slate-900">
+            <h1 className="text-[23px] font-bold tracking-tight text-slate-900 dark:text-white">
               Return Addresses
             </h1>
 
@@ -878,27 +878,38 @@ function ReturnAddresses() {
         {/* ADDRESS LIST */}
         {/* ================================================= */}
 
-        <div className="w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className="w-full overflow-hidden rounded-xl border border-slate-200 dark:border-[#1f2535] bg-white dark:bg-[#121620] shadow-sm">
 
 
           {/* LOADING */}
 
           {loading ? (
-
-            <div className="flex min-h-[220px] items-center justify-center">
-
-              <div className="text-center">
-
-                <div className="mx-auto h-7 w-7 animate-spin rounded-full border-2 border-slate-200 border-t-[#008dd2]" />
-
-                <p className="mt-3 text-xs text-slate-500">
-                  Loading return addresses...
-                </p>
-
-              </div>
-
+            <div className="divide-y divide-slate-100 p-2">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="flex items-center justify-between p-3.5 gap-4"
+                  style={{ opacity: 1 - i * 0.2 }}
+                >
+                  <div className="space-y-1.5 w-1/4">
+                    <div className="h-4 w-32 rounded bg-slate-200 skeleton-shimmer" />
+                    <div className="h-3 w-20 rounded bg-slate-100 skeleton-shimmer" />
+                  </div>
+                  <div className="space-y-1.5 w-1/4">
+                    <div className="h-3.5 w-28 rounded bg-slate-200 skeleton-shimmer" />
+                    <div className="h-2.5 w-24 rounded bg-slate-100 skeleton-shimmer" />
+                  </div>
+                  <div className="space-y-1.5 w-1/3">
+                    <div className="h-3.5 w-full rounded bg-slate-200 skeleton-shimmer" />
+                    <div className="h-2.5 w-4/5 rounded bg-slate-100 skeleton-shimmer" />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="h-7 w-7 rounded-lg bg-slate-200 skeleton-shimmer" />
+                    <div className="h-7 w-7 rounded-lg bg-slate-200 skeleton-shimmer" />
+                  </div>
+                </div>
+              ))}
             </div>
-
           )
 
 

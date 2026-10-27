@@ -1,54 +1,58 @@
 const express = require("express");
 
-const router =
-  express.Router();
+const router = express.Router();
 
 const {
   registerUser,
   loginUser,
+  getSessionUser,
+  logoutUser,
   getUserProfile,
-  updateUserProfile
+  updateUserProfile,
 } = require("../controllers/userController");
 
+const {
+  exchangeTicket,
+  endImpersonationSession,
+} = require("../controllers/impersonationController");
+
+const { authenticateUser } = require("../middleware/authMiddleware");
+const { authRateLimiter } = require("../middleware/rateLimitMiddleware");
 
 // ========================================
-// REGISTER
+// PUBLIC ROUTES: REGISTER & LOGIN
 // ========================================
 
-router.post(
-  "/register",
-  registerUser
-);
+router.post("/register", authRateLimiter, registerUser);
 
+router.post("/login", authRateLimiter, loginUser);
 
 // ========================================
-// LOGIN
+// IMPERSONATION ROUTES
 // ========================================
 
-router.post(
-  "/login",
-  loginUser
-);
+// Public exchange of single-use ticket for user session token
+router.post("/impersonate/exchange", exchangeTicket);
 
-
-// ========================================
-// GET PROFILE
-// ========================================
-
-router.get(
-  "/profile/:user_id",
-  getUserProfile
-);
-
+// End impersonation session
+router.post("/impersonate/end", authenticateUser, endImpersonationSession);
 
 // ========================================
-// UPDATE PROFILE
+// PROTECTED SESSION MANAGEMENT ROUTES
 // ========================================
 
-router.put(
-  "/profile/update",
-  updateUserProfile
-);
+// Validates current session token against database and returns safe user data
+router.get("/session", authenticateUser, getSessionUser);
 
+// Global logout: revokes all active sessions for this account across all devices
+router.post("/logout", authenticateUser, logoutUser);
+
+// ========================================
+// PROTECTED USER PROFILE ROUTES
+// ========================================
+
+router.get("/profile/:user_id", authenticateUser, getUserProfile);
+
+router.put("/profile/update", authenticateUser, updateUserProfile);
 
 module.exports = router;

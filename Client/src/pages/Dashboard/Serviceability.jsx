@@ -198,7 +198,7 @@ function Serviceability() {
   // ====================================================
 
   return (
-    <div className="min-h-full w-full bg-[#f6f8fb] p-5 md:p-6">
+    <div className="min-h-full w-full bg-[#f6f8fb] dark:bg-[#090b10] p-5 md:p-6">
 
       {/* ==================================================
           HEADER
@@ -357,8 +357,21 @@ function Serviceability() {
           </div>
 
           <div className="p-5">
-
-            {!result ? (
+            {loading ? (
+              <div className="space-y-3.5 p-2 animate-fadeIn">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-xl bg-slate-200 skeleton-shimmer" />
+                  <div className="space-y-1.5 flex-1">
+                    <div className="h-4 w-28 rounded bg-slate-200 skeleton-shimmer" />
+                    <div className="h-3 w-40 rounded bg-slate-100 skeleton-shimmer" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3 pt-2">
+                  <div className="h-16 rounded-xl bg-slate-100 skeleton-shimmer" />
+                  <div className="h-16 rounded-xl bg-slate-100 skeleton-shimmer" />
+                </div>
+              </div>
+            ) : !result ? (
               <div className="flex min-h-[250px] flex-col items-center justify-center text-center">
 
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-50 text-slate-300">

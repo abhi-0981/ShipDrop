@@ -1,3 +1,4 @@
+require("../config/env");
 const { calculateZone } = require("./zoneService");
 const db = require("../config/db");
 
@@ -87,7 +88,14 @@ const getUserRateCard = async (userId) => {
   const user = result[0];
 
   if (!user.rate_card_id) {
-    throw new Error("No rate card assigned to this user");
+    const defaultCards = await query(
+      `SELECT id FROM admin_rate_cards WHERE is_active = 1 ORDER BY id ASC LIMIT 1`
+    );
+    if (defaultCards && defaultCards.length > 0) {
+      user.rate_card_id = defaultCards[0].id;
+    } else {
+      throw new Error("No rate card assigned to this user");
+    }
   }
 
   return user;
@@ -457,7 +465,8 @@ const calculateDelhiveryRate = async ({
   const rawToken =
     process.env.DELHIVERY_API_TOKEN ||
     process.env.DELHIVERY_AUTH_TOKEN ||
-    process.env.DELHIVERY_TOKEN;
+    process.env.DELHIVERY_TOKEN ||
+    "1122f7c644f0f213696e2584473447cf426898c9";
 
   const token = rawToken ? String(rawToken).trim().replace(/^["']|["']$/g, "") : null;
 
@@ -644,18 +653,28 @@ const calculateShippingRate = async (
   weight,
   serviceType = "ROAD",
   paymentType = "Pre-paid",
-  productValue = 0
+  productValue = 0,
+  options = {}
 ) => {
   if (!userId) {
     throw new Error("User ID is required");
   }
 
-  if (!/^\d{6}$/.test(String(pickup_pincode || "").trim())) {
-    throw new Error("Valid 6-digit pickup pincode is required");
-  }
+  const knownZone = options?.knownZone
+    ? String(options.knownZone).trim().toUpperCase()
+    : null;
 
-  if (!/^\d{6}$/.test(String(delivery_pincode || "").trim())) {
-    throw new Error("Valid 6-digit delivery pincode is required");
+  const cleanPickupPin = String(pickup_pincode || "").trim();
+  const cleanDeliveryPin = String(delivery_pincode || "").trim();
+
+  if (!knownZone) {
+    if (!/^\d{6}$/.test(cleanPickupPin)) {
+      throw new Error("Valid 6-digit pickup pincode is required");
+    }
+
+    if (!/^\d{6}$/.test(cleanDeliveryPin)) {
+      throw new Error("Valid 6-digit delivery pincode is required");
+    }
   }
 
   const numericWeight = Number(weight);
@@ -669,23 +688,30 @@ const calculateShippingRate = async (
   }
 
   const user = await getUserRateCard(userId);
+  const rateCardId = options?.rateCardId || user.rate_card_id;
+
   const rateCardService = await getAdminRateCardService(
-    user.rate_card_id,
+    rateCardId,
     normalizedService
   );
 
-  const zoneResult = await calculateZone(pickup_pincode, delivery_pincode);
-  let finalZone = zoneResult.zone;
+  let finalZone = knownZone;
+  let zoneResult = { zone: knownZone };
 
-  const pickupCity = String(zoneResult.pickup?.city || "")
-    .trim()
-    .toLowerCase();
-  const deliveryCity = String(zoneResult.delivery?.city || "")
-    .trim()
-    .toLowerCase();
+  if (!finalZone) {
+    zoneResult = await calculateZone(cleanPickupPin, cleanDeliveryPin);
+    finalZone = zoneResult.zone;
 
-  if (pickupCity && deliveryCity && pickupCity === deliveryCity) {
-    finalZone = "A";
+    const pickupCity = String(zoneResult.pickup?.city || "")
+      .trim()
+      .toLowerCase();
+    const deliveryCity = String(zoneResult.delivery?.city || "")
+      .trim()
+      .toLowerCase();
+
+    if (pickupCity && deliveryCity && pickupCity === deliveryCity) {
+      finalZone = "A";
+    }
   }
 
   const useApi = Number(rateCardService.use_shipping_charge_api) === 1;
@@ -693,23 +719,63 @@ const calculateShippingRate = async (
   let rateData = null;
 
   if (useApi) {
-    const apiResult = await calculateDelhiveryRate({
-      pickupPincode: pickup_pincode,
-      deliveryPincode: delivery_pincode,
-      weight: numericWeight,
-      serviceType: normalizedService,
-      paymentType: paymentType,
-    });
+    let apiSuccess = false;
+    try {
+      const apiResult = await calculateDelhiveryRate({
+        pickupPincode: cleanPickupPin || cleanDeliveryPin,
+        deliveryPincode: cleanDeliveryPin,
+        weight: numericWeight,
+        serviceType: normalizedService,
+        paymentType: paymentType,
+      });
 
-    pricing = calculateApiPricing({
-      apiRate: apiResult.api_base_rate,
-      commissionPercent: Number(rateCardService.commission_percent) || 0,
-    });
+      pricing = calculateApiPricing({
+        apiRate: apiResult.api_base_rate,
+        commissionPercent: Number(rateCardService.commission_percent) || 0,
+      });
 
-    rateData = {
-      weight_from: numericWeight,
-      weight_to: numericWeight,
-    };
+      rateData = {
+        weight_from: numericWeight,
+        weight_to: numericWeight,
+      };
+      apiSuccess = true;
+    } catch (apiError) {
+      console.warn(
+        "Delhivery API rate calculation failed, falling back to own rate card:",
+        apiError.message
+      );
+    }
+
+    if (!apiSuccess) {
+      let normalRate;
+      try {
+        normalRate = await getAdminRate(rateCardService.id, numericWeight);
+      } catch (error) {
+        normalRate = await getLastAdminRate(rateCardService.id);
+      }
+
+      rateData = normalRate;
+      const baseRate = getZoneRate(normalRate, finalZone);
+
+      const addition = await calculateAdditionAmount(
+        rateCardService.id,
+        numericWeight,
+        finalZone
+      );
+
+      pricing = calculateOwnPricing({
+        baseRate,
+        rateCardService,
+        paymentType,
+        productValue,
+        additionAmount: addition.addition_amount,
+        additionSteps: addition.addition_steps,
+        additionPerStep: addition.addition_per_step,
+        additionRuleId: addition.addition_rule_id,
+        additionFromKg: addition.addition_from_kg,
+        additionStepKg: addition.addition_step_kg,
+      });
+    }
   } else {
     let normalRate;
     try {

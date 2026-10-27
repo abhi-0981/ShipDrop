@@ -1,8 +1,10 @@
 import { useEffect, useState, useRef } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 import {
   HiOutlineViewGrid,
   HiOutlinePlusCircle,
+  HiOutlineDocumentAdd,
   HiOutlineClock,
   HiOutlineCube,
   HiOutlineCalculator,
@@ -11,17 +13,98 @@ import {
   HiOutlineLogout,
   HiOutlineCreditCard,
   HiOutlineCash,
-  HiOutlineScale,
   HiOutlineCog,
+  HiOutlineDocumentReport,
+  HiOutlineScale,
+  HiOutlineChartBar,
   HiChevronRight,
   HiChevronDown,
   HiX,
 } from "react-icons/hi";
-import { FiMenu } from "react-icons/fi";
+import { FiMenu, FiTool } from "react-icons/fi";
 import api from "../../services/api";
+import { fetchOrderStatusCounts } from "../../services/orderEvents";
+import shipdropLogo from "../../assets/images/shipdrop-logo.png";
+import ParcelDropLogo from "../Common/ParcelDropLogo";
+
+// Dynamic route prefetcher for instant 0ms tab switching
+const prefetchRoute = (path) => {
+  try {
+    switch (path) {
+      case "/dashboard":
+        import("../../pages/Dashboard/Dashboard");
+        break;
+      case "/analytics":
+        import("../../pages/Dashboard/Analytics");
+        break;
+      case "/create-order":
+        import("../../pages/Dashboard/CreateOrder");
+        break;
+      case "/create-offline-order":
+        import("../../pages/Dashboard/CreateOfflineOrder");
+        break;
+      case "/all-orders":
+        import("../../pages/Dashboard/AllOrders");
+        break;
+      case "/offline-orders":
+        import("../../pages/Dashboard/OfflineOrders");
+        break;
+      case "/processing-orders":
+      case "/orders/processing":
+        import("../../pages/Dashboard/ProcessingOrders");
+        break;
+      case "/manifested":
+        import("../../pages/Dashboard/Manifested");
+        break;
+      case "/not-picked":
+        import("../../pages/Dashboard/NotPicked");
+        break;
+      case "/in-transit":
+        import("../../pages/Dashboard/InTransit");
+        break;
+      case "/out-for-delivery":
+        import("../../pages/Dashboard/OutForDelivery");
+        break;
+      case "/delivered":
+        import("../../pages/Dashboard/Delivered");
+        break;
+      case "/rto-in-transit":
+        import("../../pages/Dashboard/RTOInTransit");
+        break;
+      case "/rto-delivered":
+        import("../../pages/Dashboard/RTODelivered");
+        break;
+      case "/rate-calculator":
+        import("../../pages/Dashboard/RateCalculator");
+        break;
+      case "/reports":
+      case "/reports/shipment-lifecycle":
+        import("../../pages/Dashboard/ShipmentLifecycleReport");
+        break;
+      case "/reports/weight-discrepancy":
+        import("../../pages/Dashboard/WeightDiscrepancyReport");
+        break;
+      case "/serviceability":
+        import("../../pages/Dashboard/Serviceability");
+        break;
+      case "/settings/party-identities":
+        import("../../pages/Dashboard/PartyIdentities");
+        break;
+      case "/settings/pickup-address":
+        import("../../pages/Dashboard/PickupAddress");
+        break;
+      case "/settings/return-addresses":
+        import("../../pages/Dashboard/ReturnAddresses");
+        break;
+      default:
+        break;
+    }
+  } catch (err) {}
+};
 
 function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
   const location = useLocation();
+  const navigate = useNavigate();
 
   // Desktop default open (false), mobile default closed (true)
   const [isCollapsed, setIsCollapsed] = useState(() => {
@@ -74,22 +157,55 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
     "/delivered",
     "/rto-in-transit",
     "/rto-delivered",
-    "/returned",
     "/cancelled",
     "/pending",
   ].includes(location.pathname);
 
+  const isToolPath = [
+    "/analytics",
+    "/rate-calculator",
+    "/serviceability",
+  ].includes(location.pathname);
+
   const [showOrders, setShowOrders] = useState(isOrderPath);
+  const [showTools, setShowTools] = useState(isToolPath);
   const [showFinance, setShowFinance] = useState(
-  location.pathname === "/wallet" ||
-    location.pathname === "/weight-mismatch" ||
-    location.pathname === "/cod-remittance",
-);
+    location.pathname === "/wallet" ||
+      location.pathname === "/cod-remittance",
+  );
   const [showSettings, setShowSettings] = useState(
     location.pathname.startsWith("/settings"),
   );
+  const [showReports, setShowReports] = useState(
+    location.pathname.startsWith("/reports"),
+  );
 
-  const [statusCounts, setStatusCounts] = useState({});
+  useEffect(() => {
+    if (
+      [
+        "/analytics",
+        "/rate-calculator",
+        "/serviceability",
+      ].includes(location.pathname)
+    ) {
+      setShowTools(true);
+    }
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (location.pathname.startsWith("/reports")) {
+      setShowReports(true);
+    }
+  }, [location.pathname]);
+
+  const [statusCounts, setStatusCounts] = useState(() => {
+    try {
+      const cached = sessionStorage.getItem("shipdrop_dash_counts");
+      return cached ? JSON.parse(cached) : {};
+    } catch {
+      return {};
+    }
+  });
   // ================= SIDEBAR SEARCH =================
   const [sidebarSearch, setSidebarSearch] = useState("");
   const [selectedSearchIndex, setSelectedSearchIndex] = useState(0);
@@ -97,9 +213,16 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
 
   const sidebarSearchItems = [
     { name: "Dashboard", path: "/dashboard" },
+    { name: "Tools", path: "/analytics" },
+    { name: "Analytics", path: "/analytics" },
+    { name: "Business Analytics", path: "/analytics" },
+    { name: "India Sales Heatmap", path: "/analytics" },
+    { name: "Rate Calculator", path: "/rate-calculator" },
     { name: "Create Order", path: "/create-order" },
+    { name: "Create Offline Order", path: "/create-offline-order" },
     { name: "Processing Orders", path: "/processing-orders" },
     { name: "All Orders", path: "/all-orders" },
+    { name: "Offline Orders", path: "/offline-orders" },
     { name: "Manifested", path: "/manifested" },
     { name: "Not Picked", path: "/not-picked" },
     { name: "In Transit", path: "/in-transit" },
@@ -107,17 +230,19 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
     { name: "Delivered", path: "/delivered" },
     { name: "RTO In Transit", path: "/rto-in-transit" },
     { name: "RTO Delivered", path: "/rto-delivered" },
-    { name: "Returned", path: "/returned" },
     { name: "Cancelled", path: "/cancelled" },
     { name: "Pending", path: "/pending" },
     { name: "Rate Calculator", path: "/rate-calculator" },
     { name: "Serviceability", path: "/serviceability" },
     { name: "Wallet", path: "/wallet" },
-    { name: "Weight Mismatch", path: "/weight-mismatch" },
     { name: "Tickets", path: "/tickets" },
+    { name: "Reports", path: "/reports" },
+    { name: "Shipment Report", path: "/reports/shipment-lifecycle" },
+    { name: "Weight Discrepancy Report", path: "/reports/weight-discrepancy" },
     { name: "Pickup Address", path: "/settings/pickup-address" },
     { name: "Return Addresses", path: "/settings/return-addresses" },
     { name: "Label Settings", path: "/settings/label-settings" },
+    { name: "Party Identities", path: "/settings/party-identities" },
   ];
 
   const filteredSearchItems = sidebarSearch.trim()
@@ -199,13 +324,68 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
   };
 
   const handleNavClick = () => {
+    sessionStorage.removeItem("editingProcessingOrder");
     if (window.innerWidth < 1024) {
       handleToggle(true);
     }
   };
 
+  const handleSidebarLogout = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    handleNavClick();
+
+    const rawImp = localStorage.getItem("shipdrop_impersonation");
+    let impersonation = null;
+    try {
+      impersonation = rawImp ? JSON.parse(rawImp) : null;
+    } catch {
+      // parsing error
+    }
+
+    if (impersonation?.active) {
+      try {
+        await api.post("/users/impersonate/end", {
+          session_id: impersonation.session_id,
+        });
+      } catch {
+        // continue
+      }
+      const returnUrl =
+        impersonation.admin_return_url || "http://localhost:5174/users";
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      localStorage.removeItem("shipdrop_impersonation");
+      toast.success("Returned from Admin Support mode");
+      window.location.href = returnUrl;
+      return;
+    }
+
+    try {
+      await api.post("/users/logout");
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      toast.success("Logged out successfully");
+      navigate("/login");
+    } catch (err) {
+      if (err.response?.status === 401) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        toast.success("Logged out successfully");
+        navigate("/login");
+        return;
+      }
+      console.error("Logout error:", err);
+      toast.error(
+        err.response?.data?.message ||
+          "Unable to complete logout on server. Please try again."
+      );
+    }
+  };
+
   useEffect(() => {
-    const fetchStatusCounts = async () => {
+    let isMounted = true;
+
+    const fetchStatusCounts = async (force = false) => {
       try {
         const storedUser = localStorage.getItem("user");
         if (!storedUser) return;
@@ -214,101 +394,56 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
         const userId = user?.id || user?.user_id || user?.userId;
         if (!userId) return;
 
-        /*
-         * /orders/all = order table status.
-         * /manifests = actual confirmed manifest list.
-         *
-         * Manifested count MUST come from /manifests because
-         * an order can have status=Manifested while its manifest
-         * has already been cancelled/missing.
-         */
-        const [ordersResponse, manifestsResponse] = await Promise.all([
-          api.get("/orders/all", {
-            params: { user_id: userId },
-          }),
-          api.get("/manifests", {
-            params: { user_id: userId },
-          }),
-        ]);
+        const counts = await fetchOrderStatusCounts(userId, force);
+        if (isMounted && counts) {
+          setStatusCounts((prev) => {
+            if (prev && typeof prev === "object") {
+              const changed =
+                prev.in_transit_count !== counts.in_transit_count ||
+                prev.out_for_delivery_count !== counts.out_for_delivery_count ||
+                prev.delivered_count !== counts.delivered_count ||
+                prev.not_picked_count !== counts.not_picked_count ||
+                prev.manifested_count !== counts.manifested_count ||
+                prev.all_count !== counts.all_count ||
+                prev.cancelled_count !== counts.cancelled_count ||
+                prev.rto_in_transit_count !== counts.rto_in_transit_count ||
+                prev.pending_count !== counts.pending_count ||
+                prev.processing_count !== counts.processing_count;
 
-        const orders = Array.isArray(ordersResponse?.data?.orders)
-          ? ordersResponse.data.orders
-          : [];
-
-        const manifests = Array.isArray(manifestsResponse?.data?.manifests)
-          ? manifestsResponse.data.manifests
-          : [];
-
-        const counts = {
-          ALL: 0,
-          PROCESSING: 0,
-          MANIFESTED: manifests.length,
-          "NOT PICKED": 0,
-          "IN TRANSIT": 0,
-          "OUT FOR DELIVERY": 0,
-          DELIVERED: 0,
-          "RTO IN TRANSIT": 0,
-          "RTO DELIVERED": 0,
-          RETURNED: 0,
-          CANCELLED: 0,
-          PENDING: 0,
-        };
-
-        const seenOrderIds = new Set();
-
-        orders.forEach((order) => {
-          const orderId = order?.id ?? order?.order_id ?? order?.orderId;
-
-          const key =
-            orderId !== undefined && orderId !== null
-              ? String(orderId)
-              : `row-${seenOrderIds.size}`;
-
-          if (seenOrderIds.has(key)) return;
-          seenOrderIds.add(key);
-
-          const trackingStatus = String(order?.tracking_status || "")
-            .trim()
-            .toUpperCase()
-            .replace(/_/g, " ");
-
-          const orderStatus = String(
-            order?.status || order?.order_status || "PROCESSING",
-          )
-            .trim()
-            .toUpperCase()
-            .replace(/_/g, " ");
-
-          // Processing orders belong ONLY to Processing Orders.
-          // They must NOT be included in the All Orders count.
-          if (orderStatus === "PROCESSING") {
-            counts.PROCESSING += 1;
-            return;
-          }
-
-          // All Orders = every non-Processing order.
-          counts.ALL += 1;
-
-          // Manifested is already counted from /manifests.
-          if (orderStatus === "MANIFESTED") return;
-
-          // NDR is a tracking state and has no separate sidebar bucket.
-          if (trackingStatus === "NDR") return;
-
-          if (Object.prototype.hasOwnProperty.call(counts, orderStatus)) {
-            counts[orderStatus] += 1;
-          }
-        });
-
-        setStatusCounts(counts);
+              if (changed) {
+                // Background tracking auto-updated order statuses:
+                // Notify all open pages to refresh their list silently
+                try {
+                  window.dispatchEvent(
+                    new CustomEvent("shipdrop:orders-updated", {
+                      detail: { type: "auto_sync", counts },
+                    })
+                  );
+                  window.dispatchEvent(
+                    new CustomEvent("orderStatusUpdated", {
+                      detail: { type: "auto_sync", counts },
+                    })
+                  );
+                } catch (e) {}
+              }
+            }
+            return counts;
+          });
+          try {
+            sessionStorage.setItem("shipdrop_dash_counts", JSON.stringify(counts));
+          } catch {}
+        }
       } catch (error) {
         console.error("Sidebar status count error:", error);
       }
     };
 
-    fetchStatusCounts();
+    fetchStatusCounts(true);
 
-    const handleUpdate = () => fetchStatusCounts();
+    const handleUpdate = (e) => {
+      if (e?.detail?.type === "auto_sync") return;
+      fetchStatusCounts(true);
+    };
 
     const updateEvents = [
       "shipdrop:orders-updated",
@@ -318,6 +453,7 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
       "orderUpdated",
       "orderDeleted",
       "ordersDeleted",
+      "offlineOrdersUpdated",
     ];
 
     updateEvents.forEach((eventName) => {
@@ -326,17 +462,25 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") {
-        fetchStatusCounts();
+        fetchStatusCounts(true);
       }
     };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
+    // Live background sync: check status updates every 12 seconds when tab is active
+    const pollInterval = setInterval(() => {
+      if (document.visibilityState === "visible") {
+        fetchStatusCounts(false);
+      }
+    }, 12000);
+
     return () => {
+      isMounted = false;
+      clearInterval(pollInterval);
       updateEvents.forEach((eventName) => {
         window.removeEventListener(eventName, handleUpdate);
       });
-
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, []);
@@ -344,12 +488,12 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
   const activeClass = (path) =>
     location.pathname === path
       ? "bg-[#008dd2] text-white shadow-sm font-medium"
-      : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#171b26] active:scale-[0.98]";
+      : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/80 active:scale-[0.98]";
 
   const subActiveClass = (path) =>
     location.pathname === path
-      ? "bg-sky-50 dark:bg-sky-500/15 text-[#008dd2] dark:text-[#38bdf8] font-semibold"
-      : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#171b26] hover:text-[#008dd2] dark:hover:text-[#38bdf8]";
+      ? "bg-sky-50 dark:bg-sky-950/40 text-[#008dd2] font-semibold"
+      : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-[#008dd2] dark:hover:text-[#008dd2]";
 
   return (
     <>
@@ -365,22 +509,21 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
 
       {/* SIDEBAR ASIDE: Closes completely off-screen on toggle */}
       <aside
-        className={`fixed top-0 left-0 z-50 flex h-full w-[250px] flex-col border-r border-slate-200 dark:border-[#1f2535] bg-white dark:bg-[#0c0e14] transition-transform duration-300 ease-in-out ${
+        className={`fixed top-0 left-0 z-50 flex h-full w-[250px] flex-col border-r border-slate-200 bg-white transition-transform duration-300 ease-in-out ${
           collapsed
             ? "-translate-x-full"
             : "translate-x-0 shadow-2xl lg:shadow-none"
         }`}
       >
         {/* HEADER: LOGO + TOGGLE / CLOSE BUTTON */}
-        <div className="flex h-[64px] shrink-0 items-center justify-between border-b border-slate-100 dark:border-[#1f2535] px-4">
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#008dd2] text-white font-bold text-base shadow-sm">
-              S
-            </div>
-            <h1 className="text-[21px] font-bold tracking-tight text-[#008dd2]">
-              ParcelDrop
-            </h1>
-          </div>
+        <div className="flex h-[64px] shrink-0 items-center justify-between border-b border-slate-100 px-4">
+          <Link
+            to="/dashboard"
+            className="flex items-center transition hover:opacity-90 active:scale-95 py-1 pl-1"
+            title="ParcelDrop"
+          >
+            <ParcelDropLogo />
+          </Link>
 
           <button
             onClick={() => handleToggle(true)}
@@ -421,6 +564,10 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
                         to={item.path}
                         onClick={() => {
                           setSidebarSearch("");
+                          sessionStorage.removeItem("editingProcessingOrder");
+                          if (item.path === "/create-order") {
+                            window.dispatchEvent(new Event("shipdrop:resetCreateOrder"));
+                          }
                           handleNavClick();
                         }}
                         className={`block px-3 py-2.5 text-[13px] transition ${
@@ -444,6 +591,7 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
           {/* DASHBOARD */}
           <Link
             to="/dashboard"
+            onMouseEnter={() => prefetchRoute("/dashboard")}
             onClick={handleNavClick}
             className={`flex items-center rounded-xl px-3 py-2.5 text-[14px] transition duration-150 ${activeClass(
               "/dashboard",
@@ -456,7 +604,12 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
           {/* CREATE ORDER */}
           <Link
             to="/create-order"
-            onClick={handleNavClick}
+            onMouseEnter={() => prefetchRoute("/create-order")}
+            onClick={() => {
+              sessionStorage.removeItem("editingProcessingOrder");
+              window.dispatchEvent(new Event("shipdrop:resetCreateOrder"));
+              handleNavClick();
+            }}
             className={`flex items-center rounded-xl px-3 py-2.5 text-[14px] transition duration-150 ${activeClass(
               "/create-order",
             )}`}
@@ -465,16 +618,30 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
             <span className="ml-3 truncate">Create Order</span>
           </Link>
 
+          {/* OFFLINE CREATE ORDER */}
+          <Link
+            to="/create-offline-order"
+            onMouseEnter={() => prefetchRoute("/create-offline-order")}
+            onClick={handleNavClick}
+            className={`flex items-center rounded-xl px-3 py-2.5 text-[14px] transition duration-150 ${activeClass(
+              "/create-offline-order",
+            )}`}
+          >
+            <HiOutlineDocumentAdd size={20} />
+            <span className="ml-3 truncate">Create Offline Order</span>
+          </Link>
+
           {/* PROCESSING ORDERS */}
           <Link
             to="/processing-orders"
+            onMouseEnter={() => prefetchRoute("/processing-orders")}
             onClick={handleNavClick}
             className={`flex items-center rounded-xl px-3 py-2.5 text-[14px] transition duration-150 ${activeClass(
               "/processing-orders",
             )}`}
           >
             <HiOutlineClock size={20} />
-            <span className="ml-3 truncate">Processing Orders</span>
+            <span className="ml-3 truncate">Ready to Ship</span>
           </Link>
 
           {/* ORDERS */}
@@ -485,118 +652,160 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
             >
               <HiOutlineCube size={20} />
               <span className="ml-3 flex-1 text-left truncate">Orders</span>
-              {showOrders ? (
-                <HiChevronDown size={17} />
-              ) : (
-                <HiChevronRight size={17} />
-              )}
+              <HiChevronRight
+                size={17}
+                className={`transition-transform duration-300 ease-in-out ${
+                  showOrders ? "rotate-90 text-slate-800" : "rotate-0 text-slate-400"
+                }`}
+              />
             </button>
 
-            {showOrders && (
-              <div className="mt-1 ml-5 space-y-1 border-l-2 border-slate-100 pl-3">
-                {[
-                  {
-                    name: "Processing Orders",
-                    path: "/processing-orders",
-                    count: statusCounts.PROCESSING,
-                  },
-                  {
-                    name: "All Orders",
-                    path: "/all-orders",
-                    count: statusCounts.ALL,
-                  },
-                  {
-                    name: "Manifested",
-                    path: "/manifested",
-                    count: statusCounts.MANIFESTED,
-                  },
-                  {
-                    name: "Not Picked",
-                    path: "/not-picked",
-                    count: statusCounts["NOT PICKED"],
-                  },
-                  {
-                    name: "In Transit",
-                    path: "/in-transit",
-                    count: statusCounts["IN TRANSIT"],
-                  },
-                  {
-                    name: "Out For Delivery",
-                    path: "/out-for-delivery",
-                    count: statusCounts["OUT FOR DELIVERY"],
-                  },
-                  {
-                    name: "Delivered",
-                    path: "/delivered",
-                    count: statusCounts.DELIVERED,
-                  },
-                  {
-                    name: "RTO In Transit",
-                    path: "/rto-in-transit",
-                    count: statusCounts["RTO IN TRANSIT"],
-                  },
-                  {
-                    name: "RTO Delivered",
-                    path: "/rto-delivered",
-                    count: statusCounts["RTO DELIVERED"],
-                  },
-                  {
-                    name: "Returned",
-                    path: "/returned",
-                    count: statusCounts.RETURNED,
-                  },
-                  {
-                    name: "Cancelled",
-                    path: "/cancelled",
-                    count: statusCounts.CANCELLED,
-                  },
-                  {
-                    name: "Pending",
-                    path: "/pending",
-                    count: statusCounts.PENDING,
-                  },
-                ].map((item) => (
-                  <Link
-                    key={item.path}
-                    to={item.path}
-                    onClick={handleNavClick}
-                    className={`flex items-center justify-between rounded-lg px-2.5 py-1.5 text-[13px] transition ${subActiveClass(
-                      item.path,
-                    )}`}
-                  >
-                    <span className="truncate">{item.name}</span>
-                    <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
-                      {item.count ?? 0}
-                    </span>
-                  </Link>
-                ))}
+            <div className={`sidebar-accordion ${showOrders ? "is-open" : ""}`}>
+              <div>
+                <div className="mt-1 ml-5 space-y-1 border-l-2 border-slate-100 pl-3 py-0.5">
+                  {[
+                    {
+                      name: "Ready to Ship",
+                      path: "/processing-orders",
+                      count: statusCounts.PROCESSING,
+                    },
+                    {
+                      name: "All Orders",
+                      path: "/all-orders",
+                      count: statusCounts.ALL,
+                    },
+                    {
+                      name: "Offline Orders",
+                      path: "/offline-orders",
+                      count: statusCounts.OFFLINE ?? statusCounts.OFFLINE_ORDERS ?? 0,
+                    },
+                    {
+                      name: "Manifested",
+                      path: "/manifested",
+                      count: statusCounts.MANIFESTED,
+                    },
+                    {
+                      name: "Not Picked",
+                      path: "/not-picked",
+                      count: statusCounts["NOT PICKED"],
+                    },
+                    {
+                      name: "In Transit",
+                      path: "/in-transit",
+                      count: statusCounts["IN TRANSIT"],
+                    },
+                    {
+                      name: "Out For Delivery",
+                      path: "/out-for-delivery",
+                      count: statusCounts["OUT FOR DELIVERY"],
+                    },
+                    {
+                      name: "Delivered",
+                      path: "/delivered",
+                      count: statusCounts.DELIVERED,
+                    },
+                    {
+                      name: "RTO In Transit",
+                      path: "/rto-in-transit",
+                      count: statusCounts["RTO IN TRANSIT"],
+                    },
+                    {
+                      name: "RTO Delivered",
+                      path: "/rto-delivered",
+                      count: statusCounts["RTO DELIVERED"],
+                    },
+
+                     {
+                      name: "UnDelivered",
+                      path: "/pending",
+                      count: statusCounts.PENDING,
+                    },
+                   
+                    {
+                      name: "Cancelled",
+                      path: "/cancelled",
+                      count: statusCounts.CANCELLED,
+                    },
+                   
+                  ].map((item) => (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      onMouseEnter={() => prefetchRoute(item.path)}
+                      onClick={handleNavClick}
+                      className={`flex items-center justify-between rounded-lg px-2.5 py-1.5 text-[13px] transition ${subActiveClass(
+                        item.path,
+                      )}`}
+                    >
+                      <span className="truncate">{item.name}</span>
+                      <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
+                        {item.count ?? 0}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
               </div>
-            )}
+            </div>
           </div>
 
-          {/* RATE CALCULATOR */}
-          <Link
-            to="/rate-calculator"
-            onClick={handleNavClick}
-            className={`flex items-center rounded-xl px-3 py-2.5 text-[14px] transition duration-150 ${activeClass(
-              "/rate-calculator",
-            )}`}
-          >
-            <HiOutlineCalculator size={20} />
-            <span className="ml-3 truncate">Rate Calculator</span>
-          </Link>
+          {/* TOOLS ACCORDION */}
+          <div>
+            <button
+              onClick={() => setShowTools(!showTools)}
+              className="flex w-full items-center rounded-xl px-3 py-2.5 text-[14px] text-slate-600 dark:text-slate-300 transition hover:bg-slate-100 dark:hover:bg-slate-800"
+            >
+              <FiTool size={18} />
+              <span className="ml-3 flex-1 text-left truncate">Tools</span>
+              <HiChevronRight
+                size={17}
+                className={`transition-transform duration-300 ease-in-out ${
+                  showTools ? "rotate-90 text-slate-800 dark:text-slate-200" : "rotate-0 text-slate-400"
+                }`}
+              />
+            </button>
 
-          {/* SERVICEABILITY */}
-          <Link
-            to="/serviceability"
-            onClick={handleNavClick}
-            className={`flex items-center rounded-xl px-3 py-2.5 text-[14px] transition duration-150 ${activeClass(
-              "/serviceability",
-            )}`}
-          >
-            <HiOutlineLocationMarker size={20} />
-            <span className="ml-3 truncate">Serviceability</span>
-          </Link>
+            <div className={`sidebar-accordion ${showTools ? "is-open" : ""}`}>
+              <div>
+                <div className="mt-1 ml-5 space-y-1 border-l-2 border-slate-100 dark:border-slate-800 pl-3 py-0.5">
+                  <Link
+                    to="/analytics"
+                    onMouseEnter={() => prefetchRoute("/analytics")}
+                    onClick={handleNavClick}
+                    className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[13px] transition ${subActiveClass(
+                      "/analytics",
+                    )}`}
+                  >
+                    <HiOutlineChartBar size={16} />
+                    <span className="truncate">Analytics</span>
+                  </Link>
+
+                  <Link
+                    to="/rate-calculator"
+                    onMouseEnter={() => prefetchRoute("/rate-calculator")}
+                    onClick={handleNavClick}
+                    className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[13px] transition ${subActiveClass(
+                      "/rate-calculator",
+                    )}`}
+                  >
+                    <HiOutlineCalculator size={16} />
+                    <span className="truncate">Rate Calculator</span>
+                  </Link>
+
+                  <Link
+                    to="/serviceability"
+                    onMouseEnter={() => prefetchRoute("/serviceability")}
+                    onClick={handleNavClick}
+                    className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[13px] transition ${subActiveClass(
+                      "/serviceability",
+                    )}`}
+                  >
+                    <HiOutlineLocationMarker size={16} />
+                    <span className="truncate">Serviceability</span>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
 
           {/* FINANCE */}
           <div>
@@ -606,48 +815,41 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
             >
               <HiOutlineCash size={20} />
               <span className="ml-3 flex-1 text-left truncate">Finance</span>
-              {showFinance ? (
-                <HiChevronDown size={17} />
-              ) : (
-                <HiChevronRight size={17} />
-              )}
+              <HiChevronRight
+                size={17}
+                className={`transition-transform duration-300 ease-in-out ${
+                  showFinance ? "rotate-90 text-slate-800" : "rotate-0 text-slate-400"
+                }`}
+              />
             </button>
 
-            {showFinance && (
-              <div className="mt-1 ml-5 space-y-1 border-l-2 border-slate-100 pl-3">
-                <Link
-                  to="/wallet"
-                  onClick={handleNavClick}
-                  className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[13px] transition ${subActiveClass(
-                    "/wallet",
-                  )}`}
-                >
-                  <HiOutlineCreditCard size={15} />
-                  <span>Wallet</span>
-                </Link>
-                <Link
-                  to="/weight-mismatch"
-                  onClick={handleNavClick}
-                  className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[13px] transition ${subActiveClass(
-                    "/weight-mismatch",
-                  )}`}
-                >
-                  <HiOutlineScale size={15} />
-                  <span>Weight Mismatch</span>
-                </Link>
+            <div className={`sidebar-accordion ${showFinance ? "is-open" : ""}`}>
+              <div>
+                <div className="mt-1 ml-5 space-y-1 border-l-2 border-slate-100 pl-3 py-0.5">
+                  <Link
+                    to="/wallet"
+                    onClick={handleNavClick}
+                    className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[13px] transition ${subActiveClass(
+                      "/wallet",
+                    )}`}
+                  >
+                    <HiOutlineCreditCard size={15} />
+                    <span>Wallet</span>
+                  </Link>
 
-                <Link
-  to="/cod-remittance"
-  onClick={handleNavClick}
-  className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[13px] transition ${subActiveClass(
-    "/cod-remittance",
-  )}`}
->
-  <HiOutlineCash size={15} />
-  <span>COD Remittance</span>
-</Link>
+                  <Link
+                    to="/cod-remittance"
+                    onClick={handleNavClick}
+                    className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[13px] transition ${subActiveClass(
+                      "/cod-remittance",
+                    )}`}
+                  >
+                    <HiOutlineCash size={15} />
+                    <span>COD Remittance</span>
+                  </Link>
+                </div>
               </div>
-            )}
+            </div>
           </div>
 
           {/* TICKETS */}
@@ -662,6 +864,53 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
             <span className="ml-3 truncate">Tickets</span>
           </Link>
 
+          {/* REPORTS ACCORDION */}
+          <div>
+            <button
+              onClick={() => setShowReports(!showReports)}
+              className="flex w-full items-center rounded-xl px-3 py-2.5 text-[14px] text-slate-600 transition hover:bg-slate-100"
+            >
+              <HiOutlineDocumentReport size={20} />
+              <span className="ml-3 flex-1 text-left truncate">Reports</span>
+              <HiChevronRight
+                size={17}
+                className={`transition-transform duration-300 ease-in-out ${
+                  showReports ? "rotate-90 text-slate-800" : "rotate-0 text-slate-400"
+                }`}
+              />
+            </button>
+
+            <div className={`sidebar-accordion ${showReports ? "is-open" : ""}`}>
+              <div>
+                <div className="mt-1 ml-5 space-y-1 border-l-2 border-slate-100 pl-3 py-0.5">
+                  <Link
+                    to="/reports/shipment-lifecycle"
+                    onMouseEnter={() => prefetchRoute("/reports/shipment-lifecycle")}
+                    onClick={handleNavClick}
+                    className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[13px] transition ${subActiveClass(
+                      "/reports/shipment-lifecycle",
+                    )}`}
+                  >
+                    <HiOutlineCube size={15} />
+                    <span>Shipment Report</span>
+                  </Link>
+
+                  <Link
+                    to="/reports/weight-discrepancy"
+                    onMouseEnter={() => prefetchRoute("/reports/weight-discrepancy")}
+                    onClick={handleNavClick}
+                    className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[13px] transition ${subActiveClass(
+                      "/reports/weight-discrepancy",
+                    )}`}
+                  >
+                    <HiOutlineScale size={15} />
+                    <span>Weight Discrepancy</span>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* SETTINGS */}
           <div>
             <button
@@ -674,65 +923,80 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
             >
               <HiOutlineCog size={20} />
               <span className="ml-3 flex-1 text-left truncate">Settings</span>
-              {showSettings ? (
-                <HiChevronDown size={17} />
-              ) : (
-                <HiChevronRight size={17} />
-              )}
+              <HiChevronRight
+                size={17}
+                className={`transition-transform duration-300 ease-in-out ${
+                  showSettings
+                    ? "rotate-90 " + (location.pathname.startsWith("/settings") ? "text-white" : "text-slate-800")
+                    : (location.pathname.startsWith("/settings") ? "text-white/80" : "text-slate-400")
+                }`}
+              />
             </button>
 
-            {showSettings && (
-              <div className="mt-1 ml-5 space-y-1 border-l-2 border-slate-100 pl-3">
-                <Link
-                  to="/settings/pickup-address"
-                  onClick={handleNavClick}
-                  className={`block rounded-lg px-2.5 py-1.5 text-[13px] transition ${subActiveClass(
-                    "/settings/pickup-address",
-                  )}`}
-                >
-                  Pickup Address
-                </Link>
-                <Link
-                  to="/settings/return-addresses"
-                  className={`block rounded-md px-3 py-1.5 text-[13px] whitespace-nowrap transition ${subActiveClass(
-                    "/settings/return-addresses",
-                  )}`}
-                >
-                  Return Addresses
-                </Link>
-                <Link
-                  to="/settings/label-settings"
-                  onClick={handleNavClick}
-                  className={`block rounded-lg px-2.5 py-1.5 text-[13px] transition ${subActiveClass(
-                    "/settings/label-settings",
-                  )}`}
-                >
-                  Label Settings
-                </Link>
+            <div className={`sidebar-accordion ${showSettings ? "is-open" : ""}`}>
+              <div>
+                <div className="mt-1 ml-5 space-y-1 border-l-2 border-slate-100 pl-3 py-0.5">
+                  <Link
+                    to="/settings/pickup-address"
+                    onClick={handleNavClick}
+                    className={`block rounded-lg px-2.5 py-1.5 text-[13px] transition ${subActiveClass(
+                      "/settings/pickup-address",
+                    )}`}
+                  >
+                    Pickup Address
+                  </Link>
+                  <Link
+                    to="/settings/return-addresses"
+                    onClick={handleNavClick}
+                    className={`block rounded-md px-3 py-1.5 text-[13px] whitespace-nowrap transition ${subActiveClass(
+                      "/settings/return-addresses",
+                    )}`}
+                  >
+                    Return Addresses
+                  </Link>
+                  <Link
+                    to="/settings/label-settings"
+                    onClick={handleNavClick}
+                    className={`block rounded-lg px-2.5 py-1.5 text-[13px] transition ${subActiveClass(
+                      "/settings/label-settings",
+                    )}`}
+                  >
+                    Label Settings
+                  </Link>
+                  <Link
+                    to="/settings/party-identities"
+                    onClick={handleNavClick}
+                    className={`block rounded-lg px-2.5 py-1.5 text-[13px] transition ${subActiveClass(
+                      "/settings/party-identities",
+                    )}`}
+                  >
+                    Party Identities
+                  </Link>
+                </div>
               </div>
-            )}
+            </div>
           </div>
 
           {/* LOGOUT */}
-          <Link
-            to="/login"
-            onClick={handleNavClick}
-            className="flex items-center rounded-xl px-3 py-2.5 text-[14px] text-red-500 hover:bg-red-50 transition duration-150"
+          <button
+            type="button"
+            onClick={handleSidebarLogout}
+            className="flex w-full items-center rounded-xl px-3 py-2.5 text-[14px] text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition duration-150"
           >
             <HiOutlineLogout size={20} />
-            <span className="ml-3 truncate font-medium">Logout</span>
-          </Link>
+            <span className="ml-3 truncate font-medium">Log out</span>
+          </button>
         </div>
       </aside>
 
       {/* MOBILE BOTTOM APP BAR */}
-      <nav className="fixed bottom-0 left-0 z-30 flex h-16 w-full items-center justify-around border-t border-slate-200 bg-white/95 px-2 backdrop-blur-md lg:hidden">
+      <nav className="fixed bottom-0 left-0 z-30 flex h-16 w-full items-center justify-around border-t border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-[#111827]/95 px-2 backdrop-blur-md lg:hidden">
         <Link
           to="/dashboard"
           className={`flex flex-col items-center justify-center gap-1 transition active:scale-95 ${
             location.pathname === "/dashboard"
               ? "text-[#008dd2]"
-              : "text-slate-500"
+              : "text-slate-500 dark:text-slate-400"
           }`}
         >
           <HiOutlineViewGrid size={21} />
@@ -751,6 +1015,10 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
 
         <Link
           to="/create-order"
+          onClick={() => {
+            sessionStorage.removeItem("editingProcessingOrder");
+            window.dispatchEvent(new Event("shipdrop:resetCreateOrder"));
+          }}
           className="-mt-5 flex h-12 w-12 items-center justify-center rounded-full bg-[#008dd2] text-white shadow-lg shadow-[#008dd2]/30 transition active:scale-90"
         >
           <HiOutlinePlusCircle size={26} />

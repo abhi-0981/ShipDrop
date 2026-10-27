@@ -5,6 +5,11 @@ import React, {
 } from "react";
 import { toast } from "react-hot-toast";
 import api from "../../services/api";
+import OrderDetailsModal from "../../components/Common/OrderDetailsModal";
+import { notifyOrderChange, subscribeToOrderUpdates } from "../../services/orderEvents";
+import { printShippingLabels, downloadShippingLabels } from "../../services/shippingLabelService";
+import { TableRowSkeleton } from "../../components/Common/TableSkeleton";
+import OrderStatusNavTabs from "../../components/Common/OrderStatusNavTabs";
 
 // ======================================================
 // COLORS
@@ -68,6 +73,22 @@ const Icon = ({
           <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
           <path d="M6 14h12v7H6z" />
           <path d="M17 12h1" />
+        </svg>
+      );
+
+    case "copy":
+      return (
+        <svg {...common}>
+          <rect x="9" y="9" width="10" height="10" rx="2" />
+          <path d="M15 9V7a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2" />
+        </svg>
+      );
+
+    case "pin":
+      return (
+        <svg {...common}>
+          <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" />
+          <circle cx="12" cy="10" r="2.5" />
         </svg>
       );
 
@@ -233,10 +254,16 @@ const getPaymentType = (order) => {
 
 const getAmount = (order) => {
   const amount = Number(
-    order?.total_amount ??
+    order?.shipping_charge ??
+      order?.shipping_charges ??
+      order?.charge ??
+      order?.shippingCharge ??
+      order?.final_rate ??
+      order?.manifest_shipping_charge ??
+      order?.total_amount ??
       order?.total ??
       order?.amount ??
-      order?.shipping_charges ??
+      order?.price ??
       0
   );
 
@@ -502,10 +529,10 @@ const StatusBadge = ({ status }) => {
 
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-semibold ${className}`}
+      className={`inline-flex items-center  rounded-full px-2 py-0.5 text-[9px] font-semibold ${className}`}
     >
       <span className="h-1 w-1 rounded-full bg-current" />
-      {getStatusLabel(status)}
+      {getStatusLabel(status).toUpperCase()}
     </span>
   );
 };
@@ -564,6 +591,8 @@ function OutForDelivery() {
         {
           params: {
             user_id: userId,
+            status: "OUT_FOR_DELIVERY",
+            include_tracking: false,
           },
         }
       );
@@ -609,6 +638,16 @@ function OutForDelivery() {
 
   useEffect(() => {
     fetchAllOrders();
+  }, []);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToOrderUpdates(() => {
+      fetchAllOrders();
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   // ====================================================
@@ -766,8 +805,115 @@ function OutForDelivery() {
   // VIEW
   // ====================================================
 
-  const handleView = (order) => {
+  const handleView = async (order) => {
     setViewingOrder(order);
+    const orderId = order?.id ?? order?.order_id;
+    const userId = getUserId();
+    if (!orderId || !userId) return;
+    try {
+      const response = await api.get(`/orders/${orderId}`, {
+        params: { user_id: userId },
+      });
+      if (response?.data?.success && response?.data?.order) {
+        setViewingOrder((current) =>
+          current && String(current?.id ?? current?.order_id) === String(orderId)
+            ? { ...current, ...response.data.order }
+            : current,
+        );
+      }
+    } catch (error) {
+      console.error("Unable to load full order details:", error);
+    }
+  };
+
+  const handlePrintSingleLabel = async (order) => {
+    if (!order) return toast.error("Unable to print this label");
+    await printShippingLabels([order], "ParcelDrop Shipping Label");
+  };
+
+  const handleDownloadSingleLabel = async (order) => {
+    if (!order) return toast.error("Unable to download this label");
+    await downloadShippingLabels([order]);
+  };
+
+  const handleDuplicate = async (order) => {
+    const orderId = order?.id;
+    const userId = getUserId();
+    if (!orderId || !userId) {
+      toast.error("Unable to duplicate this order");
+      return;
+    }
+    try {
+      const response = await api.get(`/orders/${orderId}`, {
+        params: { user_id: userId },
+      });
+      const result = response?.data;
+      if (!result?.success || !result?.order) {
+        throw new Error(result?.message || "Unable to load order details");
+      }
+      const source = result.order;
+      const warehouseId = Number(
+        source?.warehouse_id || source?.warehouse?.id || order?.warehouse_id || 0,
+      );
+      if (!warehouseId) throw new Error("Pickup warehouse is missing");
+      const payload = {
+        user_id: Number(userId),
+        pickup_address: source?.pickup_address || null,
+        pickup_pincode: source?.pickup_pincode || null,
+        pickup_city: source?.pickup_city || null,
+        warehouse_id: warehouseId,
+        pickup_address_id: source?.pickup_address_id || null,
+        orderData: {
+          consignee_name: source?.consignee_name || "",
+          mobile: source?.mobile || "",
+          alternate_mobile: source?.alternate_mobile || null,
+          email: source?.email || null,
+          gstin: source?.gstin || null,
+          company_name: source?.company_name || null,
+          floor_no: source?.floor_no || null,
+          landmark: source?.landmark || null,
+          address_line1: source?.address_line1 || "",
+          address_line2: source?.address_line2 || null,
+          pincode: source?.pincode || "",
+          city: source?.city || "",
+          state: source?.state || "",
+          country: source?.country || "India",
+          payment_type: source?.payment_type || "Prepaid",
+          risk_type: source?.risk_type || "Owner Risk",
+          warehouse_id: warehouseId,
+          fragile_shipment: Number(source?.fragile_shipment) === 1 ? 1 : 0,
+          dangerous_good: Number(source?.dangerous_good) === 1 ? 1 : 0,
+        },
+        products: Array.isArray(source?.products)
+          ? source.products.map((product) => ({
+              product_name: product?.product_name || "",
+              sku: product?.sku || null,
+              price: Number(product?.price) || 0,
+              qty: Number(product?.qty) || 1,
+              tax: Number(product?.tax) || 0,
+            }))
+          : [],
+        packages: Array.isArray(source?.packages)
+          ? source.packages.map((pkg) => ({
+              length: Number(pkg?.length) || 0,
+              width: Number(pkg?.width) || 0,
+              height: Number(pkg?.height) || 0,
+              weight: Number(pkg?.weight) || 0,
+              package_count: Number(pkg?.package_count) || 1,
+            }))
+          : [],
+      };
+      const createResponse = await api.post("/orders/create", payload);
+      const createResult = createResponse?.data;
+      if (!createResult?.success || !createResult?.order_id) {
+        throw new Error(createResult?.message || "Unable to duplicate order");
+      }
+      toast.success(`Order duplicated successfully. New order #${createResult.order_id} is in Processing.`);
+      await fetchAllOrders();
+      notifyOrderChange({ type: "created", orderId: createResult.order_id });
+    } catch (error) {
+      toast.error(error?.response?.data?.message || error?.message || "Unable to duplicate order");
+    }
   };
 
   // ====================================================
@@ -989,57 +1135,12 @@ function OutForDelivery() {
   // PRINT LABELS
   // ====================================================
 
-  const handlePrintLabels = () => {
+  const handlePrintLabels = async () => {
     if (selectedOrders.length === 0) {
-      toast.error(
-        "Please select at least one order"
-      );
+      toast.error("Please select at least one order");
       return;
     }
-
-    const printWindow = window.open(
-      "",
-      "_blank",
-      "width=900,height=700"
-    );
-
-    if (!printWindow) {
-      toast.error(
-        "Please allow pop-ups to print labels"
-      );
-      return;
-    }
-
-    const html = selectedOrders
-      .map(buildLabel)
-      .join("");
-
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>
-            ShipDrop Shipping Labels
-          </title>
-        </head>
-
-        <body
-          style="
-            margin:30px;
-            background:#fff;
-          "
-        >
-          ${html}
-        </body>
-      </html>
-    `);
-
-    printWindow.document.close();
-    printWindow.focus();
-
-    setTimeout(() => {
-      printWindow.print();
-    }, 300);
+    await printShippingLabels(selectedOrders, "ParcelDrop Shipping Label");
   };
 
   // ====================================================
@@ -1207,39 +1308,14 @@ function OutForDelivery() {
   // LOADING
   // ====================================================
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#f5f8fc] px-4 py-5">
-        <div className="mx-auto max-w-[1450px]">
 
-          <div className="mb-3 h-[92px] animate-pulse rounded-xl border border-slate-200 bg-white" />
-
-          <div className="mb-3 h-[62px] animate-pulse rounded-xl border border-slate-200 bg-white" />
-
-          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-            <div className="h-12 animate-pulse bg-slate-50" />
-
-            {[1, 2, 3, 4].map(
-              (item) => (
-                <div
-                  key={item}
-                  className="h-[86px] animate-pulse border-t border-slate-100"
-                />
-              )
-            )}
-          </div>
-
-        </div>
-      </div>
-    );
-  }
 
   // ====================================================
   // RENDER
   // ====================================================
 
   return (
-    <div className="min-h-screen bg-[#f5f8fc] px-4 py-5">
+    <div className="min-h-screen bg-[#f6f8fb] dark:bg-[#090b10] px-4 py-5">
 
       <div className="mx-auto max-w-[1450px]">
 
@@ -1416,7 +1492,7 @@ function OutForDelivery() {
               </option>
 
               <option value="ROAD">
-                Road
+                Surface
               </option>
 
               <option value="AIR">
@@ -1468,20 +1544,18 @@ function OutForDelivery() {
 
         </div>
 
-        {/* ==================================================
-            SMALL SUMMARY
-        ================================================== */}
+        {/* ORDER STATUS TABS */}
+        <OrderStatusNavTabs />
 
-        
         {/* ==================================================
             TABLE
         ================================================== */}
 
         <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
 
-          <div className="max-h-[calc(100vh-180px)] overflow-auto">
+          <div className="max-h-[calc(100vh-180px)] overflow-x-hidden overflow-y-auto">
 
-            <table className="w-full min-w-[1120px] border-collapse">
+            <table className="w-full table-fixed border-collapse">
 
               {/* TABLE HEADER */}
 
@@ -1489,7 +1563,7 @@ function OutForDelivery() {
 
                 <tr className="border-b border-slate-200 bg-white">
 
-                  <th className="sticky top-0 z-20 w-[52px] bg-white px-4 py-3.5 text-left">
+                  <th className="sticky top-0 z-20 w-[5%] bg-white px-2 py-3 text-left">
 
                     <button
                       type="button"
@@ -1510,31 +1584,31 @@ function OutForDelivery() {
 
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[190px] bg-white px-3 py-3.5 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[17%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Customer
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[175px] bg-white px-3 py-3.5 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[16%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Shipment
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[165px] bg-white px-3 py-3.5 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[16%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Route
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[145px] bg-white px-3 py-3.5 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[13%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Payment
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[125px] bg-white px-3 py-3.5 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[10%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Weight
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[155px] bg-white px-3 py-3.5 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[11%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Created
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[105px] bg-white px-3 py-3.5 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[12%] bg-white px-2 py-3 text-center text-[12px] font-medium text-slate-700">
                     Actions
                   </th>
 
@@ -1545,8 +1619,9 @@ function OutForDelivery() {
               {/* TABLE BODY */}
 
               <tbody>
-
-                {filteredOrders.length === 0 ? (
+                {loading ? (
+                  <TableRowSkeleton rows={6} cols={8} />
+                ) : filteredOrders.length === 0 ? (
 
                   <tr>
 
@@ -1650,7 +1725,7 @@ function OutForDelivery() {
                               CUSTOMER
                           ================================== */}
 
-                          <td className="px-3 py-3">
+                          <td className="px-2 py-3">
 
                             <div className="min-w-0">
 
@@ -1686,7 +1761,7 @@ function OutForDelivery() {
                               SHIPMENT
                           ================================== */}
 
-                          <td className="px-3 py-3">
+                          <td className="px-2 py-3">
 
                             <div className="min-w-0">
 
@@ -1713,7 +1788,7 @@ function OutForDelivery() {
                                 {service ===
                                 "AIR"
                                   ? "Air"
-                                  : "Road"}
+                                  : "Surface"}
                               </p>
 
                             </div>
@@ -1724,79 +1799,33 @@ function OutForDelivery() {
                               ROUTE
                           ================================== */}
 
-                          <td className="px-3 py-3">
-
-                            <div>
-
-                              <p className="text-[12px] font-medium text-slate-700">
-
-                                {getPickupCity(
-                                  order
-                                )}
-
-                                {getPickupPincode(
-                                  order
-                                ) && (
-                                  <span className="text-[10px] text-slate-400">
-                                    {" "}
-                                    (
-                                    {getPickupPincode(
-                                      order
-                                    )}
-                                    )
-                                  </span>
-                                )}
-
-                              </p>
-
-                              <p className="my-0.5 text-[10px] text-slate-300">
-                                ↓
-                              </p>
-
-                              <p className="text-[12px] font-medium text-slate-700">
-
-                                {getDeliveryCity(
-                                  order
-                                )}
-
-                                {getDeliveryPincode(
-                                  order
-                                ) && (
-                                  <span className="text-[10px] text-slate-400">
-                                    {" "}
-                                    (
-                                    {getDeliveryPincode(
-                                      order
-                                    )}
-                                    )
-                                  </span>
-                                )}
-
-                              </p>
-
-                              <p className="mt-1 text-[9px] text-slate-400">
-
-                                {getPickupPincode(
-                                  order
-                                ) ||
-                                "—"}{" "}
-                                →{" "}
-                                {getDeliveryPincode(
-                                  order
-                                ) ||
-                                  "—"}
-
-                              </p>
-
+                          <td className="px-2 py-3">
+                            <div className="flex min-w-0 items-stretch gap-2">
+                              <div className="flex w-4 shrink-0 flex-col items-center pt-[2px]">
+                                <span className="flex h-[15px] w-4 items-center justify-center text-[#008dd2]">
+                                  <Icon name="pin" size={15} strokeWidth={2} />
+                                </span>
+                                <span className="my-[2px] h-[12px] border-l border-dashed border-slate-300" />
+                                <span className="flex h-[15px] w-4 items-center justify-center text-slate-400">
+                                  <Icon name="pin" size={15} strokeWidth={2} />
+                                </span>
+                              </div>
+                              <div className="min-w-0 flex-1 space-y-[5px]">
+                                <p className="truncate text-[12px] font-medium leading-[17px] text-slate-800" title={`${getPickupCity(order)} (${getPickupPincode(order)})`}>
+                                  {getPickupCity(order)} <span className="text-[11px] font-normal text-slate-400">{getPickupPincode(order) ? `(${getPickupPincode(order)})` : ""}</span>
+                                </p>
+                                <p className="truncate text-[12px] font-medium leading-[17px] text-slate-800" title={`${getDeliveryCity(order)} (${getDeliveryPincode(order)})`}>
+                                  {getDeliveryCity(order)} <span className="text-[11px] font-normal text-slate-400">{getDeliveryPincode(order) ? `(${getDeliveryPincode(order)})` : ""}</span>
+                                </p>
+                              </div>
                             </div>
-
                           </td>
 
                           {/* ==================================
                               PAYMENT
                           ================================== */}
 
-                          <td className="px-3 py-3">
+                          <td className="px-2 py-3">
 
                             <div>
 
@@ -1819,7 +1848,7 @@ function OutForDelivery() {
                               </p>
 
                               <p className="text-[10px] text-slate-400">
-                                Total: ₹
+                                Charge: ₹
                                 {getAmount(
                                   order
                                 ).toFixed(2)}
@@ -1833,7 +1862,7 @@ function OutForDelivery() {
                               WEIGHT
                           ================================== */}
 
-                          <td className="px-3 py-3">
+                          <td className="px-2 py-3">
 
                             <div>
 
@@ -1870,7 +1899,7 @@ function OutForDelivery() {
                               CREATED
                           ================================== */}
 
-                          <td className="px-3 py-3">
+                          <td className="px-2 py-3">
 
                             <p className="text-[12px] font-medium text-slate-700">
                               #
@@ -1890,17 +1919,15 @@ function OutForDelivery() {
                                 getCreatedAt(
                                   order
                                 )
-                              )}
-
-                            </p>
-
-                            <p className="text-[10px] text-slate-400">
-                              {formatTime(
+                              )}{" "} {formatTime(
                                 getCreatedAt(
                                   order
                                 )
                               )}
+
                             </p>
+
+                           
 
                           </td>
 
@@ -1909,92 +1936,17 @@ function OutForDelivery() {
                           ================================== */}
 
                           <td className="px-3 py-3">
-
-                            <div className="flex items-center gap-1.5">
-
-                              {/* PRINT */}
-
-                              <button
-                                type="button"
-                                onClick={() => {
-
-                                  const printWindow =
-                                    window.open(
-                                      "",
-                                      "_blank",
-                                      "width=900,height=700"
-                                    );
-
-                                  if (
-                                    !printWindow
-                                  ) {
-                                    toast.error(
-                                      "Please allow pop-ups to print labels"
-                                    );
-                                    return;
-                                  }
-
-                                  printWindow.document.write(`
-                                    <!DOCTYPE html>
-                                    <html>
-                                      <head>
-                                        <title>
-                                          ShipDrop Shipping Label
-                                        </title>
-                                      </head>
-
-                                      <body
-                                        style="
-                                          margin:30px;
-                                          background:#fff;
-                                        "
-                                      >
-                                        ${buildLabel(
-                                          order
-                                        )}
-                                      </body>
-                                    </html>
-                                  `);
-
-                                  printWindow.document.close();
-                                  printWindow.focus();
-
-                                  setTimeout(
-                                    () =>
-                                      printWindow.print(),
-                                    300
-                                  );
-
-                                }}
-                                title="Print Shipping Label"
-                                className="flex h-8 w-8 items-center justify-center rounded-md border border-[#b9dff0] bg-white text-[#008dd2] transition hover:bg-[#edf8ff]"
-                              >
-                                <Icon
-                                  name="printer"
-                                  size={15}
-                                />
+                            <div className="flex items-center justify-center gap-1.5 whitespace-nowrap">
+                              <button type="button" onClick={() => handlePrintSingleLabel(order)} title="Print Shipping Label" aria-label="Print Shipping Label" className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[7px] border border-[#008dd2] bg-[#008dd2] text-white transition hover:bg-[#007dbb] hover:border-[#007dbb] focus:outline-none focus:ring-2 focus:ring-sky-100">
+                                <Icon name="printer" size={15} strokeWidth={1.9} />
                               </button>
-
-                              {/* VIEW */}
-
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  handleView(
-                                    order
-                                  )
-                                }
-                                title="View Order"
-                                className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-500 transition hover:border-[#008dd2] hover:bg-[#edf8ff] hover:text-[#008dd2]"
-                              >
-                                <Icon
-                                  name="eye"
-                                  size={15}
-                                />
+                              <button type="button" onClick={() => handleDuplicate(order)} title="Duplicate Order" aria-label="Duplicate Order" className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[7px] border border-[#008dd2] bg-[#008dd2] text-white transition hover:bg-[#007dbb] hover:border-[#007dbb] focus:outline-none focus:ring-2 focus:ring-blue-100">
+                                <Icon name="copy" size={15} strokeWidth={1.9} />
                               </button>
-
+                              <button type="button" onClick={() => handleView(order)} title="Order Details" aria-label="Order Details" className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[7px] border border-slate-200 bg-white text-slate-600 transition hover:border-[#008dd2] hover:bg-[#edf8ff] hover:text-[#008dd2] focus:outline-none focus:ring-2 focus:ring-sky-100">
+                                <Icon name="eye" size={15} strokeWidth={1.9} />
+                              </button>
                             </div>
-
                           </td>
 
                         </tr>
@@ -2053,334 +2005,21 @@ function OutForDelivery() {
 
       </div>
 
-      {/* ====================================================
-          VIEW ORDER MODAL
-      ==================================================== */}
-
-      {viewingOrder && (
-
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/30 p-4 backdrop-blur-[2px]"
-          onClick={() =>
-            setViewingOrder(null)
+      <OrderDetailsModal
+        order={viewingOrder}
+        loading={false}
+        onClose={() => setViewingOrder(null)}
+        onTrack={(orderOrAwb) => {
+          const awb = typeof orderOrAwb === "string"
+            ? orderOrAwb
+            : getAWB(orderOrAwb || viewingOrder);
+          if (awb && awb !== "—") {
+            window.dispatchEvent(new CustomEvent("shipdrop:openTracking", { detail: String(awb) }));
           }
-        >
-
-          <div
-            className="w-full max-w-[620px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
-            onClick={(e) =>
-              e.stopPropagation()
-            }
-          >
-
-            {/* HEADER */}
-
-            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-
-              <div>
-
-                <h2 className="text-[16px] font-semibold text-slate-900">
-                  Order Details
-                </h2>
-
-                <p className="mt-0.5 text-[11px] text-slate-400">
-                  Order #
-                  {getOrderId(
-                    viewingOrder
-                  )}
-                </p>
-
-              </div>
-
-              <button
-                type="button"
-                onClick={() =>
-                  setViewingOrder(
-                    null
-                  )
-                }
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
-              >
-                <Icon
-                  name="x"
-                  size={17}
-                />
-              </button>
-
-            </div>
-
-            {/* BODY */}
-
-            <div className="max-h-[70vh] overflow-y-auto p-5">
-
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-
-                <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
-
-                  <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
-                    Customer
-                  </p>
-
-                  <p className="mt-1 text-[13px] font-semibold text-slate-800">
-                    {getCustomerName(
-                      viewingOrder
-                    )}
-                  </p>
-
-                  <p className="mt-0.5 text-[11px] text-slate-500">
-                    {getMobile(
-                      viewingOrder
-                    )}
-                  </p>
-
-                </div>
-
-                <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
-
-                  <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
-                    AWB
-                  </p>
-
-                  <p className="mt-1 text-[13px] font-semibold text-slate-800">
-                    {getAWB(
-                      viewingOrder
-                    )}
-                  </p>
-
-                </div>
-
-                <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
-
-                  <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
-                    Shipment
-                  </p>
-
-                  <p className="mt-1 text-[13px] font-semibold text-slate-800">
-                    {getShipmentName(
-                      viewingOrder
-                    )}
-                  </p>
-
-                  <p className="mt-0.5 text-[11px] text-slate-500">
-                    {getServiceType(
-                      viewingOrder
-                    ) === "AIR"
-                      ? "By Air"
-                      : "By Road"}
-                  </p>
-
-                </div>
-
-                <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
-
-                  <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
-                    Payment
-                  </p>
-
-                  <p className="mt-1 text-[13px] font-semibold text-slate-800">
-                    {getPaymentType(
-                      viewingOrder
-                    )}
-                  </p>
-
-                  <p className="mt-0.5 text-[11px] text-slate-500">
-                    ₹
-                    {getAmount(
-                      viewingOrder
-                    ).toFixed(2)}
-                  </p>
-
-                </div>
-
-              </div>
-
-              {/* ADDRESS */}
-
-              <div className="mt-3 rounded-xl border border-slate-200 bg-white p-4">
-
-                <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
-                  Delivery Address
-                </p>
-
-                <p className="mt-1 text-[13px] font-medium leading-6 text-slate-700">
-
-                  {[
-                    viewingOrder?.address_line1,
-                    viewingOrder?.address_line2,
-                    viewingOrder?.city,
-                    viewingOrder?.state,
-                  ]
-                    .filter(Boolean)
-                    .join(", ") ||
-                    "—"}
-
-                  {viewingOrder?.pincode
-                    ? ` - ${viewingOrder.pincode}`
-                    : ""}
-
-                </p>
-
-              </div>
-
-              {/* ROUTE */}
-
-              <div className="mt-3 rounded-xl border border-slate-200 bg-white p-4">
-
-                <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
-                  Route
-                </p>
-
-                <div className="mt-2 flex items-center gap-3">
-
-                  <div className="rounded-lg bg-[#edf8ff] px-3 py-2 text-[12px] font-semibold text-[#008dd2]">
-                    {getPickupCity(
-                      viewingOrder
-                    )}
-                  </div>
-
-                  <span className="text-slate-300">
-                    →
-                  </span>
-
-                  <div className="rounded-lg bg-[#f0ecff] px-3 py-2 text-[12px] font-semibold text-[#7052ff]">
-                    {getDeliveryCity(
-                      viewingOrder
-                    )}
-                  </div>
-
-                </div>
-
-              </div>
-
-              {/* WEIGHT / STATUS */}
-
-              <div className="mt-3 grid grid-cols-2 gap-3">
-
-                <div className="rounded-xl border border-slate-200 p-3">
-
-                  <p className="text-[10px] uppercase tracking-wide text-slate-400">
-                    Weight
-                  </p>
-
-                  <p className="mt-1 text-[15px] font-semibold text-slate-800">
-                    {getWeight(
-                      viewingOrder
-                    ).toFixed(2)}{" "}
-                    Kg
-                  </p>
-
-                </div>
-
-                <div className="rounded-xl border border-slate-200 p-3">
-
-                  <p className="text-[10px] uppercase tracking-wide text-slate-400">
-                    Status
-                  </p>
-
-                  <div className="mt-1">
-                    <StatusBadge
-                      status={getStatus(
-                        viewingOrder
-                      )}
-                    />
-                  </div>
-
-                </div>
-
-              </div>
-
-            </div>
-
-            {/* FOOTER */}
-
-            <div className="flex items-center justify-end gap-2 border-t border-slate-100 bg-[#fafbfc] px-5 py-3">
-
-              <button
-                type="button"
-                onClick={() =>
-                  setViewingOrder(
-                    null
-                  )
-                }
-                className="h-9 rounded-lg border border-slate-200 bg-white px-4 text-[12px] font-medium text-slate-600 hover:bg-slate-50"
-              >
-                Close
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-
-                  const order =
-                    viewingOrder;
-
-                  setViewingOrder(
-                    null
-                  );
-
-                  const printWindow =
-                    window.open(
-                      "",
-                      "_blank",
-                      "width=900,height=700"
-                    );
-
-                  if (!printWindow) {
-                    toast.error(
-                      "Please allow pop-ups to print labels"
-                    );
-                    return;
-                  }
-
-                  printWindow.document.write(`
-                    <!DOCTYPE html>
-                    <html>
-                      <head>
-                        <title>
-                          ShipDrop Shipping Label
-                        </title>
-                      </head>
-
-                      <body
-                        style="
-                          margin:30px;
-                          background:#fff;
-                        "
-                      >
-                        ${buildLabel(
-                          order
-                        )}
-                      </body>
-                    </html>
-                  `);
-
-                  printWindow.document.close();
-                  printWindow.focus();
-
-                  setTimeout(
-                    () =>
-                      printWindow.print(),
-                    300
-                  );
-
-                }}
-                className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[#008dd2] px-4 text-[12px] font-medium text-white hover:bg-[#007dbb]"
-              >
-                <Icon
-                  name="printer"
-                  size={14}
-                />
-
-                Print Label
-              </button>
-
-            </div>
-
-          </div>
-
-        </div>
-
-      )}
+        }}
+        onDownload={handleDownloadSingleLabel}
+        onPrint={handlePrintSingleLabel}
+      />
 
     </div>
   );

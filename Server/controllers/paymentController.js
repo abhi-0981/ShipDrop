@@ -19,7 +19,7 @@ const razorpay = new Razorpay({
 // ========================================
 
 const getWalletBalance = (req, res) => {
-  const { user_id } = req.query;
+  const user_id = req.user?.id || req.query.user_id;
 
   if (!user_id) {
     return res.status(400).json({
@@ -27,37 +27,33 @@ const getWalletBalance = (req, res) => {
     });
   }
 
-  paymentModel.createWalletIfNotExists(
-    user_id,
-    (err) => {
-      if (err) {
+  // Optimize: Check if wallet exists first with a lightweight SELECT
+  paymentModel.getWallet(user_id, (err, result) => {
+    if (err) {
+      return res.status(500).json({
+        message: err.message,
+      });
+    }
+
+    if (result && result.length > 0) {
+      return res.status(200).json({
+        balance: result[0].balance,
+      });
+    }
+
+    // Only create wallet if user does not have one yet
+    paymentModel.createWalletIfNotExists(user_id, (createErr) => {
+      if (createErr) {
         return res.status(500).json({
-          message: err.message,
+          message: createErr.message,
         });
       }
 
-      paymentModel.getWallet(
-        user_id,
-        (err, result) => {
-          if (err) {
-            return res.status(500).json({
-              message: err.message,
-            });
-          }
-
-          if (result.length === 0) {
-            return res.status(404).json({
-              message: "Wallet not found",
-            });
-          }
-
-          return res.status(200).json({
-            balance: result[0].balance,
-          });
-        }
-      );
-    }
-  );
+      return res.status(200).json({
+        balance: 0,
+      });
+    });
+  });
 };
 
 
@@ -67,8 +63,8 @@ const getWalletBalance = (req, res) => {
 
 const createPaymentOrder = async (req, res) => {
   try {
+    const user_id = req.user?.id || req.body.user_id;
     const {
-      user_id,
       amount,
     } = req.body;
 
@@ -185,8 +181,8 @@ const createPaymentOrder = async (req, res) => {
 // ========================================
 
 const verifyPayment = (req, res) => {
+  const user_id = req.user?.id || req.body.user_id;
   const {
-    user_id,
     razorpay_order_id,
     razorpay_payment_id,
     razorpay_signature,
@@ -367,6 +363,29 @@ const verifyPayment = (req, res) => {
                   }
 
 
+                  // Automatically trigger notification for the recharge
+                  try {
+                    const rechargeAmt = Number(transaction.amount || 0).toFixed(2);
+                    db.query(
+                      `INSERT INTO notifications (user_id, type, title, message, reference_id, reference_url, message_count, is_read, created_at)
+                       VALUES (?, 'WALLET', ?, ?, ?, '/wallet', 1, 0, NOW())`,
+                      [
+                        user_id,
+                        `Wallet Credited: ₹${rechargeAmt}`,
+                        `₹${rechargeAmt} has been successfully credited to your wallet.`,
+                        `WALLET_TX_${transaction.id}`,
+                      ]
+                    );
+                    if (Number(wallet[0]?.balance || 0) >= 200) {
+                      db.query(
+                        `DELETE FROM notifications WHERE user_id = ? AND type = 'WALLET' AND reference_id = 'LOW_WALLET_BALANCE'`,
+                        [user_id]
+                      );
+                    }
+                  } catch (notifErr) {
+                    console.warn("Could not insert recharge notification:", notifErr.message);
+                  }
+
                   return res.status(200).json({
                     message:
                       "Wallet recharged successfully",
@@ -390,7 +409,7 @@ const verifyPayment = (req, res) => {
 // ========================================
 
 const getWalletHistory = (req, res) => {
-  const { user_id } = req.query;
+  const user_id = req.user?.id || req.query.user_id;
 
   if (!user_id) {
     return res.status(400).json({
@@ -421,7 +440,7 @@ const getWalletHistory = (req, res) => {
 // ========================================
 
 const getCODRemittanceHistory = (req, res) => {
-  const { user_id } = req.query;
+  const user_id = req.user?.id || req.query.user_id;
 
   if (!user_id) {
     return res.status(400).json({

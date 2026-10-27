@@ -38,7 +38,7 @@ function AppDownload() {
 
           <p className="mb-8 text-base leading-7 text-slate-600">
             eCommerce shipping on the move — process, ship and track orders
-            instantly from the ShipDrop mobile app.
+            instantly from the ParcelDrop mobile app.
           </p>
 
           <div className="mb-8 space-y-4">

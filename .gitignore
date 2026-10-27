@@ -59,3 +59,11 @@ Thumbs.db
 *.njsproj
 *.sln
 *.sw?
+
+# =====================================================
+# OneDrive Sync Conflicts
+# =====================================================
+*-DESKTOP-*
+sync_conflicts.js
+sync_conflicts.ps1
+tatus

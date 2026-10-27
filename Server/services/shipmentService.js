@@ -105,7 +105,10 @@ const SUPPORTED_SERVICES = [
 ];
 
 const DELHIVERY_API_TOKEN =
-  process.env.DELHIVERY_API_TOKEN;
+  process.env.DELHIVERY_API_TOKEN ||
+  process.env.DELHIVERY_AUTH_TOKEN ||
+  process.env.DELHIVERY_TOKEN ||
+  "1122f7c644f0f213696e2584473447cf426898c9";
 
 const DELHIVERY_API_BASE_URL =
   process.env.DELHIVERY_API_BASE_URL ||
@@ -1450,6 +1453,11 @@ seller_add:
       order.return_country || "India",
   };
 
+    // FRAGILE SHIPMENT
+  if (Number(order.fragile_shipment) === 1) {
+    shipment.fragile_shipment = true;
+  }
+
   // ======================================================
   // COD
   // ======================================================
@@ -1790,7 +1798,8 @@ const confirmShipment = async ({
             return_city,
             return_state,
             return_country,
-
+fragile_shipment,
+dangerous_good,
             status,
             awb
           FROM orders
@@ -2059,16 +2068,13 @@ const confirmShipment = async ({
     const shipment =
       buildDelhiveryShipment({
 
-        order: {
-
-          ...lockedOrder,
-
-          ...orderData,
-
-          order_id:
-            lockedOrder.order_id,
-
-        },
+order: {
+  ...lockedOrder,
+  ...orderData,
+  fragile_shipment: lockedOrder.fragile_shipment,
+  dangerous_good: lockedOrder.dangerous_good,
+  order_id: lockedOrder.order_id,
+},
 
         products,
 

@@ -316,6 +316,60 @@ const replyToTicketController = async (
       [ticketId]
     );
 
+    // Notify user about admin reply (aggregated by ticket)
+    try {
+      const [ticketRows] = await db.query(
+        `SELECT id, ticket_number, user_id, subject FROM tickets WHERE id = ? LIMIT 1`,
+        [ticketId]
+      );
+      if (ticketRows && ticketRows.length > 0) {
+        const ticketInfo = ticketRows[0];
+        const snippet = String(message).trim().slice(0, 160);
+
+        // Check if there is an existing UNREAD notification for this ticket
+        const [existing] = await db.query(
+          `SELECT id, message_count FROM notifications 
+           WHERE user_id = ? AND type = 'TICKET_REPLY' AND reference_id = ? AND is_read = 0 
+           LIMIT 1`,
+          [ticketInfo.user_id, String(ticketInfo.id)]
+        );
+
+        if (existing && existing.length > 0) {
+          // Increment message count and update latest snippet and timestamp
+          await db.query(
+            `UPDATE notifications 
+             SET message_count = COALESCE(message_count, 1) + 1,
+                 message = ?,
+                 title = ?,
+                 created_at = NOW()
+             WHERE id = ?`,
+            [
+              snippet,
+              `Support replied to Ticket #${ticketInfo.ticket_number}`,
+              existing[0].id,
+            ]
+          );
+        } else {
+          // Insert new unread notification with count = 1
+          await db.query(
+            `
+              INSERT INTO notifications (user_id, type, title, message, reference_id, reference_url, message_count, is_read, created_at)
+              VALUES (?, 'TICKET_REPLY', ?, ?, ?, ?, 1, 0, NOW())
+            `,
+            [
+              ticketInfo.user_id,
+              `Support replied to Ticket #${ticketInfo.ticket_number}`,
+              snippet,
+              String(ticketInfo.id),
+              `/tickets?ticket_id=${ticketInfo.id}`,
+            ]
+          );
+        }
+      }
+    } catch (notifErr) {
+      console.warn("Notification insert/update error in admin reply:", notifErr.message);
+    }
+
     const [replyRows] = await db.query(
       `
         SELECT

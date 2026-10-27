@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   HiOutlineRefresh,
   HiOutlineClipboardList,
@@ -40,11 +41,16 @@ const formatDate = (value) => {
   });
 };
 
-const normalizeStatus = (status) =>
-  String(status || "")
+const normalizeStatus = (status) => {
+  const s = String(status || "")
     .trim()
     .toUpperCase()
     .replace(/_/g, " ");
+  if (s === "RETURN ACCEPTED" || s.includes("RETURN ACCEPT")) {
+    return "RTO DELIVERED";
+  }
+  return s;
+};
 
 const statusConfig = {
   PROCESSING: {
@@ -190,6 +196,8 @@ function ProgressRow({ label, value, total }) {
 }
 
 function Dashboard() {
+  const navigate = useNavigate();
+
   const [data, setData] = useState({
     counts: {},
     orders: [],
@@ -329,36 +337,36 @@ function Dashboard() {
   ];
 
   const openOrders = () => {
-    window.location.href = "/orders";
+    navigate("/orders");
   };
 
   const openUsers = () => {
-    window.location.href = "/users";
+    navigate("/users");
   };
 
   const openTickets = () => {
-    window.location.href = "/tickets";
+    navigate("/tickets");
   };
 
   if (loading) {
     return (
-      <div className="min-h-[calc(100vh-72px)] bg-[#f7fbfe] p-4 sm:p-6">
+      <div className="min-h-[calc(100vh-72px)] bg-[#f8fafc] p-4 sm:p-6">
         <div className="mx-auto max-w-[1500px] animate-pulse space-y-4 sm:space-y-5">
-          <div className="h-24 sm:h-28 rounded-2xl bg-white" />
+          <div className="h-24 sm:h-28 rounded-2xl bg-white border border-slate-200/60" />
 
           {/* SKELETON: 2 COLUMNS ON MOBILE */}
           <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
             {[1, 2, 3, 4].map((item) => (
               <div
                 key={item}
-                className="h-28 sm:h-36 rounded-2xl bg-white"
+                className="h-28 sm:h-36 rounded-2xl bg-white border border-slate-200/60"
               />
             ))}
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:gap-5 xl:grid-cols-3">
-            <div className="h-80 sm:h-96 rounded-2xl bg-white xl:col-span-2" />
-            <div className="h-80 sm:h-96 rounded-2xl bg-white" />
+            <div className="h-80 sm:h-96 rounded-2xl bg-white border border-slate-200/60 xl:col-span-2" />
+            <div className="h-80 sm:h-96 rounded-2xl bg-white border border-slate-200/60" />
           </div>
         </div>
       </div>
@@ -366,30 +374,32 @@ function Dashboard() {
   }
 
   return (
-    <div className="min-h-[calc(100vh-72px)] bg-[#f7fbfe]">
+    <div className="min-h-[calc(100vh-72px)] bg-[#f8fafc]">
       <div className="mx-auto max-w-[1500px] p-3.5 sm:p-5 md:p-6 pb-24 lg:pb-8">
 
         {/* ================================================= */}
         {/* HEADER */}
         {/* ================================================= */}
 
-        <div className="mb-4 sm:mb-5 flex flex-col gap-3.5 rounded-2xl border border-slate-200/70 bg-white p-4 sm:p-5 shadow-[0_4px_20px_rgba(15,23,42,0.035)] sm:flex-row sm:items-center sm:justify-between">
+        <div className="mb-4 sm:mb-5 flex flex-col gap-3.5 rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-xs sm:flex-row sm:items-center sm:justify-between">
           <div>
             <div className="flex items-center gap-2">
-              <div className="h-2 w-2 rounded-full bg-emerald-500" />
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+              </span>
 
-              <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-emerald-600">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600">
                 Operations Overview
               </span>
             </div>
 
-            <h1 className="mt-1 text-xl sm:text-[25px] font-bold tracking-tight text-slate-900">
+            <h1 className="mt-1 text-xl sm:text-[24px] font-bold tracking-tight text-slate-900">
               Dashboard
             </h1>
 
-            <p className="mt-0.5 sm:mt-1 text-xs text-slate-500">
-              Monitor your shipping operations, orders and delivery
-              performance.
+            <p className="mt-0.5 text-xs text-slate-500">
+              Real-time platform metrics, courier status, and operational health.
             </p>
           </div>
 
@@ -397,7 +407,7 @@ function Dashboard() {
             type="button"
             onClick={refreshDashboard}
             disabled={refreshing}
-            className="self-start sm:self-auto inline-flex h-9.5 sm:h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 sm:px-4 text-xs font-semibold text-slate-600 transition hover:border-[#008dd2]/30 hover:bg-[#008dd2]/5 hover:text-[#008dd2] active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+            className="self-start sm:self-auto inline-flex h-9.5 sm:h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 sm:px-4 text-xs font-semibold text-slate-700 shadow-2xs transition hover:border-[#008dd2]/30 hover:bg-[#008dd2]/5 hover:text-[#008dd2] active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <HiOutlineRefresh
               size={17}
@@ -957,7 +967,7 @@ function Dashboard() {
         {/* FOOTER */}
 
         <div className="mt-4 sm:mt-5 flex items-center justify-between px-1 text-[10px] text-slate-400">
-          <p>ShipDrop Admin Dashboard</p>
+          <p>ParcelDrop Admin Dashboard</p>
           <p>Live operational data</p>
         </div>
       </div>

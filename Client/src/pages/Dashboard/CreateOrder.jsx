@@ -1,6 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo, useCallback } from "react";
+import { Link } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import api from "../../services/api";
+import { notifyOrderChange } from "../../services/orderEvents";
+import ImportOrderModal from "../../components/Common/ImportOrderModal";
+import ShippingTruckLoader from "../../components/Common/ShippingTruckLoader";
 import L from "leaflet";
 import { MapContainer, Marker, TileLayer, useMapEvents } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
@@ -57,6 +61,8 @@ function CreateOrder() {
 
     payment_type: "Prepaid",
     risk_type: "Owner Risk",
+    fragile_shipment: false,
+    dangerous_good: false,
   };
 
   const initialProduct = {
@@ -78,12 +84,15 @@ function CreateOrder() {
   const [formData, setFormData] = useState(initialFormData);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingOrderId, setEditingOrderId] = useState(null);
+  const [editWarehouseId, setEditWarehouseId] = useState(null);
+  const [showImportOrder, setShowImportOrder] = useState(false);
 
   const [products, setProducts] = useState([{ ...initialProduct }]);
   const [packages, setPackages] = useState([{ ...initialPackage }]);
 
   const [loading, setLoading] = useState(false);
   const [pincodeLoading, setPincodeLoading] = useState(false);
+  const [serviceabilityStatus, setServiceabilityStatus] = useState(null);
 
   // Previous customer autocomplete
   // Previous customer autocomplete
@@ -143,6 +152,11 @@ function CreateOrder() {
   const [warehouseLocationLoading, setWarehouseLocationLoading] =
     useState(false);
 
+  // Party Identities
+  const [partyIdentities, setPartyIdentities] = useState([]);
+  const [partyIdentitiesLoading, setPartyIdentitiesLoading] = useState(false);
+  const [selectedPartyIdentityId, setSelectedPartyIdentityId] = useState(null);
+
   const inputClass =
     "h-10.5 sm:h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-[13px] sm:text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-[#008dd2] focus:ring-2 focus:ring-[#008dd2]/10";
 
@@ -164,6 +178,15 @@ function CreateOrder() {
 
       setIsEditMode(true);
       setEditingOrderId(order.id || order.order_id);
+      if (order.warehouse_id) {
+        setEditWarehouseId(Number(order.warehouse_id));
+      }
+
+      if (order.party_identity_id) {
+        setSelectedPartyIdentityId(Number(order.party_identity_id));
+      } else {
+        setSelectedPartyIdentityId(null);
+      }
 
       setFormData({
         pickup_address: order.pickup_address || "",
@@ -190,6 +213,16 @@ function CreateOrder() {
 
         payment_type: order.payment_type || "Prepaid",
         risk_type: order.risk_type || "Owner Risk",
+
+        fragile_shipment: order.fragile_shipment === true ||
+          order.fragile_shipment === 1 ||
+          order.fragile_shipment === "1" ||
+          order.fragile_shipment === "true",
+
+        dangerous_good: order.dangerous_good === true ||
+          order.dangerous_good === 1 ||
+          order.dangerous_good === "1" ||
+          order.dangerous_good === "true",
       });
 
       if (Array.isArray(order.products) && order.products.length) {
@@ -223,15 +256,22 @@ function CreateOrder() {
 
   // Restore warehouse when warehouses list is loaded in edit mode
   useEffect(() => {
-    const storedOrder = sessionStorage.getItem("editingProcessingOrder");
-    if (!storedOrder || !warehouses.length || selectedWarehouse) return;
+    const targetWarehouseId =
+      editWarehouseId ||
+      (() => {
+        try {
+          const stored = sessionStorage.getItem("editingProcessingOrder");
+          return stored ? JSON.parse(stored)?.warehouse_id : null;
+        } catch {
+          return null;
+        }
+      })();
+
+    if (!targetWarehouseId || !warehouses.length || selectedWarehouse) return;
 
     try {
-      const order = JSON.parse(storedOrder);
-      if (!order?.warehouse_id) return;
-
       const matchingWarehouse = warehouses.find(
-        (w) => Number(w.id) === Number(order.warehouse_id),
+        (w) => Number(w.id) === Number(targetWarehouseId),
       );
 
       if (matchingWarehouse) {
@@ -247,12 +287,31 @@ function CreateOrder() {
     } catch (error) {
       console.log("Edit warehouse restore error:", error);
     }
-  }, [warehouses, selectedWarehouse]);
+  }, [warehouses, selectedWarehouse, editWarehouseId]);
+
+  // When leaving Create Order page (changing tab / navigating away), clear edit session
+  useEffect(() => {
+    const handleReset = () => {
+      sessionStorage.removeItem("editingProcessingOrder");
+      setIsEditMode(false);
+      setEditingOrderId(null);
+      setEditWarehouseId(null);
+      resetForm();
+    };
+
+    window.addEventListener("shipdrop:resetCreateOrder", handleReset);
+
+    return () => {
+      window.removeEventListener("shipdrop:resetCreateOrder", handleReset);
+      sessionStorage.removeItem("editingProcessingOrder");
+    };
+  }, []);
 
   const cancelEdit = () => {
     sessionStorage.removeItem("editingProcessingOrder");
     setIsEditMode(false);
     setEditingOrderId(null);
+    setEditWarehouseId(null);
     resetForm();
     toast("Edit cancelled");
   };
@@ -320,6 +379,13 @@ function CreateOrder() {
       return false;
     }
 
+    if (serviceabilityStatus && serviceabilityStatus.serviceable === false) {
+      toast.error(
+        serviceabilityStatus.message || "Delivery service is not available for this pincode"
+      );
+      return false;
+    }
+
     if (
       !String(formData.city || "").trim() ||
       !String(formData.state || "").trim()
@@ -368,7 +434,7 @@ function CreateOrder() {
       }
     }
 
- 
+
     // 5. Packages
     if (!Array.isArray(packages) || packages.length === 0) {
       toast.error("At least one package is required");
@@ -661,9 +727,24 @@ function CreateOrder() {
     };
   }, []);
 
+  const loadPartyIdentities = async () => {
+    try {
+      setPartyIdentitiesLoading(true);
+      const response = await api.get("/party-identities");
+      if (response?.data?.success) {
+        setPartyIdentities(response.data.partyIdentities || []);
+      }
+    } catch (error) {
+      console.log("Unable to load Client identities:", error);
+    } finally {
+      setPartyIdentitiesLoading(false);
+    }
+  };
+
   useEffect(() => {
     loadWarehouses();
     loadDefaultReturnAddress();
+    loadPartyIdentities();
     const refreshDefaultWarehouse = () => {
       if (warehouses.length > 0) {
         applyDefaultWarehouseIfAvailable(warehouses);
@@ -747,7 +828,7 @@ function CreateOrder() {
 
       setWarehouseLocationSearch(
         data?.display_name ||
-          [detectedAddress, city, state, postcode].filter(Boolean).join(", "),
+        [detectedAddress, city, state, postcode].filter(Boolean).join(", "),
       );
       return true;
     } catch {
@@ -920,7 +1001,7 @@ function CreateOrder() {
 
       throw new Error(
         error.response?.data?.message ||
-          "Unable to load default return address",
+        "Unable to load default return address",
       );
     }
   };
@@ -1027,23 +1108,23 @@ function CreateOrder() {
 
       toast.error(
         error.response?.data?.message ||
-          error.message ||
-          "Unable to save warehouse",
+        error.message ||
+        "Unable to save warehouse",
       );
     } finally {
       setWarehouseSaving(false);
     }
   };
 
-  const filteredWarehouses = warehouses.filter((w) => {
+  const filteredWarehouses = useMemo(() => {
     const search = warehouseSearch.trim().toLowerCase();
-    if (!search) return true;
-    return (
+    if (!search) return warehouses;
+    return warehouses.filter((w) =>
       w.warehouse_name?.toLowerCase().includes(search) ||
       w.city?.toLowerCase().includes(search) ||
       w.pincode?.includes(search)
     );
-  });
+  }, [warehouses, warehouseSearch]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -1171,10 +1252,33 @@ function CreateOrder() {
     setPreviousCustomers([]);
     setShowPreviousCustomers(false);
     resetShippingRate();
+
+    if (customer.pincode && /^\d{6}$/.test(String(customer.pincode).trim())) {
+      api.get(`/serviceability/pincode/${customer.pincode.trim()}`)
+        .then((res) => {
+          if (res?.data?.success && res?.data?.serviceable && res?.data?.status === "SERVICEABLE") {
+            setServiceabilityStatus({
+              serviceable: true,
+              status: "SERVICEABLE",
+              message: "Serviceable",
+            });
+          } else {
+            setServiceabilityStatus({
+              serviceable: false,
+              status: res?.data?.status || "NOT_SERVICEABLE",
+              message: "Non-serviceable",
+            });
+          }
+        })
+        .catch(() => { });
+    } else {
+      setServiceabilityStatus(null);
+    }
   };
 
   const handlePincodeChange = async (e) => {
     const value = e.target.value.replace(/\D/g, "").slice(0, 6);
+    setServiceabilityStatus(null);
     setFormData((prev) => ({
       ...prev,
       pincode: value,
@@ -1188,24 +1292,87 @@ function CreateOrder() {
 
     setPincodeLoading(true);
     try {
-      const response = await fetch(
-        `https://api.postalpincode.in/pincode/${value}`,
+      // 1. Check Delhivery Pincode Serviceability
+      const serviceRes = await api.get(`/serviceability/pincode/${value}`);
+      const serviceData = serviceRes?.data;
+
+      const isServiceable = Boolean(
+        serviceData?.success &&
+        serviceData?.serviceable &&
+        serviceData?.status === "SERVICEABLE"
       );
-      if (!response.ok) throw new Error("Pincode lookup failed");
 
-      const data = await response.json();
-      if (!data?.[0]?.PostOffice?.length) throw new Error("Invalid pincode");
+      if (!isServiceable) {
+        const errorMsg = "Non-serviceable";
 
-      const postOffice = data[0].PostOffice[0];
+        setServiceabilityStatus({
+          serviceable: false,
+          status: serviceData?.status || "NOT_SERVICEABLE",
+          message: errorMsg,
+        });
+
+        toast.error(`Pincode ${value}: ${errorMsg}`, {
+          id: "pincode-service-msg",
+          duration: 4500,
+        });
+
+        setPincodeLoading(false);
+        return;
+      }
+
+      // If serviceable:
+      setServiceabilityStatus({
+        serviceable: true,
+        status: "SERVICEABLE",
+        message: "Serviceable",
+      });
+
+      // 2. Auto-detect City and State (from Delhivery response or Postal API fallback)
+      let detectedCity = "";
+      let detectedState = "";
+
+      const rawCodes = serviceData?.data;
+      const firstCode = Array.isArray(rawCodes) && rawCodes.length > 0
+        ? rawCodes[0]?.postal_code || rawCodes[0]
+        : null;
+
+      if (firstCode?.district || firstCode?.city) {
+        detectedCity = firstCode.district || firstCode.city || "";
+        detectedState = firstCode.state_code || "";
+      }
+
+      // Fetch official postal district/state for complete full names
+      try {
+        const postalRes = await fetch(
+          `https://api.postalpincode.in/pincode/${value}`
+        );
+        if (postalRes.ok) {
+          const postalData = await postalRes.json();
+          if (postalData?.[0]?.PostOffice?.length) {
+            const po = postalData[0].PostOffice[0];
+            detectedCity = po.District || po.Block || detectedCity;
+            detectedState = po.State || detectedState;
+          }
+        }
+      } catch (err) {
+        // Fallback to Delhivery's detected city/state
+      }
+
       setFormData((prev) => ({
         ...prev,
         pincode: value,
-        city: postOffice.District || postOffice.Block || "",
-        state: postOffice.State || "",
+        city: detectedCity,
+        state: detectedState,
         country: "India",
       }));
-    } catch {
-      toast.error("Unable to verify pincode");
+    } catch (error) {
+      console.error("Serviceability check error:", error);
+      toast.error(
+        error?.response?.data?.message ||
+        error?.message ||
+        "Unable to check pincode serviceability",
+        { id: "pincode-service-msg" }
+      );
     } finally {
       setPincodeLoading(false);
     }
@@ -1267,10 +1434,12 @@ function CreateOrder() {
     return { taxableValue, taxAmount, total };
   };
 
-  const totalInvoiceValue = products.reduce(
-    (sum, product) => sum + getProductValues(product).total,
-    0,
-  );
+  const totalInvoiceValue = useMemo(() => {
+    return products.reduce(
+      (sum, product) => sum + getProductValues(product).total,
+      0
+    );
+  }, [products]);
 
   const getVolumetricWeight = (item) => {
     const l = Number(item.length) || 0;
@@ -1280,7 +1449,7 @@ function CreateOrder() {
     return ((l * w * h) / 5000).toFixed(2);
   };
 
-  const getTotalVolumetricWeight = () => {
+  const totalVolumetricWeight = useMemo(() => {
     return packages.reduce((sum, item) => {
       const l = Number(item.length) || 0;
       const w = Number(item.width) || 0;
@@ -1289,30 +1458,34 @@ function CreateOrder() {
       if (!l || !w || !h) return sum;
       return sum + ((l * w * h) / 5000) * count;
     }, 0);
-  };
+  }, [packages]);
 
-  const getTotalWeight = () => {
+  const totalDeadWeight = useMemo(() => {
     return packages.reduce((sum, item) => {
       const weight = Number(item.weight) || 0;
       const count = Number(item.count) || 1;
       return sum + weight * count;
     }, 0);
-  };
+  }, [packages]);
 
-  const getChargeableWeight = () => {
-    return Math.max(getTotalWeight(), getTotalVolumetricWeight());
-  };
+  const chargeableWeight = useMemo(() => {
+    return Math.max(totalDeadWeight, totalVolumetricWeight);
+  }, [totalDeadWeight, totalVolumetricWeight]);
 
-  const resetForm = (preservePickup = false) => {
+  const getTotalVolumetricWeight = () => totalVolumetricWeight;
+  const getTotalWeight = () => totalDeadWeight;
+  const getChargeableWeight = () => chargeableWeight;
+
+  const resetForm = (preservePickup = false, preserveParty = preservePickup) => {
     const preservedPickup = preservePickup
       ? {
-          pickup_address: formData.pickup_address,
-          pickup_pincode: formData.pickup_pincode,
-          pickup_city: formData.pickup_city,
-        }
+        pickup_address: formData.pickup_address,
+        pickup_pincode: formData.pickup_pincode,
+        pickup_city: formData.pickup_city,
+      }
       : {};
 
-   
+
     setFormData({ ...initialFormData, ...preservedPickup });
 
     if (!preservePickup) {
@@ -1324,11 +1497,17 @@ function CreateOrder() {
     setPreviousCustomers([]);
     setShowPreviousCustomers(false);
 
+    if (!preserveParty) {
+      setSelectedPartyIdentityId(null);
+    }
+
     setProducts([{ ...initialProduct }]);
     setPackages([{ ...initialPackage }]);
     resetShippingRate();
+    setServiceabilityStatus(null);
     setIsEditMode(false);
     setEditingOrderId(null);
+    setEditWarehouseId(null);
     sessionStorage.removeItem("editingProcessingOrder");
   };
 
@@ -1353,6 +1532,7 @@ function CreateOrder() {
 
     const orderData = {
       warehouse_id: selectedWarehouse?.id || null,
+      party_identity_id: selectedPartyIdentityId ? Number(selectedPartyIdentityId) : null,
 
       // Default Return Address
       return_address_id: returnAddress?.id || null,
@@ -1392,9 +1572,15 @@ function CreateOrder() {
       city: formData.city,
       state: formData.state,
       country: formData.country || "India",
+
       payment_type: formData.payment_type,
       risk_type: formData.risk_type,
+
+      // Shipment flags
+      fragile_shipment: Boolean(formData.fragile_shipment),
+      dangerous_good: Boolean(formData.dangerous_good),
     };
+
 
     return { productData, packageData, orderData };
   };
@@ -1423,6 +1609,7 @@ function CreateOrder() {
         pickup_pincode: formData.pickup_pincode,
         pickup_city: formData.pickup_city,
         warehouse_id: selectedWarehouse?.id || null,
+        party_identity_id: selectedPartyIdentityId ? Number(selectedPartyIdentityId) : null,
         orderData,
         products: productData,
         packages: packageData,
@@ -1435,7 +1622,7 @@ function CreateOrder() {
 
       toast.success(`Order #${editingOrderId} updated successfully!`);
       sessionStorage.removeItem("editingProcessingOrder");
-      window.dispatchEvent(new Event("processingOrderUpdated"));
+      notifyOrderChange({ type: "updated", orderId: editingOrderId });
 
       setIsEditMode(false);
       setEditingOrderId(null);
@@ -1445,8 +1632,8 @@ function CreateOrder() {
       console.log("Update order error:", error);
       toast.error(
         error.response?.data?.message ||
-          error.message ||
-          "Unable to update order",
+        error.message ||
+        "Unable to update order",
       );
     } finally {
       setLoading(false);
@@ -1549,7 +1736,7 @@ function CreateOrder() {
       return Number.isInteger(number) && number >= 1;
     }
 
- 
+
     // Package weight: greater than zero
     if (field.dataset.enterType === "weight") {
       const number = Number(value);
@@ -1567,44 +1754,44 @@ function CreateOrder() {
 
   };
 
- 
-const handleRequiredFieldEnter = (e) => {
-  if (e.key !== "Enter") return;
 
-  // Textarea mein Enter se new line aane do
-  if (
-    e.target.tagName === "TEXTAREA" ||
-    e.target.tagName === "BUTTON"
-  ) {
-    return;
-  }
+  const handleRequiredFieldEnter = (e) => {
+    if (e.key !== "Enter") return;
 
-  e.preventDefault();
+    // Textarea mein Enter se new line aane do
+    if (
+      e.target.tagName === "TEXTAREA" ||
+      e.target.tagName === "BUTTON"
+    ) {
+      return;
+    }
 
-  const fields = Array.from(
-    e.currentTarget.querySelectorAll(
-      "[data-enter-required='true']"
-    )
-  ).filter(
-    (field) => !field.disabled && !field.readOnly
-  );
+    e.preventDefault();
 
-  const firstIncompleteField = fields.find(
-    (field) => !isEnterFieldComplete(field)
-  );
+    const fields = Array.from(
+      e.currentTarget.querySelectorAll(
+        "[data-enter-required='true']"
+      )
+    ).filter(
+      (field) => !field.disabled && !field.readOnly
+    );
 
-  // Koi required field incomplete hai
-  if (firstIncompleteField) {
-    firstIncompleteField.focus();
-    firstIncompleteField.select?.();
-    return;
-  }
+    const firstIncompleteField = fields.find(
+      (field) => !isEnterFieldComplete(field)
+    );
 
-  // Sab required fields complete hain toh save karo
-  if (!loading) {
-    handleSubmit(e);
-  }
-};
+    // Koi required field incomplete hai
+    if (firstIncompleteField) {
+      firstIncompleteField.focus();
+      firstIncompleteField.select?.();
+      return;
+    }
+
+    // Sab required fields complete hain toh save karo
+    if (!loading) {
+      handleSubmit(e);
+    }
+  };
 
 
   const handleSubmit = async (e) => {
@@ -1637,20 +1824,24 @@ const handleRequiredFieldEnter = (e) => {
         pickup_pincode: formData.pickup_pincode,
         pickup_city: formData.pickup_city,
         warehouse_id: selectedWarehouse?.id || null,
+        party_identity_id: selectedPartyIdentityId ? Number(selectedPartyIdentityId) : null,
+        payment_type: formData.payment_type,
         orderData,
         products: productData,
         packages: packageData,
       };
 
       const response = await api.post("/orders/create", orderPayload);
-      if (!response.data?.order_id) throw new Error("Order creation failed");
+      if (!response.data?.success) {
+        throw new Error(response.data?.message || "Order creation failed");
+      }
 
       toast.success(`Order #${response.data.order_id} created successfully!`);
-      window.dispatchEvent(new Event("processingOrderCreated"));
+      notifyOrderChange({ type: "created", orderId: response.data?.order_id });
       resetForm(true);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (error) {
-      toast.error(error.message || "Failed to create order");
+      toast.error(error.response?.data?.message || error.message || "Failed to create order");
     } finally {
       setLoading(false);
     }
@@ -1692,6 +1883,7 @@ const handleRequiredFieldEnter = (e) => {
           pickup_pincode: formData.pickup_pincode,
           pickup_city: formData.pickup_city,
           warehouse_id: selectedWarehouse?.id || null,
+          party_identity_id: selectedPartyIdentityId ? Number(selectedPartyIdentityId) : null,
           orderData: { ...baseOrderData, id: orderId },
           products: productData,
           packages: packageData,
@@ -1703,6 +1895,7 @@ const handleRequiredFieldEnter = (e) => {
           pickup_pincode: formData.pickup_pincode,
           pickup_city: formData.pickup_city,
           warehouse_id: selectedWarehouse?.id || null,
+          party_identity_id: selectedPartyIdentityId ? Number(selectedPartyIdentityId) : null,
           orderData: baseOrderData,
           products: productData,
           packages: packageData,
@@ -1734,19 +1927,19 @@ const handleRequiredFieldEnter = (e) => {
 
       toast.success(`Shipment confirmed for Order #${orderId}`);
       window.dispatchEvent(new Event("walletUpdated"));
-      window.dispatchEvent(new Event("orderStatusUpdated"));
+      notifyOrderChange({ type: "status_changed", action: "shipped", orderId });
       resetShippingRate();
       resetForm(true);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (error) {
-      toast.error(error.message || "Unable to confirm shipment");
+      toast.error(error.response?.data?.message || error.message || "Unable to confirm shipment");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-full w-full bg-[#f6f8fb] p-3.5 sm:p-5 md:p-6 pb-16 lg:pb-8">
+    <div className="min-h-full w-full bg-[#f6f8fb] dark:bg-[#090b10] p-3.5 sm:p-5 md:p-6 pb-16 lg:pb-8">
       <div className="mx-auto max-w-5xl">
         {/* HEADER */}
         <div className="mb-4 sm:mb-6 flex items-center justify-between gap-3">
@@ -1759,17 +1952,34 @@ const handleRequiredFieldEnter = (e) => {
             <p className="mt-0.5 text-xs sm:text-sm text-slate-400">
               {isEditMode
                 ? "Update recipient details, items manifest or package specs"
-                : "Enter customer address, items manifest and package dimensions"}
+                : "Add delivery details, shipment items, and package dimensions."}
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={isEditMode ? cancelEdit : () => resetForm()}
-            className="rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 active:scale-95 shadow-xs"
-          >
-            {isEditMode ? "Cancel Edit" : "Reset Form"}
-          </button>
+          <div className="flex items-center gap-2">
+            {!isEditMode && (
+              <button
+                type="button"
+                onClick={() => setShowImportOrder(true)}
+                className="flex items-center gap-1.5 rounded-xl bg-[#008dd2] px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-[#007ab6] active:scale-95 shadow-xs cursor-pointer"
+                title="Import Orders from Excel"
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 3v12" />
+                  <path d="m7 10 5 5 5-5" />
+                  <path d="M5 21h14" />
+                </svg>
+                <span>Import Order</span>
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={isEditMode ? cancelEdit : () => resetForm()}
+              className="rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 active:scale-95 shadow-xs cursor-pointer"
+            >
+              {isEditMode ? "Cancel Edit" : "Reset Form"}
+            </button>
+          </div>
         </div>
 
         {/* MAIN FORM CARD */}
@@ -1778,97 +1988,174 @@ const handleRequiredFieldEnter = (e) => {
           onKeyDown={handleRequiredFieldEnter}
           className="space-y-4 rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-6 md:p-7 shadow-[0_1px_4px_rgba(15,23,42,0.03)]"
         >
-          {/* 1. PICKUP LOCATION */}
+          {/* 1. PICKUP LOCATION & PARTY IDENTITY */}
           <div className="space-y-3 pb-5 border-b border-slate-100">
             <div className="flex items-center gap-2">
               <span className="flex h-5.5 w-5.5 items-center justify-center rounded-lg bg-[#008dd2]/10 text-xs font-bold text-[#008dd2]">
                 1
               </span>
               <h2 className="text-xs sm:text-sm font-bold tracking-wide uppercase text-slate-700">
-                Pickup From
+                Pickup & Client Details
               </h2>
             </div>
 
-            <div className="relative">
-              <label className={labelClass}>Pickup Warehouse *</label>
-              <div className="flex items-center gap-2">
-                <div ref={warehouseDropdownRef} className="relative flex-1">
-                  <input
-                    name="pickup_address"
-                    data-enter-required="true"
-                    value={
-                      selectedWarehouse
-                        ? getWarehouseDisplayAddress(selectedWarehouse)
-                        : warehouseSearch
-                    }
-                    onChange={(e) => {
-                      setSelectedWarehouse(null);
-                      setWarehouseSearch(e.target.value);
+            {/* SINGLE ROW: PICKUP WAREHOUSE (75%) & PARTY IDENTITY (25%) */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3 sm:gap-4 items-start">
+              {/* PICKUP WAREHOUSE (75% -> md:col-span-3) */}
+              <div className="relative md:col-span-3">
+                <label className={labelClass}>Pickup Warehouse *</label>
+                <div className="flex items-center gap-2">
+                  <div ref={warehouseDropdownRef} className="relative flex-1">
+                    <input
+                      name="pickup_address"
+                      data-enter-required="true"
+                      value={
+                        selectedWarehouse
+                          ? getWarehouseDisplayAddress(selectedWarehouse)
+                          : warehouseSearch
+                      }
+                      onChange={(e) => {
+                        setSelectedWarehouse(null);
+                        setWarehouseSearch(e.target.value);
 
-                      setFormData((prev) => ({
-                        ...prev,
-                        pickup_address: "",
-                        pickup_pincode: "",
-                        pickup_city: "",
-                      }));
+                        setFormData((prev) => ({
+                          ...prev,
+                          pickup_address: "",
+                          pickup_pincode: "",
+                          pickup_city: "",
+                        }));
 
-                      setShowWarehouseDropdown(true);
-                      resetShippingRate();
-                    }}
-                    onFocus={() => {
-                      setWarehouseSearch("");
-                      setShowWarehouseDropdown(true);
-                    }}
-                    placeholder="Search saved warehouse address..."
-                    className={`${inputClass} pr-10`}
-                    autoComplete="off"
-                  />
+                        setShowWarehouseDropdown(true);
+                        resetShippingRate();
+                      }}
+                      onFocus={() => {
+                        setWarehouseSearch("");
+                        setShowWarehouseDropdown(true);
+                      }}
+                      placeholder="Search saved warehouse address..."
+                      className={`${inputClass} pr-10`}
+                      autoComplete="off"
+                    />
 
-                  {showWarehouseDropdown && (
-                    <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-40 max-h-60 overflow-y-auto rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl">
-                      {filteredWarehouses.length > 0 ? (
-                        filteredWarehouses.map((w) => (
-                          <button
-                            key={w.id}
-                            type="button"
-                            onClick={() => applyWarehouseToPickup(w)}
-                            className="flex w-full flex-col rounded-lg p-2.5 text-left hover:bg-sky-50/60 transition"
-                          >
-                            <span className="text-xs font-bold text-slate-800">
-                              {w.warehouse_name}
-                            </span>
-                            <span className="mt-0.5 text-[11px] text-slate-500 truncate">
-                              {getWarehouseDisplayAddress(w)}
-                            </span>
-                          </button>
-                        ))
-                      ) : (
-                        <p className="p-3 text-center text-xs text-slate-400">
-                          No warehouse found
-                        </p>
-                      )}
-                    </div>
-                  )}
+                    {showWarehouseDropdown && (
+                      <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-40 max-h-60 overflow-y-auto rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl">
+                        {warehousesLoading ? (
+                          <div className="space-y-2 p-2.5">
+                            <div className="h-4 w-36 rounded bg-slate-200 skeleton-shimmer" />
+                            <div className="h-3 w-48 rounded bg-slate-100 skeleton-shimmer" />
+                          </div>
+                        ) : filteredWarehouses.length > 0 ? (
+                          filteredWarehouses.map((w) => (
+                            <button
+                              key={w.id}
+                              type="button"
+                              onClick={() => applyWarehouseToPickup(w)}
+                              className="flex w-full flex-col rounded-lg p-2.5 text-left hover:bg-sky-50/60 transition cursor-pointer"
+                            >
+                              <span className="text-xs font-bold text-slate-800">
+                                {w.warehouse_name}
+                              </span>
+                              <span className="mt-0.5 text-[11px] text-slate-500 truncate">
+                                {getWarehouseDisplayAddress(w)}
+                              </span>
+                            </button>
+                          ))
+                        ) : (
+                          <p className="p-3 text-center text-xs text-slate-400">
+                            No warehouse found
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={openWarehouseModal}
+                    className="flex h-10.5 sm:h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#008dd2] text-white shadow-xs transition hover:bg-[#007ab6] active:scale-90 cursor-pointer"
+                    title="Add New Warehouse"
+                  >
+                    <span className="text-xl font-bold">+</span>
+                  </button>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={openWarehouseModal}
-                  className="flex h-10.5 sm:h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#008dd2] text-white shadow-xs transition hover:bg-[#007ab6] active:scale-90"
-                  title="Add New Warehouse"
-                >
-                  <span className="text-xl font-bold">+</span>
-                </button>
+                {selectedWarehouse && (
+                  <div className="mt-2 flex items-center gap-2 text-[11px] font-medium text-slate-500">
+                    <span className="rounded-md bg-emerald-50 px-2 py-0.5 font-bold text-emerald-600">
+                      {selectedWarehouse.warehouse_name}
+                    </span>
+                    <span>PIN: {selectedWarehouse.pincode}</span>
+                  </div>
+                )}
               </div>
 
-              {selectedWarehouse && (
-                <div className="mt-2 flex items-center gap-2 text-[11px] font-medium text-slate-500">
-                  <span className="rounded-md bg-emerald-50 px-2 py-0.5 font-bold text-emerald-600">
-                    {selectedWarehouse.warehouse_name}
-                  </span>
-                  <span>PIN: {selectedWarehouse.pincode}</span>
+              {/* PARTY IDENTITY (25% -> md:col-span-1) */}
+              <div className="relative md:col-span-1">
+                <div className="flex items-center justify-between mb-1.5 gap-1.5">
+                  <label className="block text-[11px] sm:text-xs font-bold text-slate-600 truncate">
+                    Client  Identity
+                  </label>
+                  <Link
+                    to="/settings/party-identities"
+                    className="text-[10px] sm:text-[11px] font-semibold text-[#008dd2] hover:underline shrink-0"
+                    tabIndex={-1}
+                  >
+                    + Manage
+                  </Link>
                 </div>
-              )}
+
+                <div className="relative">
+                  <select
+                    name="party_identity_id"
+                    value={selectedPartyIdentityId || ""}
+                    onChange={(e) =>
+                      setSelectedPartyIdentityId(e.target.value ? Number(e.target.value) : null)
+                    }
+                    disabled={partyIdentitiesLoading}
+                    className={`${inputClass} appearance-none pr-8 cursor-pointer truncate text-xs`}
+                  >
+                    <option value="">-- No Client (Cash Order) --</option>
+                    {partyIdentities.map((party) => (
+                      <option key={party.id} value={party.id}>
+                        {party.reference_name || party.name}{" "}
+                        {party.name ? `— ${party.name}` : ""}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-slate-400">
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
+
+                {selectedPartyIdentityId ? (
+                  (() => {
+                    const party = partyIdentities.find((p) => Number(p.id) === Number(selectedPartyIdentityId));
+                    return (
+                      <div className="mt-2 flex items-center justify-between gap-1 text-[11px] font-medium text-slate-500">
+                        <span
+                          className="rounded-md bg-sky-50 px-2 py-0.5 font-bold text-[#008dd2] border border-sky-100 truncate"
+                          title={party?.name}
+                        >
+                          {party?.reference_name || party?.name}
+                          {party?.name && party?.reference_name ? ` — ${party.name}` : ""}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedPartyIdentityId(null)}
+                          className="text-slate-400 hover:text-slate-600 text-[10px] underline shrink-0 cursor-pointer"
+                        >
+                          Clear
+                        </button>
+                      </div>
+                    );
+                  })()
+                ) : (
+                  <p className="mt-2 text-[10px] sm:text-[11px] text-slate-400 truncate">
+                  </p>
+                )}
+              </div>
             </div>
           </div>
 
@@ -1879,12 +2166,13 @@ const handleRequiredFieldEnter = (e) => {
                 2
               </span>
               <h2 className="text-xs sm:text-sm font-bold tracking-wide uppercase text-slate-700">
-                Consignee Details (Delivery)
+                Consignee Details
               </h2>
             </div>
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <div ref={previousCustomerDropdownRef} className="relative">
+              {/* ROW 1: Customer Name (25%), Mobile Number (25%), Delivery Address (50%) */}
+              <div ref={previousCustomerDropdownRef} className="relative sm:col-span-1 lg:col-span-1">
                 <label className={labelClass}>Customer Name *</label>
                 <div className="relative">
                   <input
@@ -1944,7 +2232,7 @@ const handleRequiredFieldEnter = (e) => {
                 )}
               </div>
 
-              <div>
+              <div className="sm:col-span-1 lg:col-span-1">
                 <label className={labelClass}>Mobile Number *</label>
                 <input
                   name="mobile"
@@ -1959,19 +2247,20 @@ const handleRequiredFieldEnter = (e) => {
                 />
               </div>
 
-              <div>
-                <label className={labelClass}>Alternate Phone</label>
+              {/* Delivery Address (50% of the row) */}
+              <div className="sm:col-span-2 lg:col-span-2">
+                <label className={labelClass}>Delivery Address *</label>
                 <input
-                  name="alternate_mobile"
-                  value={formData.alternate_mobile}
+                  name="address_line1"
+                  data-enter-required="true"
+                  value={formData.address_line1}
                   onChange={handleChange}
-                  placeholder="Optional phone"
-                  inputMode="numeric"
-                  maxLength={10}
+                  placeholder="Flat/House No, Building, Road, Area"
                   className={inputClass}
                 />
               </div>
 
+              {/* ROW 3: Email, Pincode, City, State (1 col each) */}
               <div>
                 <label className={labelClass}>Email Address</label>
                 <input
@@ -1979,30 +2268,7 @@ const handleRequiredFieldEnter = (e) => {
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  placeholder="Optional email"
-                  className={inputClass}
-                />
-              </div>
-
-              <div className="sm:col-span-2">
-                <label className={labelClass}>Delivery Address *</label>
-                <input
-                  name="address_line1"
-                  data-enter-required="true"
-                  value={formData.address_line1}
-                  onChange={handleChange}
-                  placeholder="Flat/House No, Building, Road"
-                  className={inputClass}
-                />
-              </div>
-
-              <div className="sm:col-span-2">
-                <label className={labelClass}>Address Line 2</label>
-                <input
-                  name="address_line2"
-                  value={formData.address_line2}
-                  onChange={handleChange}
-                  placeholder="Area / Sector / Colony"
+                  placeholder="email"
                   className={inputClass}
                 />
               </div>
@@ -2019,14 +2285,37 @@ const handleRequiredFieldEnter = (e) => {
                     placeholder="6-digit PIN"
                     inputMode="numeric"
                     maxLength={6}
-                    className={inputClass}
+                    className={`${inputClass} ${serviceabilityStatus && !serviceabilityStatus.serviceable
+                      ? "!border-rose-400 !focus:border-rose-500 !focus:ring-rose-200 bg-rose-50/20"
+                      : serviceabilityStatus && serviceabilityStatus.serviceable
+                        ? "!border-emerald-400 !focus:border-emerald-500 !focus:ring-emerald-200"
+                        : ""
+                      }`}
                   />
                   {pincodeLoading && (
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-[#008dd2]">
-                      Checking...
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-[10px] font-bold text-[#008dd2]">
+                      <svg className="h-3.5 w-3.5 animate-spin text-[#008dd2]" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                      </svg>
+                      Checking service....
                     </span>
                   )}
                 </div>
+
+                {serviceabilityStatus && !serviceabilityStatus.serviceable && (
+                  <div className="mt-1.5 flex items-start gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs font-semibold text-rose-700 animate-fadeIn">
+                    {/* <span className="shrink-0 text-sm">⚠️</span> */}
+                    <span>{serviceabilityStatus.message || "Non-serviceable"}</span>
+                  </div>
+                )}
+
+                {serviceabilityStatus && serviceabilityStatus.serviceable && (
+                  <p className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-emerald-600">
+                    <span>✓</span>
+                    <span>Serviceable</span>
+                  </p>
+                )}
               </div>
 
               <div>
@@ -2048,17 +2337,6 @@ const handleRequiredFieldEnter = (e) => {
                   readOnly
                   placeholder="Auto-detected"
                   className={readonlyClass}
-                />
-              </div>
-
-              <div>
-                <label className={labelClass}>Landmark</label>
-                <input
-                  name="landmark"
-                  value={formData.landmark}
-                  onChange={handleChange}
-                  placeholder="Near landmark"
-                  className={inputClass}
                 />
               </div>
             </div>
@@ -2177,8 +2455,53 @@ const handleRequiredFieldEnter = (e) => {
                 );
               })}
             </div>
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+              {/* LEFT SIDE: Clean & Simple Toggles */}
+              <div className="flex flex-wrap items-center gap-2.5">
+                <label
+                  className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-semibold cursor-pointer select-none transition ${
+                    formData.fragile_shipment
+                      ? "border-[#008dd2] bg-sky-50/80 text-[#008dd2]"
+                      : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={!!formData.fragile_shipment}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        fragile_shipment: e.target.checked,
+                      }))
+                    }
+                    className="h-3.5 w-3.5 rounded border-slate-300 accent-[#008dd2] cursor-pointer"
+                  />
+                  <span>Fragile Shipment</span>
+                </label>
 
-            <div className="flex justify-end pt-1">
+                <label
+                  className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-semibold cursor-pointer select-none transition ${
+                    formData.dangerous_good
+                      ? "border-[#008dd2] bg-sky-50/80 text-[#008dd2]"
+                      : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={!!formData.dangerous_good}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        dangerous_good: e.target.checked,
+                      }))
+                    }
+                    className="h-3.5 w-3.5 rounded border-slate-300 accent-[#008dd2] cursor-pointer"
+                  />
+                  <span>Dangerous Goods</span>
+                </label>
+              </div>
+
+              {/* RIGHT SIDE: Existing Invoice Total */}
               <span className="text-xs font-medium text-slate-500">
                 Invoice Total:{" "}
                 <b className="font-bold text-slate-900 text-sm">
@@ -2226,52 +2549,52 @@ const handleRequiredFieldEnter = (e) => {
 
                   <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-5 sm:gap-3">
                     <div>
-                      <label className={labelClass}>Length (cm)</label>
+                      <label className={labelClass}>Length (cm)*</label>
                       <input
                         type="number"
                         min="0"
                         data-enter-required="true"
-data-enter-type="dimension"
-required
+                        data-enter-type="dimension"
+                        required
                         value={item.length}
                         onChange={(e) =>
                           handlePackageChange(index, "length", e.target.value)
                         }
-                        placeholder="L"
+                        placeholder="Length"
                         className={inputClass}
                       />
                     </div>
 
                     <div>
-                      <label className={labelClass}>Width (cm)</label>
+                      <label className={labelClass}>Width (cm)*</label>
                       <input
                         type="number"
                         min="0"
                         data-enter-required="true"
-data-enter-type="dimension"
-required
+                        data-enter-type="dimension"
+                        required
                         value={item.width}
                         onChange={(e) =>
                           handlePackageChange(index, "width", e.target.value)
                         }
-                        placeholder="W"
+                        placeholder="Width"
                         className={inputClass}
                       />
                     </div>
 
                     <div>
-                      <label className={labelClass}>Height (cm)</label>
+                      <label className={labelClass}>Height (cm)*</label>
                       <input
                         type="number"
                         min="0"
                         data-enter-required="true"
-data-enter-type="dimension"
-required
+                        data-enter-type="dimension"
+                        required
                         value={item.height}
                         onChange={(e) =>
                           handlePackageChange(index, "height", e.target.value)
                         }
-                        placeholder="H"
+                        placeholder="Height"
                         className={inputClass}
                       />
                     </div>
@@ -2336,11 +2659,10 @@ required
                     onClick={() =>
                       setFormData((p) => ({ ...p, payment_type: "Prepaid" }))
                     }
-                    className={`rounded-lg px-3.5 py-1 text-xs font-bold transition ${
-                      formData.payment_type === "Prepaid"
-                        ? "bg-white text-slate-900 shadow-xs"
-                        : "text-slate-500"
-                    }`}
+                    className={`rounded-lg px-3.5 py-1 text-xs font-bold transition ${formData.payment_type === "Prepaid"
+                      ? "bg-white text-slate-900 shadow-xs"
+                      : "text-slate-500"
+                      }`}
                   >
                     Prepaid
                   </button>
@@ -2349,11 +2671,10 @@ required
                     onClick={() =>
                       setFormData((p) => ({ ...p, payment_type: "COD" }))
                     }
-                    className={`rounded-lg px-3.5 py-1 text-xs font-bold transition ${
-                      formData.payment_type === "COD"
-                        ? "bg-white text-slate-900 shadow-xs"
-                        : "text-slate-500"
-                    }`}
+                    className={`rounded-lg px-3.5 py-1 text-xs font-bold transition ${formData.payment_type === "COD"
+                      ? "bg-white text-slate-900 shadow-xs"
+                      : "text-slate-500"
+                      }`}
                   >
                     COD
                   </button>
@@ -2366,15 +2687,15 @@ required
                   type="button"
                   onClick={handleShip}
                   disabled={rateLoading}
-                  className="flex h-11 items-center justify-center rounded-xl bg-[#008dd2] px-5 text-xs font-bold text-white shadow-sm shadow-[#008dd2]/20 transition hover:bg-[#007ab6] active:scale-95 disabled:opacity-60"
+                  className="flex h-11 items-center justify-center rounded-xl bg-[#008dd2] px-5 text-xs font-bold text-white shadow-sm shadow-[#008dd2]/20 transition hover:bg-[#007ab6] active:scale-95 disabled:opacity-60 cursor-pointer"
                 >
-                  {rateLoading ? "Calculating..." : "⚡ Check Rate"}
+                  {rateLoading ? "Shipping..." : "Ship Now"}
                 </button>
 
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex h-11 items-center justify-center rounded-xl border border-slate-300 bg-white px-5 text-xs font-bold text-slate-700 shadow-xs transition hover:bg-slate-50 active:scale-95 disabled:opacity-60"
+                  className="flex h-11 items-center justify-center rounded-xl border border-slate-300 bg-white px-5 text-xs font-bold text-slate-700 shadow-xs transition hover:bg-slate-50 active:scale-95 disabled:opacity-60 cursor-pointer"
                 >
                   {loading
                     ? isEditMode
@@ -2552,11 +2873,10 @@ required
                 <button
                   type="button"
                   onClick={() => selectShippingType("ROAD")}
-                  className={`w-full rounded-2xl border p-3.5 text-left transition ${
-                    selectedShippingType === "ROAD"
-                      ? "border-[#008dd2] bg-[#008dd2]/5 ring-2 ring-[#008dd2]/10"
-                      : "border-slate-200 bg-white"
-                  }`}
+                  className={`w-full rounded-2xl border p-3.5 text-left transition ${selectedShippingType === "ROAD"
+                    ? "border-[#008dd2] bg-[#008dd2]/5 ring-2 ring-[#008dd2]/10"
+                    : "border-slate-200 bg-white"
+                    }`}
                 >
                   <div className="flex items-center justify-between">
                     <div>
@@ -2580,11 +2900,10 @@ required
                 <button
                   type="button"
                   onClick={() => selectShippingType("AIR")}
-                  className={`w-full rounded-2xl border p-3.5 text-left transition ${
-                    selectedShippingType === "AIR"
-                      ? "border-[#7451ff] bg-[#7451ff]/5 ring-2 ring-[#7451ff]/10"
-                      : "border-slate-200 bg-white"
-                  }`}
+                  className={`w-full rounded-2xl border p-3.5 text-left transition ${selectedShippingType === "AIR"
+                    ? "border-[#7451ff] bg-[#7451ff]/5 ring-2 ring-[#7451ff]/10"
+                    : "border-slate-200 bg-white"
+                    }`}
                 >
                   <div className="flex items-center justify-between">
                     <div>
@@ -2615,14 +2934,24 @@ required
                 type="button"
                 onClick={handleConfirmShipment}
                 disabled={loading || !shippingRate}
-                className="flex-1 h-10 rounded-xl bg-[#008dd2] text-xs font-bold text-white shadow-xs active:scale-95 disabled:opacity-60"
+                className={`flex-1 h-10 rounded-xl bg-[#008dd2] text-xs font-bold text-white shadow-xs active:scale-95 transition ${loading ? "opacity-100 cursor-wait" : "disabled:opacity-60"}`}
               >
-                {loading ? "Confirming..." : "Confirm & Ship Now →"}
+                {loading ? (
+                  <ShippingTruckLoader text="Shipping Order..." />
+                ) : (
+                  "Confirm & Ship Now →"
+                )}
               </button>
             </div>
           </div>
         </div>
       )}
+
+      {/* IMPORT ORDER MODAL */}
+      <ImportOrderModal
+        isOpen={showImportOrder}
+        onClose={() => setShowImportOrder(false)}
+      />
     </div>
   );
 }

@@ -9,6 +9,11 @@ const {
   "../controllers/shipmentController"
 );
 
+const { authenticateUser } = require("../middleware/authMiddleware");
+
+// All shipment routes are account-owned and require authentication
+router.use(authenticateUser);
+
 
 // ========================================
 // SINGLE SHIPMENT

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-
 import api from "../../services/api";
+import { CardSkeleton, TableRowSkeleton } from "../../components/Common/TableSkeleton";
 
 const CODRemittance = () => {
   const [remittances, setRemittances] = useState([]);
@@ -220,7 +220,7 @@ const CODRemittance = () => {
   const hasFilters = search.trim() !== "" || statusFilter !== "ALL";
 
   return (
-    <div className="min-h-full w-full max-w-full overflow-x-hidden bg-[#f6f8fb] px-3 py-4 sm:px-4 lg:px-5">
+    <div className="min-h-full w-full max-w-full overflow-x-hidden bg-[#f6f8fb] dark:bg-[#090b10] px-3 py-4 sm:px-4 lg:px-5">
       {/* =====================================================
 
           PAGE HEADER
@@ -542,17 +542,7 @@ const CODRemittance = () => {
 
             <tbody>
               {loading ? (
-                <tr>
-                  <td colSpan="8" className="px-5 py-14 text-center">
-                    <div className="flex flex-col items-center">
-                      <div className="h-7 w-7 animate-spin rounded-full border-2 border-slate-200 border-t-[#008dd2]" />
-
-                      <p className="mt-3 text-[11px] font-medium text-slate-500">
-                        Loading remittance...
-                      </p>
-                    </div>
-                  </td>
-                </tr>
+                <TableRowSkeleton rows={6} cols={8} />
               ) : error ? (
                 <tr>
                   <td colSpan="8" className="px-5 py-14 text-center">
@@ -732,12 +722,8 @@ const CODRemittance = () => {
 
         <div className="md:hidden">
           {loading ? (
-            <div className="flex flex-col items-center px-5 py-14">
-              <div className="h-7 w-7 animate-spin rounded-full border-2 border-slate-200 border-t-[#008dd2]" />
-
-              <p className="mt-3 text-[11px] text-slate-500">
-                Loading remittance...
-              </p>
+            <div className="p-3">
+              <CardSkeleton count={4} />
             </div>
           ) : error ? (
             <div className="px-5 py-12 text-center">

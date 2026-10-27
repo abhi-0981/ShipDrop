@@ -1,9 +1,17 @@
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "react-hot-toast";
 
 import api from "../../services/api";
-import { DEFAULT_LABEL_SETTINGS, printShippingLabels, downloadShippingLabels } from "../../services/shippingLabelService";
+import OrderDetailsModal from "../../components/Common/OrderDetailsModal";
+import { notifyOrderChange, subscribeToOrderUpdates } from "../../services/orderEvents";
 
+import {
+  DEFAULT_LABEL_SETTINGS,
+  printShippingLabels,
+  downloadShippingLabels,
+} from "../../services/shippingLabelService";
+import { CardSkeleton, TableRowSkeleton } from "../../components/Common/TableSkeleton";
+import OrderStatusNavTabs from "../../components/Common/OrderStatusNavTabs";
 
 const PRIMARY = "#0788ca";
 const PRIMARY_DARK = "#0579b1";
@@ -123,12 +131,12 @@ const Icon = ({ name, size = 15 }) => {
       </svg>
     );
 
-  if (name === "alert")
+  if (name === "more")
     return (
       <svg {...common}>
-        <path d="M12 9v4" />
-        <path d="M12 17h.01" />
-        <path d="M10.3 3.8 2.8 17a2 2 0 0 0 1.7 3h15a2 2 0 0 0 1.7-3L13.7 3.8a2 2 0 0 0-3.4 0Z" />
+        <circle cx="12" cy="5" r="1" fill="currentColor" stroke="none" />
+        <circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" />
+        <circle cx="12" cy="19" r="1" fill="currentColor" stroke="none" />
       </svg>
     );
 
@@ -137,16 +145,14 @@ const Icon = ({ name, size = 15 }) => {
 
 /* ============================================================
    BASIC HELPERS
-   ============================================================ */
+============================================================ */
 
 const getUserId = () => {
   const raw = localStorage.getItem("user");
-
   if (!raw) return null;
 
   try {
     const user = JSON.parse(raw);
-
     return user?.id || user?.user_id || user?.userId || null;
   } catch {
     return null;
@@ -157,7 +163,6 @@ const text = (value, fallback = "—") => {
   if (value === null || value === undefined || String(value).trim() === "") {
     return fallback;
   }
-
   return String(value);
 };
 
@@ -180,6 +185,9 @@ const getOrderId = (order) =>
       order.order_number ||
       order.id,
   );
+
+const getPartyName = (order) =>
+  text(order.party_reference_name || order.party_name || order.party_identity_name || order.party, "—");
 
 const getCustomerName = (order) =>
   text(
@@ -223,8 +231,18 @@ const getDeliveryPincode = (order) =>
 const getServiceType = (order) =>
   String(order.service_type || order.serviceType || "ROAD").toUpperCase();
 
-const getTrackingStatus = (order) =>
-  String(
+const getTrackingStatus = (order) => {
+  const primary = String(
+    order?.manifest_status || order?.status || order?.order_status || ""
+  )
+    .trim()
+    .toUpperCase();
+
+  if (primary === "CANCELLED" || primary === "CANCELED") {
+    return "CANCELLED";
+  }
+
+  return String(
     order?.tracking_status ||
       order?.order_status ||
       order?.status ||
@@ -232,6 +250,7 @@ const getTrackingStatus = (order) =>
   )
     .trim()
     .toUpperCase();
+};
 
 const getStatusBadgeClass = (status) => {
   switch (String(status || "").toUpperCase()) {
@@ -281,8 +300,38 @@ const getWeight = (order) => {
   );
 };
 
-const getDistance = (order) =>
-  Number(order.distance_km ?? order.distance ?? 0) || 0;
+const getVolumetricWeight = (order) => {
+  const packages = Array.isArray(order?.packages) ? order.packages : [];
+
+  const total = packages.reduce((sum, pkg) => {
+    const count = Number(pkg?.package_count) || 1;
+    const supplied = Number(pkg?.volumetric_weight);
+    const volumetric =
+      Number.isFinite(supplied) && supplied > 0
+        ? supplied
+        : Number(
+            (
+              ((Number(pkg?.length) || 0) *
+                (Number(pkg?.width) || 0) *
+                (Number(pkg?.height) || 0)) /
+              5000
+            ).toFixed(2),
+          );
+
+    return sum + volumetric * count;
+  }, 0);
+
+  const orderValue = Number(
+    order?.volumetric_weight ?? order?.vol_weight ?? order?.volumetricWeight,
+  );
+
+  return Number.isFinite(orderValue) && orderValue > 0 ? orderValue : total;
+};
+
+const getDistance = (order) => {
+  const d = Number(order?.distance ?? order?.distance_km ?? 0);
+  return Number.isFinite(d) ? d : 0;
+};
 
 const getCreatedAt = (order) =>
   order.manifest_created_at ||
@@ -295,7 +344,6 @@ const formatDate = (value) => {
   if (!value) return "—";
 
   const date = new Date(value);
-
   if (Number.isNaN(date.getTime())) {
     return "—";
   }
@@ -311,7 +359,6 @@ const formatTime = (value) => {
   if (!value) return "";
 
   const date = new Date(value);
-
   if (Number.isNaN(date.getTime())) {
     return "";
   }
@@ -326,43 +373,52 @@ const getSelectedKey = (order) =>
   order.manifest_id || order.id || order.order_id;
 
 /* ============================================================
-   COMPONENT/* ============================================================
    COMPONENT
-   ============================================================ */
+============================================================ */
 
 function Manifested() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
-
   const [selectedIds, setSelectedIds] = useState([]);
-
   const [actionLoading, setActionLoading] = useState(false);
-
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [paymentFilter, setPaymentFilter] = useState("ALL");
   const [serviceFilter, setServiceFilter] = useState("ALL");
-
   const [viewingOrder, setViewingOrder] = useState(null);
-
+  const [detailsLoading, setDetailsLoading] = useState(false);
+  const [openActionMenuId, setOpenActionMenuId] = useState(null);
+  const actionMenuRef = useRef(null);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
-
   const [labelSettings, setLabelSettings] = useState(DEFAULT_LABEL_SETTINGS);
-
   const [labelSettingsLoading, setLabelSettingsLoading] = useState(true);
-
   const [customLogo, setCustomLogo] = useState(null);
 
   /* ==========================================================
+     TRACKING DISPATCH
+  ========================================================== */
+
+  const triggerTracking = (awb) => {
+    if (!awb || awb === "AWB unavailable" || awb === "—") {
+      toast.error("Valid tracking number not found");
+      return;
+    }
+
+    window.dispatchEvent(
+      new CustomEvent("shipdrop:openTracking", {
+        detail: String(awb).trim(),
+      })
+    );
+  };
+
+  /* ==========================================================
      FETCH MANIFESTED
-     ========================================================== */
+  ========================================================== */
 
   const fetchManifestedOrders = async () => {
     const userId = getUserId();
-
     if (!userId) {
       toast.error("User session not found. Please login again.");
-
       setLoading(false);
       return;
     }
@@ -383,17 +439,13 @@ function Manifested() {
       }
 
       setOrders(Array.isArray(data.manifests) ? data.manifests : []);
-
       setSelectedIds([]);
     } catch (error) {
-      // console.error("Manifest fetch error:", error);
-
       toast.error(
         error.response?.data?.message ||
           error.message ||
           "Unable to load manifested orders",
       );
-
       setOrders([]);
     } finally {
       setLoading(false);
@@ -401,12 +453,60 @@ function Manifested() {
   };
 
   /* ==========================================================
+     LOAD COMPLETE ORDER DETAILS FOR VIEW MODAL
+  ========================================================== */
+
+  const openShipmentDetails = async (manifestOrder) => {
+    setViewingOrder(manifestOrder);
+    setDetailsLoading(true);
+
+    const userId = getUserId();
+    const orderId = manifestOrder?.order_id || manifestOrder?.id || manifestOrder?.orderId;
+
+    if (!userId || !orderId) {
+      setDetailsLoading(false);
+      return;
+    }
+
+    try {
+      const response = await api.get(`/orders/${orderId}`, {
+        params: { user_id: userId },
+      });
+      const data = response?.data;
+      const fullOrder = data?.order || data?.result?.order || data?.result || null;
+
+      if (fullOrder && typeof fullOrder === "object") {
+        setViewingOrder((current) => {
+          if (!current) return current;
+          // Keep manifest/shipment values, while filling in complete order fields.
+          const merged = { ...fullOrder, ...current };
+          Object.entries(fullOrder).forEach(([key, value]) => {
+            if (value !== undefined && value !== null && value !== "") merged[key] = value;
+          });
+          // Manifest-specific values are authoritative for shipment details.
+          ["awb", "waybill", "pickup_id", "pickup_request_id", "shipping_charge",
+           "service_type", "manifest_created_at", "manifest_id", "order_status", "tracking_status"].forEach((key) => {
+            if (current[key] !== undefined && current[key] !== null && current[key] !== "") {
+              merged[key] = current[key];
+            }
+          });
+          return merged;
+        });
+      }
+    } catch (error) {
+      console.warn("Could not load complete shipment details:", error);
+      toast.error(error.response?.data?.message || "Some order details could not be loaded");
+    } finally {
+      setDetailsLoading(false);
+    }
+  };
+
+  /* ==========================================================
      FETCH LABEL SETTINGS
-     ========================================================== */
+  ========================================================== */
 
   const fetchLabelSettings = async () => {
     const userId = getUserId();
-
     if (!userId) {
       setLabelSettingsLoading(false);
       return;
@@ -439,8 +539,8 @@ function Manifested() {
 
         setCustomLogo(data.custom_logo || null);
       }
-    } catch (error) {
-      // console.error("Label settings fetch error:", error);
+    } catch {
+      // ignore
     } finally {
       setLabelSettingsLoading(false);
     }
@@ -451,25 +551,54 @@ function Manifested() {
     fetchLabelSettings();
   }, []);
 
+  useEffect(() => {
+    const unsubscribe = subscribeToOrderUpdates(() => {
+      fetchManifestedOrders();
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleOutsideClick = (event) => {
+      if (
+        actionMenuRef.current &&
+        !actionMenuRef.current.contains(event.target)
+      ) {
+        setOpenActionMenuId(null);
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+    };
+  }, []);
+
   /* ==========================================================
      MANIFESTED COUNT
-     ========================================================== */
+  ========================================================== */
 
-  const manifestedCount = useMemo(() => {
-    return orders.filter(
-      (order) => getTrackingStatus(order) === "MANIFESTED"
-    ).length;
-  }, [orders]);
+const manifestedCount = useMemo(() => {
+  return orders.filter((order) =>
+    ["MANIFESTED", "NOT PICKED"].includes(
+      getTrackingStatus(order)
+    )
+  ).length;
+}, [orders]);
 
   /* ==========================================================
      FILTER
-     ========================================================== */
+  ========================================================== */
 
   const filteredOrders = useMemo(() => {
     const q = search.trim().toLowerCase();
 
     return orders.filter((order) => {
       const searchable = [
+        getPartyName(order),
         getCustomerName(order),
         getMobile(order),
         getAWB(order),
@@ -482,13 +611,11 @@ function Manifested() {
         .toLowerCase();
 
       const status = getTrackingStatus(order);
-
       const payment = getPaymentType(order);
-
       const service = getServiceType(order);
 
       return (
-        (status === "MANIFESTED") &&
+        ["MANIFESTED", "NOT PICKED"].includes(status) &&
         (!q || searchable.includes(q)) &&
         (statusFilter === "ALL" || status === statusFilter) &&
         (paymentFilter === "ALL" || payment === paymentFilter) &&
@@ -499,7 +626,7 @@ function Manifested() {
 
   /* ==========================================================
      SELECTION
-     ========================================================== */
+  ========================================================== */
 
   const selectedOrders = useMemo(
     () => orders.filter((order) => selectedIds.includes(getSelectedKey(order))),
@@ -515,9 +642,7 @@ function Manifested() {
   const toggleAll = () => {
     if (allVisibleSelected) {
       const visibleKeys = new Set(filteredOrders.map(getSelectedKey));
-
       setSelectedIds((prev) => prev.filter((id) => !visibleKeys.has(id)));
-
       return;
     }
 
@@ -528,7 +653,6 @@ function Manifested() {
 
   const toggleOne = (order) => {
     const id = getSelectedKey(order);
-
     setSelectedIds((prev) =>
       prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
     );
@@ -543,16 +667,26 @@ function Manifested() {
       toast.error("Please select at least one shipment");
       return;
     }
+
     if (labelSettingsLoading) {
       toast.error("Label settings are still loading");
       return;
     }
+
     try {
       setActionLoading(true);
-      await printShippingLabels(selectedOrders, labelSettings, customLogo, "ShipDrop Shipping Labels");
-      toast.success(`${selectedOrders.length} ${selectedOrders.length === 1 ? "label" : "labels"} ready to print`);
+
+      await printShippingLabels(
+        selectedOrders,
+        labelSettings,
+        customLogo,
+        "ShipDrop Shipping Labels",
+      );
+
+      toast.success(
+        `${selectedOrders.length} ${selectedOrders.length === 1 ? "label" : "labels"} ready to print`,
+      );
     } catch (error) {
-      // console.error("Print label error:", error);
       toast.error(error.message || "Unable to print labels");
     } finally {
       setActionLoading(false);
@@ -564,12 +698,19 @@ function Manifested() {
       toast.error("Label settings are still loading");
       return;
     }
+
     try {
       setActionLoading(true);
-      await printShippingLabels([order], labelSettings, customLogo, "ShipDrop Shipping Label");
+
+      await printShippingLabels(
+        [order],
+        labelSettings,
+        customLogo,
+        "ShipDrop Shipping Label",
+      );
+
       toast.success("1 label ready to print");
     } catch (error) {
-      // console.error("Print label error:", error);
       toast.error(error.message || "Unable to print label");
     } finally {
       setActionLoading(false);
@@ -581,16 +722,21 @@ function Manifested() {
       toast.error("Please select at least one shipment");
       return;
     }
+
     if (labelSettingsLoading) {
       toast.error("Label settings are still loading");
       return;
     }
+
     try {
       setActionLoading(true);
+
       await downloadShippingLabels(selectedOrders, labelSettings, customLogo);
-      toast.success(`${selectedOrders.length} ${selectedOrders.length === 1 ? "label" : "labels"} downloaded`);
+
+      toast.success(
+        `${selectedOrders.length} ${selectedOrders.length === 1 ? "label" : "labels"} downloaded`,
+      );
     } catch (error) {
-      // console.error("Download label error:", error);
       toast.error(error.message || "Unable to download labels");
     } finally {
       setActionLoading(false);
@@ -602,12 +748,14 @@ function Manifested() {
       toast.error("Label settings are still loading");
       return;
     }
+
     try {
       setActionLoading(true);
+
       await downloadShippingLabels([order], labelSettings, customLogo);
+
       toast.success("1 label downloaded");
     } catch (error) {
-      // console.error("Download label error:", error);
       toast.error(error.message || "Unable to download label");
     } finally {
       setActionLoading(false);
@@ -616,7 +764,7 @@ function Manifested() {
 
   /* ==========================================================
      MANIFEST PRINT
-     ========================================================== */
+  ========================================================== */
 
   const handlePrintManifests = () => {
     if (!selectedOrders.length) {
@@ -637,7 +785,6 @@ function Manifested() {
           color:#172033;
         "
       >
-
         <div
           style="
             display:flex;
@@ -691,27 +838,22 @@ function Manifested() {
             <td style="padding:8px;border-bottom:1px solid #edf1f6;color:#718096">
               Order ID
             </td>
-
             <td style="padding:8px;border-bottom:1px solid #edf1f6;font-weight:700">
               #${escapeHtml(getOrderId(order))}
             </td>
           </tr>
-
           <tr>
             <td style="padding:8px;border-bottom:1px solid #edf1f6;color:#718096">
               Customer
             </td>
-
             <td style="padding:8px;border-bottom:1px solid #edf1f6;font-weight:700">
               ${escapeHtml(getCustomerName(order))}
             </td>
           </tr>
-
           <tr>
             <td style="padding:8px;border-bottom:1px solid #edf1f6;color:#718096">
               Route
             </td>
-
             <td style="padding:8px;border-bottom:1px solid #edf1f6">
               ${escapeHtml(getPickupCity(order))}
               (${escapeHtml(getPickupPincode(order))})
@@ -720,33 +862,27 @@ function Manifested() {
               (${escapeHtml(getDeliveryPincode(order))})
             </td>
           </tr>
-
           <tr>
             <td style="padding:8px;border-bottom:1px solid #edf1f6;color:#718096">
               Payment
             </td>
-
             <td style="padding:8px;border-bottom:1px solid #edf1f6">
               ${escapeHtml(getPaymentType(order))}
             </td>
           </tr>
-
           <tr>
             <td style="padding:8px;color:#718096">
               Weight
             </td>
-
             <td style="padding:8px;font-weight:700">
               ${getWeight(order).toFixed(2)} Kg
             </td>
           </tr>
         </table>
-
       </div>
     `;
 
     const html = selectedOrders.map(builder).join("");
-
     const win = window.open("", "_blank", "width=900,height=700");
 
     if (!win) {
@@ -760,13 +896,7 @@ function Manifested() {
         <head>
           <title>Shipment Manifests</title>
         </head>
-
-        <body
-          style="
-            margin:30px;
-            background:white;
-          "
-        >
+        <body style="margin:30px; background:white;">
           ${html}
         </body>
       </html>
@@ -774,7 +904,6 @@ function Manifested() {
 
     win.document.close();
     win.focus();
-
     setTimeout(() => {
       win.print();
     }, 300);
@@ -782,7 +911,7 @@ function Manifested() {
 
   /* ==========================================================
      CANCEL
-     ========================================================== */
+  ========================================================== */
 
   const openCancelConfirmation = () => {
     if (!selectedOrders.length) {
@@ -795,7 +924,6 @@ function Manifested() {
 
   const handleCancel = async () => {
     setShowCancelConfirm(false);
-
     const userId = getUserId();
 
     if (!userId) {
@@ -865,10 +993,12 @@ function Manifested() {
       }
 
       await fetchManifestedOrders();
-      window.dispatchEvent(new Event("orderStatusUpdated"));
+      notifyOrderChange({
+        type: "status_changed",
+        action: "cancelled",
+        orderIds,
+      });
     } catch (error) {
-      // console.error("Cancel manifest error:", error);
-
       toast.error(
         error.response?.data?.message ||
           error.message ||
@@ -881,9 +1011,7 @@ function Manifested() {
 
   /* ==========================================================
      DUPLICATE ORDER
-     Creates a fresh PROCESSING order from the manifested
-     shipment. Original manifested shipment remains unchanged.
-     ========================================================== */
+  ========================================================== */
 
   const handleDuplicate = async (order) => {
     const userId = getUserId();
@@ -893,12 +1021,7 @@ function Manifested() {
       return;
     }
 
-    const orderId = Number(
-      order?.order_id ||
-        order?.id ||
-        order?.orderId ||
-        0,
-    );
+    const orderId = Number(order?.order_id || order?.id || order?.orderId || 0);
 
     if (!orderId) {
       toast.error("Unable to identify this order");
@@ -908,26 +1031,16 @@ function Manifested() {
     try {
       setActionLoading(true);
 
-      // Get complete original order details.
-      const response = await api.get(
-        `/orders/${orderId}?user_id=${userId}`,
-      );
-
+      const response = await api.get(`/orders/${orderId}?user_id=${userId}`);
       const result = response?.data;
 
       if (!result?.success || !result?.order) {
-        throw new Error(
-          result?.message ||
-            "Unable to load order details",
-        );
+        throw new Error(result?.message || "Unable to load order details");
       }
 
       const source = result.order;
-
       const warehouseId = Number(
-        source?.warehouse_id ||
-          order?.warehouse_id ||
-          0,
+        source?.warehouse_id || order?.warehouse_id || 0,
       );
 
       if (!warehouseId) {
@@ -936,127 +1049,41 @@ function Manifested() {
 
       const payload = {
         user_id: Number(userId),
-
-        pickup_address:
-          source?.pickup_address ||
-          order?.pickup_address ||
-          null,
-
-        pickup_pincode:
-          source?.pickup_pincode ||
-          order?.pickup_pincode ||
-          null,
-
-        pickup_city:
-          source?.pickup_city ||
-          order?.pickup_city ||
-          null,
-
+        pickup_address: source?.pickup_address || order?.pickup_address || null,
+        pickup_pincode: source?.pickup_pincode || order?.pickup_pincode || null,
+        pickup_city: source?.pickup_city || order?.pickup_city || null,
         warehouse_id: warehouseId,
-
         pickup_address_id:
-          source?.pickup_address_id ||
-          order?.pickup_address_id ||
-          null,
-
+          source?.pickup_address_id || order?.pickup_address_id || null,
         orderData: {
-          consignee_name:
-            source?.consignee_name ||
-            source?.customer_name ||
-            "",
-
-          mobile:
-            source?.mobile ||
-            source?.phone ||
-            "",
-
-          alternate_mobile:
-            source?.alternate_mobile ||
-            null,
-
-          email:
-            source?.email ||
-            null,
-
-          gstin:
-            source?.gstin ||
-            null,
-
-          company_name:
-            source?.company_name ||
-            null,
-
-          floor_no:
-            source?.floor_no ||
-            null,
-
-          landmark:
-            source?.landmark ||
-            null,
-
+          consignee_name: source?.consignee_name || source?.customer_name || "",
+          mobile: source?.mobile || source?.phone || "",
+          alternate_mobile: source?.alternate_mobile || null,
+          email: source?.email || null,
+          gstin: source?.gstin || null,
+          company_name: source?.company_name || null,
+          floor_no: source?.floor_no || null,
+          landmark: source?.landmark || null,
           address_line1:
-            source?.address_line1 ||
-            source?.delivery_address ||
-            "",
-
-          address_line2:
-            source?.address_line2 ||
-            null,
-
-          pincode:
-            source?.pincode ||
-            source?.delivery_pincode ||
-            "",
-
-          city:
-            source?.city ||
-            source?.delivery_city ||
-            "",
-
-          state:
-            source?.state ||
-            source?.delivery_state ||
-            "",
-
-          country:
-            source?.country ||
-            "India",
-
-          payment_type:
-            source?.payment_type ||
-            "Prepaid",
-
-          risk_type:
-            source?.risk_type ||
-            "Owner Risk",
-
+            source?.address_line1 || source?.delivery_address || "",
+          address_line2: source?.address_line2 || null,
+          pincode: source?.pincode || source?.delivery_pincode || "",
+          city: source?.city || source?.delivery_city || "",
+          state: source?.state || source?.delivery_state || "",
+          country: source?.country || "India",
+          payment_type: source?.payment_type || "Prepaid",
+          risk_type: source?.risk_type || "Owner Risk",
           warehouse_id: warehouseId,
         },
-
-        products: Array.isArray(source?.products)
-          ? source.products
-          : [],
-
-        packages: Array.isArray(source?.packages)
-          ? source.packages
-          : [],
+        products: Array.isArray(source?.products) ? source.products : [],
+        packages: Array.isArray(source?.packages) ? source.packages : [],
       };
 
-      const createResponse = await api.post(
-        "/orders/create",
-        payload,
-      );
-
+      const createResponse = await api.post("/orders/create", payload);
       const createResult = createResponse?.data;
 
-      if (
-        !createResult?.success ||
-        !createResult?.order_id
-      ) {
-        throw new Error(
-          createResult?.message ||
-            "Unable to duplicate order",
-        );
+      if (!createResult?.success || !createResult?.order_id) {
+        throw new Error(createResult?.message || "Unable to duplicate order");
       }
 
       toast.success(
@@ -1065,13 +1092,8 @@ function Manifested() {
       );
 
       await fetchManifestedOrders();
-
-      window.dispatchEvent(
-        new Event("orderStatusUpdated"),
-      );
+      notifyOrderChange({ type: "created", orderId: createResult.order_id });
     } catch (error) {
-      
-
       toast.error(
         error?.response?.data?.message ||
           error?.message ||
@@ -1084,7 +1106,7 @@ function Manifested() {
 
   /* ==========================================================
      EXPORT
-     ========================================================== */
+  ========================================================== */
 
   const handleExport = () => {
     if (!orders.length) {
@@ -1097,6 +1119,7 @@ function Manifested() {
     const headers = [
       "AWB",
       "Order ID",
+      "Party Identity",
       "Customer",
       "Mobile",
       "Pickup ID",
@@ -1114,6 +1137,7 @@ function Manifested() {
     const rows = exportOrders.map((order) => [
       getAWB(order),
       getOrderId(order),
+      getPartyName(order),
       getCustomerName(order),
       getMobile(order),
       getPickupId(order),
@@ -1130,7 +1154,6 @@ function Manifested() {
 
     const escapeCsv = (value) => {
       const s = String(value ?? "");
-
       return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
     };
 
@@ -1143,20 +1166,16 @@ function Manifested() {
     });
 
     const url = URL.createObjectURL(blob);
-
     const link = document.createElement("a");
 
     link.href = url;
-
     link.download = `shipdrop-manifest-${new Date()
       .toISOString()
       .slice(0, 10)}.csv`;
 
     document.body.appendChild(link);
-
     link.click();
     link.remove();
-
     URL.revokeObjectURL(url);
 
     toast.success(
@@ -1167,61 +1186,55 @@ function Manifested() {
   };
 
   /* ==========================================================
-     LOADING
-     ========================================================== */
+     COPY AWB HELPER
+  ========================================================== */
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#f7f8fb] px-4 py-4">
-        <div className="mx-auto max-w-[1450px]">
-          <div className="mb-3 h-[74px] animate-pulse rounded-xl border border-slate-200 bg-white" />
+  const copyAWB = async (awb) => {
+    if (!awb || awb === "AWB unavailable" || awb === "—") {
+      toast.error("AWB not available");
+      return;
+    }
 
-          <div className="mb-3 h-[54px] animate-pulse rounded-xl border border-slate-200 bg-white" />
-
-          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-            <div className="h-14 animate-pulse bg-slate-50" />
-
-            {[1, 2, 3, 4, 5].map((n) => (
-              <div
-                key={n}
-                className="h-[102px] animate-pulse border-t border-slate-100"
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
+    try {
+      await navigator.clipboard.writeText(String(awb).trim());
+      toast.success("AWB copied to clipboard");
+    } catch {
+      toast.error("Unable to copy AWB");
+    }
+  };
 
   /* ==========================================================
-     UI
-     ========================================================== */
+     LOADING STATE
+  ========================================================== */
+
+
+
+  /* ==========================================================
+     MAIN UI
+  ========================================================== */
 
   return (
-    <div className="min-h-screen bg-[#f7f8fb] px-4 py-4">
+    <div className="min-h-screen bg-[#f6f8fb] dark:bg-[#090b10] p-3 sm:p-5 pb-24 lg:pb-8">
       <div className="mx-auto max-w-[1450px]">
         {/* =====================================================
             HEADER
         ===================================================== */}
-
-        <div className="mb-3 rounded-xl border border-slate-200 bg-white px-5 py-3.5">
-          <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="mb-3 rounded-2xl border border-slate-200/90 bg-white p-3.5 sm:px-5 sm:py-4 shadow-2xs">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
               <div
-                className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#edf8ff]"
-                style={{
-                  color: PRIMARY,
-                }}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#edf8ff]"
+                style={{ color: PRIMARY }}
               >
                 <Icon name="box" size={20} />
               </div>
 
               <div>
-                <h1 className="text-[17px] font-semibold tracking-[-0.2px] text-slate-900">
+                <h1 className="text-base sm:text-[17px] font-bold tracking-tight text-slate-900">
                   Manifested Shipments
                 </h1>
 
-                <p className="mt-0.5 text-[12px] text-slate-400">
+                <p className="mt-0.5 text-xs text-slate-400">
                   {manifestedCount}{" "}
                   {manifestedCount === 1 ? "shipment" : "shipments"} ready for
                   pickup
@@ -1230,65 +1243,58 @@ function Manifested() {
             </div>
 
             {/* TOP ACTIONS */}
-
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
               <button
                 type="button"
                 onClick={handlePrintLabels}
                 disabled={actionLoading || !selectedOrders.length}
-                className="inline-flex h-9 items-center gap-1.5 rounded-md px-3.5 text-[12px] font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-45"
-                style={{
-                  background: PRIMARY,
-                }}
+                className="flex h-9 items-center justify-center gap-1.5 rounded-xl px-3 text-xs font-semibold text-white shadow-2xs transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-45"
+                style={{ background: PRIMARY }}
               >
                 <Icon name="printer" />
-                Print Shipping Label
+                <span className="truncate">Print Label</span>
               </button>
 
               <button
                 type="button"
                 onClick={handleDownloadLabels}
                 disabled={actionLoading || !selectedOrders.length}
-                className="inline-flex h-9 items-center gap-1.5 rounded-md px-3.5 text-[12px] font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-45"
-                style={{
-                  background: PRIMARY_DARK,
-                }}
+                className="flex h-9 items-center justify-center gap-1.5 rounded-xl px-3 text-xs font-semibold text-white shadow-2xs transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-45"
+                style={{ background: PRIMARY_DARK }}
               >
                 <Icon name="download" />
-                Download Labels
+                <span className="truncate">Download</span>
               </button>
 
               <button
                 type="button"
                 onClick={handlePrintManifests}
                 disabled={actionLoading || !selectedOrders.length}
-                className="inline-flex h-9 items-center gap-1.5 rounded-md px-3.5 text-[12px] font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-45"
-                style={{
-                  background: PRIMARY,
-                }}
+                className="flex h-9 items-center justify-center gap-1.5 rounded-xl px-3 text-xs font-semibold text-white shadow-2xs transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-45"
+                style={{ background: PRIMARY }}
               >
                 <Icon name="file" />
-                Manifests
+                <span className="truncate">Manifests</span>
               </button>
 
               <button
                 type="button"
                 onClick={openCancelConfirmation}
                 disabled={actionLoading || !selectedOrders.length}
-                className="inline-flex h-9 items-center gap-1.5 rounded-md bg-[#ef4444] px-3.5 text-[12px] font-medium text-white transition hover:bg-[#dc2626] disabled:cursor-not-allowed disabled:opacity-45"
+                className="flex h-9 items-center justify-center gap-1.5 rounded-xl bg-rose-500 px-3 text-xs font-semibold text-white shadow-2xs transition hover:bg-rose-600 active:scale-95 disabled:cursor-not-allowed disabled:opacity-45"
               >
                 <Icon name="x" />
-                Cancel
+                <span className="truncate">Cancel</span>
               </button>
 
               <button
                 type="button"
                 onClick={handleExport}
                 disabled={!orders.length}
-                className="inline-flex h-9 items-center gap-1.5 rounded-md bg-[#10b981] px-3.5 text-[12px] font-medium text-white transition hover:bg-[#059669] disabled:cursor-not-allowed disabled:opacity-45"
+                className="col-span-2 sm:col-span-1 flex h-9 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3 text-xs font-semibold text-white shadow-2xs transition hover:bg-emerald-700 active:scale-95 disabled:cursor-not-allowed disabled:opacity-45"
               >
                 <Icon name="upload" />
-                Export
+                <span className="truncate">Export</span>
               </button>
             </div>
           </div>
@@ -1297,10 +1303,9 @@ function Manifested() {
         {/* =====================================================
             FILTERS
         ===================================================== */}
-
-        <div className="mb-3 rounded-xl border border-slate-200 bg-white p-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="relative min-w-[280px] flex-1">
+        <div className="mb-3 rounded-2xl border border-slate-200/90 bg-white p-3 shadow-2xs space-y-2.5">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <div className="relative min-w-0 flex-1">
               <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
                 <Icon name="search" size={15} />
               </span>
@@ -1309,135 +1314,395 @@ function Manifested() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search customer, AWB, Order ID or mobile..."
-                className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50 pl-9 pr-3 text-[12px] text-slate-700 outline-none transition focus:border-[#0788ca] focus:bg-white"
+                className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/70 pl-9 pr-3 text-xs text-slate-700 outline-none transition focus:border-[#0788ca] focus:bg-white focus:ring-2 focus:ring-[#0788ca]/10"
               />
             </div>
 
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-[12px] text-slate-600 outline-none"
-            >
-              <option value="ALL">All Status</option>
+            <div className="flex items-center gap-2">
+              <select
+                value={serviceFilter}
+                onChange={(e) => setServiceFilter(e.target.value)}
+                className="h-10 flex-1 sm:w-36 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 outline-none focus:border-[#0788ca]"
+              >
+                <option value="ALL">All Services</option>
+                <option value="ROAD">Road</option>
+                <option value="AIR">Air</option>
+              </select>
 
-              <option value="MANIFESTED">Manifested</option>
+              <select
+                value={paymentFilter}
+                onChange={(e) => setPaymentFilter(e.target.value)}
+                className="h-10 flex-1 sm:w-36 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 outline-none focus:border-[#0788ca]"
+              >
+                <option value="ALL">All Payment</option>
+                <option value="PREPAID">Prepaid</option>
+                <option value="COD">COD</option>
+              </select>
 
-            </select>
-
-            <select
-              value={serviceFilter}
-              onChange={(e) => setServiceFilter(e.target.value)}
-              className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-[12px] text-slate-600 outline-none"
-            >
-              <option value="ALL">All Services</option>
-
-              <option value="ROAD">Road</option>
-
-              <option value="AIR">Air</option>
-            </select>
-
-            <select
-              value={paymentFilter}
-              onChange={(e) => setPaymentFilter(e.target.value)}
-              className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-[12px] text-slate-600 outline-none"
-            >
-              <option value="ALL">All Payment</option>
-
-              <option value="PREPAID">Prepaid</option>
-
-              <option value="COD">COD</option>
-            </select>
-
-            <button
-              type="button"
-              onClick={fetchManifestedOrders}
-              disabled={loading}
-              title="Refresh"
-              className="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50"
-            >
-              <Icon name="refresh" size={15} />
-            </button>
+              <button
+                type="button"
+                onClick={fetchManifestedOrders}
+                disabled={loading}
+                title="Refresh"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 active:scale-95 disabled:opacity-50"
+              >
+                <Icon name="refresh" size={15} />
+              </button>
+            </div>
           </div>
+
+          {/* MOBILE SELECT ALL BAR */}
+          {filteredOrders.length > 0 && (
+            <div className="flex items-center justify-between border-t border-slate-100 pt-2 sm:hidden text-xs">
+              <label className="flex items-center gap-2 font-bold text-slate-700 cursor-pointer">
+                <button
+                  type="button"
+                  onClick={toggleAll}
+                  className="flex h-4 w-4 items-center justify-center rounded border transition"
+                  style={
+                    allVisibleSelected
+                      ? {
+                          borderColor: PRIMARY,
+                          background: PRIMARY,
+                          color: "white",
+                        }
+                      : {
+                          borderColor: "#cbd5e1",
+                          background: "white",
+                          color: "transparent",
+                        }
+                  }
+                >
+                  <Icon name="check" size={11} />
+                </button>
+                <span>Select Visible ({filteredOrders.length})</span>
+              </label>
+
+              {selectedIds.length > 0 && (
+                <span className="text-[11px] font-bold text-[#0788ca]">
+                  {selectedIds.length} selected
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* ORDER STATUS TABS */}
+        <OrderStatusNavTabs />
+
+        {/* =====================================================
+            1. MOBILE VIEW: APPLIKE SHIPMENT CARDS
+        ===================================================== */}
+        <div className="space-y-2.5 sm:hidden">
+          {loading ? (
+            <CardSkeleton count={4} />
+          ) : !filteredOrders.length ? (
+            <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-slate-400">
+              <div className="mx-auto mb-2 flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+                <Icon name="box" size={20} />
+              </div>
+              <h3 className="text-xs font-bold text-slate-800">
+                {orders.length
+                  ? "No matching shipments"
+                  : "No manifested shipments"}
+              </h3>
+              <p className="mt-1 text-[11px] text-slate-400">
+                {orders.length
+                  ? "Try changing your search or filters."
+                  : "Orders will appear here after confirmation."}
+              </p>
+            </div>
+          ) : (
+            filteredOrders.map((order) => {
+              const key = getSelectedKey(order);
+              const selected = selectedIds.includes(key);
+              const service = getServiceType(order);
+              const payment = getPaymentType(order);
+              const created = getCreatedAt(order);
+              const awb = getAWB(order);
+
+              return (
+                <div
+                  key={key}
+                  className={`rounded-2xl border bg-white p-3.5 space-y-2.5 shadow-2xs transition ${
+                    selected
+                      ? "border-[#0788ca] ring-2 ring-[#0788ca]/10"
+                      : "border-slate-200/90"
+                  }`}
+                >
+                  {/* CARD HEADER */}
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <button
+                        type="button"
+                        onClick={() => toggleOne(order)}
+                        className="flex h-4 w-4 shrink-0 items-center justify-center rounded border transition"
+                        style={
+                          selected
+                            ? {
+                                borderColor: PRIMARY,
+                                background: PRIMARY,
+                                color: "white",
+                              }
+                            : {
+                                borderColor: "#cbd5e1",
+                                background: "white",
+                                color: "transparent",
+                              }
+                        }
+                      >
+                        <Icon name="check" size={11} />
+                      </button>
+
+                      <span className="font-mono text-xs font-bold text-slate-800 truncate">
+                        #{getOrderId(order)}
+                      </span>
+
+                      {getPartyName(order) !== "—" && (
+                        <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-700 truncate max-w-[100px]">
+                          {getPartyName(order)}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span
+                        className={`rounded-md px-2 py-0.5 text-[9.5px] font-bold ${
+                          payment === "COD"
+                            ? "bg-rose-50 text-rose-600"
+                            : "bg-sky-50 text-sky-700"
+                        }`}
+                      >
+                        {payment}
+                      </span>
+                      <span
+                        className={`inline-flex rounded-full px-2 py-0.5 text-[9.5px] font-bold ${getStatusBadgeClass(
+                          getTrackingStatus(order),
+                        )}`}
+                      >
+                        {getTrackingStatus(order)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* CUSTOMER & AWB BAR WITH CLICK-TO-TRACK & COPY */}
+                  <div className="space-y-1 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-slate-800 truncate">
+                        {getCustomerName(order)}
+                      </span>
+                      <span className="text-[11px] text-slate-400">
+                        {getMobile(order)}
+                      </span>
+                    </div>
+
+                    {/* AWB BAR: CLICK TO TRACK + COPY BUTTON */}
+                    <div className="flex items-center justify-between font-mono text-[11px] text-slate-700 bg-slate-50/80 px-2.5 py-1.5 rounded-xl border border-slate-100">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="font-sans text-[10px] text-slate-400 font-semibold uppercase">
+                          AWB:
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => triggerTracking(awb)}
+                          className="truncate font-bold text-[#0788ca] hover:underline cursor-pointer text-left active:scale-[0.99]"
+                          title="Click to track live"
+                        >
+                          {awb}
+                        </button>
+                      </div>
+
+                      {awb && awb !== "AWB unavailable" && awb !== "—" && (
+                        <button
+                          type="button"
+                          onClick={() => copyAWB(awb)}
+                          className="flex items-center gap-1 rounded-md bg-[#0788ca]/10 px-2 py-0.5 text-[10px] font-bold text-[#0788ca] active:scale-95 transition shrink-0"
+                          title="Copy AWB"
+                        >
+                          <Icon name="copy" size={11} />
+                          <span>Copy</span>
+                        </button>
+                      )}
+                    </div>
+
+                    {/* ROUTE */}
+                    <div className="flex items-center justify-between text-[11px] text-slate-500 pt-0.5">
+                      <span className="truncate max-w-[125px]">
+                        {getPickupCity(order)} ({getPickupPincode(order)})
+                      </span>
+                      <span className="text-slate-300 font-bold px-1">→</span>
+                      <span className="truncate max-w-[125px] text-right">
+                        {getDeliveryCity(order)} ({getDeliveryPincode(order)})
+                      </span>
+                    </div>
+
+                    {/* SPECS & CHARGE */}
+                    <div className="flex items-center justify-between text-[11px] text-slate-500 border-t border-slate-50 pt-1.5">
+                      <span>
+                        {service === "AIR" ? "By Air" : "By Surface"} •{" "}
+                        {getWeight(order).toFixed(2)} Kg
+                      </span>
+                      <span className="font-bold text-slate-800">
+                        ₹{Number(order.shipping_charge || 0).toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* CARD ACTIONS: PRINT, DOWNLOAD, DUPLICATE & DETAILS */}
+                  <div className="flex items-center justify-between border-t border-slate-100 pt-2 text-[10px] text-slate-400">
+                    <span className="truncate max-w-[100px]">
+                      {formatDate(created)}
+                    </span>
+
+                    <div className="flex items-center gap-1.5">
+                      {/* PRINT */}
+                      <button
+                        type="button"
+                        onClick={() => handlePrintSingle(order)}
+                        disabled={actionLoading}
+                        title="Print Label"
+                        className="flex h-7.5 w-7.5 items-center justify-center rounded-lg text-white transition active:scale-95 disabled:opacity-50 shadow-2xs"
+                        style={{ background: PRIMARY }}
+                      >
+                        <Icon name="printer" size={13} />
+                      </button>
+
+                      {/* DOWNLOAD */}
+                      <button
+                        type="button"
+                        onClick={() => handleDownloadSingle(order)}
+                        disabled={actionLoading}
+                        title="Download Label"
+                        className="flex h-7.5 w-7.5 items-center justify-center rounded-lg text-white transition active:scale-95 disabled:opacity-50 shadow-2xs"
+                        style={{ background: PRIMARY_DARK }}
+                      >
+                        <Icon name="download" size={13} />
+                      </button>
+
+                      {/* DUPLICATE ORDER */}
+                      <button
+                        type="button"
+                        onClick={() => handleDuplicate(order)}
+                        disabled={actionLoading}
+                        title="Duplicate Order"
+                        className="flex h-7.5 items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 active:scale-95 disabled:opacity-50"
+                      >
+                        <Icon name="copy" size={13} />
+                        <span className="hidden xs:inline">Duplicate</span>
+                      </button>
+
+                      {/* VIEW DETAILS */}
+                      <button
+                        type="button"
+                        onClick={() => openShipmentDetails(order)}
+                        className="flex h-7.5 items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 active:scale-95"
+                      >
+                        <Icon name="eye" size={13} />
+                        <span>Details</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+
+          {/* MOBILE FOOTER COUNTER */}
+          {filteredOrders.length > 0 && (
+            <div className="flex items-center justify-between rounded-xl border border-slate-200/80 bg-white px-3.5 py-2.5 text-[11px] text-slate-500 shadow-2xs">
+              <span>
+                Showing <strong>{filteredOrders.length}</strong> of{" "}
+                <strong>{manifestedCount}</strong> manifested
+              </span>
+              {selectedIds.length > 0 && (
+                <span className="font-bold text-[#0788ca]">
+                  {selectedIds.length} selected
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         {/* =====================================================
-            TABLE
+            2. DESKTOP & TABLET VIEW: STRUCTURED DATA TABLE
         ===================================================== */}
-
-        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[1120px] border-collapse">
-              <thead>
+        <div className="hidden sm:block overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
+          <div
+            className="orders-scrollbar max-h-[calc(100vh-180px)] overflow-y-auto overflow-x-hidden"
+            style={{
+              scrollbarWidth: "thin",
+              scrollbarColor: "#cbd5e1 transparent",
+            }}
+          >
+            <table className="w-full table-fixed border-collapse">
+              <thead className="sticky top-0 z-20 bg-white">
                 <tr className="border-b border-slate-200 bg-white">
-                  <th className="w-[52px] px-4 py-3.5 text-left">
+                  <th className="sticky top-0 z-20 w-[4%] bg-white px-2 py-3 text-left">
                     <button
                       type="button"
                       onClick={toggleAll}
-                      className="flex h-[17px] w-[17px] items-center justify-center rounded-[4px] border"
-                      style={
+                      className={`flex h-[17px] w-[17px] items-center justify-center rounded-[4px] border transition ${
                         allVisibleSelected
-                          ? {
-                              borderColor: PRIMARY,
-                              background: PRIMARY,
-                              color: "white",
-                            }
-                          : {
-                              borderColor: "#cbd5e1",
-                              background: "white",
-                              color: "transparent",
-                            }
-                      }
+                          ? "border-[#008dd2] bg-[#008dd2] text-white"
+                          : "border-slate-300 bg-white text-transparent"
+                      }`}
                     >
                       <Icon name="check" size={11} />
                     </button>
                   </th>
 
-                  <th className="w-[190px] px-3 py-3.5 text-left text-[13px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[7%] bg-white px-1.5 py-3 text-left text-[12px] font-medium text-slate-700">
+                    Party
+                  </th>
+
+                  <th className="sticky top-0 z-20 w-[18%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Customer
                   </th>
 
-                  <th className="w-[175px] px-3 py-3.5 text-left text-[13px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[16%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Shipment
                   </th>
 
-                  <th className="w-[165px] px-3 py-3.5 text-left text-[13px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[16%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Route
                   </th>
 
-                  <th className="w-[150px] px-3 py-3.5 text-left text-[13px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[10%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Payment
                   </th>
 
-                  <th className="w-[135px] px-3 py-3.5 text-left text-[13px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[8%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Weight
                   </th>
 
-                  <th className="w-[155px] px-3 py-3.5 text-left text-[13px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[11%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Created
                   </th>
 
-                  <th className="w-[125px] px-3 py-3.5 text-left text-[13px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[10%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
                     Actions
                   </th>
                 </tr>
               </thead>
 
               <tbody>
-                {!filteredOrders.length ? (
+                {loading ? (
+                  <TableRowSkeleton rows={6} cols={9} />
+                ) : !filteredOrders.length ? (
                   <tr>
-                    <td colSpan="8" className="px-6 py-16 text-center">
-                      <div className="mx-auto flex max-w-sm flex-col items-center">
-                        <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+                    <td colSpan="9" className="h-[300px] px-6 text-center">
+                      <div className="flex flex-col items-center justify-center">
+                        <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-50 text-slate-300">
                           <Icon name="box" size={21} />
                         </div>
 
-                        <h3 className="text-[14px] font-semibold text-slate-800">
+                        <h3 className="text-sm font-medium text-slate-700">
                           {orders.length
                             ? "No matching shipments"
                             : "No manifested shipments"}
                         </h3>
 
-                        <p className="mt-1 text-[12px] text-slate-400">
+                        <p className="mt-1 text-xs text-slate-400">
                           {orders.length
                             ? "Try changing the search or filters."
                             : "Orders will appear here after successful shipment confirmation."}
@@ -1448,122 +1713,144 @@ function Manifested() {
                 ) : (
                   filteredOrders.map((order) => {
                     const key = getSelectedKey(order);
-
                     const selected = selectedIds.includes(key);
-
                     const service = getServiceType(order);
-
                     const payment = getPaymentType(order);
-
                     const created = getCreatedAt(order);
+                    const awb = getAWB(order);
 
                     return (
                       <tr
                         key={key}
-                        className={`border-b border-slate-100 last:border-b-0 ${
+                        className={`border-b border-slate-100 transition last:border-b-0 ${
                           selected
-                            ? "bg-[#f7fcff]"
-                            : "bg-white hover:bg-[#fcfdff]"
-                        }`}
+                            ? "bg-[#f8fcff]"
+                            : "bg-white"
+                        } hover:bg-slate-50`}
                       >
-                        <td className="px-4 py-4 align-middle">
+                        <td className="px-2 py-2.5">
                           <button
                             type="button"
                             onClick={() => toggleOne(order)}
-                            className="flex h-[18px] w-[18px] items-center justify-center rounded-[4px] border"
-                            style={
+                            className={`flex h-[17px] w-[17px] items-center justify-center rounded-[4px] border transition ${
                               selected
-                                ? {
-                                    borderColor: PRIMARY,
-                                    background: PRIMARY,
-                                    color: "white",
-                                  }
-                                : {
-                                    borderColor: "#cbd5e1",
-                                    background: "white",
-                                    color: "transparent",
-                                  }
-                            }
+                                ? "border-[#008dd2] bg-[#008dd2] text-white"
+                                : "border-slate-300 bg-white text-transparent"
+                            }`}
                           >
                             <Icon name="check" size={11} />
                           </button>
                         </td>
 
-                        <td className="px-3 py-4 align-middle">
-                          <div className="min-w-[160px]">
-                            <div className="text-[13px] font-medium leading-5 text-slate-800">
+                        <td className="px-1.5 py-2.5 break-words">
+                          <div className="min-w-0">
+                            {getPartyName(order) !== "—" ? (
+                              <span
+                                className="inline-block max-w-full truncate rounded-md bg-slate-100 px-1.5 py-0.5 text-[11px] font-semibold text-slate-700"
+                                title={order.party_name && order.party_reference_name ? `${order.party_reference_name} — ${order.party_name}` : getPartyName(order)}
+                              >
+                                {getPartyName(order)}
+                              </span>
+                            ) : (
+                              <span className="text-[12px] text-slate-400 font-normal">—</span>
+                            )}
+                          </div>
+                        </td>
+
+                        <td className="px-2 py-2.5 break-words">
+                          <div className="min-w-0">
+                            <p className="truncate text-[13px] font-semibold text-slate-800">
                               {getCustomerName(order)}
-                            </div>
+                            </p>
 
                             {getMobile(order) && (
-                              <div className="text-[11px] leading-4 text-slate-400">
+                              <p className="mt-0.5 text-[11px] text-slate-400">
                                 {getMobile(order)}
-                              </div>
+                              </p>
                             )}
 
-                            <span
-                              className={`mt-1.5 inline-flex rounded-full px-2.5 py-1 text-[10px] font-medium leading-none ${getStatusBadgeClass(getTrackingStatus(order))}`}
-                            >
-                              {getTrackingStatus(order)}
-                            </span>
-                          </div>
-                        </td>
-
-                        <td className="px-3 py-4 align-middle">
-                          <div className="min-w-[145px]">
-                            <div className="text-[13px] font-semibold leading-5 text-slate-800">
-                              {getAWB(order)}
-                            </div>
-
-                            <div className="text-[11px] leading-4 text-slate-500">
-                              Pickup ID: {getPickupId(order)}
-                            </div>
-
-                            <div className="text-[11px] leading-4 text-slate-500">
-                              {getShipmentName(order)} ·{" "}
-                              {service === "AIR" ? "Air" : "Road"}
-                            </div>
-                          </div>
-                        </td>
-
-                        <td className="px-3 py-4 align-middle">
-                          <div className="min-w-[145px]">
-                            <div className="flex items-center gap-2">
+                            <div className="mt-0.5 -ml-0.5">
                               <span
-                                className="mt-[1px]"
-                                style={{
-                                  color: PRIMARY,
-                                }}
+                                className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium leading-none ${getStatusBadgeClass(
+                                  getTrackingStatus(order),
+                                )}`}
+                              >
+                                {getTrackingStatus(order)}
+                              </span>
+                            </div>
+                          </div>
+                        </td>
+
+                        <td className="px-2 py-2.5 break-words">
+                          <div className="min-w-0">
+                            <div className="flex min-w-0 items-center gap-1.5">
+                              <p
+                                onClick={() => triggerTracking(awb)}
+                                title="Click to track shipment"
+                                className="truncate text-[13px] font-semibold text-slate-800 hover:text-[#008dd2] cursor-pointer select-none"
+                              >
+                                {awb}
+                              </p>
+
+                              {awb !== "AWB unavailable" && awb !== "—" && (
+                                <button
+                                  type="button"
+                                  title="Copy AWB"
+                                  onClick={() => copyAWB(awb)}
+                                  className="shrink-0 p-0.5 text-slate-400 hover:text-[#008dd2] transition"
+                                >
+                                  <Icon name="copy" size={13} />
+                                </button>
+                              )}
+                            </div>
+
+                            <p className="mt-0.5 text-[11px] text-slate-500">
+                              Pickup ID: {getPickupId(order)}
+                            </p>
+
+                            <p className="mt-0.5 text-[11px] text-slate-500">
+                              {getShipmentName(order)} ·{" "}
+                              {service === "AIR" ? "By Air" : "By Surface"}
+                            </p>
+                          </div>
+                        </td>
+
+                        <td className="px-2 py-2.5">
+                          <div className="min-w-0 break-words">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <span
+                                className="mt-[1px] shrink-0"
+                                style={{ color: PRIMARY }}
                               >
                                 <Icon name="location" size={12} />
                               </span>
 
-                              <div className="text-[12px] font-medium leading-4 text-slate-700">
+                              <p className="truncate text-[12px] font-medium text-slate-700">
                                 {getPickupCity(order)}{" "}
                                 <span className="font-normal text-slate-400">
                                   ({getPickupPincode(order)})
                                 </span>
-                              </div>
+                              </p>
                             </div>
 
                             <div className="ml-[5px] h-2 border-l border-dashed border-slate-300" />
 
-                            <div className="flex items-center gap-2">
-                              <span className="mt-[1px] text-slate-400">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <span className="mt-[1px] text-slate-400 shrink-0">
                                 <Icon name="location" size={12} />
                               </span>
 
-                              <div className="text-[12px] font-medium leading-4 text-slate-700">
+                              <p className="truncate text-[12px] font-medium text-slate-700">
                                 {getDeliveryCity(order)}{" "}
                                 <span className="font-normal text-slate-400">
                                   ({getDeliveryPincode(order)})
                                 </span>
-                              </div>
+                              </p>
                             </div>
                           </div>
                         </td>
 
-                        <td className="px-3 py-4 align-middle">
+                        <td className="px-2 py-2.5 break-words">
                           <div
                             className="text-[12px] font-semibold"
                             style={{
@@ -1573,18 +1860,18 @@ function Manifested() {
                             {payment}
                           </div>
 
-                          <div className="mt-0.5 text-[10px] text-slate-400">
+                          <p className="mt-0.5 text-[10px] text-slate-400">
                             {payment === "COD" ? "Cash on Delivery" : "Prepaid"}
-                          </div>
+                          </p>
 
-                          <div className="text-[10px] text-slate-500">
+                          <p className="text-[10px] text-slate-500">
                             Total: ₹
                             {Number(order.shipping_charge || 0).toFixed(2)}
-                          </div>
+                          </p>
                         </td>
 
-                        <td className="px-3 py-4 align-middle">
-                          <div className="text-[12px] font-medium text-slate-700">
+                        <td className="px-2 py-2.5 break-words">
+                          <p className="text-[12px] font-semibold text-slate-700">
                             Box:{" "}
                             {Number(
                               order.packages?.reduce(
@@ -1592,95 +1879,98 @@ function Manifested() {
                                 0,
                               ) || 1,
                             )}
-                          </div>
+                          </p>
 
-                          <div className="text-[10px] text-slate-500">
+                          <p className="mt-0.5 text-[10px] text-slate-400">
                             Wt: {getWeight(order).toFixed(2)} kg
-                          </div>
+                          </p>
 
-                          <div className="text-[10px] text-slate-400">
-                            Dist: {getDistance(order).toFixed(0)} km
-                          </div>
+                          <p className="text-[10px] text-slate-400">
+                            Vol: {getVolumetricWeight(order).toFixed(2)} kg
+                          </p>
                         </td>
 
-                        <td className="px-3 py-4 align-middle">
-                          <div className="text-[11px] font-medium text-slate-700">
+                        <td className="px-2 py-2.5 break-words">
+                          <p className="text-[12px] font-medium text-slate-700">
                             #{getOrderId(order)}
-                          </div>
+                          </p>
 
-                          <div className="text-[10px] leading-4 text-slate-400">
-                            Manifested: {formatDate(created)}
-                          </div>
-
-                          <div className="text-[10px] leading-4 text-slate-400">
+                          <p className="mt-0.5 text-[10px] leading-4 text-slate-400">
+                            Manifested: {formatDate(created)}{" "}
                             {formatTime(created)}
-                          </div>
+                          </p>
                         </td>
 
                         {/* ACTIONS */}
-
-                        <td className="px-3 py-4 align-middle">
-                          <div className="flex items-center gap-1.5">
-                            {/* PRINT */}
-
+                        <td className="px-1 py-2.5">
+                          <div className="flex items-center justify-start gap-1">
                             <button
                               type="button"
                               onClick={() => handlePrintSingle(order)}
                               disabled={actionLoading}
                               title="Print Shipping Label"
-                              className="flex h-8 w-8 items-center justify-center rounded-md text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-                              style={{
-                                background: PRIMARY,
-                              }}
+                              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                              style={{ background: PRIMARY }}
                             >
-                              <Icon name="printer" size={14} />
+                              <Icon name="printer" size={13} />
                             </button>
-
-                            {/* DOWNLOAD */}
 
                             <button
                               type="button"
                               onClick={() => handleDownloadSingle(order)}
                               disabled={actionLoading}
                               title="Download Shipping Label"
-                              className="flex h-8 w-8 items-center justify-center rounded-md text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-                              style={{
-                                background: PRIMARY_DARK,
-                              }}
+                              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                              style={{ background: PRIMARY_DARK }}
                             >
-                              <Icon name="download" size={14} />
+                              <Icon name="download" size={13} />
                             </button>
 
-                            {/* DUPLICATE */}
+                            <div ref={actionMenuRef} className="relative">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setOpenActionMenuId((previous) =>
+                                    previous === key ? null : key,
+                                  )
+                                }
+                                title="More Actions"
+                                aria-label="More Actions"
+                                aria-expanded={openActionMenuId === key}
+                                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-500 transition hover:border-[#0788ca] hover:bg-[#edf8ff] hover:text-[#0788ca]"
+                              >
+                                <Icon name="more" size={15} />
+                              </button>
 
-                            <button
-                              type="button"
-                              onClick={() => handleDuplicate(order)}
-                              disabled={actionLoading}
-                              title="Duplicate Order"
-                              className="flex h-8 w-8 items-center justify-center rounded-md border bg-white transition hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-50"
-                              style={{
-                                borderColor: "#c4b5fd",
-                                color: "#7c3aed",
-                              }}
-                            >
-                              <Icon name="copy" size={14} />
-                            </button>
+                              {openActionMenuId === key && (
+                                <div className="absolute right-0 top-full z-50 mt-1 w-44 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 text-left shadow-lg">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setOpenActionMenuId(null);
+                                      openShipmentDetails(order);
+                                    }}
+                                    className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-xs font-medium text-slate-700 hover:bg-slate-50"
+                                  >
+                                    <Icon name="eye" size={15} />
+                                    Details
+                                  </button>
 
-                            {/* VIEW */}
-
-                            <button
-                              type="button"
-                              onClick={() => setViewingOrder(order)}
-                              title="View Shipment"
-                              className="flex h-8 w-8 items-center justify-center rounded-md border bg-white transition hover:bg-[#f3faff]"
-                              style={{
-                                borderColor: PRIMARY,
-                                color: PRIMARY,
-                              }}
-                            >
-                              <Icon name="eye" size={14} />
-                            </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setOpenActionMenuId(null);
+                                      handleDuplicate(order);
+                                    }}
+                                    disabled={actionLoading}
+                                    className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                                  >
+                                    <Icon name="copy" size={15} />
+                                    Duplicate Order
+                                  </button>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </td>
                       </tr>
@@ -1690,6 +1980,8 @@ function Manifested() {
               </tbody>
             </table>
           </div>
+
+
 
           <div className="flex min-h-[45px] items-center justify-between border-t border-slate-100 bg-[#fcfdff] px-5">
             <div className="text-[11px] text-slate-400">
@@ -1708,9 +2000,7 @@ function Manifested() {
               <div className="text-[11px] text-slate-400">
                 <span
                   className="font-semibold"
-                  style={{
-                    color: PRIMARY,
-                  }}
+                  style={{ color: PRIMARY }}
                 >
                   {selectedIds.length}
                 </span>{" "}
@@ -1722,9 +2012,8 @@ function Manifested() {
       </div>
 
       {/* =======================================================
-          CANCEL MODAL
+          CANCEL CONFIRM MODAL
       ======================================================= */}
-
       {showCancelConfirm && (
         <div
           className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-[2px]"
@@ -1799,7 +2088,6 @@ function Manifested() {
                 className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-red-500 px-4 text-[12px] font-medium text-white transition hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Icon name="x" size={14} />
-
                 {actionLoading ? "Cancelling..." : "Yes, Cancel"}
               </button>
             </div>
@@ -1807,107 +2095,19 @@ function Manifested() {
         </div>
       )}
 
-      {/* =======================================================
-          VIEW MODAL
-      ======================================================= */}
-
-      {viewingOrder && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/45 p-4"
-          onMouseDown={(e) => {
-            if (e.target === e.currentTarget) {
-              setViewingOrder(null);
-            }
-          }}
-        >
-          <div className="w-full max-w-[650px] overflow-hidden rounded-2xl bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-              <div>
-                <h2 className="text-[16px] font-semibold text-slate-900">
-                  Shipment Details
-                </h2>
-
-                <p className="mt-0.5 text-[11px] text-slate-400">
-                  AWB:{" "}
-                  <span
-                    className="font-semibold"
-                    style={{
-                      color: PRIMARY,
-                    }}
-                  >
-                    {getAWB(viewingOrder)}
-                  </span>
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setViewingOrder(null)}
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100"
-              >
-                <Icon name="x" size={16} />
-              </button>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 p-5">
-              {[
-                ["Order ID", `#${getOrderId(viewingOrder)}`],
-                ["Customer", getCustomerName(viewingOrder)],
-                ["Mobile", getMobile(viewingOrder)],
-                ["Pickup ID", getPickupId(viewingOrder)],
-                ["Payment", getPaymentType(viewingOrder)],
-                [
-                  "Service",
-                  getServiceType(viewingOrder) === "AIR" ? "By Air" : "By Road",
-                ],
-                ["Weight", `${getWeight(viewingOrder).toFixed(2)} Kg`],
-                ["Distance", `${getDistance(viewingOrder).toFixed(0)} Km`],
-              ].map(([label, value]) => (
-                <div
-                  key={label}
-                  className="rounded-xl border border-slate-100 bg-slate-50 p-3"
-                >
-                  <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-                    {label}
-                  </div>
-
-                  <div className="mt-1 text-[12px] font-semibold text-slate-800">
-                    {text(value)}
-                  </div>
-                </div>
-              ))}
-
-              <div className="col-span-2 rounded-xl border border-slate-100 bg-slate-50 p-3">
-                <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-                  Delivery Address
-                </div>
-
-                <div className="mt-1 text-[12px] leading-5 text-slate-700">
-                  {[
-                    viewingOrder.address_line1,
-                    viewingOrder.address_line2,
-                    viewingOrder.city,
-                    viewingOrder.state,
-                    viewingOrder.pincode,
-                  ]
-                    .filter(Boolean)
-                    .join(", ") || "—"}
-                </div>
-              </div>
-            </div>
-
-            <div className="flex justify-end border-t border-slate-200 px-5 py-4">
-              <button
-                type="button"
-                onClick={() => setViewingOrder(null)}
-                className="h-9 rounded-lg border border-slate-200 px-4 text-[12px] font-medium text-slate-600 hover:bg-slate-50"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <OrderDetailsModal
+        order={viewingOrder}
+        loading={detailsLoading}
+        actionLoading={actionLoading}
+        onClose={() => setViewingOrder(null)}
+        onTrack={triggerTracking}
+        onDownload={handleDownloadSingle}
+        onPrint={handlePrintSingle}
+        onDuplicate={(order) => {
+          setViewingOrder(null);
+          handleDuplicate(order);
+        }}
+      />
     </div>
   );
 }

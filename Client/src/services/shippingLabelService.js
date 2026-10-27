@@ -236,8 +236,8 @@ const getOrderValue = (o) =>
     )
   ) || 0;
 
-const getCodAmount = (o) =>
-  Number(
+const getCodAmount = (o) => {
+  const codAmount = Number(
     first(
       o.cod_amount,
       o.codAmount,
@@ -246,10 +246,22 @@ const getCodAmount = (o) =>
       o.collectable_amount,
       o.collectableAmount,
       o.amount_to_collect,
-      o.amountToCollect,
-      0
+      o.amountToCollect
     )
-  ) || 0;
+  );
+
+  if (Number.isFinite(codAmount) && codAmount > 0) {
+    return codAmount;
+  }
+
+  const products = getProducts(o);
+  const productTotal = products.reduce(
+    (sum, product) => sum + (Number(product.total) || 0),
+    0
+  );
+
+  return productTotal > 0 ? productTotal : getOrderValue(o);
+};
 
 const money = (value) =>
   `₹${(Number(value) || 0).toFixed(2)}`;
@@ -766,109 +778,38 @@ const normalizeSettings = (data = {}) => ({
     null,
 });
 
-const getLabelSettings = async () => {
-  const userId = getUserId();
+let labelSettingsCache = null;
 
-  if (!userId) {
-    return { ...DEFAULT_LABEL_SETTINGS };
-  }
-
+export const getLabelSettings = () => {
+  if (labelSettingsCache) return labelSettingsCache;
   try {
-    const response = await api.get("/label-settings", {
-      params: { user_id: userId },
-    });
-
-    const data = response.data?.settings;
-
-    if (!response.data?.success || !data) {
-      return { ...DEFAULT_LABEL_SETTINGS };
+    const raw = localStorage.getItem("shipdrop_label_settings");
+    if (raw) {
+      labelSettingsCache = normalizeSettings(JSON.parse(raw));
+      return labelSettingsCache;
     }
-
-    return normalizeSettings(data);
-  } catch (error) {
-    console.error("Label settings error:", error);
-    return { ...DEFAULT_LABEL_SETTINGS };
-  }
+  } catch {}
+  return { ...DEFAULT_LABEL_SETTINGS };
 };
 
-const getDetailedOrders = async (orders) => {
+// Non-blocking background sync to keep settings fresh without blocking user actions
+const syncLabelSettingsInBackground = async () => {
   const userId = getUserId();
-
-  if (!userId) return orders;
-
-  return Promise.all(
-    orders.map(async (order) => {
-      const id = first(
-        order?.order_id,
-        order?.orderId,
-        order?.id
-      );
-
-      if (!id) return order;
-
-      try {
-        const response = await api.get(`/orders/${id}`, {
-          params: { user_id: userId },
-        });
-
-        const full =
-          response.data?.order ||
-          response.data?.result?.order ||
-          response.data?.result ||
-          null;
-
-        if (!full) return order;
-
-        return {
-          ...order,
-          ...full,
-          awb: first(
-            order.awb,
-            full.awb,
-            full.waybill
-          ),
-          order_id: first(
-            order.order_id,
-            full.order_id
-          ),
-        };
-      } catch (error) {
-        console.warn(
-          "Could not fetch complete order:",
-          id,
-          error
-        );
-
-        return order;
-      }
-    })
-  );
+  if (!userId) return;
+  try {
+    const response = await api.get("/label-settings", { params: { user_id: userId } });
+    const data = response.data?.settings;
+    if (data) {
+      labelSettingsCache = normalizeSettings(data);
+      localStorage.setItem("shipdrop_label_settings", JSON.stringify(data));
+    }
+  } catch {}
 };
+setTimeout(syncLabelSettingsInBackground, 1000);
 
-const imageToDataUrl = async (source) => {
-  if (!source) return "";
+const getDetailedOrders = (orders) => orders;
 
-  if (String(source).startsWith("data:")) {
-    return source;
-  }
-
-  const response = await fetch(source);
-
-  if (!response.ok) {
-    throw new Error(`Unable to load logo: ${source}`);
-  }
-
-  const blob = await response.blob();
-
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-
-    reader.onloadend = () => resolve(reader.result);
-    reader.onerror = reject;
-
-    reader.readAsDataURL(blob);
-  });
-};
+const imageToDataUrl = (source) => Promise.resolve(source);
 
 const createBarcode = (awb, compact = false) => {
   const svg = document.createElementNS(
@@ -999,6 +940,7 @@ const build3x2LabelHtml = (
           <div>
             <span>PAYMENT</span>
             <b>${payment}</b>
+            <div style="height: 1mm; padding-top: 1px;"></div>
           </div>
 
           ${
@@ -1007,6 +949,7 @@ const build3x2LabelHtml = (
                 <div>
                   <span>ORDER ID</span>
                   <b>${esc(getOrderId(order))}</b>
+                  <div style="height: 1mm; padding-top: 1px;"></div>
                 </div>
               `
               : ""
@@ -1015,6 +958,7 @@ const build3x2LabelHtml = (
           <div>
             <span>SERVICE</span>
             <b>${getServiceType(order)}</b>
+            <div style="height: 1mm; padding-top: 1px;"></div>
           </div>
 
           ${
@@ -1023,6 +967,7 @@ const build3x2LabelHtml = (
                 <div>
                   <span>WEIGHT</span>
                   <b>${getWeight(order).toFixed(2)} KG</b>
+                  <div style="height: 1mm; padding-top: 1px;"></div>
                 </div>
               `
               : ""
@@ -1035,12 +980,12 @@ const build3x2LabelHtml = (
 
           <div>
             <span>SELLER</span>
-            <b>${esc(getSellerName(order))}</b>
+            <b class="seller-name">${esc(getSellerName(order))}</b>
           </div>
 
           <div>
             <span>GSTIN</span>
-            <b>${esc(getSellerGstin(order) || "")}</b>
+            <b class="seller-gstin">${esc(getSellerGstin(order) || "")}</b>
           </div>
 
           <div>
@@ -1258,9 +1203,17 @@ const build3x2LabelHtml = (
         display: block;
         font-size: 5pt;
         font-weight: 600;
+        line-height: 1.2;
+      }
+
+      .label-3x2 .mini-seller .seller-name {
+        white-space: normal;
+        overflow-wrap: break-word;
+        word-break: break-word;
+      }
+
+      .label-3x2 .mini-seller .seller-gstin {
         white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
       }
     </style>
   `;
@@ -1354,10 +1307,22 @@ const buildLabelHtml = (
         .map(
           (product) => `
             <tr>
-              <td class="product-name">${esc(product.name)}</td>
-              <td>${product.rate.toFixed(2)}</td>
-              <td>${product.qty}</td>
-              <td>${product.total.toFixed(2)}</td>
+              <td class="product-name">
+                <div>${esc(product.name)}</div>
+                <div style="height: 1mm; padding-top: 1px;"></div>
+              </td>
+              <td>
+                <div>${product.rate.toFixed(2)}</div>
+                <div style="height: 1mm; padding-top: 1px;"></div>
+              </td>
+              <td>
+                <div>${product.qty}</div>
+                <div style="height: 1mm; padding-top: 1px;"></div>
+              </td>
+              <td>
+                <div>${product.total.toFixed(2)}</div>
+                <div style="height: 1mm; padding-top: 1px;"></div>
+              </td>
             </tr>
           `
         )
@@ -1463,6 +1428,7 @@ const buildLabelHtml = (
   <div>
     <span>PAYMENT</span>
     <b>${payment}</b>
+    <div style="height: 1mm; padding-top: 1px;"></div>
   </div>
 
   ${
@@ -1471,6 +1437,7 @@ const buildLabelHtml = (
         <div>
           <span>ORDER ID</span>
           <b>${esc(getOrderId(order))}</b>
+          <div style="height: 1mm; padding-top: 1px;"></div>
         </div>
       `
       : ""
@@ -1479,6 +1446,7 @@ const buildLabelHtml = (
   <div>
     <span>SERVICE</span>
     <b>${getServiceType(order)}</b>
+    <div style="height: 1mm; padding-top: 1px;"></div>
   </div>
 
   ${
@@ -1487,13 +1455,12 @@ const buildLabelHtml = (
         <div>
           <span>WEIGHT</span>
           <b>${getWeight(order).toFixed(2)} KG</b>
+          <div style="height: 1mm; padding-top: 1px;"></div>
         </div>
       `
       : ""
   }
 </section>
-
-
 
        
         ${
@@ -1531,12 +1498,12 @@ const buildLabelHtml = (
         <section class="seller">
           <div>
             <span>SELLER : </span>
-            <b>${esc(getSellerName(order))}</b>
+            <b class="seller-name">${esc(getSellerName(order))}</b>
           </div>
 
           <div>
             <span>GSTIN : </span>
-            <b>${esc(getSellerGstin(order) || " ")}</b>
+            <b class="seller-gstin">${esc(getSellerGstin(order) || " ")}</b>
           </div>
 
           <div>
@@ -1758,19 +1725,27 @@ const buildLabelHtml = (
       }
 
       .summary span,
-      .info-cell span,
+      .info-cell span {
+        display: block;
+        font-size: ${compact ? "4.3pt" : isA4 ? "8pt" : "5.8pt"};
+        font-weight: 600;
+        line-height: 1;
+        margin-bottom: 0.5mm;
+      }
+
       .seller span {
-          display: block;
-  font-size: ${compact ? "4.3pt" : isA4 ? "8pt" : "5.8pt"};
-  font-weight: 600;
-  line-height: 1;
-  margin-bottom: 0.5mm;
+        display: block;
+        font-size: ${compact ? "4.5pt" : isA4 ? "8.2pt" : "6pt"};
+        font-weight: 600;
+        line-height: 1;
+        margin-bottom: 0.5mm;
       }
 
       .summary b {
         display: block;
         font-size: ${compact ? "5.5pt" : isA4 ? "13pt" : "8.5pt"};
         font-weight: 600;
+        line-height: 1.2;
       }
 
       .order-info {
@@ -1838,10 +1813,16 @@ td {
   width: 25%;
   border: 1px solid #9ca3af;
   padding: ${compact ? "1mm" : "1.5mm"};
+  vertical-align: middle;
   text-align: center;
   overflow-wrap: anywhere;
-font-size: ${compact ? "5.5pt" : isA4 ? "13pt" : "8.5pt"};
+  font-size: ${compact ? "5.5pt" : isA4 ? "13pt" : "8.5pt"};
   font-weight: 600;
+  line-height: 1.2;
+}
+
+table tr:last-child td {
+  border-bottom: none;
 }
 
       th {
@@ -1851,44 +1832,56 @@ font-size: ${compact ? "5.5pt" : isA4 ? "13pt" : "8.5pt"};
 
      th:first-child,
 td:first-child {
+  border-left: none;
   text-align: left;
   width: 25%;
 }
+
+th:last-child,
+td:last-child {
+  border-right: none;
+}
+
 .seller {
   flex: 0 0 auto;
   display: grid;
   grid-template-columns: 1fr 1fr 1fr 1fr;
   border-bottom: 1px solid #111827;
   min-height: 10mm;
-  align-items: start;
+  align-items: stretch;
 }
 
 .seller > div {
   min-width: 0;
+  height: 100%;
   padding: ${compact ? "1mm" : "1.2mm"} ${compact ? "1mm" : "1.5mm"};
   overflow-wrap: anywhere;
   min-height: ${compact ? "7mm" : "9mm"};
   box-sizing: border-box;
 }
 
-
-      .seller > div + div {
-        border-left: 1px solid #9ca3af;
-      }
+.seller > div + div {
+  border-left: 1px solid #9ca3af;
+}
 
 .seller b {
   display: block;
-  font-size: ${compact ? "4.8pt" : isA4 ? "9.5pt" : "6pt"};
+  font-size: ${compact ? "5pt" : isA4 ? "9.5pt" : "6.2pt"};
   font-weight: 600;
-  line-height: 1.2;
+  line-height: 1.25;
   margin-top: 0.8mm;
-
-  white-space: nowrap;
-  overflow: visible;
-  text-overflow: clip;
-
   height: auto;
   min-height: 0;
+}
+
+.seller .seller-name {
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.seller .seller-gstin {
+  white-space: nowrap;
 }
 
 .return {
@@ -1921,27 +1914,16 @@ td:first-child {
   `;
 };
 
-const prepareLabels = async (orders) => {
-  const settings = await getLabelSettings();
-  const detailedOrders = await getDetailedOrders(orders);
+const prepareLabels = (orders) => {
+  const settings = getLabelSettings();
+  const detailedOrders = orders;
   const size = getLabelSize(settings.labelSize);
 
-  const leftLogoData = await imageToDataUrl(shipdropLogo);
-
-  const rightLogoSource =
-    settings.rightLogoMode === "custom" &&
-    settings.customLogo
+  const leftLogoData = shipdropLogo;
+  const rightLogoData =
+    settings.rightLogoMode === "custom" && settings.customLogo
       ? settings.customLogo
       : delhiveryLogo;
-
-  let rightLogoData;
-
-  try {
-    rightLogoData = await imageToDataUrl(rightLogoSource);
-  } catch (error) {
-    console.error("Carrier logo loading error:", error);
-    rightLogoData = await imageToDataUrl(delhiveryLogo);
-  }
 
   return {
     settings,
@@ -1952,24 +1934,27 @@ const prepareLabels = async (orders) => {
   };
 };
 
-export const printShippingLabels = async (
-  orders,
-  title = "ParcelDrop Shipping Labels"
-) => {
+export const generateShippingLabelsPdf = async (orders) => {
   if (!Array.isArray(orders) || orders.length === 0) {
-    toast.error("Please select at least one shipment");
-    return;
+    throw new Error("Please select at least one shipment");
   }
 
-  try {
-    const {
-      settings,
-      detailedOrders,
-      size,
-      leftLogoData,
-      rightLogoData,
-    } = await prepareLabels(orders);
+  const {
+    settings,
+    detailedOrders,
+    size,
+    leftLogoData,
+    rightLogoData,
+  } = prepareLabels(orders);
 
+  // Use a completely isolated off-screen iframe so zero CSS leaks into the parent dashboard
+  const iframe = document.createElement("iframe");
+  iframe.style.cssText =
+    `position:fixed;top:0;left:-10000px;width:${size.widthIn}in;height:1200px;border:none;opacity:1;pointer-events:none;z-index:-99999;`;
+  document.body.appendChild(iframe);
+
+  try {
+    const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
     const html = detailedOrders
       .map((order) =>
         buildLabelHtml(
@@ -1982,111 +1967,217 @@ export const printShippingLabels = async (
       )
       .join("");
 
-    const win = window.open(
-      "",
-      "_blank",
-      "width=900,height=700"
-    );
-
-    if (!win) {
-      toast.error("Please allow pop-ups to print");
-      return;
-    }
-
-    win.document.open();
-
-    win.document.write(`
-      <!doctype html>
+    iframeDoc.open();
+    iframeDoc.write(`
+      <!DOCTYPE html>
       <html>
-        <head>
-          <meta charset="utf-8">
-<title>${getParcelDropFilename()}</title>          <style>
-            html, body {
-              margin: 0;
-              padding: 0;
-              background: #fff;
-            }
-
-            * {
-              box-sizing: border-box;
-            }
-
-            @page {
-              size: ${size.widthIn}in ${size.heightIn}in;
-              margin: 0;
-            }
-
-            @media print {
-              html, body {
-                margin: 0 !important;
-                padding: 0 !important;
-              }
-
-              .shipping-label {
-                page-break-after: always;
-              }
-
-              .shipping-label:last-child {
-                page-break-after: auto;
-              }
-            }
-          </style>
-        </head>
-
-        <body>${html}</body>
+      <head>
+        <base href="${window.location.origin}">
+        <style>
+          * { box-sizing: border-box; }
+          html, body { margin: 0; padding: 0; background: #ffffff; }
+          #labels-flow { display: block; width: ${size.widthIn}in; margin: 0; padding: 0; background: #ffffff; }
+        </style>
+      </head>
+      <body>
+        <div id="labels-flow">${html}</div>
+      </body>
       </html>
     `);
+    iframeDoc.close();
 
-    win.document.close();
-
-    let printStarted = false;
-
-    const printWhenReady = async () => {
-      if (printStarted || win.closed) return;
-
-      const images = Array.from(win.document.images);
-
-      await Promise.all(
-        images.map((img) => {
-          if (img.complete && img.naturalWidth > 0) {
-            return Promise.resolve();
-          }
-
-          return new Promise((resolve) => {
-            img.onload = resolve;
-            img.onerror = resolve;
-          });
-        })
-      );
-
-      if (win.closed || printStarted) return;
-
-      printStarted = true;
-      win.focus();
-      win.print();
-    };
-
-    win.addEventListener(
-      "load",
-      () => {
-        printWhenReady().catch((error) =>
-          console.error("Print readiness error:", error)
-        );
-      },
-      { once: true }
+    // Ensure all images are loaded
+    const images = Array.from(iframeDoc.images);
+    await Promise.all(
+      images.map((img) => {
+        if (img.complete) return Promise.resolve();
+        return new Promise((resolve) => {
+          const t = setTimeout(resolve, 80);
+          img.onload = () => { clearTimeout(t); resolve(); };
+          img.onerror = () => { clearTimeout(t); resolve(); };
+        });
+      })
     );
 
-    window.setTimeout(() => {
-      printWhenReady().catch((error) =>
-        console.error("Print readiness error:", error)
+    // Microtask wait for layout
+    await new Promise((resolve) => setTimeout(resolve, 15));
+
+    const labelsFlow = iframeDoc.getElementById("labels-flow");
+    const labelElements = Array.from(iframeDoc.querySelectorAll(".shipping-label"));
+
+    if (!labelElements.length) {
+      throw new Error("No shipping labels could be generated");
+    }
+
+    // High-speed single pass capture with crisp 2x resolution for sharp text & barcodes
+    const bigCanvas = await html2canvas(labelsFlow, {
+      scale: 2,
+      backgroundColor: "#ffffff",
+      useCORS: true,
+      logging: false,
+      imageTimeout: 0,
+    });
+
+    const pdf = new jsPDF({
+      orientation: size.widthMm > size.heightMm ? "landscape" : "portrait",
+      unit: "mm",
+      format: [size.widthMm, size.heightMm],
+      compress: true,
+    });
+
+    const filename = `${getParcelDropFilename()}.pdf`;
+
+    pdf.setProperties({
+      title: getParcelDropFilename(),
+      subject: "ParcelDrop Shipping Label",
+      creator: "ParcelDrop",
+      author: "ParcelDrop",
+    });
+
+    const totalCount = detailedOrders.length;
+    const pageCanvas = document.createElement("canvas");
+    pageCanvas.width = bigCanvas.width;
+    const pageCtx = pageCanvas.getContext("2d");
+
+    for (let i = 0; i < totalCount; i += 1) {
+      const startY = Math.round(i * (bigCanvas.height / totalCount));
+      const endY = Math.round((i + 1) * (bigCanvas.height / totalCount));
+      const sliceH = endY - startY;
+
+      pageCanvas.width = bigCanvas.width;
+      pageCanvas.height = sliceH;
+
+      pageCtx.clearRect(0, 0, bigCanvas.width, sliceH);
+      pageCtx.drawImage(
+        bigCanvas,
+        0,
+        startY,
+        bigCanvas.width,
+        sliceH,
+        0,
+        0,
+        bigCanvas.width,
+        sliceH
       );
-    }, 1000);
+
+      if (i > 0) {
+        pdf.addPage(
+          [size.widthMm, size.heightMm],
+          size.widthMm > size.heightMm ? "landscape" : "portrait"
+        );
+      }
+
+      // High visual quality with balanced compression (~35KB per page)
+      const imgData = pageCanvas.toDataURL("image/jpeg", 0.90);
+
+      pdf.addImage(
+        imgData,
+        "JPEG",
+        0,
+        0,
+        size.widthMm,
+        size.heightMm,
+        undefined,
+        "FAST"
+      );
+    }
+
+    return {
+      pdf,
+      filename,
+      detailedOrders,
+      size,
+    };
+  } finally {
+    iframe.remove();
+  }
+};
+
+export const printShippingLabels = async (
+  orders,
+  title = "ParcelDrop Shipping Labels"
+) => {
+  if (!Array.isArray(orders) || orders.length === 0) {
+    toast.error("Please select at least one shipment");
+    return;
+  }
+
+  // Pre-open preview tab synchronously so popup blocker doesn't trigger
+  const previewTab = window.open("", "_blank");
+  if (previewTab) {
+    try {
+      previewTab.document.open();
+      previewTab.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <title>${getParcelDropFilename()}</title>
+          <style>
+            * { box-sizing: border-box; margin: 0; padding: 0; }
+            body {
+              height: 100vh;
+              background: #323639;
+              color: #f1f3f4;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+              user-select: none;
+            }
+            .spinner {
+              width: 44px;
+              height: 44px;
+              border: 4px solid rgba(255, 255, 255, 0.15);
+              border-top: 4px solid #8ab4f8;
+              border-radius: 50%;
+              animation: spin 0.7s linear infinite;
+              margin-bottom: 16px;
+            }
+            @keyframes spin { 100% { transform: rotate(360deg); } }
+            .title { font-size: 15px; font-weight: 500; letter-spacing: 0.2px; }
+            .sub { font-size: 12px; color: #9aa0a6; margin-top: 6px; }
+          </style>
+        </head>
+        <body>
+          <div class="spinner"></div>
+          <div class="title">Opening Shipping Label PDF...</div>
+          <div class="sub">Native PDF Viewer</div>
+        </body>
+        </html>
+      `);
+      previewTab.document.close();
+    } catch (e) {
+      console.warn("Could not write initial loading screen to preview tab", e);
+    }
+  }
+
+  try {
+    const { pdf, detailedOrders } = await generateShippingLabelsPdf(orders);
+
+    const pdfBlob = pdf.output("blob");
+    const blobUrl = URL.createObjectURL(
+      new Blob([pdfBlob], { type: "application/pdf" })
+    );
+
+    if (previewTab && !previewTab.closed) {
+      previewTab.location.replace(blobUrl);
+    } else {
+      window.open(blobUrl, "_blank");
+    }
 
     toast.success(
-      `${detailedOrders.length} label(s) ready to print`
+      `${detailedOrders.length} ${
+        detailedOrders.length === 1 ? "label" : "labels"
+      } opened in PDF viewer`
     );
   } catch (error) {
     console.error("Print label error:", error);
+
+    if (previewTab && !previewTab.closed) {
+      previewTab.close();
+    }
 
     toast.error(
       error?.message || "Unable to print labels"
@@ -2100,383 +2191,26 @@ export const downloadShippingLabels = async (orders) => {
     return;
   }
 
-  let iframe = null;
-
   try {
-    const {
-      settings,
-      detailedOrders,
-      size,
-      leftLogoData,
-      rightLogoData,
-    } = await prepareLabels(orders);
-
-    // =====================================================
-    // ISOLATED PRINT/DOWNLOAD AREA
-    // Main UI ko bilkul touch nahi karega
-    // =====================================================
-
-    iframe = document.createElement("iframe");
-
-    iframe.style.position = "fixed";
-    iframe.style.left = "-10000px";
-    iframe.style.top = "0";
-    iframe.style.width = `${size.widthIn}in`;
-    iframe.style.height = `${size.heightIn}in`;
-    iframe.style.border = "0";
-    iframe.style.visibility = "visible";
-    iframe.style.opacity = "1";
-    iframe.style.pointerEvents = "none";
-
-    document.body.appendChild(iframe);
-
-    const iframeDoc =
-      iframe.contentDocument ||
-      iframe.contentWindow.document;
-
-    iframeDoc.open();
-
-    iframeDoc.write(`
-      <!doctype html>
-      <html>
-        <head>
-          <meta charset="utf-8">
-
-          <style>
-            html,
-            body {
-              margin: 0;
-              padding: 0;
-              background: #ffffff;
-              width: 100%;
-              min-height: 100%;
-            }
-
-            body {
-              overflow: hidden;
-            }
-
-            * {
-              box-sizing: border-box;
-            }
-          </style>
-        </head>
-
-        <body></body>
-      </html>
-    `);
-
-    iframeDoc.close();
-
-    // =====================================================
-    // BUILD LABELS INSIDE IFRAME
-    // =====================================================
-
-    const labels = [];
-
-    for (const order of detailedOrders) {
-      const holder = iframeDoc.createElement("div");
-
-      holder.innerHTML = buildLabelHtml(
-        order,
-        settings,
-        leftLogoData,
-        rightLogoData,
-        size
-      );
-
-      // Generated style ko MAIN PAGE mein nahi,
-      // iframe ke head mein daalna hai.
-      const styles = Array.from(
-        holder.querySelectorAll("style")
-      );
-
-      styles.forEach((style) => {
-        const styleClone =
-          iframeDoc.createElement("style");
-
-        styleClone.textContent =
-          style.textContent || "";
-
-        iframeDoc.head.appendChild(styleClone);
-      });
-
-      const label =
-        holder.querySelector(".shipping-label");
-
-      if (!label) continue;
-
-      iframeDoc.body.appendChild(label);
-
-      labels.push(label);
-    }
-
-    if (!labels.length) {
-      throw new Error(
-        "No shipping labels could be generated"
-      );
-    }
-
-    // =====================================================
-    // WAIT FOR IMAGES
-    // =====================================================
-
-    const images = Array.from(
-      iframeDoc.images
-    );
-
-    await Promise.all(
-      images.map((img) => {
-        if (
-          img.complete &&
-          img.naturalWidth > 0
-        ) {
-          return Promise.resolve();
-        }
-
-        return new Promise((resolve) => {
-          img.onload = resolve;
-          img.onerror = resolve;
-        });
-      })
-    );
-
-    // Wait for iframe layout
-    await new Promise((resolve) => {
-      iframe.contentWindow.requestAnimationFrame(() => {
-        iframe.contentWindow.requestAnimationFrame(
-          resolve
-        );
-      });
-    });
-
-    // =====================================================
-    // CREATE PDF
-    // =====================================================
-
-    const pdf = new jsPDF({
-      orientation:
-        size.widthMm > size.heightMm
-          ? "landscape"
-          : "portrait",
-
-      unit: "mm",
-
-      format: [
-        size.widthMm,
-        size.heightMm,
-      ],
-
-      compress: true,
-    });
-
-    // =====================================================
-    // RENDER EVERY LABEL
-    // =====================================================
-
-    for (
-      let index = 0;
-      index < labels.length;
-      index += 1
-    ) {
-      const label = labels[index];
-
-      // ---------------------------------------------------
-      // ORIGINAL FIXED LABEL SIZE
-      // ---------------------------------------------------
-
-      const pageWidth =
-        label.offsetWidth;
-
-      const pageHeight =
-        label.offsetHeight;
-
-      if (
-        !pageWidth ||
-        !pageHeight
-      ) {
-        throw new Error(
-          "Unable to determine label size"
-        );
-      }
-
-      // ---------------------------------------------------
-      // CHECK ACTUAL CONTENT SIZE
-      // ---------------------------------------------------
-
-      const contentWidth =
-        Math.max(
-          label.scrollWidth,
-          pageWidth
-        );
-
-      const contentHeight =
-        Math.max(
-          label.scrollHeight,
-          pageHeight
-        );
-
-      // ---------------------------------------------------
-      // IF CONTENT IS TOO BIG,
-      // SCALE IT DOWN INSIDE THE LABEL
-      // ---------------------------------------------------
-
-      const fitScale = Math.min(
-        pageWidth / contentWidth,
-        pageHeight / contentHeight,
-        1
-      );
-
-      const labelBorder =
-        label.querySelector(
-          ".label-border"
-        );
-
-      // Temporarily allow complete content
-      label.style.overflow = "visible";
-
-      if (labelBorder) {
-        labelBorder.style.overflow =
-          "visible";
-      }
-
-      // Keep scaling inside the original page
-      label.style.transformOrigin =
-        "top left";
-
-      label.style.transform =
-        fitScale < 1
-          ? `scale(${fitScale})`
-          : "none";
-
-      // ---------------------------------------------------
-      // WAIT FOR TRANSFORM
-      // ---------------------------------------------------
-
-      await new Promise((resolve) => {
-        iframe.contentWindow.requestAnimationFrame(
-          () => {
-            iframe.contentWindow.requestAnimationFrame(
-              resolve
-            );
-          }
-        );
-      });
-
-      // ---------------------------------------------------
-      // CAPTURE FIXED PAGE SIZE
-      // ---------------------------------------------------
-
-      const canvas =
-        await html2canvas(label, {
-          scale: 4,
-
-          backgroundColor:
-            "#ffffff",
-
-          useCORS: true,
-
-          logging: false,
-
-          width: pageWidth,
-
-          height: pageHeight,
-
-          windowWidth: pageWidth,
-
-          windowHeight: pageHeight,
-
-          scrollX: 0,
-
-          scrollY: 0,
-        });
-
-      const image =
-        canvas.toDataURL(
-          "image/png"
-        );
-
-      // ---------------------------------------------------
-      // RESET TEMPORARY CHANGES
-      // ---------------------------------------------------
-
-      label.style.transform =
-        "none";
-
-      label.style.transformOrigin =
-        "";
-
-      label.style.overflow =
-        "";
-
-      if (labelBorder) {
-        labelBorder.style.overflow =
-          "";
-      }
-
-      // ---------------------------------------------------
-      // ADD PDF PAGE
-      // ---------------------------------------------------
-
-      if (index > 0) {
-        pdf.addPage(
-          [
-            size.widthMm,
-            size.heightMm,
-          ],
-          size.widthMm > size.heightMm
-            ? "landscape"
-            : "portrait"
-        );
-      }
-
-      pdf.addImage(
-        image,
-        "PNG",
-        0,
-        0,
-        size.widthMm,
-        size.heightMm,
-        undefined,
-        "FAST"
-      );
-    }
-
-    // =====================================================
-    // FILE NAME
-    // =====================================================
-
- const filename = `${getParcelDropFilename()}.pdf`;
-
-    // =====================================================
-    // DOWNLOAD
-    // =====================================================
+    toast.loading("Preparing PDF download...", { id: "download-pdf" });
+    const { pdf, filename, detailedOrders } =
+      await generateShippingLabelsPdf(orders);
 
     pdf.save(filename);
+    toast.dismiss("download-pdf");
 
     toast.success(
       `${detailedOrders.length} ${
-        detailedOrders.length === 1
-          ? "label"
-          : "labels"
+        detailedOrders.length === 1 ? "label" : "labels"
       } downloaded`
     );
-
   } catch (error) {
-    console.error(
-      "Download label error:",
-      error
-    );
+    console.error("Download label error:", error);
+    toast.dismiss("download-pdf");
 
     toast.error(
-      error?.message ||
-        "Unable to download labels"
+      error?.message || "Unable to download labels"
     );
-
-  } finally {
-    // Iframe cleanup
-    if (iframe) {
-      iframe.remove();
-    }
   }
 };
+

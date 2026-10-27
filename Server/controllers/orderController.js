@@ -10,12 +10,103 @@ const {
   deleteProcessingOrders,
   searchPreviousCustomers,
   searchOrderForTracking,
+  getOrderStatusCounts,
+  getDashboardSummary,
+  clearOrderStatusCountsCache,
 } = require("../models/orderModel");
+
+const db = require("../config/db");
 
 const {
   attachTrackingToOrders,
   getTrackingForWaybills,
+  orderStatusMap,
 } = require("../services/delhiveryTrackingService");
+
+// ======================================================
+// ACTIVE TRACKING AUTO-SYNC HELPERS
+// ======================================================
+
+const isOrderActive = (order) => {
+  const awb = String(order?.awb || "").trim();
+  if (!awb) return false;
+  const status = String(order?.status || "").toUpperCase().trim();
+  const trackingStatus = String(order?.tracking_status || "").toUpperCase().trim();
+  const isTerminal =
+    status === "DELIVERED" ||
+    status === "CANCELLED" ||
+    status === "CANCELED" ||
+    status === "RTO DELIVERED" ||
+    trackingStatus === "DELIVERED" ||
+    trackingStatus === "CANCELLED" ||
+    trackingStatus === "CANCELED" ||
+    trackingStatus === "RTO DELIVERED";
+  return !isTerminal;
+};
+
+const isOrderTrackingStale = (order, staleMinutes = 2) => {
+  if (!isOrderActive(order)) return false;
+  if (!order.tracking_updated_at) return true;
+  const lastMs = new Date(order.tracking_updated_at).getTime();
+  if (isNaN(lastMs)) return true;
+  return Date.now() - lastMs > staleMinutes * 60 * 1000;
+};
+
+// Throttled background sync per user: at most once every 45s
+const userLastSyncMap = new Map();
+
+const triggerBackgroundActiveOrdersSync = (userId) => {
+  const numericUserId = Number(userId);
+  if (!numericUserId) return;
+
+  const lastSync = userLastSyncMap.get(numericUserId) || 0;
+  if (Date.now() - lastSync < 45 * 1000) {
+    return;
+  }
+  userLastSyncMap.set(numericUserId, Date.now());
+
+  if (userLastSyncMap.size > 500) {
+    const cutoff = Date.now() - 5 * 60 * 1000;
+    for (const [uid, time] of userLastSyncMap.entries()) {
+      if (time < cutoff) userLastSyncMap.delete(uid);
+    }
+  }
+
+  setImmediate(async () => {
+    try {
+      const [rows] = await db.promise().query(
+        `
+        SELECT awb FROM orders
+        WHERE user_id = ?
+          AND awb IS NOT NULL
+          AND TRIM(awb) <> ''
+          AND (carrier IS NULL OR carrier = 'Delivery')
+          AND UPPER(TRIM(COALESCE(status, ''))) NOT IN ('DELIVERED', 'CANCELLED', 'CANCELED', 'RTO DELIVERED')
+          AND UPPER(TRIM(COALESCE(tracking_status, ''))) NOT IN ('DELIVERED', 'CANCELLED', 'CANCELED', 'RTO DELIVERED')
+          AND (tracking_updated_at IS NULL OR tracking_updated_at < NOW() - INTERVAL 2 MINUTE)
+        ORDER BY COALESCE(tracking_updated_at, '2000-01-01') ASC
+        LIMIT 30
+      `,
+        [numericUserId]
+      );
+
+      if (!rows || rows.length === 0) return;
+
+      const waybills = [
+        ...new Set(
+          rows.map((r) => String(r.awb || "").trim()).filter(Boolean)
+        ),
+      ];
+
+      if (waybills.length > 0) {
+        await getTrackingForWaybills(waybills);
+        clearOrderStatusCountsCache(numericUserId);
+      }
+    } catch (err) {
+      console.warn("Background active orders sync notice:", err?.message || err);
+    }
+  });
+};
 
 // ======================================================
 // CREATE ORDER
@@ -28,9 +119,9 @@ const createOrderController = async (req, res) => {
     // ==================================================
 
     const body = req.body || {};
+    const user_id = req.user?.id ? Number(req.user.id) : body.user_id;
 
     const {
-      user_id,
 
       // ----------------------------------------------
       // NEW FRONTEND PICKUP DATA
@@ -166,7 +257,167 @@ const createOrderController = async (req, res) => {
         nestedOrderData.payment_type || body.payment_type || "Prepaid",
 
       risk_type: nestedOrderData.risk_type || body.risk_type || "Owner Risk",
+
+      fragile_shipment: nestedOrderData.fragile_shipment === true ||
+  nestedOrderData.fragile_shipment === 1,
+
+dangerous_good: nestedOrderData.dangerous_good === true ||
+  nestedOrderData.dangerous_good === 1,
     };
+
+    // ==================================================
+    // PARTY IDENTITY VALIDATION
+    // ==================================================
+    let validatedPartyIdentityId = null;
+    const rawPartyIdentityId =
+      body.party_identity_id !== undefined
+        ? body.party_identity_id
+        : nestedOrderData.party_identity_id !== undefined
+        ? nestedOrderData.party_identity_id
+        : null;
+
+    if (rawPartyIdentityId) {
+      const parsedPid = Number(rawPartyIdentityId);
+      if (!Number.isInteger(parsedPid) || parsedPid <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Valid Party Identity ID is required",
+        });
+      }
+
+      const [partyRows] = await db.promise().query(
+        "SELECT id FROM party_identities WHERE id = ? AND user_id = ? AND (is_deleted = 0 OR is_deleted IS NULL) LIMIT 1",
+        [parsedPid, user_id]
+      );
+
+      if (!partyRows || partyRows.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Selected Party Identity does not belong to your account",
+        });
+      }
+
+      validatedPartyIdentityId = parsedPid;
+    }
+
+    finalOrderData.party_identity_id = validatedPartyIdentityId;
+
+    // ==================================================
+    // WAREHOUSE OWNERSHIP VALIDATION
+    // ==================================================
+    if (finalOrderData.warehouse_id) {
+      const [warehouseRows] = await db.promise().query(
+        "SELECT id FROM warehouses WHERE id = ? AND user_id = ? AND (is_deleted = 0 OR is_deleted IS NULL) LIMIT 1",
+        [Number(finalOrderData.warehouse_id), user_id]
+      );
+      if (!warehouseRows || warehouseRows.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Selected warehouse does not belong to your account",
+        });
+      }
+    }
+
+    // ==================================================
+    // CARRIER & MANUAL CARRIER FIELDS VALIDATION
+    // ==================================================
+    const ALLOWED_CARRIERS = [
+      "Delivery",
+      "MARK EXPRESS",
+      "TIRUPATI COURIER",
+      "DTDC",
+      "TRACKON COURIER",
+      "SELF",
+    ];
+
+    const rawCarrier = body.carrier || nestedOrderData.carrier || "Delivery";
+    const selectedCarrier = String(rawCarrier).trim();
+
+    if (!ALLOWED_CARRIERS.includes(selectedCarrier)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid carrier selected",
+      });
+    }
+
+    finalOrderData.carrier = selectedCarrier;
+
+    if (selectedCarrier !== "Delivery") {
+      const rawConsignment =
+        body.consignment_no !== undefined
+          ? body.consignment_no
+          : nestedOrderData.consignment_no;
+      const consignmentNo = String(rawConsignment ?? "").trim();
+
+      if (!consignmentNo) {
+        return res.status(400).json({
+          success: false,
+          message: "Consignment No is required for manual carrier orders",
+        });
+      }
+
+      const rawPackageType =
+        body.package_type !== undefined
+          ? body.package_type
+          : nestedOrderData.package_type;
+      const packageType = String(rawPackageType ?? "").trim();
+
+      if (!packageType) {
+        return res.status(400).json({
+          success: false,
+          message: "Package Type is required for manual carrier orders",
+        });
+      }
+
+      const rawManualAmount =
+        body.manual_amount_including_gst !== undefined
+          ? body.manual_amount_including_gst
+          : nestedOrderData.manual_amount_including_gst;
+      const parsedAmount = Number(rawManualAmount);
+
+      if (
+        rawManualAmount === undefined ||
+        rawManualAmount === null ||
+        rawManualAmount === "" ||
+        !Number.isFinite(parsedAmount) ||
+        parsedAmount < 0
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "A valid non-negative Amount (Including GST) is required for manual carrier orders",
+        });
+      }
+
+      const rawShippingMode =
+        body.shipping_mode !== undefined
+          ? body.shipping_mode
+          : nestedOrderData.shipping_mode;
+      const shippingMode = String(rawShippingMode ?? "Surface").trim();
+
+      const rawPaymentType =
+        body.payment_type !== undefined
+          ? body.payment_type
+          : nestedOrderData.payment_type;
+      const paymentType =
+        String(rawPaymentType ?? "Prepaid").trim().toUpperCase() === "COD"
+          ? "COD"
+          : "Prepaid";
+
+      finalOrderData.consignment_no = consignmentNo;
+      finalOrderData.package_type = packageType;
+      finalOrderData.manual_amount_including_gst = parsedAmount;
+      finalOrderData.shipping_mode = shippingMode || "Surface";
+      finalOrderData.payment_type = paymentType;
+      finalOrderData.status = "Booked";
+    } else {
+      finalOrderData.carrier = "Delivery";
+      finalOrderData.consignment_no = null;
+      finalOrderData.package_type = null;
+      finalOrderData.manual_amount_including_gst = null;
+      finalOrderData.shipping_mode = null;
+      finalOrderData.status = "Processing";
+    }
 
     // ==================================================
     // PICKUP ADDRESS VALIDATION
@@ -414,16 +665,20 @@ const createOrderController = async (req, res) => {
 
     return res.status(201).json({
       success: true,
-
       id: createdOrder.id,
-
       order_id: createdOrder.order_id,
-
+      carrier: createdOrder.carrier,
+      consignment_no: createdOrder.consignment_no,
+      package_type: createdOrder.package_type,
+      manual_amount_including_gst: createdOrder.manual_amount_including_gst,
+      shipping_mode: createdOrder.shipping_mode,
+      payment_type: createdOrder.payment_type,
+      status: createdOrder.status,
       pickup_address_id: finalPickupAddressId,
-
       warehouse_id: finalOrderData.warehouse_id || null,
-
-      message: "Order created successfully",
+      message: createdOrder.order_id
+        ? "Order created successfully"
+        : "Manual carrier order saved successfully",
     });
   } catch (error) {
     console.log("Create order error:", error);
@@ -442,7 +697,7 @@ const createOrderController = async (req, res) => {
 
 const getProcessingOrdersController = async (req, res) => {
   try {
-    const user_id = Number(req.query.user_id || req.body?.user_id);
+    const user_id = Number(req.user?.id || req.query.user_id || req.body?.user_id);
 
     if (!user_id) {
       return res.status(400).json({
@@ -485,12 +740,12 @@ const getProcessingOrdersController = async (req, res) => {
 const getAllOrdersController = async (req, res) => {
   try {
     const requestStart = Date.now();
-    const user_id = Number(req.query.user_id || req.body?.user_id);
+    const user_id = Number(req.user?.id || req.query.user_id || req.body?.user_id);
 
     const page = Math.max(1, Number(req.query.page) || 1);
-
     const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 50));
     const search = String(req.query.search || "").trim();
+    const status = String(req.query.status || req.query.statusScope || "").trim();
 
     // ==================================================
     // USER ID
@@ -499,7 +754,6 @@ const getAllOrdersController = async (req, res) => {
     if (!user_id) {
       return res.status(400).json({
         success: false,
-
         message: "User ID is required",
       });
     }
@@ -514,6 +768,7 @@ const getAllOrdersController = async (req, res) => {
       page,
       limit,
       search,
+      status,
       async (error, rows, totalOrders) => {
         console.log(
           `GET ALL ORDERS DB TIME: ${Date.now() - dbStart} ms | ROWS: ${
@@ -526,26 +781,163 @@ const getAllOrdersController = async (req, res) => {
 
           return res.status(500).json({
             success: false,
-
             message: error.message || "Unable to fetch all orders",
           });
         }
 
+        const rawRows = rows || [];
+
+        // --------------------------------------------------
+        // Unpack stored JSON tracking data into order object
+        // --------------------------------------------------
+        const ordersWithStoredTracking = rawRows.map((order) => {
+          const isCancelled =
+            String(order.status || "").trim().toUpperCase() === "CANCELLED" ||
+            String(order.status || "").trim().toUpperCase() === "CANCELED" ||
+            String(order.order_status || "").trim().toUpperCase() === "CANCELLED" ||
+            String(order.order_status || "").trim().toUpperCase() === "CANCELED" ||
+            String(order.tracking_status || "").trim().toUpperCase() === "CANCELLED" ||
+            String(order.tracking_status || "").trim().toUpperCase() === "CANCELED";
+
+          if (isCancelled) {
+            return {
+              ...order,
+              status: "Cancelled",
+              order_status: "Cancelled",
+              tracking_status: "CANCELLED",
+              tracking_available: false,
+            };
+          }
+
+          let trackingData = order.tracking_data;
+          if (trackingData) {
+            try {
+              if (typeof trackingData === "string") {
+                trackingData = JSON.parse(trackingData);
+              }
+              if (trackingData && typeof trackingData === "object") {
+                let resolvedTrackingStatus = order.tracking_status || trackingData.tracking_status || order.status;
+                let resolvedStatus = order.status;
+
+                const checkText = `${resolvedTrackingStatus || ""} ${trackingData.tracking_raw_status || ""} ${trackingData.tracking_instructions || ""}`.toUpperCase();
+                if (
+                  checkText.includes("RETURN ACCEPT") ||
+                  checkText.includes("RETURN_ACCEPT") ||
+                  checkText.includes("RETURN DELIVERED") ||
+                  checkText.includes("RTO DELIVERED") ||
+                  checkText.includes("DELIVERED TO SHIPPER") ||
+                  checkText.includes("RETURNED TO SHIPPER")
+                ) {
+                  resolvedTrackingStatus = "RTO DELIVERED";
+                  if (String(resolvedStatus || "").toUpperCase() === "DELIVERED") {
+                    resolvedStatus = "RTO Delivered";
+                  }
+                }
+
+                return {
+                  ...order,
+                  status: resolvedStatus,
+                  tracking_status: resolvedTrackingStatus,
+                  tracking_raw_status: trackingData.tracking_raw_status || null,
+                  tracking_status_code: trackingData.tracking_status_code || null,
+                  tracking_status_type: trackingData.tracking_status_type || null,
+                  tracking_status_datetime: trackingData.tracking_status_datetime || null,
+                  tracking_location: trackingData.tracking_location || null,
+                  tracking_instructions: trackingData.tracking_instructions || null,
+                  tracking_scans: Array.isArray(trackingData.tracking_scans) ? trackingData.tracking_scans : [],
+                  tracking_expected_delivery: trackingData.tracking_expected_delivery || null,
+                  tracking_pickup_date: trackingData.tracking_pickup_date || null,
+                  tracking_delivery_date: trackingData.tracking_delivery_date || null,
+                  tracking_rto_started_date: trackingData.tracking_rto_started_date || null,
+                  tracking_returned_date: trackingData.tracking_returned_date || null,
+                  tracking_awb: trackingData.tracking_awb || order.awb,
+                  tracking_available: trackingData.tracking_available !== false,
+                };
+              }
+            } catch (e) {
+              // Ignore JSON parse errors
+            }
+          }
+
+          return {
+            ...order,
+            tracking_status: order.tracking_status || order.status,
+            tracking_available: Boolean(order.tracking_status),
+          };
+        });
+
         // ==================================================
-        // DELHIVERY TRACKING
+        // DELHIVERY LIVE / AUTO TRACKING SYNC
         // ==================================================
-        const includeTracking =
-          String(req.query.include_tracking || "true").toLowerCase() === "true";
+        const forceLiveTracking =
+          String(req.query.refresh_tracking || req.query.live_tracking || "false").toLowerCase() === "true";
 
-        const trackingStart = Date.now();
+        let finalOrders = ordersWithStoredTracking;
 
-        const ordersWithTracking = includeTracking
-          ? await attachTrackingToOrders(rows || [])
-          : rows || [];
+        if (forceLiveTracking) {
+          const trackingStart = Date.now();
+          finalOrders = await attachTrackingToOrders(ordersWithStoredTracking);
+          console.log(
+            `GET ALL ORDERS LIVE TRACKING TIME: ${Date.now() - trackingStart} ms`,
+          );
+        } else {
+          // Identify any active orders on the current page with stale tracking (> 2 mins)
+          const stalePageAwbs = [
+            ...new Set(
+              ordersWithStoredTracking
+                .filter((o) => isOrderTrackingStale(o, 2))
+                .map((o) => String(o.awb || "").trim())
+                .filter(Boolean)
+            ),
+          ];
 
-        console.log(
-          `GET ALL ORDERS TRACKING TIME: ${Date.now() - trackingStart} ms`,
-        );
+          if (stalePageAwbs.length > 0 && stalePageAwbs.length <= 25) {
+            try {
+              const trackingPromise = getTrackingForWaybills(stalePageAwbs);
+              const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error("Tracking sync timeout")), 1800)
+              );
+              const freshTrackingMap = await Promise.race([
+                trackingPromise,
+                timeoutPromise,
+              ]);
+
+              if (freshTrackingMap && typeof freshTrackingMap === "object") {
+                clearOrderStatusCountsCache(user_id);
+                finalOrders = finalOrders.map((order) => {
+                  const awb = String(order.awb || "").trim();
+                  const fresh = freshTrackingMap[awb];
+                  if (fresh && fresh.tracking_available !== false) {
+                    const newStatus =
+                      fresh.tracking_status && orderStatusMap[fresh.tracking_status]
+                        ? orderStatusMap[fresh.tracking_status]
+                        : order.status;
+                    return {
+                      ...order,
+                      status: newStatus,
+                      tracking_status: fresh.tracking_status || order.tracking_status,
+                      tracking_data: fresh,
+                      tracking_updated_at: new Date(),
+                      tracking_available: true,
+                    };
+                  }
+                  return order;
+                });
+              }
+            } catch (syncErr) {
+              // If timeout or error, continue without blocking the response
+              // and let getTrackingForWaybills complete in the background
+              getTrackingForWaybills(stalePageAwbs).catch(() => {});
+            }
+          } else if (stalePageAwbs.length > 25) {
+            getTrackingForWaybills(stalePageAwbs.slice(0, 50)).catch((err) => {
+              console.warn("Background tracking catch:", err?.message || err);
+            });
+          }
+
+          // Trigger throttled background sync for any other active orders across this user's account
+          triggerBackgroundActiveOrdersSync(user_id);
+        }
 
         // ==================================================
         // SUCCESS RESPONSE
@@ -557,14 +949,12 @@ const getAllOrdersController = async (req, res) => {
 
         return res.status(200).json({
           success: true,
-
-          orders: ordersWithTracking,
-
+          orders: finalOrders,
           pagination: {
             page,
             limit,
             totalOrders,
-            totalPages: Math.ceil(totalOrders / limit),
+            totalPages: Math.ceil(totalOrders / limit) || 1,
           },
         });
       },
@@ -574,7 +964,6 @@ const getAllOrdersController = async (req, res) => {
 
     return res.status(500).json({
       success: false,
-
       message: error.message || "Unable to fetch all orders",
     });
   }
@@ -588,7 +977,7 @@ const getOrderByIdController = async (req, res) => {
   try {
     const orderId = Number(req.params.id);
 
-    const userId = Number(req.query.user_id || req.body?.user_id);
+    const userId = Number(req.user?.id || req.query.user_id || req.body?.user_id);
 
     if (!orderId) {
       return res.status(400).json({
@@ -633,6 +1022,7 @@ const getOrderByIdController = async (req, res) => {
 const updateOrderController = async (req, res) => {
   try {
     const orderId = Number(req.params.id);
+    const body = req.body || {};
 
     const {
       user_id,
@@ -641,12 +1031,13 @@ const updateOrderController = async (req, res) => {
       pickup_address,
       pickup_pincode,
       pickup_city,
+      party_identity_id,
       orderData,
       products,
       packages,
-    } = req.body;
+    } = body;
 
-    const userId = Number(user_id);
+    const userId = Number(req.user?.id || user_id);
 
     if (!orderId || !userId) {
       return res.status(400).json({
@@ -691,6 +1082,41 @@ const updateOrderController = async (req, res) => {
     }
 
     // ==================================================
+    // PARTY IDENTITY VALIDATION
+    // ==================================================
+    let validatedPartyIdentityId = null;
+    const rawPartyIdentityId =
+      body.party_identity_id !== undefined
+        ? body.party_identity_id
+        : nestedOrderData.party_identity_id !== undefined
+        ? nestedOrderData.party_identity_id
+        : null;
+
+    if (rawPartyIdentityId) {
+      const parsedPid = Number(rawPartyIdentityId);
+      if (!Number.isInteger(parsedPid) || parsedPid <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Valid Party Identity ID is required",
+        });
+      }
+
+      const [partyRows] = await db.promise().query(
+        "SELECT id FROM party_identities WHERE id = ? AND user_id = ? AND (is_deleted = 0 OR is_deleted IS NULL) LIMIT 1",
+        [parsedPid, userId]
+      );
+
+      if (!partyRows || partyRows.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Selected Party Identity does not belong to your account",
+        });
+      }
+
+      validatedPartyIdentityId = parsedPid;
+    }
+
+    // ==================================================
     // FINAL ORDER DATA
     // ==================================================
 
@@ -702,6 +1128,8 @@ const updateOrderController = async (req, res) => {
       warehouse_id: warehouse_id || nestedOrderData.warehouse_id || null,
 
       pickup_address_id: finalPickupAddressId,
+
+      party_identity_id: validatedPartyIdentityId,
     };
 
     // ==================================================
@@ -750,7 +1178,7 @@ const deleteOrdersController = async (req, res) => {
   try {
     const { user_id, order_ids } = req.body;
 
-    const userId = Number(user_id);
+    const userId = Number(req.user?.id || user_id);
 
     if (!userId) {
       return res.status(400).json({
@@ -810,7 +1238,7 @@ const deleteOrdersController = async (req, res) => {
 
 const searchPreviousCustomersController = async (req, res) => {
   try {
-    const userId = Number(req.query?.user_id);
+    const userId = Number(req.user?.id || req.query?.user_id);
     const search = String(req.query?.search || "").trim();
 
     console.log("==========================================");
@@ -869,7 +1297,7 @@ const searchPreviousCustomersController = async (req, res) => {
 
 const searchTrackingController = async (req, res) => {
   try {
-    const userId = Number(req.query?.user_id || req.body?.user_id);
+    const userId = Number(req.user?.id || req.query?.user_id || req.body?.user_id);
 
     const search = String(req.query?.search || req.body?.search || "").trim();
 
@@ -944,6 +1372,83 @@ const searchTrackingController = async (req, res) => {
 };
 
 // ======================================================
+// GET ORDER STATUS COUNTS
+// ======================================================
+
+const getOrderStatusCountsController = async (req, res) => {
+  try {
+    const userId = Number(
+      req.query?.user_id ||
+      req.user?.id ||
+      req.user?.user_id ||
+      req.user?.userId
+    );
+
+    if (!userId || !Number.isInteger(userId) || userId <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Valid user ID is required",
+      });
+    }
+
+    // Auto-sync active orders in background whenever counts are fetched
+    triggerBackgroundActiveOrdersSync(userId);
+
+    const counts = await getOrderStatusCounts(userId);
+
+    return res.status(200).json({
+      success: true,
+      counts,
+    });
+  } catch (error) {
+    console.error("Get order status counts error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Unable to fetch order status counts",
+    });
+  }
+};
+
+// ======================================================
+// GET DASHBOARD SUMMARY (FAST UNIFIED ENDPOINT)
+// ======================================================
+
+const getDashboardSummaryController = async (req, res) => {
+  try {
+    const userId = Number(
+      req.query?.user_id ||
+      req.user?.id ||
+      req.user?.user_id ||
+      req.user?.userId
+    );
+
+    if (!userId || !Number.isInteger(userId) || userId <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Valid user ID is required",
+      });
+    }
+
+    triggerBackgroundActiveOrdersSync(userId);
+
+    const summary = await getDashboardSummary(userId);
+
+    return res.status(200).json({
+      success: true,
+      ...summary,
+    });
+  } catch (error) {
+    console.error("Get dashboard summary error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Unable to fetch dashboard summary",
+    });
+  }
+};
+
+// ======================================================
 // EXPORT
 // ======================================================
 
@@ -963,4 +1468,9 @@ module.exports = {
   searchPreviousCustomers: searchPreviousCustomersController,
 
   searchTracking: searchTrackingController,
+
+  getOrderStatusCounts: getOrderStatusCountsController,
+
+  getDashboardSummary: getDashboardSummaryController,
 };
+

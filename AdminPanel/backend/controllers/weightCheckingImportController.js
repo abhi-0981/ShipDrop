@@ -1,6 +1,7 @@
 const path = require("path");
 const XLSX = require("xlsx");
 
+require("../config/env");
 require("dotenv").config();
 
 const db = require("../config/db");
@@ -64,6 +65,8 @@ const calculateRateForWeight = async ({
   serviceType,
   paymentType,
   productValue,
+  knownZone = null,
+  rateCardId = null,
 }) => {
   const result =
     await calculateShippingRate(
@@ -73,7 +76,11 @@ const calculateRateForWeight = async ({
       weight,
       serviceType,
       paymentType,
-      productValue
+      productValue,
+      {
+        knownZone,
+        rateCardId,
+      }
     );
 
   const shippingCharge =
@@ -337,15 +344,36 @@ const importWeightFile =
                   o.payment_type,
                   o.pincode AS delivery_pincode,
 
-                  pa.pickup_pincode,
+                  COALESCE(
+                    NULLIF(TRIM(pa.pickup_pincode), ''),
+                    NULLIF(TRIM(w.pincode), ''),
+                    NULLIF(TRIM(w2.pincode), ''),
+                    (
+                      SELECT pincode
+                      FROM warehouses
+                      WHERE user_id = o.user_id
+                      ORDER BY id ASC
+                      LIMIT 1
+                    )
+                  ) AS pickup_pincode,
 
-                  pkg.weight AS declared_weight,
+                  COALESCE(
+                    NULLIF(pkg.weight, 0),
+                    (
+                      SELECT SUM(weight * package_count)
+                      FROM order_packages
+                      WHERE order_id = o.id
+                    ),
+                    0.5
+                  ) AS declared_weight,
 
                   m.id AS manifest_id,
                   m.shipping_charge,
                   m.zone,
                   m.distance_km,
                   m.service_type,
+
+                  u.rate_card_id,
 
                   COALESCE(
                     (
@@ -372,8 +400,22 @@ const importWeightFile =
 
                 FROM orders o
 
+                LEFT JOIN users u
+                  ON u.id =
+                     o.user_id
+
                 LEFT JOIN pickup_addresses pa
                   ON pa.id =
+                     o.pickup_address_id
+
+                LEFT JOIN warehouses w
+                  ON w.id =
+                     o.warehouse_id
+                  AND w.user_id =
+                     o.user_id
+
+                LEFT JOIN warehouses w2
+                  ON w2.id =
                      o.pickup_address_id
 
                 LEFT JOIN order_packages pkg
@@ -601,6 +643,12 @@ const importWeightFile =
                   paymentType,
 
                   productValue,
+
+                  knownZone:
+                    order.zone || null,
+
+                  rateCardId:
+                    order.rate_card_id || null,
                 }
               );
 
@@ -625,6 +673,12 @@ const importWeightFile =
                   paymentType,
 
                   productValue,
+
+                  knownZone:
+                    order.zone || null,
+
+                  rateCardId:
+                    order.rate_card_id || null,
                 }
               );
 

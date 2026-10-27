@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
-
+import { toast } from "react-hot-toast";
 import api from "../../services/api";
+import { RateCardSkeleton } from "../../components/Common/TableSkeleton";
 
 // ======================================================
 // CONSTANTS
@@ -881,14 +882,11 @@ function RateCard() {
   // ====================================================
 
   const showToast = (message, type = "success") => {
-    setToast({
-      message,
-      type,
-    });
-
-    window.setTimeout(() => {
-      setToast(null);
-    }, 2800);
+    if (type === "error") {
+      toast.error(message);
+    } else {
+      toast.success(message);
+    }
   };
 
   // ====================================================
@@ -1196,58 +1194,7 @@ function RateCard() {
   // ====================================================
 
   if (loading) {
-    return (
-      <div
-        className="
-          min-h-screen
-          bg-[#F5F8FC]
-          p-6
-        "
-      >
-        <div
-          className="
-            mx-auto
-            max-w-7xl
-          "
-        >
-          <div
-            className="
-              rounded-2xl
-              border
-              border-slate-200
-              bg-white
-              p-10
-              text-center
-              shadow-sm
-            "
-          >
-            <div
-              className="
-                mx-auto
-                h-8
-                w-8
-                animate-spin
-                rounded-full
-                border-4
-                border-slate-200
-                border-t-[#008dd2]
-              "
-            />
-
-            <p
-              className="
-                mt-3
-                text-sm
-                font-semibold
-                text-slate-500
-              "
-            >
-              Loading shipping rates...
-            </p>
-          </div>
-        </div>
-      </div>
-    );
+    return <RateCardSkeleton />;
   }
 
   // ====================================================
@@ -1258,7 +1205,8 @@ function RateCard() {
     <div
       className="
         min-h-screen
-        bg-[#F5F8FC]
+        bg-[#f6f8fb]
+        dark:bg-[#090b10]
         p-4
         md:p-6
       "

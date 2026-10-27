@@ -81,6 +81,9 @@ const getManifestedOrders = async (
         m.pickup_request_id,
 
         o.id AS order_db_id,
+        o.party_identity_id,
+        pi.name AS party_name,
+        pi.reference_name AS party_reference_name,
 o.order_id AS display_order_id,
 o.awb,
 
@@ -106,6 +109,9 @@ o.awb,
         o.risk_type,
 
         o.status AS order_status,
+        o.tracking_status,
+        o.tracking_data,
+        o.tracking_updated_at,
         o.created_at AS order_created_at,
         
         pa.pickup_address,
@@ -132,7 +138,9 @@ o.awb,
         ON o.id = m.order_id
        AND o.user_id = m.user_id
 
-   
+      LEFT JOIN party_identities pi
+        ON pi.id = o.party_identity_id
+       AND pi.user_id = o.user_id
 
       LEFT JOIN pickup_addresses pa
   ON pa.id = o.pickup_address_id
@@ -157,12 +165,11 @@ LEFT JOIN order_products op
           )
         ) = 'CONFIRMED'
 
-        AND UPPER(
-          COALESCE(
-            o.status,
-            ''
-          )
-        ) = 'MANIFESTED'
+       AND UPPER(
+  TRIM(
+    COALESCE(o.status, '')
+  )
+) IN ('MANIFESTED', 'NOT PICKED')
 
       ORDER BY
         m.created_at DESC
@@ -309,6 +316,18 @@ pickup_id:
 
         order_status:
           row.order_status,
+
+        party_identity_id:
+          row.party_identity_id || null,
+
+        party_name:
+          row.party_name || null,
+
+        tracking_status:
+          row.tracking_status || row.order_status || "MANIFESTED",
+
+        tracking_data:
+          row.tracking_data || null,
 
         products: [],
 
@@ -492,10 +511,33 @@ pickup_id:
   }
 
 
-  return Object.values(
-    manifestMap
-  );
-
+  return Object.values(manifestMap).map((manifest) => {
+    if (manifest.tracking_data) {
+      try {
+        let td = manifest.tracking_data;
+        if (typeof td === "string") {
+          td = JSON.parse(td);
+        }
+        if (td && typeof td === "object") {
+          return {
+            ...manifest,
+            tracking_status: manifest.tracking_status || td.tracking_status || manifest.order_status,
+            tracking_raw_status: td.tracking_raw_status || null,
+            tracking_location: td.tracking_location || null,
+            tracking_instructions: td.tracking_instructions || null,
+            tracking_scans: Array.isArray(td.tracking_scans) ? td.tracking_scans : [],
+            tracking_expected_delivery: td.tracking_expected_delivery || null,
+            tracking_pickup_date: td.tracking_pickup_date || null,
+            tracking_delivery_date: td.tracking_delivery_date || null,
+            tracking_available: td.tracking_available !== false,
+          };
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+    return manifest;
+  });
 };
 
 
@@ -1166,7 +1208,8 @@ for (const shipment of cancelled) {
         `
           UPDATE orders
           SET
-            status = 'Cancelled'
+            status = 'Cancelled',
+            tracking_status = 'CANCELLED'
           WHERE
             user_id = ?
             AND id IN (

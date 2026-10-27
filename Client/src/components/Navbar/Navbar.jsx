@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import ParcelDropLogo from "../Common/ParcelDropLogo";
 
 function Navbar() {
   const navItems = [
@@ -17,18 +18,10 @@ function Navbar() {
         {/* Logo */}
         <Link
           to="/"
-          className="group flex items-center gap-2.5"
+          className="group flex items-center transition-transform hover:scale-[1.02] active:scale-95"
+          title="ParcelDrop"
         >
-          
-
-          <div className="flex items-center text-[25px] leading-none tracking-tight">
-            <span className="font-extrabold text-[#008dd2]">
-              Parcel
-            </span>
-            <span className="font-bold text-slate-900 ">
-              Drop
-            </span>
-          </div>
+          <ParcelDropLogo height={44} />
         </Link>
 
         {/* Old navigation kept safely, currently hidden */}
