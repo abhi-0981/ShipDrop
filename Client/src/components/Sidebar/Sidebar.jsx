@@ -21,7 +21,7 @@ import {
   HiChevronDown,
   HiX,
 } from "react-icons/hi";
-import { FiMenu, FiTool } from "react-icons/fi";
+import { FiMenu, FiTool, FiSearch } from "react-icons/fi";
 import api from "../../services/api";
 import { fetchOrderStatusCounts } from "../../services/orderEvents";
 import ParcelDropLogo from "../Common/ParcelDropLogo";
@@ -85,6 +85,9 @@ const prefetchRoute = (path) => {
         break;
       case "/serviceability":
         import("../../pages/Dashboard/Serviceability");
+        break;
+      case "/tracking":
+        import("../../pages/Dashboard/Tracking");
         break;
       case "/settings/party-identities":
         import("../../pages/Dashboard/PartyIdentities");
@@ -164,6 +167,7 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
     "/analytics",
     "/rate-calculator",
     "/serviceability",
+    "/tracking",
   ].includes(location.pathname);
 
   const [showOrders, setShowOrders] = useState(isOrderPath);
@@ -185,6 +189,7 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
         "/analytics",
         "/rate-calculator",
         "/serviceability",
+        "/tracking",
       ].includes(location.pathname)
     ) {
       setShowTools(true);
@@ -231,8 +236,10 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
     { name: "RTO Delivered", path: "/rto-delivered" },
     { name: "Cancelled", path: "/cancelled" },
     { name: "Pending", path: "/pending" },
-    { name: "Rate Calculator", path: "/rate-calculator" },
     { name: "Serviceability", path: "/serviceability" },
+    { name: "Tracking", path: "/tracking" },
+    { name: "Track Order", path: "/tracking" },
+    { name: "Track Shipment", path: "/tracking" },
     { name: "Wallet", path: "/wallet" },
     { name: "Tickets", path: "/tickets" },
     { name: "Reports", path: "/reports" },
@@ -800,6 +807,18 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
                   >
                     <HiOutlineLocationMarker size={16} />
                     <span className="truncate">Serviceability</span>
+                  </Link>
+
+                  <Link
+                    to="/tracking"
+                    onMouseEnter={() => prefetchRoute("/tracking")}
+                    onClick={handleNavClick}
+                    className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[13px] transition ${subActiveClass(
+                      "/tracking",
+                    )}`}
+                  >
+                    <FiSearch size={16} />
+                    <span className="truncate">Tracking</span>
                   </Link>
                 </div>
               </div>

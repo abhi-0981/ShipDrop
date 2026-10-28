@@ -44,6 +44,7 @@ const Reports = lazy(() => import("./pages/Dashboard/Reports"));
 const ShipmentLifecycleReport = lazy(() => import("./pages/Dashboard/ShipmentLifecycleReport"));
 const WeightDiscrepancyReport = lazy(() => import("./pages/Dashboard/WeightDiscrepancyReport"));
 const Analytics = lazy(() => import("./pages/Dashboard/Analytics"));
+const Tracking = lazy(() => import("./pages/Dashboard/Tracking"));
 
 import { RouteSkeleton } from "./components/Common/TableSkeleton";
 
@@ -325,6 +326,15 @@ function App() {
               element={
                 <Suspense fallback={<RouteLoader />}>
                   <Serviceability />
+                </Suspense>
+              }
+            />
+
+            <Route
+              path="/tracking"
+              element={
+                <Suspense fallback={<RouteLoader />}>
+                  <Tracking />
                 </Suspense>
               }
             />
