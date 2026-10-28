@@ -6,7 +6,7 @@ import {
   HiOutlineRefresh,
   HiOutlineFilter,
   HiOutlineX,
-  HiOutlineClipboardCopy,
+  HiOutlineDuplicate,
   HiOutlineCheck,
   HiOutlineEye,
   HiOutlineOfficeBuilding,
@@ -596,7 +596,7 @@ export default function PickupAddresses() {
                               {copiedField === `phone_${addr.id}` ? (
                                 <HiOutlineCheck size={11} className="text-emerald-500" />
                               ) : (
-                                <HiOutlineClipboardCopy
+                                <HiOutlineDuplicate
                                   size={11}
                                   className="text-slate-300 hover:text-slate-500"
                                 />
@@ -635,7 +635,7 @@ export default function PickupAddresses() {
                                 {copiedField === `pin_${addr.id}` ? (
                                   <HiOutlineCheck size={10} className="text-emerald-500" />
                                 ) : (
-                                  <HiOutlineClipboardCopy size={10} />
+                                  <HiOutlineDuplicate size={10} />
                                 )}
                               </button>
                             )}
@@ -656,7 +656,7 @@ export default function PickupAddresses() {
                             {copiedField === `gst_${addr.id}` ? (
                               <HiOutlineCheck size={12} className="text-emerald-600" />
                             ) : (
-                              <HiOutlineClipboardCopy size={12} className="text-slate-400" />
+                              <HiOutlineDuplicate size={12} className="text-slate-400" />
                             )}
                           </button>
                         ) : (
@@ -921,7 +921,7 @@ export default function PickupAddresses() {
                     }}
                     className="text-xs text-[#008dd2] font-semibold hover:underline flex items-center gap-1"
                   >
-                    <HiOutlineClipboardCopy size={13} />
+                    <HiOutlineDuplicate size={13} />
                     <span>Copy Full Address</span>
                   </button>
                 </div>

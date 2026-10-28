@@ -6,7 +6,7 @@ import {
   subscribeToOrderUpdates,
 } from "../../services/orderEvents";
 import {
-  HiOutlineClipboardCopy,
+  HiOutlineDuplicate,
   HiOutlineLocationMarker,
 } from "react-icons/hi";
 import OrderDetailsModal from "../../components/Common/OrderDetailsModal";
@@ -1348,7 +1348,7 @@ function RTOInTransit() {
                                       aria-label="Copy AWB"
                                       className="shrink-0 rounded p-0.5 text-slate-400 hover:bg-blue-50 hover:text-[#008dd2]"
                                     >
-                                      <HiOutlineClipboardCopy className="text-[13px]" />
+                                      <HiOutlineDuplicate className="text-[13px]" />
                                     </button>
                                   )}
                                 </div>

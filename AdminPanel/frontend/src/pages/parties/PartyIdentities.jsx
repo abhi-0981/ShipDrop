@@ -6,7 +6,7 @@ import {
   HiOutlineRefresh,
   HiOutlineFilter,
   HiOutlineX,
-  HiOutlineClipboardCopy,
+  HiOutlineDuplicate,
   HiOutlineCheck,
   HiOutlineEye,
   HiOutlineOfficeBuilding,
@@ -596,7 +596,7 @@ export default function PartyIdentities() {
                                 {copiedField === `gst_${party.id}` ? (
                                   <HiOutlineCheck size={11} className="text-emerald-600" />
                                 ) : (
-                                  <HiOutlineClipboardCopy size={11} className="text-slate-400" />
+                                  <HiOutlineDuplicate size={11} className="text-slate-400" />
                                 )}
                               </button>
                               <span className="inline-block text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1 py-0.2 rounded">
@@ -621,7 +621,7 @@ export default function PartyIdentities() {
                               {copiedField === `phone_${party.id}` ? (
                                 <HiOutlineCheck size={11} className="text-emerald-500" />
                               ) : (
-                                <HiOutlineClipboardCopy size={11} className="text-slate-300" />
+                                <HiOutlineDuplicate size={11} className="text-slate-300" />
                               )}
                             </button>
                           )}
@@ -894,7 +894,7 @@ export default function PartyIdentities() {
                       onClick={() => copyToClipboard(viewingParty.address, "modal_party_addr")}
                       className="text-xs text-[#008dd2] font-semibold hover:underline flex items-center gap-1"
                     >
-                      <HiOutlineClipboardCopy size={13} />
+                      <HiOutlineDuplicate size={13} />
                       <span>Copy Address</span>
                     </button>
                   )}

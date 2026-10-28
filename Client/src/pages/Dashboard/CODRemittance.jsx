@@ -9,7 +9,7 @@ import {
   HiOutlineSearch,
   HiOutlineCheckCircle,
   HiOutlineClock,
-  HiOutlineClipboardCopy,
+  HiOutlineDuplicate,
   HiOutlineChevronLeft,
   HiOutlineChevronRight,
   HiOutlineX,
@@ -637,7 +637,7 @@ export default function CODRemittance() {
                           onClick={() => handleCopy(item.order_id, "Order ID")}
                           className="text-slate-400 hover:text-[#008dd2]"
                         >
-                          <HiOutlineClipboardCopy className="text-xs" />
+                          <HiOutlineDuplicate className="text-xs" />
                         </button>
                       </div>
                       <p className="text-[12px] font-medium text-slate-700 dark:text-slate-300 mt-0.5">
@@ -752,7 +752,7 @@ export default function CODRemittance() {
                             title="Copy Order ID"
                             className="text-slate-400 hover:text-[#008dd2] transition p-0.5"
                           >
-                            <HiOutlineClipboardCopy className="text-[13px]" />
+                            <HiOutlineDuplicate className="text-[13px]" />
                           </button>
                         </div>
                       </td>
@@ -775,7 +775,7 @@ export default function CODRemittance() {
                               title="Copy AWB"
                               className="text-slate-400 hover:text-[#008dd2] transition p-0.5"
                             >
-                              <HiOutlineClipboardCopy className="text-[13px]" />
+                              <HiOutlineDuplicate className="text-[13px]" />
                             </button>
                           </div>
                         ) : (

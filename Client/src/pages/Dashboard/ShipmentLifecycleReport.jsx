@@ -15,7 +15,7 @@ import {
   HiOutlineClock,
   HiOutlineTruck,
   HiOutlineLocationMarker,
-  HiOutlineClipboardCopy,
+  HiOutlineDuplicate,
   HiOutlineChevronLeft,
   HiOutlineChevronRight,
   HiOutlineArrowNarrowRight,
@@ -783,7 +783,7 @@ export default function ShipmentLifecycleReport() {
                               className="text-slate-400 hover:text-slate-600 transition"
                               title="Copy Order ID"
                             >
-                              <HiOutlineClipboardCopy className="text-xs" />
+                              <HiOutlineDuplicate className="text-xs" />
                             </button>
                           </div>
                           {o.awb ? (
@@ -797,7 +797,7 @@ export default function ShipmentLifecycleReport() {
                                 className="text-slate-400 hover:text-[#008dd2] transition"
                                 title="Copy AWB"
                               >
-                                <HiOutlineClipboardCopy className="text-xs" />
+                                <HiOutlineDuplicate className="text-xs" />
                               </button>
                             </div>
                           ) : (

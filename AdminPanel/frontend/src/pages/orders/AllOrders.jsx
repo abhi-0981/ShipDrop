@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import {
   HiOutlineSearch,
   HiOutlineEye,
-  HiOutlineClipboardCopy,
+  HiOutlineDuplicate,
   HiOutlineRefresh,
   HiOutlineChevronDown,
   HiOutlineFilter,
@@ -1158,7 +1158,7 @@ const AllOrders = () => {
                         onClick={() => copyText(order.awb, "AWB")}
                         className="text-[#008dd2] font-bold flex items-center gap-1 text-[10px] shrink-0 active:scale-95"
                       >
-                        <HiOutlineClipboardCopy size={13} />
+                        <HiOutlineDuplicate size={13} />
                         Copy
                       </button>
                     )}
@@ -1337,7 +1337,7 @@ const AllOrders = () => {
                               className="text-slate-400 transition hover:text-blue-600"
                               title="Copy AWB"
                             >
-                              <HiOutlineClipboardCopy className="text-[14px]" />
+                              <HiOutlineDuplicate className="text-[14px]" />
                             </button>
                           )}
                         </div>

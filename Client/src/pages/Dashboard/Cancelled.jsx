@@ -4,7 +4,7 @@ import React, {
   useState,
 } from "react";
 import { toast } from "react-hot-toast";
-import { HiOutlineClipboardCopy, HiOutlineLocationMarker, HiOutlinePrinter, HiOutlineEye } from "react-icons/hi";
+import { HiOutlineDuplicate, HiOutlineLocationMarker, HiOutlinePrinter, HiOutlineEye } from "react-icons/hi";
 import api from "../../services/api";
 import { notifyOrderChange, subscribeToOrderUpdates } from "../../services/orderEvents";
 import OrderDetailsModal from "../../components/Common/OrderDetailsModal";
@@ -1835,7 +1835,7 @@ function Cancelled() {
                                 <>
                                   <div className="flex min-w-0 items-center gap-1">
                                     <button type="button" onClick={() => triggerTracking(awb)} title="Track shipment" className="truncate text-left text-[12px] font-semibold text-slate-800 hover:text-[#008dd2]">{awb}</button>
-                                    <button type="button" onClick={() => copyText(awb, "AWB")} title="Copy AWB" className="shrink-0 text-slate-400 hover:text-[#008dd2]"><HiOutlineClipboardCopy className="text-[12px]" /></button>
+                                    <button type="button" onClick={() => copyText(awb, "AWB")} title="Copy AWB" className="shrink-0 text-slate-400 hover:text-[#008dd2]"><HiOutlineDuplicate className="text-[12px]" /></button>
                                   </div>
                                   <p className="mt-0.5 truncate text-[10px] text-slate-400">Pickup ID: {order?.pickup_request_id || order?.pickupRequestId || order?.pickup_id || order?.pickupId || ""}</p>
                                 </>
@@ -1993,7 +1993,7 @@ function Cancelled() {
                           <td className="px-2 py-3 align-middle">
                             <div className="flex items-center justify-center gap-1.5 whitespace-nowrap">
                               <button type="button" onClick={() => handlePrintSingleLabel(order)} title="Print Shipping Label" aria-label="Print Shipping Label" className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[7px] border border-[#008dd2] bg-[#008dd2] text-white transition hover:bg-[#007dbb]"><HiOutlinePrinter className="text-[16px]" /></button>
-                              <button type="button" onClick={() => handleDuplicate(order)} title="Duplicate Order" aria-label="Duplicate Order" className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[7px] border border-[#008dd2] bg-[#008dd2] text-white transition hover:bg-[#007dbb]"><HiOutlineClipboardCopy className="text-[16px]" /></button>
+                              <button type="button" onClick={() => handleDuplicate(order)} title="Duplicate Order" aria-label="Duplicate Order" className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[7px] border border-[#008dd2] bg-[#008dd2] text-white transition hover:bg-[#007dbb]"><HiOutlineDuplicate className="text-[16px]" /></button>
                               <button type="button" onClick={() => handleView(order)} title="View order details" aria-label="View order details" className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[7px] border border-slate-200 bg-white text-slate-600 transition hover:border-[#008dd2]/40 hover:bg-blue-50 hover:text-[#008dd2]"><HiOutlineEye className="text-[16px]" /></button>
                             </div>
                           </td>

@@ -3,7 +3,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import {
   HiOutlineSearch,
   HiOutlineEye,
-  HiOutlineClipboardCopy,
+  HiOutlineDuplicate,
   HiOutlineRefresh,
   HiOutlineChevronDown,
   HiOutlineFilter,
@@ -1131,7 +1131,7 @@ const triggerTracking = (awb) => {
     aria-label="Copy AWB"
     className="shrink-0 rounded p-0.5 text-slate-400 hover:bg-blue-50 hover:text-[#008dd2]"
   >
-    <HiOutlineClipboardCopy className="text-[12px]" />
+    <HiOutlineDuplicate className="text-[12px]" />
   </button>
 </div>
 
@@ -1225,7 +1225,7 @@ const triggerTracking = (awb) => {
                             aria-label="Duplicate Order"
                             className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[7px] border border-[#008dd2] bg-[#008dd2] text-white transition hover:bg-[#007dbb]"
                           >
-                            <HiOutlineClipboardCopy className="text-[16px]" />
+                            <HiOutlineDuplicate className="text-[16px]" />
                           </button>
                           <button
                             type="button"

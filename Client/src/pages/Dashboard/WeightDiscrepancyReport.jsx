@@ -12,7 +12,7 @@ import {
   HiOutlineCheckCircle,
   HiOutlineExclamationCircle,
   HiOutlineClock,
-  HiOutlineClipboardCopy,
+  HiOutlineDuplicate,
   HiOutlineChevronLeft,
   HiOutlineChevronRight,
   HiOutlineArrowNarrowRight,
@@ -515,7 +515,7 @@ export default function WeightDiscrepancyReport() {
                               className="text-slate-400 hover:text-slate-600 transition"
                               title="Copy Order ID"
                             >
-                              <HiOutlineClipboardCopy className="text-xs" />
+                              <HiOutlineDuplicate className="text-xs" />
                             </button>
                           </div>
                           <div className="flex items-center gap-1.5 mt-0.5">
@@ -528,7 +528,7 @@ export default function WeightDiscrepancyReport() {
                               className="text-slate-400 hover:text-[#008dd2] transition"
                               title="Copy AWB"
                             >
-                              <HiOutlineClipboardCopy className="text-xs" />
+                              <HiOutlineDuplicate className="text-xs" />
                             </button>
                           </div>
                         </div>

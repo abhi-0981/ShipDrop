@@ -8,7 +8,7 @@ import {
   HiOutlineRefresh,
   HiOutlineSearch,
   HiOutlineCalendar,
-  HiOutlineClipboardCopy,
+  HiOutlineDuplicate,
   HiOutlineChevronLeft,
   HiOutlineChevronRight,
   HiOutlineX,
@@ -926,7 +926,7 @@ export default function WalletHistory() {
                               title="Copy Transaction ID"
                               className="text-slate-400 hover:text-[#008dd2] transition p-0.5"
                             >
-                              <HiOutlineClipboardCopy className="text-[13px]" />
+                              <HiOutlineDuplicate className="text-[13px]" />
                             </button>
                           </div>
                         </td>
