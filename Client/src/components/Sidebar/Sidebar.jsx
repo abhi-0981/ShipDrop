@@ -24,7 +24,6 @@ import {
 import { FiMenu, FiTool } from "react-icons/fi";
 import api from "../../services/api";
 import { fetchOrderStatusCounts } from "../../services/orderEvents";
-import shipdropLogo from "../../assets/images/shipdrop-logo.png";
 import ParcelDropLogo from "../Common/ParcelDropLogo";
 
 // Dynamic route prefetcher for instant 0ms tab switching

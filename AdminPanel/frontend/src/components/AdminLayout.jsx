@@ -18,7 +18,6 @@ import {
   HiX,
 } from "react-icons/hi";
 import { FiMenu, FiSearch } from "react-icons/fi";
-import shipdropLogo from "../assets/shipdrop-logo.png";
 import ParcelDropLogo from "./ParcelDropLogo";
 
 // Public tracking is served by the CLIENT backend, not the AdminPanel backend.

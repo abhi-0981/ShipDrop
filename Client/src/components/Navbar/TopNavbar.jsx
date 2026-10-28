@@ -4,7 +4,6 @@
   import { FiMenu, FiSearch, FiCommand } from "react-icons/fi";
   import api from "../../services/api";
   import { notifyOrderChange } from "../../services/orderEvents";
-  import shipdropLogo from "../../assets/images/shipdrop-logo.png";
   import NotificationToast from "../Common/NotificationToast";
   import ParcelDropLogo from "../Common/ParcelDropLogo";
 
