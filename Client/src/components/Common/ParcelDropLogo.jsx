@@ -2,14 +2,132 @@ import React, { useEffect, useState, useRef } from "react";
 import shipdropLogo from "../../assets/images/shipdrop-logo.png";
 import parceldropIcon from "../../assets/images/parceldrop-icon.png";
 
-// Module-level cache so slices are calculated only once across the entire app
+// Module-level caches so processing is done only once across the entire application lifecycle
 let cachedSlices = null;
+let cachedCleanIcon = null;
+
+// Helper to remove outer white background and crop tightly to the squircle
+const processTransparentIcon = (img) => {
+  try {
+    const width = img.naturalWidth || img.width;
+    const height = img.naturalHeight || img.height;
+    if (!width || !height) return img.src;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    ctx.drawImage(img, 0, 0);
+
+    const imgData = ctx.getImageData(0, 0, width, height);
+    const data = imgData.data;
+
+    // BFS Flood Fill from all outer edges to remove outer white rectangular canvas
+    const visited = new Uint8Array(width * height);
+    const queue = [];
+
+    // Seed from all 4 borders (top, bottom, left, right)
+    for (let x = 0; x < width; x++) {
+      queue.push(x);
+      queue.push((height - 1) * width + x);
+      visited[x] = 1;
+      visited[(height - 1) * width + x] = 1;
+    }
+    for (let y = 0; y < height; y++) {
+      queue.push(y * width);
+      queue.push(y * width + (width - 1));
+      visited[y * width] = 1;
+      visited[y * width + (width - 1)] = 1;
+    }
+
+    const isWhite = (idx) => {
+      const p = idx * 4;
+      return data[p] > 230 && data[p + 1] > 230 && data[p + 2] > 230;
+    };
+
+    let head = 0;
+    while (head < queue.length) {
+      const curr = queue[head++];
+      if (isWhite(curr)) {
+        data[curr * 4 + 3] = 0; // Make transparent!
+
+        const cx = curr % width;
+        const cy = Math.floor(curr / width);
+
+        if (cx > 0) {
+          const n = curr - 1;
+          if (!visited[n]) {
+            visited[n] = 1;
+            if (isWhite(n)) queue.push(n);
+          }
+        }
+        if (cx < width - 1) {
+          const n = curr + 1;
+          if (!visited[n]) {
+            visited[n] = 1;
+            if (isWhite(n)) queue.push(n);
+          }
+        }
+        if (cy > 0) {
+          const n = curr - width;
+          if (!visited[n]) {
+            visited[n] = 1;
+            if (isWhite(n)) queue.push(n);
+          }
+        }
+        if (cy < height - 1) {
+          const n = curr + width;
+          if (!visited[n]) {
+            visited[n] = 1;
+            if (isWhite(n)) queue.push(n);
+          }
+        }
+      }
+    }
+
+    // Find bounding box of visible icon pixels
+    let minX = width;
+    let maxX = 0;
+    let minY = height;
+    let maxY = 0;
+
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const a = data[(y * width + x) * 4 + 3];
+        if (a > 30) {
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+          if (y < minY) minY = y;
+          if (y > maxY) maxY = y;
+        }
+      }
+    }
+
+    if (maxX <= minX || maxY <= minY) {
+      ctx.putImageData(imgData, 0, 0);
+      return canvas.toDataURL("image/png");
+    }
+
+    ctx.putImageData(imgData, 0, 0);
+
+    // Crop tightly to squircle bounds
+    const cropW = maxX - minX + 1;
+    const cropH = maxY - minY + 1;
+    const cropCanvas = document.createElement("canvas");
+    cropCanvas.width = cropW;
+    cropCanvas.height = cropH;
+    const cropCtx = cropCanvas.getContext("2d");
+    cropCtx.drawImage(canvas, minX, minY, cropW, cropH, 0, 0, cropW, cropH);
+
+    return cropCanvas.toDataURL("image/png");
+  } catch (e) {
+    console.warn("Icon transparency error:", e);
+    return img.src;
+  }
+};
 
 /**
- * ParcelDropLogo with Brand Icon & Smooth Floating 'o' Pin
- * 1. Brand icon placed right before logo, sized to match capital letter height
- * 2. Subtle edge erosion to lighten stroke weight ("halka font weight kam")
- * 3. Smooth floating 'o' location pin
+ * ParcelDropLogo with Clean Transparent Brand Icon & Smooth Floating 'o' Pin
  */
 export default function ParcelDropLogo({
   className = "",
@@ -18,8 +136,26 @@ export default function ParcelDropLogo({
   showIcon = true,
 }) {
   const [slices, setSlices] = useState(() => cachedSlices);
+  const [cleanIcon, setCleanIcon] = useState(() => cachedCleanIcon);
   const containerRef = useRef(null);
 
+  // Process Icon to remove white background
+  useEffect(() => {
+    if (cachedCleanIcon) {
+      setCleanIcon(cachedCleanIcon);
+      return;
+    }
+
+    const iconImg = new Image();
+    iconImg.src = parceldropIcon;
+    iconImg.onload = () => {
+      const transparentUrl = processTransparentIcon(iconImg);
+      cachedCleanIcon = transparentUrl;
+      setCleanIcon(transparentUrl);
+    };
+  }, []);
+
+  // Process Logo Image into Slices ("ParcelDr" + floating "o" + "p")
   useEffect(() => {
     if (cachedSlices) {
       setSlices(cachedSlices);
@@ -54,7 +190,7 @@ export default function ParcelDropLogo({
             const r = pixels[idx];
             const g = pixels[idx + 1];
             const b = pixels[idx + 2];
-            if (a > 30 && !(r > 240 && g > 240 && b > 240)) {
+            if (a > 30 && !(r > 242 && g > 242 && b > 242)) {
               colHasContent[x] = true;
               break;
             }
@@ -83,11 +219,11 @@ export default function ParcelDropLogo({
           return;
         }
 
-        // Slicing boundaries with 1px breathing margin
+        // Slicing boundaries with breathing margin
         const leftCut = Math.max(0, o_start);
         const rightCut = Math.min(width, o_end + 1);
 
-        // Helper to crop a slice and make white background transparent + slightly reduce font weight
+        // Helper to crop a slice and make white background transparent
         const createSlice = (startX, sliceWidth) => {
           const c = document.createElement("canvas");
           c.width = sliceWidth;
@@ -102,32 +238,8 @@ export default function ParcelDropLogo({
             const r = sPix[i];
             const g = sPix[i + 1];
             const b = sPix[i + 2];
-            if (r > 240 && g > 240 && b > 240) {
+            if (r > 242 && g > 242 && b > 242) {
               sPix[i + 3] = 0; // transparent
-            }
-          }
-
-          // Slightly soften edge pixels to lighten stroke weight ("halka font weight kam kr dena")
-          const origAlpha = new Uint8Array(sliceWidth * height);
-          for (let i = 0; i < origAlpha.length; i++) {
-            origAlpha[i] = sPix[i * 4 + 3];
-          }
-
-          for (let y = 1; y < height - 1; y++) {
-            for (let x = 1; x < sliceWidth - 1; x++) {
-              const idx = y * sliceWidth + x;
-              if (origAlpha[idx] > 30) {
-                const nUp = origAlpha[idx - sliceWidth];
-                const nDown = origAlpha[idx + sliceWidth];
-                const nLeft = origAlpha[idx - 1];
-                const nRight = origAlpha[idx + 1];
-
-                // If on boundary of letter stroke, soften to slightly reduce bold weight
-                if (nUp < 30 || nDown < 30 || nLeft < 30 || nRight < 30) {
-                  const pIdx = idx * 4;
-                  sPix[pIdx + 3] = Math.round(sPix[pIdx + 3] * 0.4);
-                }
-              }
             }
           }
 
@@ -156,13 +268,14 @@ export default function ParcelDropLogo({
     };
   }, []);
 
-  // While calculating or if fallback needed, render original image directly
   const hasCustomHeight = className.includes("h-") || height !== undefined;
   const defaultHeightClass = hasCustomHeight ? "" : "h-[42px] sm:h-[44px]";
   const resolvedStyle =
     height !== undefined
       ? { height: typeof height === "number" ? `${height}px` : height, ...style }
       : style;
+
+  const iconSrc = cleanIcon || parceldropIcon;
 
   if (!slices) {
     return (
@@ -172,9 +285,9 @@ export default function ParcelDropLogo({
       >
         {showIcon && (
           <img
-            src={parceldropIcon}
+            src={iconSrc}
             alt="ParcelDrop Icon"
-            className="h-[64%] w-auto aspect-square object-contain shrink-0 rounded-[22%] pointer-events-none select-none shadow-[0_1px_2px_rgba(0,0,0,0.06)]"
+            className="h-[64%] w-auto aspect-square object-contain shrink-0 pointer-events-none select-none"
           />
         )}
         <img
@@ -193,23 +306,23 @@ export default function ParcelDropLogo({
       title="ParcelDrop"
       style={resolvedStyle}
     >
-      {/* 0. BRAND ICON - Exactly matched to the capital letter height of the logo */}
+      {/* 0. BRAND ICON - 100% Transparent background (no white box) & matched to capital letter height */}
       {showIcon && (
         <img
-          src={parceldropIcon}
+          src={iconSrc}
           alt="ParcelDrop Icon"
-          className="h-[64%] w-auto aspect-square object-contain shrink-0 rounded-[22%] pointer-events-none select-none shadow-[0_1px_2px_rgba(0,0,0,0.06)]"
+          className="h-[64%] w-auto aspect-square object-contain shrink-0 pointer-events-none select-none"
         />
       )}
 
-      {/* 1. "ParcelDr" - Slimmer stroke, clean color & resolution */}
+      {/* 1. "ParcelDr" - Crisp authentic colors */}
       <img
         src={slices.left}
         alt="ParcelDr"
         className="h-full w-auto object-contain object-left block pointer-events-none"
       />
 
-      {/* 2. "o" (Location Pin) - Exact original size & color with smooth float */}
+      {/* 2. "o" (Location Pin) - Authentic size & vibrant color with smooth floating animation */}
       <span className="inline-block h-full animate-logo-pin-float pointer-events-none">
         <img
           src={slices.pin}
@@ -218,7 +331,7 @@ export default function ParcelDropLogo({
         />
       </span>
 
-      {/* 3. "p" - Slimmer stroke */}
+      {/* 3. "p" */}
       <img
         src={slices.right}
         alt="p"
