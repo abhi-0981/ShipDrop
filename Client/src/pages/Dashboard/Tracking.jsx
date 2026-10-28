@@ -15,11 +15,6 @@ import {
   FiArrowRight,
   FiAlertCircle,
   FiExternalLink,
-  FiUser,
-  FiPhone,
-  FiHome,
-  FiCreditCard,
-  FiBox,
 } from "react-icons/fi";
 import api from "../../services/api";
 
@@ -678,97 +673,6 @@ export default function Tracking() {
               </div>
             </div>
 
-            {/* RECIPIENT & SHIPMENT SPECIFICATIONS */}
-            {(order.contact_name || order.address_line1 || order.total_amount || order.package_weight) && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* RECIPIENT CARD */}
-                <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
-                  <div className="flex items-center gap-2 mb-3.5">
-                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-sky-50 dark:bg-sky-950/60 text-[#008dd2]">
-                      <FiUser size={15} />
-                    </span>
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
-                      Delivery Destination
-                    </h3>
-                  </div>
-
-                  <div className="space-y-2 text-xs">
-                    <div>
-                      <p className="text-[11px] text-slate-400 font-medium">Customer Name</p>
-                      <p className="text-sm font-bold text-slate-800 dark:text-slate-100 mt-0.5">
-                        {order.contact_name || order.consignee_name || "Valued Customer"}
-                      </p>
-                    </div>
-
-                    {(order.contact_phone || order.mobile) && (
-                      <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300 pt-1">
-                        <FiPhone size={13} className="text-slate-400" />
-                        <span className="font-medium">{order.contact_phone || order.mobile}</span>
-                      </div>
-                    )}
-
-                    {(order.address_line1 || order.address) && (
-                      <div className="flex items-start gap-1.5 text-slate-600 dark:text-slate-300 pt-1">
-                        <FiHome size={13} className="text-slate-400 mt-0.5 shrink-0" />
-                        <span className="font-medium leading-relaxed">
-                          {[
-                            order.address_line1 || order.address,
-                            order.address_line2,
-                            order.city,
-                            order.state,
-                            order.pincode ? `PIN: ${order.pincode}` : null,
-                          ]
-                            .filter(Boolean)
-                            .join(", ")}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* SHIPMENT DETAILS CARD */}
-                <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
-                  <div className="flex items-center gap-2 mb-3.5">
-                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600">
-                      <FiBox size={15} />
-                    </span>
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
-                      Shipment Details
-                    </h3>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3 text-xs">
-                    <div className="rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 p-2.5">
-                      <p className="text-[10px] text-slate-400 font-medium uppercase">Payment Mode</p>
-                      <p className="text-xs font-bold text-slate-800 dark:text-slate-100 mt-0.5">
-                        {order.payment_type || order.payment_mode || "Prepaid"}
-                      </p>
-                    </div>
-
-                    <div className="rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 p-2.5">
-                      <p className="text-[10px] text-slate-400 font-medium uppercase">Order Value</p>
-                      <p className="text-xs font-bold text-slate-800 dark:text-slate-100 mt-0.5">
-                        ₹{Number(order.total_amount || order.amount || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}
-                      </p>
-                    </div>
-
-                    <div className="rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 p-2.5">
-                      <p className="text-[10px] text-slate-400 font-medium uppercase">Weight</p>
-                      <p className="text-xs font-bold text-slate-800 dark:text-slate-100 mt-0.5">
-                        {order.package_weight || order.weight || "0.5"} kg
-                      </p>
-                    </div>
-
-                    <div className="rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 p-2.5">
-                      <p className="text-[10px] text-slate-400 font-medium uppercase">Origin Facility</p>
-                      <p className="text-xs font-bold text-slate-800 dark:text-slate-100 mt-0.5 truncate">
-                        {order.pickup_city || "Merchant Warehouse"}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
 
             {/* TIMELINE SCANS */}
             <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 sm:p-6 shadow-sm">
