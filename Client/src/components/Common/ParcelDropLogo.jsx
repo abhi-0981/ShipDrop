@@ -16,16 +16,22 @@ export default function ParcelDropLogo({
   showIcon = true,
 }) {
   const hasCustomHeight = className.includes("h-") || height !== undefined;
-  // Refined default height for a sleek, light modern appearance
-  const defaultHeightClass = hasCustomHeight ? "" : "h-[32px] sm:h-[34px]";
+  // Sleek, compact default height (22px) so it fits elegantly in the 250px sidebar without colliding with toggle button
+  const defaultHeightClass = hasCustomHeight ? "" : "h-[22px] sm:h-[23px]";
   const resolvedStyle =
     height !== undefined
-      ? { height: typeof height === "number" ? `${height}px` : height, ...style }
+      ? {
+          height:
+            typeof height === "number"
+              ? `${Math.round(height * 0.65)}px`
+              : height,
+          ...style,
+        }
       : style;
 
   return (
     <div
-      className={`inline-flex items-start gap-2.5 select-none leading-none ${defaultHeightClass} ${className}`}
+      className={`inline-flex items-start gap-1.5 select-none leading-none ${defaultHeightClass} ${className}`}
       title="ParcelDrop"
       style={resolvedStyle}
     >
@@ -34,7 +40,7 @@ export default function ParcelDropLogo({
         <img
           src={parceldropIcon}
           alt="ParcelDrop Icon"
-          className="h-[79%] w-auto aspect-[152/132] object-contain shrink-0 pointer-events-none select-none mt-[1px]"
+          className="h-[79%] w-auto aspect-[152/132] object-contain shrink-0 pointer-events-none select-none mt-[0.5px]"
         />
       )}
 
