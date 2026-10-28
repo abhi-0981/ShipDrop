@@ -15,38 +15,65 @@ import {
   FiArrowRight,
   FiAlertCircle,
   FiExternalLink,
+  FiUser,
+  FiPhone,
+  FiHome,
+  FiCreditCard,
+  FiBox,
 } from "react-icons/fi";
 import api from "../../services/api";
 
 // ======================================================
-// FORMATTING HELPERS
+// FORMATTING & PARSING HELPERS
 // ======================================================
 
 const formatTrackingDateTime = (value) => {
   if (!value) return "—";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return String(value);
+  try {
+    // Normalizing space-separated datetime like "2026-10-28 14:30:00" to ISO
+    const safeStr = typeof value === "string" ? value.trim().replace(" ", "T") : value;
+    const date = new Date(safeStr);
+    if (Number.isNaN(date.getTime())) {
+      const fallbackDate = new Date(value);
+      if (Number.isNaN(fallbackDate.getTime())) return String(value);
+      return fallbackDate.toLocaleString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      });
+    }
 
-  return date.toLocaleString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-  });
+    return date.toLocaleString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+  } catch {
+    return String(value);
+  }
 };
 
 const formatTrackingDate = (value) => {
   if (!value) return "—";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return String(value);
+  try {
+    const safeStr = typeof value === "string" ? value.trim().replace(" ", "T") : value;
+    const date = new Date(safeStr);
+    if (Number.isNaN(date.getTime())) return String(value);
 
-  return date.toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
+    return date.toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  } catch {
+    return String(value);
+  }
 };
 
 const humanizeStatus = (status) => {
@@ -65,7 +92,7 @@ const humanizeStatus = (status) => {
   return status
     .toLowerCase()
     .split(" ")
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .map((w) => (w ? w.charAt(0).toUpperCase() + w.slice(1) : ""))
     .join(" ");
 };
 
@@ -74,10 +101,10 @@ const getStatusBadgeClass = (status) => {
   if (s.includes("DELIVERED") && !s.includes("RTO")) {
     return "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-900/50";
   }
-  if (s.includes("OUT")) {
+  if (s.includes("OUT") || s.includes("OFD")) {
     return "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-900/50";
   }
-  if (s.includes("TRANSIT") && !s.includes("RTO")) {
+  if (s.includes("TRANSIT") || s.includes("DISPATCH") || s.includes("ARRIVED") || s.includes("REACHED")) {
     return "bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/40 dark:text-sky-400 dark:border-sky-900/50";
   }
   if (s.includes("RTO") || s.includes("CANCEL")) {
@@ -93,9 +120,120 @@ const getStatusBadgeClass = (status) => {
 const getMilestoneIndex = (status) => {
   const s = String(status || "").toUpperCase();
   if (s.includes("DELIVERED") && !s.includes("RTO")) return 3;
-  if (s.includes("OUT")) return 2;
-  if (s.includes("TRANSIT")) return 1;
+  if (s.includes("OUT") || s.includes("OFD")) return 2;
+  if (s.includes("TRANSIT") || s.includes("DISPATCH") || s.includes("REACHED") || s.includes("ARRIVED")) return 1;
   return 0; // Manifested / Booked
+};
+
+/**
+ * Robust extractor for Delhivery tracking scans.
+ * Delhivery returns scan objects where event attributes are inside ScanDetail.
+ */
+const extractTrackingScans = (order) => {
+  let rawScans = [];
+
+  if (Array.isArray(order?.tracking_scans) && order.tracking_scans.length > 0) {
+    rawScans = order.tracking_scans;
+  } else if (order?.tracking_data) {
+    try {
+      let tData = order.tracking_data;
+      if (typeof tData === "string") tData = JSON.parse(tData);
+      if (Array.isArray(tData?.Scans)) rawScans = tData.Scans;
+      else if (Array.isArray(tData?.Shipment?.Scans)) rawScans = tData.Shipment.Scans;
+      else if (Array.isArray(tData?.scans)) rawScans = tData.scans;
+    } catch {}
+  }
+
+  const parsed = rawScans.map((scan, index) => {
+    // Delhivery puts the actual attributes inside scan.ScanDetail
+    const detail =
+      scan?.ScanDetail ||
+      scan?.scanDetail ||
+      scan?.scan_detail ||
+      scan ||
+      {};
+
+    const statusTitle =
+      detail?.Scan ||
+      detail?.scan ||
+      detail?.Status ||
+      detail?.status ||
+      detail?.ScanGroup ||
+      detail?.scan_group ||
+      detail?.Instructions ||
+      detail?.instructions ||
+      detail?.ScanType ||
+      detail?.scan_type ||
+      "Status Update";
+
+    const location =
+      detail?.ScannedLocation ||
+      detail?.scanned_location ||
+      detail?.ScanLocation ||
+      detail?.scan_location ||
+      detail?.StatusLocation ||
+      detail?.status_location ||
+      detail?.Location ||
+      detail?.location ||
+      detail?.City ||
+      detail?.city ||
+      "";
+
+    const dateTime =
+      detail?.ScanDateTime ||
+      detail?.scan_date_time ||
+      detail?.StatusDateTime ||
+      detail?.status_date_time ||
+      detail?.DateTime ||
+      detail?.date_time ||
+      scan?.dateTime ||
+      scan?.status_datetime ||
+      null;
+
+    const instructions =
+      detail?.Instructions ||
+      detail?.instructions ||
+      detail?.Comment ||
+      detail?.comment ||
+      detail?.Remark ||
+      detail?.remark ||
+      "";
+
+    const cleanTitle = String(statusTitle).trim();
+    const cleanInstructions = String(instructions).trim();
+    const hasDistinctNote =
+      Boolean(cleanInstructions) &&
+      cleanInstructions.toLowerCase() !== cleanTitle.toLowerCase();
+
+    return {
+      id: `${index}-${dateTime || index}`,
+      status: cleanTitle,
+      location: String(location).trim(),
+      dateTime,
+      instructions: hasDistinctNote ? cleanInstructions : "",
+      statusCode: detail?.StatusCode || detail?.status_code || detail?.ScanType || "",
+    };
+  });
+
+  parsed.sort((a, b) => {
+    const aTime = a.dateTime ? new Date(String(a.dateTime).replace(" ", "T")).getTime() : 0;
+    const bTime = b.dateTime ? new Date(String(b.dateTime).replace(" ", "T")).getTime() : 0;
+    return bTime - aTime;
+  });
+
+  // If no scans recorded yet, synthesize the base manifest event
+  if (parsed.length === 0 && order) {
+    parsed.push({
+      id: "manifest-0",
+      status: order.tracking_status || order.status || "Manifested",
+      location: order.tracking_location || order.pickup_city || "Origin Facility",
+      dateTime: order.tracking_status_datetime || order.created_at,
+      instructions: order.tracking_instructions || "Shipment created & manifested with courier",
+      statusCode: "MANIFEST",
+    });
+  }
+
+  return parsed;
 };
 
 // ======================================================
@@ -185,7 +323,7 @@ export default function Tracking() {
     }
   }, []);
 
-  // Quick auto-search when 14-digit AWB is pasted/typed
+  // Quick auto-search when 14-digit AWB is entered
   useEffect(() => {
     const trimmed = String(searchInput || "").trim();
     if (/^\d{14}$/.test(trimmed) && trimmed !== searchedQuery && !loading) {
@@ -210,7 +348,7 @@ export default function Tracking() {
   };
 
   const activeMilestone = order ? getMilestoneIndex(order.tracking_status) : 0;
-  const scans = Array.isArray(order?.tracking_scans) ? order.tracking_scans : [];
+  const scans = order ? extractTrackingScans(order) : [];
 
   return (
     <div className="min-h-full w-full bg-[#f6f8fb] dark:bg-[#090b10] p-3.5 sm:p-5 md:p-6 pb-24 lg:pb-10 transition-colors">
@@ -229,7 +367,7 @@ export default function Tracking() {
               Shipment Tracking
             </h1>
             <p className="mt-0.5 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-              Live order tracking and complete Delhivery milestone scan history.
+              Live tracking status, milestone updates, and full scan history directly from logistics network.
             </p>
           </div>
 
@@ -247,7 +385,7 @@ export default function Tracking() {
         </div>
 
         {/* ==================================================
-            SEARCH CARD (MATCHES TOPBAR CAPABILITY)
+            SEARCH CARD
         ================================================== */}
         <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 sm:p-6 shadow-[0_2px_12px_rgba(15,23,42,0.04)]">
           <form
@@ -384,7 +522,7 @@ export default function Tracking() {
                       </button>
                     </div>
                     <p className="text-[11px] font-medium text-slate-400">
-                      Courier: <span className="font-semibold text-slate-700 dark:text-slate-300">{order.courier_name || "Delhivery"}</span>
+                      Courier: <span className="font-semibold text-slate-700 dark:text-slate-300">{order.courier_name || order.carrier || "Delhivery"}</span>
                     </p>
                   </div>
                 </div>
@@ -392,11 +530,11 @@ export default function Tracking() {
                 <div className="flex items-center gap-2">
                   <span
                     className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold ${getStatusBadgeClass(
-                      order.tracking_status,
+                      order.tracking_status || order.status,
                     )}`}
                   >
                     <span className="h-1.5 w-1.5 rounded-full bg-current" />
-                    {humanizeStatus(order.tracking_status)}
+                    {humanizeStatus(order.tracking_status || order.status)}
                   </span>
 
                   <button
@@ -439,7 +577,7 @@ export default function Tracking() {
                   <div className="mt-1 flex items-center gap-1.5">
                     <FiMapPin size={14} className="text-slate-400 shrink-0" />
                     <p className="truncate text-xs font-bold text-slate-700 dark:text-slate-200">
-                      {order.tracking_location || "In Transit Facility"}
+                      {order.tracking_location || scans[0]?.location || "In Transit Facility"}
                     </p>
                   </div>
                 </div>
@@ -451,7 +589,7 @@ export default function Tracking() {
                   <div className="mt-1 flex items-center gap-1.5">
                     <FiClock size={14} className="text-slate-400 shrink-0" />
                     <p className="text-xs font-bold text-slate-700 dark:text-slate-200">
-                      {formatTrackingDateTime(order.tracking_status_datetime)}
+                      {formatTrackingDateTime(order.tracking_status_datetime || scans[0]?.dateTime)}
                     </p>
                   </div>
                 </div>
@@ -497,7 +635,7 @@ export default function Tracking() {
                   {[
                     { title: "Manifested", desc: "Shipment booked" },
                     { title: "In Transit", desc: "On the way to hub" },
-                    { title: "Out for Delivery", desc: "Courier courier out" },
+                    { title: "Out for Delivery", desc: "Courier out for delivery" },
                     { title: "Delivered", desc: "Package handed over" },
                   ].map((step, index) => {
                     const isPassed = index <= activeMilestone;
@@ -540,6 +678,98 @@ export default function Tracking() {
               </div>
             </div>
 
+            {/* RECIPIENT & SHIPMENT SPECIFICATIONS */}
+            {(order.contact_name || order.address_line1 || order.total_amount || order.package_weight) && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* RECIPIENT CARD */}
+                <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
+                  <div className="flex items-center gap-2 mb-3.5">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-sky-50 dark:bg-sky-950/60 text-[#008dd2]">
+                      <FiUser size={15} />
+                    </span>
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+                      Delivery Destination
+                    </h3>
+                  </div>
+
+                  <div className="space-y-2 text-xs">
+                    <div>
+                      <p className="text-[11px] text-slate-400 font-medium">Customer Name</p>
+                      <p className="text-sm font-bold text-slate-800 dark:text-slate-100 mt-0.5">
+                        {order.contact_name || order.consignee_name || "Valued Customer"}
+                      </p>
+                    </div>
+
+                    {(order.contact_phone || order.mobile) && (
+                      <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300 pt-1">
+                        <FiPhone size={13} className="text-slate-400" />
+                        <span className="font-medium">{order.contact_phone || order.mobile}</span>
+                      </div>
+                    )}
+
+                    {(order.address_line1 || order.address) && (
+                      <div className="flex items-start gap-1.5 text-slate-600 dark:text-slate-300 pt-1">
+                        <FiHome size={13} className="text-slate-400 mt-0.5 shrink-0" />
+                        <span className="font-medium leading-relaxed">
+                          {[
+                            order.address_line1 || order.address,
+                            order.address_line2,
+                            order.city,
+                            order.state,
+                            order.pincode ? `PIN: ${order.pincode}` : null,
+                          ]
+                            .filter(Boolean)
+                            .join(", ")}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* SHIPMENT DETAILS CARD */}
+                <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm">
+                  <div className="flex items-center gap-2 mb-3.5">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600">
+                      <FiBox size={15} />
+                    </span>
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+                      Shipment Details
+                    </h3>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    <div className="rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 p-2.5">
+                      <p className="text-[10px] text-slate-400 font-medium uppercase">Payment Mode</p>
+                      <p className="text-xs font-bold text-slate-800 dark:text-slate-100 mt-0.5">
+                        {order.payment_type || order.payment_mode || "Prepaid"}
+                      </p>
+                    </div>
+
+                    <div className="rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 p-2.5">
+                      <p className="text-[10px] text-slate-400 font-medium uppercase">Order Value</p>
+                      <p className="text-xs font-bold text-slate-800 dark:text-slate-100 mt-0.5">
+                        ₹{Number(order.total_amount || order.amount || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}
+                      </p>
+                    </div>
+
+                    <div className="rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 p-2.5">
+                      <p className="text-[10px] text-slate-400 font-medium uppercase">Weight</p>
+                      <p className="text-xs font-bold text-slate-800 dark:text-slate-100 mt-0.5">
+                        {order.package_weight || order.weight || "0.5"} kg
+                      </p>
+                    </div>
+
+                    <div className="rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 p-2.5">
+                      <p className="text-[10px] text-slate-400 font-medium uppercase">Origin Facility</p>
+                      <p className="text-xs font-bold text-slate-800 dark:text-slate-100 mt-0.5 truncate">
+                        {order.pickup_city || "Merchant Warehouse"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* TIMELINE SCANS */}
             <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 sm:p-6 shadow-sm">
               <div className="flex items-center justify-between mb-5">
@@ -559,11 +789,12 @@ export default function Tracking() {
               {scans.length > 0 ? (
                 <div className="relative pl-2 sm:pl-3">
                   {/* Vertical Progress Line */}
-                  <div className="absolute left-[13px] sm:left-[17px] top-3 bottom-3 w-0.5 bg-slate-100 dark:bg-slate-800" />
+                  <div className="absolute left-[13px] sm:left-[17px] top-3 bottom-3 w-0.5 bg-slate-200 dark:bg-slate-800" />
 
                   <div className="space-y-4">
                     {scans.map((scan, idx) => (
                       <div key={scan.id || idx} className="relative flex items-start gap-3.5">
+                        {/* Event Circle Node */}
                         <div
                           className={`relative z-10 mt-1 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 ${
                             idx === 0
@@ -574,33 +805,47 @@ export default function Tracking() {
                           {idx === 0 && <span className="h-1.5 w-1.5 rounded-full bg-[#008dd2]" />}
                         </div>
 
+                        {/* Event Card Content */}
                         <div
                           className={`flex-1 rounded-xl border p-3.5 sm:p-4 transition ${
                             idx === 0
-                              ? "border-sky-200 dark:border-sky-900/50 bg-sky-50/40 dark:bg-sky-950/20 shadow-xs"
-                              : "border-slate-100 dark:border-slate-800/80 bg-white dark:bg-slate-800/40"
+                              ? "border-sky-200 dark:border-sky-900/50 bg-sky-50/50 dark:bg-sky-950/20 shadow-xs"
+                              : "border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-800/40"
                           }`}
                         >
                           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-1.5 sm:gap-4">
-                            <div>
-                              <p className="text-sm font-bold text-slate-800 dark:text-slate-100">
-                                {scan.status || "Status Update"}
-                              </p>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <p className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                                  {scan.status || "Status Update"}
+                                </p>
+                                {idx === 0 && (
+                                  <span className="rounded-md bg-[#008dd2]/10 px-2 py-0.5 text-[10px] font-bold text-[#008dd2]">
+                                    Latest Event
+                                  </span>
+                                )}
+                              </div>
+
                               {scan.location && (
-                                <p className="mt-0.5 text-xs font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                                  <FiMapPin size={11} className="text-slate-400" />
+                                <p className="mt-1 text-xs font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                                  <FiMapPin size={12} className="text-[#008dd2] shrink-0" />
                                   <span>{scan.location}</span>
                                 </p>
                               )}
-                              {scan.instructions && scan.instructions !== scan.status && (
-                                <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">
+
+                              {scan.instructions && (
+                                <p className="mt-1 text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                                   {scan.instructions}
                                 </p>
                               )}
                             </div>
-                            <span className="shrink-0 text-[11px] font-semibold text-slate-400">
-                              {formatTrackingDateTime(scan.dateTime || scan.status_datetime)}
-                            </span>
+
+                            <div className="shrink-0 text-left sm:text-right mt-1 sm:mt-0">
+                              <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 dark:bg-slate-800 px-2.5 py-1 text-[11px] font-semibold text-slate-600 dark:text-slate-300">
+                                <FiClock size={11} className="text-slate-400" />
+                                <span>{formatTrackingDateTime(scan.dateTime)}</span>
+                              </span>
+                            </div>
                           </div>
                         </div>
                       </div>

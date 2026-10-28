@@ -1581,20 +1581,13 @@ const searchOrderForTracking = (userId, search) => {
 
     const query = `
       SELECT
-        id,
-        order_id,
-        user_id,
-        awb,
-        status,
-        tracking_status,
-        tracking_data,
-        tracking_updated_at,
-        created_at
-      FROM orders
-      WHERE user_id = ?
+        o.*,
+        COALESCE(o.carrier, 'Delhivery') AS courier_name
+      FROM orders o
+      WHERE o.user_id = ?
         AND (
-          CAST(order_id AS CHAR) = ?
-          OR UPPER(TRIM(COALESCE(awb, ''))) = UPPER(?)
+          CAST(o.order_id AS CHAR) = ?
+          OR UPPER(TRIM(COALESCE(o.awb, ''))) = UPPER(?)
         )
       LIMIT 1
     `;
@@ -1604,7 +1597,44 @@ const searchOrderForTracking = (userId, search) => {
         return reject(error);
       }
 
-      return resolve(rows?.[0] || null);
+      if (rows && rows.length > 0) {
+        return resolve(rows[0]);
+      }
+
+      // Fallback check in offline_orders table by consignment_no or id
+      const offlineQuery = `
+        SELECT
+          id,
+          id AS order_id,
+          user_id,
+          consignment_no AS awb,
+          status,
+          carrier AS courier_name,
+          consignee_name AS contact_name,
+          mobile AS contact_phone,
+          address AS address_line1,
+          city,
+          state,
+          pincode,
+          amount AS total_amount,
+          payment_mode AS payment_type,
+          weight AS package_weight,
+          created_at
+        FROM offline_orders
+        WHERE user_id = ?
+          AND (
+            CAST(id AS CHAR) = ?
+            OR UPPER(TRIM(COALESCE(consignment_no, ''))) = UPPER(?)
+          )
+        LIMIT 1
+      `;
+
+      db.query(offlineQuery, [Number(userId), term, term], (offlineErr, offlineRows) => {
+        if (offlineErr) {
+          return resolve(null);
+        }
+        return resolve(offlineRows?.[0] || null);
+      });
     });
   });
 };
