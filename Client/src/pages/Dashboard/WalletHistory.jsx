@@ -412,41 +412,6 @@ export default function WalletHistory() {
     });
   }, [transactions, search, typeFilter, categoryFilter, startDate, endDate]);
 
-  // KPI Summary
-  const summary = useMemo(() => {
-    let totalCredits = 0;
-    let creditCount = 0;
-    let totalDebits = 0;
-    let debitCount = 0;
-
-    filteredTransactions.forEach((t) => {
-      const type = getType(t.type);
-      const amt = Number(t.amount || 0);
-
-      if (type === "CREDIT") {
-        totalCredits += amt;
-        creditCount++;
-      } else {
-        totalDebits += amt;
-        debitCount++;
-      }
-    });
-
-    const displayBalance =
-      liveBalance !== null
-        ? liveBalance
-        : transactions[0]?.closing_balance != null
-        ? Number(transactions[0].closing_balance)
-        : 0;
-
-    return {
-      currentBalance: displayBalance,
-      totalCredits,
-      creditCount,
-      totalDebits,
-      debitCount,
-    };
-  }, [filteredTransactions, liveBalance, transactions]);
 
   // Pagination calculation
   const totalPages = Math.ceil(filteredTransactions.length / rowsPerPage) || 1;
@@ -678,70 +643,6 @@ export default function WalletHistory() {
           </div>
         </div>
 
-        {/* ==================================================
-            3. EXACT 3 KPI SUMMARY STATCARDS
-        ================================================== */}
-        <div className="mb-3 grid grid-cols-1 md:grid-cols-3 gap-3.5">
-          {/* Card 1: AVAILABLE WALLET BALANCE */}
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_1px_4px_rgba(15,23,42,0.03)] transition-all dark:border-slate-800 dark:bg-[#0f1319]">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                  Available Balance
-                </p>
-                <p className="mt-1 text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
-                  {formatAmount(summary.currentBalance)}
-                </p>
-                <p className="mt-0.5 text-[11.5px] font-medium text-slate-500 dark:text-slate-400">
-                  Live funds ready for shipping
-                </p>
-              </div>
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-sky-50 text-[#008dd2] dark:bg-[#008dd2]/10 dark:text-[#38bdf8]">
-                <HiOutlineCash className="text-xl" />
-              </div>
-            </div>
-          </div>
-
-          {/* Card 2: TOTAL CREDITED (Top-Ups / Refunds / COD) */}
-          <div className="rounded-2xl border border-emerald-200/80 bg-white p-4 shadow-[0_1px_4px_rgba(15,23,42,0.03)] transition-all dark:border-emerald-900/40 dark:bg-[#0f1319]">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-                  Total Added (Credits)
-                </p>
-                <p className="mt-1 text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">
-                  +{formatAmount(summary.totalCredits)}
-                </p>
-                <p className="mt-0.5 text-[11.5px] font-medium text-slate-500 dark:text-slate-400">
-                  Across <span className="font-semibold text-emerald-600 dark:text-emerald-400">{summary.creditCount}</span> recharges & refunds
-                </p>
-              </div>
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400">
-                <HiOutlineCheckCircle className="text-xl" />
-              </div>
-            </div>
-          </div>
-
-          {/* Card 3: TOTAL DEBITED (Freight / Surcharges) */}
-          <div className="rounded-2xl border border-rose-200/80 bg-white p-4 shadow-[0_1px_4px_rgba(15,23,42,0.03)] transition-all dark:border-rose-900/40 dark:bg-[#0f1319]">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-[11px] font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400">
-                  Total Spent (Debits)
-                </p>
-                <p className="mt-1 text-2xl font-bold tracking-tight text-rose-600 dark:text-rose-400">
-                  -{formatAmount(summary.totalDebits)}
-                </p>
-                <p className="mt-0.5 text-[11.5px] font-medium text-slate-500 dark:text-slate-400">
-                  Across <span className="font-semibold text-rose-600 dark:text-rose-400">{summary.debitCount}</span> shipments & weight debits
-                </p>
-              </div>
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-rose-50 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400">
-                <HiOutlineTruck className="text-xl" />
-              </div>
-            </div>
-          </div>
-        </div>
 
         {/* ==================================================
             4. SEARCH & FILTER CONTROLS
