@@ -752,4 +752,22 @@ html.dark .orders-scrollbar::-webkit-scrollbar-thumb:hover {
 .animate-truck-road-dash {
   animation: truckRoadDash 0.4s linear infinite;
 }
+
+/* ======================================================
+   PARCEL DROP LOGO PIN FLOATING ANIMATION
+   Smooth, gentle 3.5px hover up and down for 'o' pin
+   ====================================================== */
+@keyframes logoPinFloat {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3.5px);
+  }
+}
+
+.animate-logo-pin-float {
+  animation: logoPinFloat 2.2s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+  will-change: transform;
+}
 
