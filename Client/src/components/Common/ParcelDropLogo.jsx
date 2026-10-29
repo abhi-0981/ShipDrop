@@ -39,10 +39,8 @@ export default function ParcelDropLogo({
         const imgData = ctx.getImageData(0, 0, width, height);
         const pixels = imgData.data;
 
-        // Detect non-empty columns (non-white, non-transparent) and rows
+        // Detect non-empty columns (non-white, non-transparent)
         const colHasContent = new Array(width).fill(false);
-        let minY = height;
-        let maxY = 0;
 
         for (let y = 0; y < height; y++) {
           for (let x = 0; x < width; x++) {
@@ -53,8 +51,6 @@ export default function ParcelDropLogo({
             const b = pixels[idx + 2];
             if (a > 30 && !(r > 240 && g > 240 && b > 240)) {
               colHasContent[x] = true;
-              if (y < minY) minY = y;
-              if (y > maxY) maxY = y;
             }
           }
         }
@@ -85,31 +81,27 @@ export default function ParcelDropLogo({
         const leftCut = Math.max(0, o_start);
         const rightCut = Math.min(width, o_end + 1);
 
-        // Precise vertical bounds (eliminates bottom empty space so logo is vertically centered)
-        const topCut = minY < maxY ? Math.max(0, minY - 1) : 0;
-        const bottomCut = minY < maxY ? Math.min(height, maxY + 2) : height;
-        const croppedHeight = Math.max(1, bottomCut - topCut);
-
         // Helper to crop a slice and make white background transparent
+        // Using original full image height guarantees 100% identical aspect ratio and font scaling
         const createSlice = (startX, sliceWidth) => {
           const c = document.createElement("canvas");
           c.width = sliceWidth;
-          c.height = croppedHeight;
+          c.height = height;
           const cCtx = c.getContext("2d");
           cCtx.drawImage(
             img,
             startX,
-            topCut,
+            0,
             sliceWidth,
-            croppedHeight,
+            height,
             0,
             0,
             sliceWidth,
-            croppedHeight
+            height
           );
 
           // Make white background transparent so it floats cleanly in light & dark mode
-          const sliceData = cCtx.getImageData(0, 0, sliceWidth, croppedHeight);
+          const sliceData = cCtx.getImageData(0, 0, sliceWidth, height);
           const sPix = sliceData.data;
           for (let i = 0; i < sPix.length; i += 4) {
             const r = sPix[i];
@@ -187,11 +179,11 @@ export default function ParcelDropLogo({
       />
 
       {/* 2. "o" (Location Pin) - Exact original size & color with smooth float */}
-      <span className="inline-flex items-center h-full animate-logo-pin-float pointer-events-none">
+      <span className="inline-block h-full animate-logo-pin-float pointer-events-none">
         <img
           src={slices.pin}
           alt="o"
-          className="h-full w-auto object-contain block"
+          className="h-full w-auto object-contain block pointer-events-none"
         />
       </span>
 
