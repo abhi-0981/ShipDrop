@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { Link, useNavigate, Navigate } from "react-router-dom";
 import {
   FiArrowLeft,
   FiEye,
@@ -10,25 +10,15 @@ import {
 import toast from "react-hot-toast";
 import api from "../services/api";
 import ParcelDropLogo from "../components/Common/ParcelDropLogo";
+import { hasActiveSession } from "../utils/auth";
 
 function Login() {
-  const navigate = useNavigate();
+  // If user already has an active session (< 24h), immediately redirect without flashing login form
+  if (hasActiveSession()) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    const user = localStorage.getItem("user");
-    if (token && user) {
-      api
-        .get("/users/session")
-        .then(() => {
-          navigate("/dashboard", { replace: true });
-        })
-        .catch(() => {
-          localStorage.removeItem("token");
-          localStorage.removeItem("user");
-        });
-    }
-  }, [navigate]);
+  const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
     email: "",

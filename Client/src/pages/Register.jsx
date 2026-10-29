@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, Navigate } from "react-router-dom";
 import {
   FiArrowLeft,
   FiCheck,
@@ -13,8 +13,14 @@ import {
 import toast from "react-hot-toast";
 import api from "../services/api";
 import ParcelDropLogo from "../components/Common/ParcelDropLogo";
+import { hasActiveSession } from "../utils/auth";
 
 function Register() {
+  // If user already has an active session (< 24h), redirect to dashboard
+  if (hasActiveSession()) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
