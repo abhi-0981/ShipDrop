@@ -587,26 +587,44 @@ function PublicTracking() {
 
               <div className="relative p-6 sm:p-7">
 
-                <div className="mb-6 flex items-start gap-4">
+                <div className="mb-6 flex items-start justify-between gap-4">
 
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#008dd2] text-white shadow-[0_8px_20px_rgba(0,141,210,0.22)]">
-                    <SearchIcon size={21} />
+                  <div className="flex items-start gap-4">
+
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#008dd2] text-white shadow-[0_8px_20px_rgba(0,141,210,0.22)]">
+                      <SearchIcon size={21} />
+                    </div>
+
+                    <div>
+                      <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.15em] text-[#008dd2]">
+                        Shipment
+                      </p>
+
+                      <h2 className="text-xl font-extrabold tracking-tight text-slate-900">
+                        Track Shipment
+                      </h2>
+
+                      <p className="mt-1 text-xs leading-5 text-slate-400">
+                        Enter your AWB number to view the
+                        latest shipment status.
+                      </p>
+                    </div>
+
                   </div>
 
-                  <div>
-                    <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.15em] text-[#008dd2]">
-                      Shipment
-                    </p>
-
-                    <h2 className="text-xl font-extrabold tracking-tight text-slate-900">
-                      Track Shipment
-                    </h2>
-
-                    <p className="mt-1 text-xs leading-5 text-slate-400">
-                      Enter your AWB number to view the
-                      latest shipment status.
-                    </p>
-                  </div>
+                  {tracking && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTracking(null);
+                        setAwb("");
+                        setTrackingError("");
+                      }}
+                      className="shrink-0 rounded-xl border border-slate-200 bg-white px-3 py-2 text-[10px] font-bold text-slate-500 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700"
+                    >
+                      Reset
+                    </button>
+                  )}
 
                 </div>
 
@@ -669,6 +687,63 @@ function PublicTracking() {
                   </button>
 
                 </form>
+
+                {/* TRACKING RESULT */}
+                <div className="mt-4">
+                  {!tracking ? (
+                    <div className="flex min-h-[92px] items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 px-5 text-center">
+                      <div>
+                        <p className="text-xs font-bold text-slate-600">
+                          Track your order & destination
+                        </p>
+                        <p className="mt-1 text-[10px] leading-5 text-slate-400">
+                          Enter your AWB number above to view real-time location & destination.
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="rounded-2xl border border-sky-100 bg-sky-50/50 p-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-100 text-[#008dd2]">
+                            <PackageIcon size={19} />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className={`h-2 w-2 rounded-full ${statusStyle.dot}`} />
+                              <p className={`text-sm font-extrabold truncate ${statusStyle.text}`}>
+                                {humanizeTrackingStatus(tracking.status)}
+                              </p>
+                            </div>
+                            <p className="mt-0.5 text-[10px] text-slate-500 truncate">
+                              AWB: <span className="font-bold text-slate-700">{tracking.awb}</span>
+                            </p>
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => setShowTrackingDetails(true)}
+                          className="shrink-0 rounded-xl bg-[#008dd2] px-3.5 py-2 text-[11px] font-bold text-white shadow-sm transition hover:bg-[#007fbd]"
+                        >
+                          View Details
+                        </button>
+                      </div>
+
+                      {tracking.destination && (
+                        <div className="mt-3 flex items-center justify-between rounded-xl bg-white/80 px-3.5 py-2.5">
+                          <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                            <LocationIcon size={13} />
+                            Destination
+                          </span>
+                          <span className="text-xs font-extrabold text-slate-800 text-right truncate ml-2" title={tracking.destination}>
+                            {tracking.destination}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
 
                 <div className="mt-4 flex items-center gap-2 text-[10px] font-medium text-slate-400">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
@@ -929,13 +1004,75 @@ function PublicTracking() {
 
               <div className="overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
 
+                {/* ROUTE BANNER */}
+                {(tracking.destination || tracking.origin) && (
+                  <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-sky-100 bg-gradient-to-r from-sky-50/60 via-white to-blue-50/40 p-3.5 sm:p-4 shadow-sm">
+                    <div className="flex flex-wrap items-center gap-3 sm:gap-6">
+                      {tracking.origin && (
+                        <div className="flex items-center gap-2.5">
+                          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
+                            <LocationIcon size={16} />
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                              Origin
+                            </p>
+                            <p className="text-xs font-bold text-slate-700">
+                              {tracking.origin}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {tracking.origin && tracking.destination && (
+                        <div className="hidden sm:flex items-center text-slate-300">
+                          <svg
+                            width="22"
+                            height="22"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M5 12h14" />
+                            <path d="m12 5 7 7-7 7" />
+                          </svg>
+                        </div>
+                      )}
+
+                      {tracking.destination && (
+                        <div className="flex items-center gap-2.5">
+                          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600">
+                            <LocationIcon size={16} />
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                              Destination
+                            </p>
+                            <p className="text-xs font-extrabold text-slate-800">
+                              {tracking.destination}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2 rounded-full bg-white px-3 py-1 text-[11px] font-bold text-slate-700 border border-slate-200/80 shadow-xs">
+                      <span className={`h-2 w-2 rounded-full ${statusStyle.dot}`} />
+                      {humanizeTrackingStatus(tracking.status)}
+                    </div>
+                  </div>
+                )}
+
                 {/* TOP DETAILS */}
 
                 <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
 
-                    <div className="border-b border-slate-100 px-4 py-3.5 lg:border-r">
+                    <div className="border-b border-slate-100 px-4 py-3.5 sm:border-r">
                       <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
                         Tracking No
                       </p>
@@ -954,6 +1091,16 @@ function PublicTracking() {
 
                       <p className="mt-1 truncate text-sm font-bold text-slate-800">
                         Delhivery
+                      </p>
+                    </div>
+
+                    <div className="border-b border-slate-100 px-4 py-3.5 sm:border-r">
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                        Destination
+                      </p>
+
+                      <p className="mt-1 truncate text-sm font-bold text-slate-800" title={tracking.destination || ""}>
+                        {tracking.destination || "—"}
                       </p>
                     </div>
 

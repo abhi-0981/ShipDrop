@@ -742,6 +742,32 @@ const getTrackingForWaybills = async (
             status?.Instructions ||
             null,
 
+          tracking_origin:
+            shipment?.Origin ||
+            shipment?.OriginLocation ||
+            null,
+
+          tracking_destination:
+            shipment?.Destination ||
+            shipment?.DestinationLocation ||
+            shipment?.Consignee?.City ||
+            null,
+
+          tracking_consignee: shipment?.Consignee
+            ? {
+                city:
+                  shipment.Consignee.City ||
+                  null,
+                state:
+                  shipment.Consignee.State ||
+                  null,
+                pincode:
+                  shipment.Consignee.PinCode ||
+                  shipment.Consignee.pincode ||
+                  null,
+              }
+            : null,
+
           tracking_scans:
             scans,
 

@@ -1,3 +1,4 @@
+const db = require("../config/db");
 const {
   getTrackingForWaybills,
 } = require("../services/delhiveryTrackingService");
@@ -62,9 +63,55 @@ const publicTrackingController = async (req, res) => {
     }
 
     // --------------------------------------------------
+    // DESTINATION & ORIGIN RESOLUTION
+    // --------------------------------------------------
+    // Attempt to enrich destination from local orders DB
+    // (city, state, pincode), with graceful fallback to
+    // Delhivery tracking payload.
+
+    let dbOrder = null;
+    try {
+      const [rows] = await db.promise().query(
+        "SELECT city, state, pincode FROM orders WHERE awb = ? LIMIT 1",
+        [awb]
+      );
+      if (Array.isArray(rows) && rows.length > 0) {
+        dbOrder = rows[0];
+      }
+    } catch (dbErr) {
+      console.warn("Public tracking DB lookup warning:", dbErr?.message);
+    }
+
+    let destination = null;
+    if (dbOrder?.city) {
+      const parts = [dbOrder.city.trim()];
+      if (dbOrder.state && dbOrder.state.trim()) {
+        parts.push(dbOrder.state.trim());
+      }
+      destination = parts.join(", ");
+      if (dbOrder.pincode) {
+        destination += ` (${dbOrder.pincode})`;
+      }
+    } else if (tracking.tracking_consignee?.city) {
+      const c = tracking.tracking_consignee;
+      const parts = [c.city.trim()];
+      if (c.state && c.state.trim()) {
+        parts.push(c.state.trim());
+      }
+      destination = parts.join(", ");
+      if (c.pincode) {
+        destination += ` (${c.pincode})`;
+      }
+    } else if (tracking.tracking_destination) {
+      destination = tracking.tracking_destination;
+    }
+
+    const origin = tracking.tracking_origin || null;
+
+    // --------------------------------------------------
     // SAFE PUBLIC RESPONSE
     // --------------------------------------------------
-    // Never expose internal DB/user/order data.
+    // Never expose sensitive internal DB/user/order data.
 
     return res.status(200).json({
       success: true,
@@ -90,6 +137,25 @@ const publicTrackingController = async (req, res) => {
 
         location:
           tracking.tracking_location || null,
+
+        destination,
+
+        origin,
+
+        city:
+          dbOrder?.city ||
+          tracking.tracking_consignee?.city ||
+          null,
+
+        state:
+          dbOrder?.state ||
+          tracking.tracking_consignee?.state ||
+          null,
+
+        pincode:
+          dbOrder?.pincode ||
+          tracking.tracking_consignee?.pincode ||
+          null,
 
         instructions:
           tracking.tracking_instructions || null,
