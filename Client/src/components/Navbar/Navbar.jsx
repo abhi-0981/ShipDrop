@@ -48,7 +48,7 @@ function Navbar() {
           </Link>
 
           <Link
-            to={hasActiveSession() ? "/dashboard" : "/register"}
+            to="/register"
             className="rounded-xl bg-[#008dd2] px-3.5 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-[14px] font-semibold text-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#007fbd] hover:shadow-md"
           >
             Sign Up
