@@ -1678,35 +1678,35 @@ const manifestedCount = useMemo(() => {
                     </button>
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[7%] bg-white px-1.5 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[7%] bg-white px-1.5 py-3 text-left text-[12px] font-bold text-slate-800">
                     Party
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[18%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[18%] bg-white px-2 py-3 text-left text-[12px] font-bold text-slate-800">
                     Customer
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[16%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[16%] bg-white px-2 py-3 text-left text-[12px] font-bold text-slate-800">
                     Shipment
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[16%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[16%] bg-white px-2 py-3 text-left text-[12px] font-bold text-slate-800">
                     Route
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[10%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[10%] bg-white px-2 py-3 text-left text-[12px] font-bold text-slate-800">
                     Payment
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[8%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[8%] bg-white px-2 py-3 text-left text-[12px] font-bold text-slate-800">
                     Weight
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[11%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[11%] bg-white px-2 py-3 text-left text-[12px] font-bold text-slate-800">
                     Created
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[10%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[10%] bg-white px-2 py-3 text-left text-[12px] font-bold text-slate-800">
                     Actions
                   </th>
                 </tr>
@@ -1779,19 +1779,19 @@ const manifestedCount = useMemo(() => {
                                 {getPartyName(order)}
                               </span>
                             ) : (
-                              <span className="text-[12px] text-slate-400 font-normal">—</span>
+                              <span className="text-[12px] text-slate-500 font-medium">—</span>
                             )}
                           </div>
                         </td>
 
                         <td className="px-2 py-2.5 break-words">
                           <div className="min-w-0">
-                            <p className="truncate text-[13px] font-semibold text-slate-800">
+                            <p className="truncate text-[13px] font-bold text-slate-800">
                               {getCustomerName(order)}
                             </p>
 
                             {getMobile(order) && (
-                              <p className="mt-0.5 text-[11px] text-slate-400">
+                              <p className="mt-0.5 text-[11px] font-medium text-slate-600">
                                 {getMobile(order)}
                               </p>
                             )}
@@ -1814,7 +1814,7 @@ const manifestedCount = useMemo(() => {
                               <p
                                 onClick={() => triggerTracking(awb)}
                                 title="Click to track shipment"
-                                className="truncate text-[13px] font-semibold text-slate-800 hover:text-[#008dd2] cursor-pointer select-none"
+                                className="truncate text-[13px] font-bold text-slate-900 hover:text-[#008dd2] cursor-pointer select-none"
                               >
                                 {awb}
                               </p>
@@ -1824,18 +1824,18 @@ const manifestedCount = useMemo(() => {
                                   type="button"
                                   title="Copy AWB"
                                   onClick={() => copyAWB(awb)}
-                                  className="shrink-0 p-0.5 text-slate-400 hover:text-[#008dd2] transition"
+                                  className="shrink-0 p-0.5 text-slate-500 hover:text-[#008dd2] transition"
                                 >
                                   <Icon name="copy" size={13} />
                                 </button>
                               )}
                             </div>
 
-                            <p className="mt-0.5 text-[11px] text-slate-500">
+                            <p className="mt-0.5 text-[10.5px] font-medium text-slate-600">
                               Pickup ID: {getPickupId(order)}
                             </p>
 
-                            <p className="mt-0.5 text-[11px] text-slate-500">
+                            <p className="mt-0.5 text-[10.5px] font-medium text-slate-600">
                               {getShipmentName(order)} ·{" "}
                               {service === "AIR" ? "By Air" : "By Surface"}
                             </p>
@@ -1852,9 +1852,9 @@ const manifestedCount = useMemo(() => {
                                 <Icon name="location" size={12} />
                               </span>
 
-                              <p className="truncate text-[12px] font-medium text-slate-700">
+                              <p className="truncate text-[11px] font-semibold text-slate-800">
                                 {getPickupCity(order)}{" "}
-                                <span className="font-normal text-slate-400">
+                                <span className="font-medium text-slate-500">
                                   ({getPickupPincode(order)})
                                 </span>
                               </p>
@@ -1863,13 +1863,13 @@ const manifestedCount = useMemo(() => {
                             <div className="ml-[5px] h-2 border-l border-dashed border-slate-300" />
 
                             <div className="flex items-center gap-1.5 min-w-0">
-                              <span className="mt-[1px] text-slate-400 shrink-0">
+                              <span className="mt-[1px] text-slate-500 shrink-0">
                                 <Icon name="location" size={12} />
                               </span>
 
-                              <p className="truncate text-[12px] font-medium text-slate-700">
+                              <p className="truncate text-[11px] font-semibold text-slate-800">
                                 {getDeliveryCity(order)}{" "}
-                                <span className="font-normal text-slate-400">
+                                <span className="font-medium text-slate-500">
                                   ({getDeliveryPincode(order)})
                                 </span>
                               </p>
@@ -1879,7 +1879,7 @@ const manifestedCount = useMemo(() => {
 
                         <td className="px-2 py-2.5 break-words">
                           <div
-                            className="text-[12px] font-semibold"
+                            className="text-[12px] font-bold"
                             style={{
                               color: payment === "COD" ? "#dc2626" : PRIMARY,
                             }}
@@ -1887,18 +1887,18 @@ const manifestedCount = useMemo(() => {
                             {payment}
                           </div>
 
-                          <p className="mt-0.5 text-[10px] text-slate-400">
+                          <p className="mt-0.5 text-[10.5px] font-medium text-slate-600">
                             {payment === "COD" ? "Cash on Delivery" : "Prepaid"}
                           </p>
 
-                          <p className="text-[10px] text-slate-500">
+                          <p className="text-[10.5px] font-medium text-slate-600">
                             Total: ₹
                             {Number(order.shipping_charge || 0).toFixed(2)}
                           </p>
                         </td>
 
                         <td className="px-2 py-2.5 break-words">
-                          <p className="text-[12px] font-semibold text-slate-700">
+                          <p className="text-[12px] font-bold text-slate-800">
                             Box:{" "}
                             {Number(
                               order.packages?.reduce(
@@ -1908,21 +1908,21 @@ const manifestedCount = useMemo(() => {
                             )}
                           </p>
 
-                          <p className="mt-0.5 text-[10px] text-slate-400">
+                          <p className="mt-0.5 text-[10.5px] font-medium text-slate-600">
                             Wt: {getWeight(order).toFixed(2)} kg
                           </p>
 
-                          <p className="text-[10px] text-slate-400">
+                          <p className="text-[10.5px] font-medium text-slate-600">
                             Vol: {getVolumetricWeight(order).toFixed(2)} kg
                           </p>
                         </td>
 
                         <td className="px-2 py-2.5 break-words">
-                          <p className="text-[12px] font-medium text-slate-700">
+                          <p className="text-[12px] font-bold text-slate-800">
                             #{getOrderId(order)}
                           </p>
 
-                          <p className="mt-0.5 text-[10px] leading-4 text-slate-400">
+                          <p className="mt-0.5 text-[10.5px] font-medium text-slate-600">
                             Manifested: {formatDate(created)}{" "}
                             {formatTime(created)}
                           </p>

@@ -1843,31 +1843,31 @@ function OutForDelivery() {
 
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[17%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[17%] bg-white px-2 py-3 text-left text-[12px] font-bold text-slate-800">
                     Customer
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[16%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[16%] bg-white px-2 py-3 text-left text-[12px] font-bold text-slate-800">
                     Shipment
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[16%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[16%] bg-white px-2 py-3 text-left text-[12px] font-bold text-slate-800">
                     Route
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[13%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[13%] bg-white px-2 py-3 text-left text-[12px] font-bold text-slate-800">
                     Payment
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[10%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[10%] bg-white px-2 py-3 text-left text-[12px] font-bold text-slate-800">
                     Weight
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[11%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[11%] bg-white px-2 py-3 text-left text-[12px] font-bold text-slate-800">
                     Created
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[12%] bg-white px-2 py-3 text-center text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[12%] bg-white px-2 py-3 text-center text-[12px] font-bold text-slate-800">
                     Actions
                   </th>
 
@@ -1988,7 +1988,7 @@ function OutForDelivery() {
 
                             <div className="min-w-0">
 
-                              <p className="truncate text-[13px] font-semibold text-slate-800">
+                              <p className="truncate text-[13px] font-bold text-slate-900">
                                 {getCustomerName(
                                   order
                                 )}
@@ -1997,7 +1997,7 @@ function OutForDelivery() {
                               {getMobile(
                                 order
                               ) && (
-                                <p className="mt-0.5 text-[11px] text-slate-400">
+                                <p className="mt-0.5 text-[11px] font-medium text-slate-600">
                                   {getMobile(
                                     order
                                   )}
@@ -2026,11 +2026,11 @@ function OutForDelivery() {
 
                              {status !== "PROCESSING" && (
   <>
-    <p className="truncate text-[13px] font-semibold text-slate-800">
+    <p className="truncate text-[13px] font-bold text-slate-900">
       {awb}
     </p>
 
-    <p className="mt-0.5 text-[10px] text-slate-400">
+    <p className="mt-0.5 text-[11px] font-medium text-slate-600">
       Pickup ID:{" "}
       {order?.pickup_id ||
         order?.pickupId ||
@@ -2039,7 +2039,7 @@ function OutForDelivery() {
   </>
 )}
 
-                              <p className="mt-0.5 text-[10px] text-slate-400">
+                              <p className="mt-0.5 text-[11px] font-medium text-slate-600">
                                 {getShipmentName(
                                   order
                                 )}{" "}
@@ -2065,16 +2065,16 @@ function OutForDelivery() {
                                   <Icon name="pin" size={15} strokeWidth={2} />
                                 </span>
                                 <span className="my-[2px] h-[12px] border-l border-dashed border-slate-300" />
-                                <span className="flex h-[15px] w-4 items-center justify-center text-slate-400">
+                                <span className="flex h-[15px] w-4 items-center justify-center text-slate-500">
                                   <Icon name="pin" size={15} strokeWidth={2} />
                                 </span>
                               </div>
                               <div className="min-w-0 flex-1 space-y-[5px]">
-                                <p className="truncate text-[12px] font-medium leading-[17px] text-slate-800" title={`${getPickupCity(order)} (${getPickupPincode(order)})`}>
-                                  {getPickupCity(order)} <span className="text-[11px] font-normal text-slate-400">{getPickupPincode(order) ? `(${getPickupPincode(order)})` : ""}</span>
+                                <p className="truncate text-[12px] font-semibold leading-[17px] text-slate-800" title={`${getPickupCity(order)} (${getPickupPincode(order)})`}>
+                                  {getPickupCity(order)} <span className="text-[11px] font-medium text-slate-500">{getPickupPincode(order) ? `(${getPickupPincode(order)})` : ""}</span>
                                 </p>
-                                <p className="truncate text-[12px] font-medium leading-[17px] text-slate-800" title={`${getDeliveryCity(order)} (${getDeliveryPincode(order)})`}>
-                                  {getDeliveryCity(order)} <span className="text-[11px] font-normal text-slate-400">{getDeliveryPincode(order) ? `(${getDeliveryPincode(order)})` : ""}</span>
+                                <p className="truncate text-[12px] font-semibold leading-[17px] text-slate-800" title={`${getDeliveryCity(order)} (${getDeliveryPincode(order)})`}>
+                                  {getDeliveryCity(order)} <span className="text-[11px] font-medium text-slate-500">{getDeliveryPincode(order) ? `(${getDeliveryPincode(order)})` : ""}</span>
                                 </p>
                               </div>
                             </div>
@@ -2089,7 +2089,7 @@ function OutForDelivery() {
                             <div>
 
                               <p
-                                className={`text-[12px] font-semibold ${
+                                className={`text-[12px] font-bold ${
                                   payment ===
                                   "COD"
                                     ? "text-amber-600"
@@ -2099,14 +2099,14 @@ function OutForDelivery() {
                                 {payment}
                               </p>
 
-                              <p className="mt-0.5 text-[10px] text-slate-400">
+                              <p className="mt-0.5 text-[11px] font-medium text-slate-600">
                                 {payment ===
                                 "COD"
                                   ? "Cash on Delivery"
                                   : "Prepaid"}
                               </p>
 
-                              <p className="text-[10px] text-slate-400">
+                              <p className="text-[11px] font-medium text-slate-600">
                                 Charge: ₹
                                 {getAmount(
                                   order
@@ -2125,14 +2125,14 @@ function OutForDelivery() {
 
                             <div>
 
-                              <p className="text-[12px] font-semibold text-slate-700">
+                              <p className="text-[12px] font-bold text-slate-800">
                                 Box:{" "}
                                 {getPackageCount(
                                   order
                                 )}
                               </p>
 
-                              <p className="mt-0.5 text-[10px] text-slate-400">
+                              <p className="mt-0.5 text-[11px] font-medium text-slate-600">
                                 Wt:{" "}
                                 {weight.toFixed(
                                   2
@@ -2140,7 +2140,7 @@ function OutForDelivery() {
                                 kg
                               </p>
 
-                              <p className="text-[10px] text-slate-400">
+                              <p className="text-[11px] font-medium text-slate-600">
                                 Vol:{" "}
                                 {getVolumetricWeight(
                                   order
@@ -2160,14 +2160,14 @@ function OutForDelivery() {
 
                           <td className="px-2 py-3">
 
-                            <p className="text-[12px] font-medium text-slate-700">
+                            <p className="text-[12px] font-bold text-slate-800">
                               #
                               {getOrderId(
                                 order
                               )}
                             </p>
 
-                            <p className="mt-0.5 text-[10px] text-slate-400">
+                            <p className="mt-0.5 text-[11px] font-medium text-slate-600">
 
                               {status ===
                               "MANIFESTED"

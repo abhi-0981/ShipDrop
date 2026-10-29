@@ -1553,35 +1553,35 @@ useEffect(() => {
                     </button>
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[7%] bg-white px-1.5 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[7%] bg-white px-1.5 py-3 text-left text-[12px] font-bold text-slate-800">
                     Party
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[18%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[18%] bg-white px-2 py-3 text-left text-[12px] font-bold text-slate-800">
                     Customer
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[16%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[16%] bg-white px-2 py-3 text-left text-[12px] font-bold text-slate-800">
                     Shipment
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[16%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[16%] bg-white px-2 py-3 text-left text-[12px] font-bold text-slate-800">
                     Route
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[10%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[10%] bg-white px-2 py-3 text-left text-[12px] font-bold text-slate-800">
                     Payment
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[8%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[8%] bg-white px-2 py-3 text-left text-[12px] font-bold text-slate-800">
                     Weight
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[11%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[11%] bg-white px-2 py-3 text-left text-[12px] font-bold text-slate-800">
                     Created
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[10%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[10%] bg-white px-2 py-3 text-left text-[12px] font-bold text-slate-800">
                     Actions
                   </th>
                 </tr>
@@ -1686,12 +1686,12 @@ useEffect(() => {
 
                         <td className="px-2 py-2.5 break-words">
                           <div className="min-w-0">
-                            <p className="truncate text-[13px] font-semibold text-slate-800">
+                            <p className="truncate text-[13px] font-bold text-slate-900">
                               {getCustomerName(order)}
                             </p>
 
                             {getMobile(order) && (
-                              <p className="mt-0.5 text-[11px] text-slate-400">
+                              <p className="mt-0.5 text-[11px] font-medium text-slate-600">
                                 {getMobile(order)}
                               </p>
                             )}
@@ -1710,7 +1710,7 @@ useEffect(() => {
                                   <p
                                     onClick={() => triggerTracking(awb)}
                                     title="click to track"
-                                    className="truncate text-[13px] font-semibold text-slate-800 cursor-pointer select-none hover:text-[#008dd2]"
+                                    className="truncate text-[13px] font-bold text-slate-900 cursor-pointer select-none hover:text-[#008dd2]"
                                   >
                                     {awb}
                                   </p>
@@ -1730,21 +1730,21 @@ useEffect(() => {
                                         }
                                       }}
                                       title="Copy AWB"
-                                      className="shrink-0 p-0.5 text-slate-400 hover:text-slate-700 transition"
+                                      className="shrink-0 p-0.5 text-slate-500 hover:text-slate-800 transition"
                                     >
                                       <Icon name="copy" size={14} />
                                     </button>
                                   )}
                                 </div>
 
-                                <p className="mt-0.5 text-[11px] text-slate-500">
+                                <p className="mt-0.5 text-[11px] font-medium text-slate-600">
                                   Pickup ID:{" "}
                                   {order?.pickup_id || order?.pickupId || order?.pickup_request_id || "—"}
                                 </p>
                               </>
                             )}
 
-                            <p className="mt-0.5 text-[11px] text-slate-500">
+                            <p className="mt-0.5 text-[11px] font-medium text-slate-600">
                               {getShipmentName(order)} -{" "}
                               {service === "AIR" ? "Air" : "Surface"}
                             </p>
@@ -1770,10 +1770,10 @@ useEffect(() => {
                                 <circle cx="12" cy="10" r="2.5" />
                               </svg>
 
-                              <p className="truncate text-[12px] font-medium text-slate-700">
+                              <p className="truncate text-[12px] font-semibold text-slate-800">
                                 {getPickupCity(order)}
                                 {getPickupPincode(order) && (
-                                  <span className="ml-1 text-[10px] text-slate-400">
+                                  <span className="ml-1 text-[10.5px] font-medium text-slate-500">
                                     ({getPickupPincode(order)})
                                   </span>
                                 )}
@@ -1793,7 +1793,7 @@ useEffect(() => {
                                 height="13"
                                 viewBox="0 0 24 24"
                                 fill="none"
-                                stroke="#94a3b8"
+                                stroke="#64748b"
                                 strokeWidth="1.8"
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
@@ -1803,10 +1803,10 @@ useEffect(() => {
                                 <circle cx="12" cy="10" r="2.5" />
                               </svg>
 
-                              <p className="truncate text-[12px] font-medium text-slate-700">
+                              <p className="truncate text-[12px] font-semibold text-slate-800">
                                 {getDeliveryCity(order)}
                                 {getDeliveryPincode(order) && (
-                                  <span className="ml-1 text-[10px] text-slate-400">
+                                  <span className="ml-1 text-[10.5px] font-medium text-slate-500">
                                     ({getDeliveryPincode(order)})
                                   </span>
                                 )}
@@ -1818,7 +1818,7 @@ useEffect(() => {
                         <td className="px-2 py-2.5 break-words">
                           <div>
                             <p
-                              className={`text-[12px] font-semibold ${
+                              className={`text-[12px] font-bold ${
                                 payment === "COD"
                                   ? "text-amber-600"
                                   : "text-[#008dd2]"
@@ -1827,13 +1827,13 @@ useEffect(() => {
                               {payment}
                             </p>
 
-                            <p className="mt-0.5 text-[10px] text-slate-400">
+                            <p className="mt-0.5 text-[11px] font-medium text-slate-600">
                               {payment === "COD"
                                 ? "Cash on Delivery"
                                 : "Prepaid"}
                             </p>
 
-                            <p className="text-[10px] text-slate-400">
+                            <p className="text-[11px] font-medium text-slate-600">
                               Charge: ₹
                               {Number(order?.shipping_charge || 0).toFixed(2)}
                             </p>
@@ -1842,26 +1842,26 @@ useEffect(() => {
 
                         <td className="px-2 py-2.5 break-words">
                           <div>
-                            <p className="text-[12px] font-semibold text-slate-700">
+                            <p className="text-[12px] font-bold text-slate-800">
                               Box: {getPackageCount(order)}
                             </p>
 
-                            <p className="mt-0.5 text-[10px] text-slate-400">
+                            <p className="mt-0.5 text-[11px] font-medium text-slate-600">
                               Wt: {weight.toFixed(2)} kg
                             </p>
 
-                            <p className="text-[10px] text-slate-400">
+                            <p className="text-[11px] font-medium text-slate-600">
                               Vol: {getVolumetricWeight(order).toFixed(2)} kg
                             </p>
                           </div>
                         </td>
 
                         <td className="px-2 py-2.5 break-words">
-                          <p className="text-[12px] font-medium text-slate-700">
+                          <p className="text-[12px] font-bold text-slate-800">
                             #{getOrderId(order)}
                           </p>
 
-                          <p className="mt-0.5 text-[10px] text-slate-400">
+                          <p className="mt-0.5 text-[11px] font-medium text-slate-600">
                             {status === "MANIFESTED"
                               ? "Manifested: "
                               : "Created: "}

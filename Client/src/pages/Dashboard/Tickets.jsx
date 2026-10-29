@@ -1256,13 +1256,13 @@ function Tickets() {
                     <p className="text-xs font-bold text-slate-900 truncate">
                       {ticket.subject}
                     </p>
-                    <p className="text-[11px] text-slate-400 mt-0.5">
-                      {ticket.awb && <span className="font-mono text-slate-500">AWB: {ticket.awb} • </span>}
+                    <p className="text-[11px] font-medium text-slate-600 mt-0.5">
+                      {ticket.awb && <span className="font-mono font-semibold text-slate-700">AWB: {ticket.awb} • </span>}
                       {ticket.public_order_id && `Order #${ticket.public_order_id}`}
                     </p>
                   </div>
 
-                  <div className="flex items-center justify-between border-t border-slate-50 pt-2 text-[10px] text-slate-400 font-medium">
+                  <div className="flex items-center justify-between border-t border-slate-100 pt-2 text-[10.5px] text-slate-600 font-medium">
                     <span>{formatDate(ticket.created_at)}</span>
                     <span className="flex items-center gap-1 text-[#008dd2] font-bold">
                       Open Discussion
@@ -1307,7 +1307,7 @@ function Tickets() {
         <div className="hidden sm:block overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.02)]">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-slate-100 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+              <tr className="border-b border-slate-200 bg-slate-50/90 text-[11px] font-bold uppercase tracking-wider text-slate-800">
                 <th className="py-3.5 px-5">Ticket</th>
                 <th className="py-3.5 px-5">Subject</th>
                 <th className="py-3.5 px-5">Category</th>
@@ -1375,7 +1375,7 @@ function Tickets() {
                             #{ticket.ticket_number}
                           </div>
                           {ticket.awb && (
-                            <div className="font-mono text-[10.5px] text-slate-400 font-medium">
+                            <div className="font-mono text-[10.5px] text-slate-600 font-semibold">
                               AWB: {ticket.awb}
                             </div>
                           )}
@@ -1384,11 +1384,11 @@ function Tickets() {
                     </td>
 
                     <td className="py-3.5 px-5">
-                      <div className="font-bold text-slate-800 group-hover:text-[#008dd2] transition-colors truncate max-w-sm">
+                      <div className="font-bold text-slate-900 group-hover:text-[#008dd2] transition-colors truncate max-w-sm">
                         {ticket.subject}
                       </div>
                       {ticket.public_order_id && (
-                        <div className="inline-flex items-center gap-1 rounded bg-slate-100 px-1.5 py-0.5 text-[9.5px] font-semibold text-slate-600 mt-0.5">
+                        <div className="inline-flex items-center gap-1 rounded bg-slate-100 px-1.5 py-0.5 text-[9.5px] font-semibold text-slate-700 mt-0.5">
                           <Icon name="box" size={10} />
                           <span>Order #{ticket.public_order_id}</span>
                         </div>
@@ -1396,7 +1396,7 @@ function Tickets() {
                     </td>
 
                     <td className="py-3.5 px-5">
-                      <span className="inline-flex items-center rounded-lg bg-slate-100/80 px-2.5 py-1 text-[11px] font-semibold text-slate-700">
+                      <span className="inline-flex items-center rounded-lg bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-800">
                         {categoryLabel(ticket.category)}
                       </span>
                     </td>
@@ -1409,7 +1409,7 @@ function Tickets() {
                       <StatusBadge status={ticket.status} />
                     </td>
 
-                    <td className="py-3.5 px-5 text-slate-500 font-medium">
+                    <td className="py-3.5 px-5 text-slate-700 font-semibold">
                       {formatDate(ticket.created_at)}
                     </td>
 

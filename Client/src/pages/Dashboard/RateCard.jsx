@@ -417,8 +417,8 @@ const RateTable = ({
                 text-[11px]
                 font-extrabold
                 uppercase
-                tracking-wide
-                text-slate-500
+                tracking-wider
+                text-slate-800
               "
             >
               Weight From
@@ -432,8 +432,8 @@ const RateTable = ({
                 text-[11px]
                 font-extrabold
                 uppercase
-                tracking-wide
-                text-slate-500
+                tracking-wider
+                text-slate-800
               "
             >
               Weight To
@@ -449,8 +449,8 @@ const RateTable = ({
                     text-[11px]
                     font-extrabold
                     uppercase
-                    tracking-wide
-                    text-slate-500
+                    tracking-wider
+                    text-slate-800
                   "
               >
                 {field.replace("zone_", "").replace("_rate", "").toUpperCase()}
@@ -465,8 +465,8 @@ const RateTable = ({
                 text-[11px]
                 font-extrabold
                 uppercase
-                tracking-wide
-                text-slate-500
+                tracking-wider
+                text-slate-800
               "
             >
               Action

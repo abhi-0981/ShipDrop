@@ -1238,31 +1238,31 @@ function RTOInTransit() {
                     </button>
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[19%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[19%] bg-white px-2 py-3 text-left text-[12px] font-bold text-slate-800">
                     Customer
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[17%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[17%] bg-white px-2 py-3 text-left text-[12px] font-bold text-slate-800">
                     Shipment
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[16%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[16%] bg-white px-2 py-3 text-left text-[12px] font-bold text-slate-800">
                     Route
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[12%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[12%] bg-white px-2 py-3 text-left text-[12px] font-bold text-slate-800">
                     Payment
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[9%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[9%] bg-white px-2 py-3 text-left text-[12px] font-bold text-slate-800">
                     Weight
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[11%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[11%] bg-white px-2 py-3 text-left text-[12px] font-bold text-slate-800">
                     Created
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[12%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[12%] bg-white px-2 py-3 text-left text-[12px] font-bold text-slate-800">
                     Actions
                   </th>
                 </tr>
@@ -1328,12 +1328,12 @@ function RTOInTransit() {
                         {/* CUSTOMER */}
                         <td className="px-2 py-2.5 break-words">
                           <div className="min-w-0 flex flex-col items-start">
-                            <p className="w-full truncate text-[13px] font-semibold leading-[18px] text-slate-800">
+                            <p className="w-full truncate text-[13px] font-bold leading-[18px] text-slate-800">
                               {getCustomerName(order)}
                             </p>
 
                             {getMobile(order) && (
-                              <p className="mt-0.5 w-full text-[11px] leading-[14px] text-slate-400">
+                              <p className="mt-0.5 w-full text-[11px] font-medium leading-[14px] text-slate-600">
                                 {getMobile(order)}
                               </p>
                             )}
@@ -1354,7 +1354,7 @@ function RTOInTransit() {
                                     type="button"
                                     onClick={() => triggerTracking(awb)}
                                     title="Track shipment"
-                                    className="min-w-0 truncate text-left text-[12px] font-semibold text-slate-800 cursor-pointer hover:text-[#008dd2]"
+                                    className="min-w-0 truncate text-left text-[12px] font-bold text-slate-900 cursor-pointer hover:text-[#008dd2]"
                                   >
                                     {awb}
                                   </button>
@@ -1364,13 +1364,13 @@ function RTOInTransit() {
                                       onClick={() => copyText(awb, "AWB")}
                                       title="Copy AWB"
                                       aria-label="Copy AWB"
-                                      className="shrink-0 rounded p-0.5 text-slate-400 hover:bg-blue-50 hover:text-[#008dd2]"
+                                      className="shrink-0 rounded p-0.5 text-slate-500 hover:bg-blue-50 hover:text-[#008dd2]"
                                     >
                                       <HiOutlineDuplicate className="text-[13px]" />
                                     </button>
                                   )}
                                 </div>
-                                <p className="mt-0.5 truncate text-[10px] text-slate-400">
+                                <p className="mt-0.5 truncate text-[10.5px] font-medium text-slate-600">
                                   Pickup ID:{" "}
                                   {order?.pickup_request_id ||
                                     order?.pickupRequestId ||
@@ -1381,7 +1381,7 @@ function RTOInTransit() {
                               </>
                             )}
 
-                            <p className="mt-0.5 text-[10px] text-slate-400">
+                            <p className="mt-0.5 text-[10.5px] font-medium text-slate-600">
                               {getShipmentName(order)} -{" "}
                               {service === "AIR" ? "Air" : "Road"}
                             </p>
@@ -1396,9 +1396,9 @@ function RTOInTransit() {
                                 className="shrink-0 text-sky-500"
                                 size={13}
                               />
-                              <span className="text-[11px] font-medium text-slate-700">
+                              <span className="text-[11px] font-semibold text-slate-800">
                                 {getPickupCity(order)}{" "}
-                                <span className="text-[10px] font-normal text-slate-400">
+                                <span className="text-[10.5px] font-medium text-slate-500">
                                   ({getPickupPincode(order) || "—"})
                                 </span>
                               </span>
@@ -1408,12 +1408,12 @@ function RTOInTransit() {
 
                             <div className="flex items-center gap-2 leading-[16px]">
                               <HiOutlineLocationMarker
-                                className="shrink-0 text-slate-400"
+                                className="shrink-0 text-slate-500"
                                 size={13}
                               />
-                              <span className="text-[11px] font-medium text-slate-700">
+                              <span className="text-[11px] font-semibold text-slate-800">
                                 {getDeliveryCity(order)}{" "}
-                                <span className="text-[10px] font-normal text-slate-400">
+                                <span className="text-[10.5px] font-medium text-slate-500">
                                   ({getDeliveryPincode(order) || "—"})
                                 </span>
                               </span>
@@ -1425,7 +1425,7 @@ function RTOInTransit() {
                         <td className="px-2 py-2.5 break-words">
                           <div>
                             <p
-                              className={`text-[12px] font-semibold ${
+                              className={`text-[12px] font-bold ${
                                 payment === "COD"
                                   ? "text-amber-600"
                                   : "text-[#008dd2]"
@@ -1434,13 +1434,13 @@ function RTOInTransit() {
                               {payment}
                             </p>
 
-                            <p className="mt-0.5 text-[10px] text-slate-400">
+                            <p className="mt-0.5 text-[10.5px] font-medium text-slate-600">
                               {payment === "COD"
                                 ? "Cash on Delivery"
                                 : "Prepaid"}
                             </p>
 
-                            <p className="text-[10px] text-slate-400">
+                            <p className="text-[10.5px] font-medium text-slate-600">
                               Charge: ₹{getAmount(order).toFixed(2)}
                             </p>
                           </div>
@@ -1449,15 +1449,15 @@ function RTOInTransit() {
                         {/* WEIGHT */}
                         <td className="px-2 py-2.5 break-words">
                           <div>
-                            <p className="text-[12px] font-semibold text-slate-700">
+                            <p className="text-[12px] font-bold text-slate-800">
                               Box: {getPackageCount(order)}
                             </p>
 
-                            <p className="mt-0.5 text-[10px] text-slate-400">
+                            <p className="mt-0.5 text-[10.5px] font-medium text-slate-600">
                               Wt: {weight.toFixed(2)} kg
                             </p>
 
-                            <p className="text-[10px] text-slate-400">
+                            <p className="text-[10.5px] font-medium text-slate-600">
                               Vol: {getVolumetricWeight(order).toFixed(2)} kg
                             </p>
                           </div>
@@ -1465,18 +1465,18 @@ function RTOInTransit() {
 
                         {/* CREATED */}
                         <td className="px-2 py-2.5 break-words">
-                          <p className="text-[12px] font-medium text-slate-700">
+                          <p className="text-[12px] font-bold text-slate-800">
                             #{getOrderId(order)}
                           </p>
 
-                          <p className="mt-0.5 text-[10px] text-slate-400">
+                          <p className="mt-0.5 text-[10.5px] font-medium text-slate-600">
                             {status === "MANIFESTED"
                               ? "Manifested: "
                               : "Created: "}
                             {formatDate(getCreatedAt(order))}
                           </p>
 
-                          <p className="text-[10px] text-slate-400">
+                          <p className="text-[10.5px] font-medium text-slate-600">
                             {formatTime(getCreatedAt(order))}
                           </p>
                         </td>

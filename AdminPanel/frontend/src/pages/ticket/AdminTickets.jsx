@@ -1198,17 +1198,17 @@ function AdminTickets() {
                   <p className="text-xs font-bold text-slate-900 truncate">
                     {ticket.subject || "No subject"}
                   </p>
-                  <div className="flex items-center justify-between text-[11px] text-slate-500">
-                    <span className="truncate max-w-[170px] font-medium">
+                  <div className="flex items-center justify-between text-[11px] text-slate-600 font-medium">
+                    <span className="truncate max-w-[170px] font-semibold text-slate-800">
                       {ticket.customer_name || "Unknown customer"}
                     </span>
-                    <span className="text-[10px] text-slate-400">
+                    <span className="text-[10.5px] font-medium text-slate-600">
                       {categoryLabel(ticket.category)}
                     </span>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between border-t border-slate-50 pt-2 text-[10px] text-slate-400">
+                <div className="flex items-center justify-between border-t border-slate-100 pt-2 text-[10.5px] font-medium text-slate-600">
                   <span>{formatDate(ticket.created_at)}</span>
                   <span className="flex items-center gap-1 text-[#008dd2] font-bold">
                     Open Conversation
@@ -1253,7 +1253,7 @@ function AdminTickets() {
       <div className="hidden sm:block overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs">
         <table className="w-full text-left border-collapse">
           <thead>
-            <tr className="border-b border-slate-100 bg-slate-50/70 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+            <tr className="border-b border-slate-200 bg-slate-50/90 text-[11px] font-bold uppercase tracking-wider text-slate-800">
               <th className="px-5 py-3.5">Ticket</th>
               <th className="px-4 py-3.5">Customer</th>
               <th className="px-4 py-3.5">Subject</th>
@@ -1266,13 +1266,13 @@ function AdminTickets() {
           <tbody className="divide-y divide-slate-100 text-xs">
             {loading ? (
               <tr>
-                <td colSpan="6" className="py-16 text-center text-slate-400 font-semibold">
+                <td colSpan="6" className="py-16 text-center text-slate-500 font-semibold">
                   Loading tickets...
                 </td>
               </tr>
             ) : tickets.length === 0 ? (
               <tr>
-                <td colSpan="6" className="py-16 text-center text-slate-400 font-semibold">
+                <td colSpan="6" className="py-16 text-center text-slate-500 font-semibold">
                   No tickets found matching your criteria.
                 </td>
               </tr>
@@ -1289,7 +1289,7 @@ function AdminTickets() {
                       #{ticket.ticket_number}
                     </div>
                     {ticket.awb && (
-                      <div className="font-mono text-[10px] text-slate-400 mt-0.5">
+                      <div className="font-mono text-[10.5px] font-medium text-slate-600 mt-0.5">
                         AWB {ticket.awb}
                       </div>
                     )}
@@ -1297,20 +1297,20 @@ function AdminTickets() {
 
                   {/* CUSTOMER */}
                   <td className="px-4 py-3.5">
-                    <div className="font-bold text-slate-800 truncate max-w-[160px]">
+                    <div className="font-bold text-slate-900 truncate max-w-[160px]">
                       {ticket.customer_name || "Unknown"}
                     </div>
-                    <div className="text-[10.5px] text-slate-400 truncate max-w-[160px]">
+                    <div className="text-[11px] font-medium text-slate-600 truncate max-w-[160px]">
                       {ticket.customer_email || "—"}
                     </div>
                   </td>
 
                   {/* SUBJECT */}
                   <td className="px-4 py-3.5">
-                    <div className="font-semibold text-slate-800 truncate max-w-xs">
+                    <div className="font-bold text-slate-900 truncate max-w-xs">
                       {ticket.subject || "No subject"}
                     </div>
-                    <div className="text-[10px] text-slate-400 mt-0.5">
+                    <div className="text-[10.5px] font-medium text-slate-600 mt-0.5">
                       {categoryLabel(ticket.category)}
                     </div>
                   </td>
@@ -1326,7 +1326,7 @@ function AdminTickets() {
                   </td>
 
                   {/* DATE */}
-                  <td className="px-4 py-3.5 text-right text-slate-400 font-medium">
+                  <td className="px-4 py-3.5 text-right text-slate-600 font-semibold">
                     {formatDate(ticket.created_at)}
                   </td>
                 </tr>

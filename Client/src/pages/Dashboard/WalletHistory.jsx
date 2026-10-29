@@ -855,7 +855,7 @@ export default function WalletHistory() {
           <div className="hidden sm:block overflow-x-auto">
             <table className="w-full min-w-[880px] text-left border-collapse">
               <thead>
-                <tr className="border-b border-slate-200 bg-white text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-800/40 dark:text-slate-400">
+                <tr className="border-b border-slate-200 bg-white text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:border-slate-800 dark:bg-slate-800/40 dark:text-slate-200">
                   <th className="px-4 py-3 text-left">TXN ID</th>
                   <th className="px-4 py-3 text-left">Amount</th>
                   <th className="px-4 py-3 text-left">Type</th>
@@ -918,13 +918,13 @@ export default function WalletHistory() {
                       >
                         {/* TXN ID */}
                         <td className="px-4 py-3 whitespace-nowrap">
-                          <div className="flex items-center gap-1.5 font-mono text-[12.5px] font-semibold text-slate-900 dark:text-slate-100">
+                          <div className="flex items-center gap-1.5 font-mono text-[12.5px] font-bold text-slate-900 dark:text-slate-100">
                             <span>#{item.id}</span>
                             <button
                               type="button"
                               onClick={() => handleCopy(item.id, "Transaction ID")}
                               title="Copy Transaction ID"
-                              className="text-slate-400 hover:text-[#008dd2] transition p-0.5"
+                              className="text-slate-500 hover:text-[#008dd2] transition p-0.5"
                             >
                               <HiOutlineDuplicate className="text-[13px]" />
                             </button>
@@ -969,7 +969,7 @@ export default function WalletHistory() {
                         </td>
 
                         {/* Closing Balance */}
-                        <td className="px-4 py-3 whitespace-nowrap font-semibold text-slate-800 dark:text-slate-200">
+                        <td className="px-4 py-3 whitespace-nowrap font-bold text-slate-800 dark:text-slate-200">
                           {item.closing_balance != null
                             ? formatAmount(item.closing_balance)
                             : "—"}
@@ -983,7 +983,7 @@ export default function WalletHistory() {
                             </div>
                             <div className="min-w-0">
                               <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className="font-semibold text-slate-800 dark:text-slate-100 text-[12.5px] leading-tight">
+                                <span className="font-bold text-slate-800 dark:text-slate-100 text-[12.5px] leading-tight">
                                   {desc.title}
                                 </span>
                                 {desc.badge && (
@@ -994,7 +994,7 @@ export default function WalletHistory() {
                                   </span>
                                 )}
                               </div>
-                              <p className="mt-0.5 text-[11.5px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                              <p className="mt-0.5 text-[11.5px] font-medium text-slate-600 dark:text-slate-400 leading-relaxed">
                                 {desc.subtitle}
                               </p>
                             </div>
@@ -1002,7 +1002,7 @@ export default function WalletHistory() {
                         </td>
 
                         {/* Date & Time */}
-                        <td className="px-4 py-3 whitespace-nowrap text-[12px] text-slate-600 dark:text-slate-300">
+                        <td className="px-4 py-3 whitespace-nowrap text-[12px] font-medium text-slate-700 dark:text-slate-300">
                           {formatDate(item.created_at)}
                         </td>
                       </tr>

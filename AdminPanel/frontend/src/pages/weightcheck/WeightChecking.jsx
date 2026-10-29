@@ -1338,43 +1338,43 @@ const WeightChecking = () => {
                   />
                 </th>
 
-                <th className="border-r border-slate-200 px-3 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                <th className="border-r border-slate-200 px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-800">
                   Order
                 </th>
 
-                <th className="border-r border-slate-200 px-3 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                <th className="border-r border-slate-200 px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-800">
                   Customer
                 </th>
 
-                <th className="border-r border-slate-200 px-3 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                <th className="border-r border-slate-200 px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-800">
                   AWB
                 </th>
 
-                <th className="border-r border-slate-200 px-3 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                <th className="border-r border-slate-200 px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-800">
                   Declared
                 </th>
 
-                <th className="border-r border-slate-200 px-3 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                <th className="border-r border-slate-200 px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-800">
                   Actual
                 </th>
 
-                <th className="border-r border-slate-200 px-3 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                <th className="border-r border-slate-200 px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-800">
                   Difference
                 </th>
 
-                <th className="border-r border-slate-200 px-3 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                <th className="border-r border-slate-200 px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-800">
                   Current Shipping Charge
                 </th>
 
-                <th className="border-r border-slate-200 px-3 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                <th className="border-r border-slate-200 px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-800">
                   Extra Weight Charge
                 </th>
 
-                <th className="border-r border-slate-200 px-3 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                <th className="border-r border-slate-200 px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-800">
                   Recalculated Total
                 </th>
 
-                <th className="px-3 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                <th className="px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-800">
                   Status
                 </th>
               </tr>
@@ -1445,41 +1445,41 @@ const WeightChecking = () => {
                       </td>
 
                       <td className="border-r border-slate-100 px-3 py-3 align-top">
-                        <div className="text-xs font-bold text-slate-800">
+                        <div className="text-xs font-bold text-slate-900">
                           #{normalizeOrderId(item)}
                         </div>
-                        <div className="mt-1 text-[10px] text-slate-400">
+                        <div className="mt-1 text-[10.5px] font-medium text-slate-600">
                           {formatDate(item?.imported_at || item?.created_at)}
                         </div>
                       </td>
 
                       <td className="border-r border-slate-100 px-3 py-3 align-top">
-                        <div className="max-w-[160px] truncate text-xs font-semibold text-slate-700">
+                        <div className="max-w-[160px] truncate text-xs font-bold text-slate-800">
                           {valueOrDash(
                             item?.user_name || item?.customer_name || item?.full_name
                           )}
                         </div>
-                        <div className="mt-1 text-[10px] text-slate-400">
+                        <div className="mt-1 text-[10.5px] font-medium text-slate-600">
                           UID: {valueOrDash(item?.user_id)}
                         </div>
                       </td>
 
-                      <td className="border-r border-slate-100 px-3 py-3 align-top font-mono text-[11px] font-semibold text-slate-700">
+                      <td className="border-r border-slate-100 px-3 py-3 align-top font-mono text-[11px] font-semibold text-slate-800">
                         {valueOrDash(item?.awb)}
                       </td>
 
                       <td className="border-r border-slate-100 px-3 py-3 align-top">
-                        <div className="text-xs font-semibold text-slate-700">
+                        <div className="text-xs font-bold text-slate-800">
                           {formatWeight(declaredWeight)}
                         </div>
-                        <div className="mt-1 text-[10px] text-slate-400">User declared</div>
+                        <div className="mt-1 text-[10.5px] font-medium text-slate-600">User declared</div>
                       </td>
 
                       <td className="border-r border-slate-100 px-3 py-3 align-top">
-                        <div className="text-xs font-semibold text-slate-700">
+                        <div className="text-xs font-bold text-slate-800">
                           {formatWeight(actualWeight)}
                         </div>
-                        <div className="mt-1 text-[10px] text-slate-400">Courier verified</div>
+                        <div className="mt-1 text-[10.5px] font-medium text-slate-600">Courier verified</div>
                       </td>
 
                       <td className="border-r border-slate-100 px-3 py-3 align-top">
@@ -1494,10 +1494,10 @@ const WeightChecking = () => {
                       </td>
 
                       <td className="border-r border-slate-100 px-3 py-3 align-top">
-                        <div className="text-xs font-semibold text-slate-700">
+                        <div className="text-xs font-bold text-slate-800">
                           {formatMoney(currentCharge)}
                         </div>
-                        <div className="mt-1 text-[10px] text-slate-400">Already charged</div>
+                        <div className="mt-1 text-[10.5px] font-medium text-slate-600">Already charged</div>
                       </td>
 
                       <td className="border-r border-slate-100 px-3 py-3 align-top">
@@ -1507,7 +1507,7 @@ const WeightChecking = () => {
                               ? "text-rose-600"
                               : extraCharge < 0
                               ? "text-emerald-600"
-                              : "text-slate-400"
+                              : "text-slate-500"
                           }`}
                         >
                           {extraCharge > 0
@@ -1516,7 +1516,7 @@ const WeightChecking = () => {
                             ? formatMoney(Math.abs(extraCharge))
                             : "₹0.00"}
                         </div>
-                        <div className="mt-1 text-[10px] text-slate-400">
+                        <div className="mt-1 text-[10.5px] font-medium text-slate-600">
                           {extraCharge > 0
                             ? "To recover"
                             : extraCharge < 0
@@ -1529,7 +1529,7 @@ const WeightChecking = () => {
                         <div className="text-xs font-bold text-[#008dd2]">
                           {formatMoney(recalculatedTotal)}
                         </div>
-                        <div className="mt-1 text-[10px] text-slate-400">Actual weight rate</div>
+                        <div className="mt-1 text-[10.5px] font-medium text-slate-600">Actual weight rate</div>
                       </td>
 
                       <td className="px-3 py-3 align-top">

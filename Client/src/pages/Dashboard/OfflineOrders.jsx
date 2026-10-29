@@ -605,39 +605,39 @@ export default function OfflineOrders() {
                       </button>
                     </th>
 
-                    <th className="sticky top-0 z-20 w-[7%] bg-white px-1.5 py-3 text-left text-[12px] font-medium text-slate-700">
+                    <th className="sticky top-0 z-20 w-[7%] bg-white px-1.5 py-3 text-left text-[12px] font-bold text-slate-800">
                       Party
                     </th>
 
-                    <th className="sticky top-0 z-20 w-[16%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                    <th className="sticky top-0 z-20 w-[16%] bg-white px-2 py-3 text-left text-[12px] font-bold text-slate-800">
                       Customer
                     </th>
 
-                    <th className="sticky top-0 z-20 w-[15%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                    <th className="sticky top-0 z-20 w-[15%] bg-white px-2 py-3 text-left text-[12px] font-bold text-slate-800">
                       Shipment
                     </th>
 
-                    <th className="sticky top-0 z-20 w-[15%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                    <th className="sticky top-0 z-20 w-[15%] bg-white px-2 py-3 text-left text-[12px] font-bold text-slate-800">
                       Center
                     </th>
 
-                    <th className="sticky top-0 z-20 w-[9%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                    <th className="sticky top-0 z-20 w-[9%] bg-white px-2 py-3 text-left text-[12px] font-bold text-slate-800">
                       Payment
                     </th>
 
-                    <th className="sticky top-0 z-20 w-[8%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                    <th className="sticky top-0 z-20 w-[8%] bg-white px-2 py-3 text-left text-[12px] font-bold text-slate-800">
                       Weight
                     </th>
 
-                    <th className="sticky top-0 z-20 w-[10%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                    <th className="sticky top-0 z-20 w-[10%] bg-white px-2 py-3 text-left text-[12px] font-bold text-slate-800">
                       Remark
                     </th>
 
-                    <th className="sticky top-0 z-20 w-[9%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                    <th className="sticky top-0 z-20 w-[9%] bg-white px-2 py-3 text-left text-[12px] font-bold text-slate-800">
                       Created
                     </th>
 
-                    <th className="sticky top-0 z-20 w-[8%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                    <th className="sticky top-0 z-20 w-[8%] bg-white px-2 py-3 text-left text-[12px] font-bold text-slate-800">
                       Actions
                     </th>
                   </tr>
@@ -650,7 +650,7 @@ export default function OfflineOrders() {
                     const payment = String(o.payment_mode || "PREPAID").toUpperCase();
                     const status = String(o.status || "BOOKED").toUpperCase();
                     const volWeight =
-                      o.length && o.width && o.height
+                       o.length && o.width && o.height
                         ? (Number(o.length) * Number(o.width) * Number(o.height)) / 5000
                         : Number(o.weight || 0);
 
@@ -700,7 +700,7 @@ export default function OfflineOrders() {
                                 {o.party_reference_name || o.party_name}
                               </span>
                             ) : (
-                              <span className="text-[12px] text-slate-400 font-normal">
+                              <span className="text-[12px] text-slate-500 font-medium">
                                 —
                               </span>
                             )}
@@ -711,14 +711,14 @@ export default function OfflineOrders() {
                         <td className="px-2 py-2.5 break-words">
                           <div className="min-w-0">
                             <p
-                              className="truncate text-[13px] font-semibold text-slate-800"
+                              className="truncate text-[13px] font-bold text-slate-800"
                               title={o.consignee_name}
                             >
                               {o.consignee_name}
                             </p>
 
                             {o.mobile && (
-                              <p className="mt-0.5 text-[11px] text-slate-400">
+                              <p className="mt-0.5 text-[11px] font-medium text-slate-600">
                                 {o.mobile}
                               </p>
                             )}
@@ -736,7 +736,7 @@ export default function OfflineOrders() {
                           <div className="min-w-0">
                             <div className="flex items-center gap-1.5 min-w-0">
                               <p
-                                className="truncate text-[13px] font-semibold text-slate-800"
+                                className="truncate text-[13px] font-bold text-slate-900"
                                 title={o.consignment_no}
                               >
                                 {o.consignment_no}
@@ -757,7 +757,7 @@ export default function OfflineOrders() {
                                     }
                                   }}
                                   title="Copy Consignment No"
-                                  className="shrink-0 p-0.5 text-slate-400 hover:text-slate-700 transition"
+                                  className="shrink-0 p-0.5 text-slate-500 hover:text-slate-800 transition"
                                 >
                                   <svg
                                     width="13"
@@ -783,11 +783,11 @@ export default function OfflineOrders() {
                               )}
                             </div>
 
-                            <p className="mt-0.5 text-[11px] text-slate-500 font-medium truncate">
+                            <p className="mt-0.5 text-[10.5px] text-slate-600 font-medium truncate">
                               {o.carrier}
                             </p>
 
-                            <p className="mt-0.5 text-[11px] text-slate-500 truncate">
+                            <p className="mt-0.5 text-[10.5px] text-slate-600 font-medium truncate">
                               {o.product_name ? `${o.product_name} - ` : ""}
                               {o.shipping_mode || "Surface"}
                             </p>
@@ -814,10 +814,10 @@ export default function OfflineOrders() {
                                 <circle cx="12" cy="10" r="2.5" />
                               </svg>
 
-                              <p className="truncate text-[12px] font-medium text-slate-700">
+                              <p className="truncate text-[11px] font-semibold text-slate-800">
                                 {getPickupCity(o)}
                                 {getPickupPincode(o) && (
-                                  <span className="ml-1 text-[10px] text-slate-400">
+                                  <span className="ml-1 text-[10.5px] font-medium text-slate-500">
                                     ({getPickupPincode(o)})
                                   </span>
                                 )}
@@ -837,7 +837,7 @@ export default function OfflineOrders() {
                                 height="13"
                                 viewBox="0 0 24 24"
                                 fill="none"
-                                stroke="#94a3b8"
+                                stroke="#64748b"
                                 strokeWidth="1.8"
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
@@ -847,10 +847,10 @@ export default function OfflineOrders() {
                                 <circle cx="12" cy="10" r="2.5" />
                               </svg>
 
-                              <p className="truncate text-[12px] font-medium text-slate-700">
+                              <p className="truncate text-[11px] font-semibold text-slate-800">
                                 {o.city || "—"}
                                 {o.pincode && (
-                                  <span className="ml-1 text-[10px] text-slate-400">
+                                  <span className="ml-1 text-[10.5px] font-medium text-slate-500">
                                     ({o.pincode})
                                   </span>
                                 )}
@@ -863,7 +863,7 @@ export default function OfflineOrders() {
                         <td className="px-2 py-2.5 break-words">
                           <div>
                             <p
-                              className={`text-[12px] font-semibold ${
+                              className={`text-[12px] font-bold ${
                                 payment === "COD"
                                   ? "text-amber-600"
                                   : "text-[#008dd2]"
@@ -872,13 +872,13 @@ export default function OfflineOrders() {
                               {payment}
                             </p>
 
-                            <p className="mt-0.5 text-[10px] text-slate-400">
+                            <p className="mt-0.5 text-[10.5px] font-medium text-slate-600">
                               {payment === "COD"
                                 ? "Cash on Delivery"
                                 : "Prepaid"}
                             </p>
 
-                            <p className="text-[10px] text-slate-400">
+                            <p className="text-[10.5px] font-medium text-slate-600">
                               Charge: ₹{charge.toFixed(2)}
                             </p>
                           </div>
@@ -887,15 +887,15 @@ export default function OfflineOrders() {
                         {/* WEIGHT */}
                         <td className="px-2 py-2.5 break-words">
                           <div>
-                            <p className="text-[12px] font-semibold text-slate-700">
+                            <p className="text-[12px] font-bold text-slate-800">
                               {o.package_type || "Box"}: 1
                             </p>
 
-                            <p className="mt-0.5 text-[10px] text-slate-400">
+                            <p className="mt-0.5 text-[10.5px] font-medium text-slate-600">
                               Wt: {Number(o.weight || 0).toFixed(2)} kg
                             </p>
 
-                            <p className="text-[10px] text-slate-400">
+                            <p className="text-[10.5px] font-medium text-slate-600">
                               Vol: {volWeight.toFixed(2)} kg
                             </p>
                           </div>
@@ -905,13 +905,13 @@ export default function OfflineOrders() {
                         <td className="px-2 py-2.5 break-words">
                           {o.remark ? (
                             <p
-                              className="text-[12px] font-normal text-slate-800 break-words whitespace-normal leading-snug"
+                              className="text-[12px] font-medium text-slate-800 break-words whitespace-normal leading-snug"
                               title={o.remark}
                             >
                               {o.remark}
                             </p>
                           ) : (
-                            <span className="text-[12px] text-slate-300 font-normal">
+                            <span className="text-[12px] text-slate-400 font-normal">
                               —
                             </span>
                           )}
@@ -919,14 +919,14 @@ export default function OfflineOrders() {
 
                         {/* CREATED */}
                         <td className="px-2 py-2.5 break-words">
-                          <p className="text-[12px] font-medium text-slate-700">
+                          <p className="text-[12px] font-bold text-slate-800">
                             #{o.id}
                           </p>
 
-                          <p className="mt-0.5 text-[10px] text-slate-400">
+                          <p className="mt-0.5 text-[10.5px] font-medium text-slate-600">
                             Created: {formatDate(o.created_at)}
                           </p>
-                          <p className="text-[10px] text-slate-400">
+                          <p className="text-[10.5px] font-medium text-slate-600">
                             {formatTime(o.created_at)}
                           </p>
                         </td>

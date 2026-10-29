@@ -1890,31 +1890,31 @@ function Cancelled() {
 
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[17%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[17%] bg-white px-2 py-3 text-left text-[12px] font-bold text-slate-800">
                     Customer
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[17%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[17%] bg-white px-2 py-3 text-left text-[12px] font-bold text-slate-800">
                     Shipment
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[17%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[17%] bg-white px-2 py-3 text-left text-[12px] font-bold text-slate-800">
                     Route
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[11%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[11%] bg-white px-2 py-3 text-left text-[12px] font-bold text-slate-800">
                     Payment
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[10%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[10%] bg-white px-2 py-3 text-left text-[12px] font-bold text-slate-800">
                     Weight
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[12%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[12%] bg-white px-2 py-3 text-left text-[12px] font-bold text-slate-800">
                     Created
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[12%] bg-white px-2 py-3 text-center text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[12%] bg-white px-2 py-3 text-center text-[12px] font-bold text-slate-800">
                     Actions
                   </th>
 
@@ -2035,7 +2035,7 @@ function Cancelled() {
 
                             <div className="min-w-0">
 
-                              <p className="truncate text-[13px] font-semibold text-slate-800">
+                              <p className="truncate text-[13px] font-bold text-slate-800">
                                 {getCustomerName(
                                   order
                                 )}
@@ -2044,7 +2044,7 @@ function Cancelled() {
                               {getMobile(
                                 order
                               ) && (
-                                <p className="mt-0.5 text-[11px] text-slate-400">
+                                <p className="mt-0.5 text-[11px] font-medium text-slate-600">
                                   {getMobile(
                                     order
                                   )}
@@ -2074,14 +2074,14 @@ function Cancelled() {
                              {status !== "PROCESSING" && (
                                 <>
                                   <div className="flex min-w-0 items-center gap-1">
-                                    <button type="button" onClick={() => triggerTracking(awb)} title="Track shipment" className="truncate text-left text-[12px] font-semibold text-slate-800 hover:text-[#008dd2]">{awb}</button>
-                                    <button type="button" onClick={() => copyText(awb, "AWB")} title="Copy AWB" className="shrink-0 text-slate-400 hover:text-[#008dd2]"><HiOutlineDuplicate className="text-[12px]" /></button>
+                                    <button type="button" onClick={() => triggerTracking(awb)} title="Track shipment" className="truncate text-left text-[12px] font-bold text-slate-900 hover:text-[#008dd2]">{awb}</button>
+                                    <button type="button" onClick={() => copyText(awb, "AWB")} title="Copy AWB" className="shrink-0 text-slate-500 hover:text-[#008dd2]"><HiOutlineDuplicate className="text-[12px]" /></button>
                                   </div>
-                                  <p className="mt-0.5 truncate text-[10px] text-slate-400">Pickup ID: {order?.pickup_request_id || order?.pickupRequestId || order?.pickup_id || order?.pickupId || ""}</p>
+                                  <p className="mt-0.5 truncate text-[10.5px] font-medium text-slate-600">Pickup ID: {order?.pickup_request_id || order?.pickupRequestId || order?.pickup_id || order?.pickupId || ""}</p>
                                 </>
                               )}
 
-                              <p className="mt-0.5 text-[10px] text-slate-500">
+                              <p className="mt-0.5 text-[10.5px] font-medium text-slate-600">
                                 {getShipmentName(
                                   order
                                 )}{" "}
@@ -2105,11 +2105,11 @@ function Cancelled() {
                               <div className="flex w-3 shrink-0 flex-col items-center pt-0.5">
                                 <HiOutlineLocationMarker className="text-[13px] text-[#008dd2]" />
                                 <span className="my-0.5 h-3 border-l border-dashed border-slate-300" />
-                                <HiOutlineLocationMarker className="text-[13px] text-slate-400" />
+                                <HiOutlineLocationMarker className="text-[13px] text-slate-500" />
                               </div>
                               <div className="min-w-0 flex-1">
-                                <div className="truncate text-[11px] font-medium leading-5 text-slate-700">{getPickupCity(order)} <span className="text-slate-400">{getPickupPincode(order) ? `(${getPickupPincode(order)})` : ""}</span></div>
-                                <div className="truncate text-[11px] font-medium leading-5 text-slate-700">{getDeliveryCity(order)} <span className="text-slate-400">{getDeliveryPincode(order) ? `(${getDeliveryPincode(order)})` : ""}</span></div>
+                                <div className="truncate text-[11px] font-semibold leading-5 text-slate-800">{getPickupCity(order)} <span className="text-slate-500 font-medium">{getPickupPincode(order) ? `(${getPickupPincode(order)})` : ""}</span></div>
+                                <div className="truncate text-[11px] font-semibold leading-5 text-slate-800">{getDeliveryCity(order)} <span className="text-slate-500 font-medium">{getDeliveryPincode(order) ? `(${getDeliveryPincode(order)})` : ""}</span></div>
                               </div>
                             </div>
                           </td>
@@ -2123,7 +2123,7 @@ function Cancelled() {
                             <div>
 
                               <p
-                                className={`text-[12px] font-semibold ${
+                                className={`text-[12px] font-bold ${
                                   payment ===
                                   "COD"
                                     ? "text-amber-600"
@@ -2133,14 +2133,14 @@ function Cancelled() {
                                 {payment}
                               </p>
 
-                              <p className="mt-0.5 text-[10px] text-slate-400">
+                              <p className="mt-0.5 text-[10.5px] font-medium text-slate-600">
                                 {payment ===
                                 "COD"
                                   ? "Cash on Delivery"
                                   : "Prepaid"}
                               </p>
 
-                              <p className="text-[10px] text-slate-400">
+                              <p className="text-[10.5px] font-medium text-slate-600">
                                 Charge: ₹
                                 {getAmount(
                                   order
@@ -2159,14 +2159,14 @@ function Cancelled() {
 
                             <div>
 
-                              <p className="text-[12px] font-semibold text-slate-700">
+                              <p className="text-[12px] font-bold text-slate-800">
                                 Box:{" "}
                                 {getPackageCount(
                                   order
                                 )}
                               </p>
 
-                              <p className="mt-0.5 text-[10px] text-slate-400">
+                              <p className="mt-0.5 text-[10.5px] font-medium text-slate-600">
                                 Wt:{" "}
                                 {weight.toFixed(
                                   2
@@ -2174,7 +2174,7 @@ function Cancelled() {
                                 kg
                               </p>
 
-                              <p className="text-[10px] text-slate-400">
+                              <p className="text-[10.5px] font-medium text-slate-600">
                                 Vol:{" "}
                                 {getVolumetricWeight(
                                   order
@@ -2194,14 +2194,14 @@ function Cancelled() {
 
                           <td className="px-3 py-3">
 
-                            <p className="text-[12px] font-medium text-slate-700">
+                            <p className="text-[12px] font-bold text-slate-800">
                               #
                               {getOrderId(
                                 order
                               )}
                             </p>
 
-                            <p className="mt-0.5 text-[10px] text-slate-400">
+                            <p className="mt-0.5 text-[10.5px] font-medium text-slate-600">
 
                               {status ===
                               "MANIFESTED"
@@ -2216,7 +2216,7 @@ function Cancelled() {
 
                             </p>
 
-                            <p className="text-[10px] text-slate-400">
+                            <p className="text-[10.5px] font-medium text-slate-600">
                               {formatTime(
                                 getCreatedAt(
                                   order

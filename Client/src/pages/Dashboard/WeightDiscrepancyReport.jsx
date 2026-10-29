@@ -481,7 +481,7 @@ export default function WeightDiscrepancyReport() {
                   {/* AWB BAR */}
                   <div className="flex items-center justify-between font-mono text-[11px] text-slate-700 bg-slate-50/80 px-2.5 py-1.5 rounded-xl border border-slate-100">
                     <div className="flex items-center gap-1.5 min-w-0">
-                      <span className="font-sans text-[10px] text-slate-400 font-semibold uppercase">
+                      <span className="font-sans text-[10.5px] text-slate-600 font-bold uppercase">
                         AWB:
                       </span>
                       <span className="truncate font-bold text-[#008dd2]">
@@ -505,21 +505,21 @@ export default function WeightDiscrepancyReport() {
                   {/* WEIGHT COMPARISON */}
                   <div className="grid grid-cols-3 gap-2 bg-slate-50/60 p-2.5 rounded-xl border border-slate-100 text-center">
                     <div>
-                      <div className="text-[9.5px] uppercase font-semibold text-slate-400">Declared</div>
-                      <div className="text-xs font-bold text-slate-700 mt-0.5">
+                      <div className="text-[9.5px] uppercase font-bold text-slate-500">Declared</div>
+                      <div className="text-xs font-bold text-slate-800 mt-0.5">
                         {Number(d.declared_weight || 0).toFixed(3)} kg
                       </div>
                     </div>
 
                     <div>
-                      <div className="text-[9.5px] uppercase font-semibold text-rose-500">Billed</div>
+                      <div className="text-[9.5px] uppercase font-bold text-rose-600">Billed</div>
                       <div className="text-xs font-bold text-rose-700 mt-0.5">
                         {Number(d.actual_weight || 0).toFixed(3)} kg
                       </div>
                     </div>
 
                     <div>
-                      <div className="text-[9.5px] uppercase font-semibold text-amber-600">Excess</div>
+                      <div className="text-[9.5px] uppercase font-bold text-amber-700">Excess</div>
                       <div className="text-xs font-bold text-amber-700 mt-0.5">
                         +{Number(d.weight_difference || 0).toFixed(3)} kg
                       </div>
@@ -528,8 +528,8 @@ export default function WeightDiscrepancyReport() {
 
                   {/* CHARGES */}
                   <div className="flex items-center justify-between text-xs pt-1">
-                    <span className="text-slate-500 text-[11px]">
-                      Original: <strong>₹{Number(d.original_shipping_charge || 0).toFixed(2)}</strong>
+                    <span className="text-slate-600 font-medium text-[11px]">
+                      Original: <strong className="text-slate-800">₹{Number(d.original_shipping_charge || 0).toFixed(2)}</strong>
                     </span>
                     <span className="font-bold text-rose-600">
                       Extra Debit: +₹{Number(d.extra_charge || 0).toFixed(2)}
@@ -537,12 +537,12 @@ export default function WeightDiscrepancyReport() {
                   </div>
 
                   {/* FOOTER DATE & ZONE */}
-                  <div className="border-t border-slate-100 pt-2 text-[10px] text-slate-400 flex items-center justify-between">
+                  <div className="border-t border-slate-100 pt-2 text-[10.5px] font-medium text-slate-600 flex items-center justify-between">
                     <span>
-                      Flagged: {d.created_at ? new Date(d.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "-"}
+                      Flagged: <strong className="text-slate-700">{d.created_at ? new Date(d.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "-"}</strong>
                     </span>
                     {d.zone && (
-                      <span className="font-semibold text-slate-500">
+                      <span className="font-semibold text-slate-700">
                         Zone {d.zone}
                       </span>
                     )}
@@ -558,7 +558,7 @@ export default function WeightDiscrepancyReport() {
           <div className="hidden sm:block overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-slate-200 bg-white text-[12px] font-medium text-slate-700">
+                <tr className="border-b border-slate-200 bg-slate-50/90 text-[11px] font-bold uppercase tracking-wider text-slate-800">
                   <th className="py-3 px-4">Order ID & AWB</th>
                   <th className="py-3 px-4">Date Flagged</th>
                   <th className="py-3 px-4">Declared Wt.</th>
@@ -636,7 +636,7 @@ export default function WeightDiscrepancyReport() {
                       {/* Order ID & AWB */}
                       <td className="py-3 px-4">
                         <div>
-                          <div className="font-semibold text-slate-900 text-[12px] flex items-center gap-1.5">
+                          <div className="font-bold text-slate-900 text-[12px] flex items-center gap-1.5">
                             <span>#{d.order_id}</span>
                             <button
                               type="button"
@@ -648,7 +648,7 @@ export default function WeightDiscrepancyReport() {
                             </button>
                           </div>
                           <div className="flex items-center gap-1.5 mt-0.5">
-                            <span className="text-[11px] font-mono text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">
+                            <span className="text-[11px] font-mono font-semibold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded">
                               {d.awb}
                             </span>
                             <button
@@ -665,24 +665,24 @@ export default function WeightDiscrepancyReport() {
 
                       {/* Date Flagged */}
                       <td className="py-3 px-4 whitespace-nowrap">
-                        <div className="text-[12px] font-medium text-slate-700">
+                        <div className="text-[12px] font-semibold text-slate-800">
                           {d.created_at ? new Date(d.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "-"}
                         </div>
-                        <div className="text-[10.5px] text-slate-400">
+                        <div className="text-[10.5px] font-medium text-slate-600">
                           {d.zone ? `Zone ${d.zone}` : ""}
                         </div>
                       </td>
 
                       {/* Declared Wt */}
-                      <td className="py-3 px-4 whitespace-nowrap font-medium text-slate-600">
-                        <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-semibold text-[11.5px]">
+                      <td className="py-3 px-4 whitespace-nowrap font-medium text-slate-700">
+                        <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-800 font-bold text-[11.5px]">
                           {Number(d.declared_weight || 0).toFixed(3)} kg
                         </span>
                       </td>
 
                       {/* Billed Wt */}
-                      <td className="py-3 px-4 whitespace-nowrap font-medium text-slate-600">
-                        <span className="px-2 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-100 font-semibold text-[11.5px]">
+                      <td className="py-3 px-4 whitespace-nowrap font-medium text-slate-700">
+                        <span className="px-2 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-100 font-bold text-[11.5px]">
                           {Number(d.actual_weight || 0).toFixed(3)} kg
                         </span>
                       </td>
@@ -695,7 +695,7 @@ export default function WeightDiscrepancyReport() {
                       </td>
 
                       {/* Original Shipping Charge */}
-                      <td className="py-3 px-4 text-right whitespace-nowrap font-medium text-slate-600 text-[12px]">
+                      <td className="py-3 px-4 text-right whitespace-nowrap font-bold text-slate-800 text-[12px]">
                         ₹{Number(d.original_shipping_charge || 0).toFixed(2)}
                       </td>
 

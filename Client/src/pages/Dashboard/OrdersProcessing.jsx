@@ -1317,27 +1317,27 @@ function ProcessingOrders() {
                   Party
                 </th>
 
-                <th className="border-r border-b border-slate-200 px-4 text-left text-[14px] font-medium text-slate-800">
+                <th className="border-r border-b border-slate-200 px-4 text-left text-[13px] font-bold text-slate-800">
                   Customer
                 </th>
 
-                <th className="border-r border-b border-slate-200 px-4 text-left text-[14px] font-medium text-slate-800">
+                <th className="border-r border-b border-slate-200 px-4 text-left text-[13px] font-bold text-slate-800">
                   Route
                 </th>
 
-                <th className="border-r border-b border-slate-200 px-4 text-left text-[14px] font-medium text-slate-800">
+                <th className="border-r border-b border-slate-200 px-4 text-left text-[13px] font-bold text-slate-800">
                   Payment
                 </th>
 
-                <th className="border-r border-b border-slate-200 px-4 text-left text-[14px] font-medium text-slate-800">
+                <th className="border-r border-b border-slate-200 px-4 text-left text-[13px] font-bold text-slate-800">
                   Order
                 </th>
 
-                <th className="border-r border-b border-slate-200 px-4 text-left text-[14px] font-medium text-slate-800">
+                <th className="border-r border-b border-slate-200 px-4 text-left text-[13px] font-bold text-slate-800">
                   Weight
                 </th>
 
-                <th className="border-b border-slate-200 px-4 text-left text-[14px] font-medium text-slate-800">
+                <th className="border-b border-slate-200 px-4 text-left text-[13px] font-bold text-slate-800">
                   Actions
                 </th>
               </tr>
@@ -1388,17 +1388,17 @@ function ProcessingOrders() {
                               {getParty(order)}
                             </span>
                           ) : (
-                            <span className="text-[12px] text-slate-400 font-normal">—</span>
+                            <span className="text-[12px] text-slate-500 font-medium">—</span>
                           )}
                         </div>
                       </td>
 
                       <td className="border-r border-b border-slate-200 px-4">
-                        <div className="text-[14px] font-medium text-slate-900">
+                        <div className="text-[14px] font-bold text-slate-900">
                           {getCustomer(order)}
                         </div>
 
-                        <div className="text-[11px] text-slate-500">
+                        <div className="text-[11px] font-medium text-slate-600">
                           {getMobile(order)}
                         </div>
 
@@ -1415,11 +1415,11 @@ function ProcessingOrders() {
                             <span className="mt-[5px] h-[8px] w-[8px] shrink-0 rounded-full bg-[#7451ff]" />
 
                             <div>
-                              <div className="text-[12px] font-medium text-slate-800">
+                              <div className="text-[12px] font-semibold text-slate-800">
                                 {getPickupCity(order)}
                               </div>
 
-                              <div className="text-[11px] text-slate-400">
+                              <div className="text-[11px] font-medium text-slate-500">
                                 ({getPickupPincode(order)})
                               </div>
                             </div>
@@ -1431,11 +1431,11 @@ function ProcessingOrders() {
                             <span className="mt-[5px] h-[8px] w-[8px] shrink-0 rounded-full bg-[#009ee5]" />
 
                             <div>
-                              <div className="text-[12px] font-medium text-slate-800">
+                              <div className="text-[12px] font-semibold text-slate-800">
                                 {getDeliveryCity(order)}
                               </div>
 
-                              <div className="text-[11px] text-slate-400">
+                              <div className="text-[11px] font-medium text-slate-500">
                                 ({getDeliveryPincode(order)})
                               </div>
                             </div>
@@ -1445,7 +1445,7 @@ function ProcessingOrders() {
 
                       <td className="border-r border-b border-slate-200 px-4">
                         <div
-                          className={`text-[13px] font-medium ${
+                          className={`text-[13px] font-bold ${
                             getPayment(order) === "COD"
                               ? "text-red-500"
                               : "text-[#00a66a]"
@@ -1453,7 +1453,7 @@ function ProcessingOrders() {
                         >
                           {getPayment(order)}
                         </div>
-                        <div className="mt-[5px] text-[10px] leading-[15px] text-slate-400">
+                        <div className="mt-[5px] text-[10.5px] font-medium leading-[15px] text-slate-600">
                           <div>{getDate(order)}</div>
 
                           <div>{getTime(order)}</div>
@@ -1461,25 +1461,25 @@ function ProcessingOrders() {
                       </td>
 
                       <td className="border-r border-b border-slate-200 px-4">
-                        <div className="text-[13px] font-medium text-slate-800">
+                        <div className="text-[13px] font-bold text-slate-800">
                           #{order.order_id}
                         </div>
 
-                        <div className="text-[13px] text-slate-700">
+                        <div className="text-[13px] font-medium text-slate-700">
                           {getProduct(order)}
                         </div>
 
-                        <div className="text-[11px] text-slate-500">
+                        <div className="text-[11px] font-medium text-slate-600">
                           Qty: {getQty(order)}
                         </div>
                       </td>
 
                       <td className="border-r border-b border-slate-200 px-4">
-                        <div className="text-[12px] text-slate-700">
+                        <div className="text-[12px] font-bold text-slate-800">
                           {getBoxCount(order)} Box × {getTotalWeight(order)}
                         </div>
 
-                        <div className="text-[11px] text-slate-500">
+                        <div className="text-[11px] font-medium text-slate-600">
                           Wt: {getTotalWeight(order)}
                         </div>
                       </td>

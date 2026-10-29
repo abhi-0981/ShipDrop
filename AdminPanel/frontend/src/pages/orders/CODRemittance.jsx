@@ -625,9 +625,9 @@ export default function CODRemittance() {
 
     return (
       <div className="min-w-[220px]">
-        <p className="whitespace-pre-wrap break-words text-sm leading-5 text-slate-600">
+        <p className="whitespace-pre-wrap break-words text-sm leading-5 font-medium text-slate-700">
           {item.description || (
-            <span className="italic text-slate-400">
+            <span className="italic font-medium text-slate-500">
               No description
             </span>
           )}
@@ -1107,18 +1107,18 @@ export default function CODRemittance() {
                         <div className="min-w-0 flex-1">
                           <div className="flex items-start justify-between gap-3">
                             <div>
-                              <p className="text-base font-bold text-slate-800">
+                              <p className="text-base font-bold text-slate-900">
                                 Order #{row.order_id || "—"}
                               </p>
 
-                              <p className="mt-1 text-sm text-slate-500">
+                              <p className="mt-1 text-sm font-medium text-slate-600">
                                 {row.customer_name || "Customer"} · ID{" "}
                                 {row.user_id ?? "—"}
                               </p>
                             </div>
 
                             <div className="text-right">
-                              <p className="text-base font-bold text-slate-800">
+                              <p className="text-base font-bold text-slate-900">
                                 {money(row.cod_amount)}
                               </p>
 
@@ -1130,37 +1130,37 @@ export default function CODRemittance() {
 
                           <div className="mt-4 grid grid-cols-2 gap-3 border-t border-slate-100 pt-3 text-sm">
                             <div>
-                              <p className="text-xs text-slate-400">
+                              <p className="text-xs font-semibold text-slate-600">
                                 Buyer
                               </p>
-                              <p className="mt-1 break-words font-medium text-slate-700">
+                              <p className="mt-1 break-words font-semibold text-slate-800">
                                 {row.buyer || "—"}
                               </p>
                             </div>
 
                             <div>
-                              <p className="text-xs text-slate-400">
+                              <p className="text-xs font-semibold text-slate-600">
                                 AWB
                               </p>
-                              <p className="mt-1 break-all font-medium text-slate-700">
+                              <p className="mt-1 break-all font-mono font-semibold text-slate-800">
                                 {row.awb || "—"}
                               </p>
                             </div>
 
                             <div>
-                              <p className="text-xs text-slate-400">
+                              <p className="text-xs font-semibold text-slate-600">
                                 Created On
                               </p>
-                              <p className="mt-1 text-slate-700">
+                              <p className="mt-1 font-medium text-slate-700">
                                 {dateText(row.created_at)}
                               </p>
                             </div>
 
                             <div>
-                              <p className="text-xs text-slate-400">
+                              <p className="text-xs font-semibold text-slate-600">
                                 Transferred On
                               </p>
-                              <p className="mt-1 text-slate-700">
+                              <p className="mt-1 font-medium text-slate-700">
                                 {dateText(row.transferred_on)}
                               </p>
                             </div>
@@ -1229,7 +1229,7 @@ export default function CODRemittance() {
               <div className="hidden overflow-x-auto sm:block">
                 <table className="w-full min-w-[1300px] border-collapse text-left">
                   <thead>
-                    <tr className="border-b border-slate-200 bg-slate-50 text-xs font-bold uppercase tracking-wide text-slate-500">
+                    <tr className="border-b border-slate-200 bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-800">
                       <th className="w-12 px-4 py-4">
                         <input
                           type="checkbox"
@@ -1281,34 +1281,34 @@ export default function CODRemittance() {
                           </td>
 
                           <td className="px-4 py-4">
-                            <p className="whitespace-nowrap font-bold text-slate-800">
+                            <p className="whitespace-nowrap font-bold text-slate-900">
                               #{row.order_id || "—"}
                             </p>
 
-                            <p className="mt-1 max-w-[160px] truncate text-xs text-slate-500">
+                            <p className="mt-1 max-w-[160px] truncate text-xs font-semibold text-slate-700">
                               {row.customer_name || "Customer"}
                             </p>
 
-                            <p className="mt-1 text-xs text-slate-400">
+                            <p className="mt-1 text-xs font-medium text-slate-600">
                               ID: {row.user_id ?? "—"}
                             </p>
                           </td>
 
                           <td className="px-4 py-4">
-                            <p className="max-w-[160px] break-words font-medium text-slate-700">
+                            <p className="max-w-[160px] break-words font-semibold text-slate-800">
                               {row.buyer || "—"}
                             </p>
                           </td>
 
-                          <td className="px-4 py-4 font-mono text-xs text-slate-600">
+                          <td className="px-4 py-4 font-mono text-xs font-semibold text-slate-800">
                             {row.awb || "—"}
                           </td>
 
-                          <td className="whitespace-nowrap px-4 py-4 font-bold text-slate-800">
+                          <td className="whitespace-nowrap px-4 py-4 font-bold text-slate-900">
                             {money(row.cod_amount)}
                           </td>
 
-                          <td className="whitespace-nowrap px-4 py-4 text-xs text-slate-500">
+                          <td className="whitespace-nowrap px-4 py-4 text-xs font-medium text-slate-700">
                             {dateText(row.created_at)}
                           </td>
 
@@ -1316,7 +1316,7 @@ export default function CODRemittance() {
                             <StatusBadge status={row.status} />
                           </td>
 
-                          <td className="whitespace-nowrap px-4 py-4 text-xs text-slate-500">
+                          <td className="whitespace-nowrap px-4 py-4 text-xs font-medium text-slate-700">
                             {dateText(row.transferred_on)}
                           </td>
 

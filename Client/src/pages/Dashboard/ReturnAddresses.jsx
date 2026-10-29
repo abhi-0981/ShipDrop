@@ -1078,25 +1078,25 @@ function ReturnAddresses() {
 
                 {/* TABLE HEADER */}
 
-                <div className="hidden grid-cols-[18%_17%_35%_12%_18%] border-b border-slate-200 bg-slate-50/70 px-4 py-3 md:grid">
+                <div className="hidden grid-cols-[18%_17%_35%_12%_18%] border-b border-slate-200 bg-slate-50/90 px-4 py-3 md:grid">
 
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-800">
                   Name
                 </span>
 
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-800">
                   Contact
                 </span>
 
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-800">
                   Address
                 </span>
 
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-800">
                   Default
                 </span>
 
-                <span className="text-right text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                <span className="text-right text-[11px] font-bold uppercase tracking-wider text-slate-800">
                   Actions
                 </span>
 
@@ -1129,7 +1129,7 @@ function ReturnAddresses() {
 
                         <div className="flex items-center gap-2">
 
-                          <p className="truncate text-sm font-semibold text-slate-800">
+                          <p className="truncate text-sm font-bold text-slate-900">
                             {address.name}
                           </p>
 
@@ -1143,7 +1143,7 @@ function ReturnAddresses() {
 
                         </div>
 
-                        <p className="mt-1 text-[11px] text-slate-400">
+                        <p className="mt-1 text-[11px] font-medium text-slate-600">
                           Return Address #{address.id}
                         </p>
 
@@ -1154,13 +1154,13 @@ function ReturnAddresses() {
 
                       <div className="mt-3 md:mt-0">
 
-                        <p className="text-xs font-medium text-slate-700">
+                        <p className="text-xs font-semibold text-slate-800">
                           {address.phone || "—"}
                         </p>
 
                         {address.email && (
 
-                          <p className="mt-0.5 truncate text-[11px] text-slate-400">
+                          <p className="mt-0.5 truncate text-[11px] font-medium text-slate-600">
                             {address.email}
                           </p>
 
@@ -1175,7 +1175,7 @@ function ReturnAddresses() {
 
                         <p
                           title={getAddress(address)}
-                          className="line-clamp-2 text-xs leading-5 text-slate-600"
+                          className="line-clamp-2 text-xs leading-5 font-medium text-slate-700"
                         >
                           {getAddress(address)}
                         </p>

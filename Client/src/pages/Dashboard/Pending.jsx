@@ -1162,28 +1162,28 @@ const triggerTracking = (awb) => {
                     className="h-3.5 w-3.5 cursor-pointer rounded border-slate-300 accent-[#008dd2]"
                   />
                 </th>
-                <th className="w-[7%] px-1.5 py-3 text-left text-[12px] font-medium text-slate-700">
+                <th className="w-[7%] px-1.5 py-3 text-left text-[12px] font-bold text-slate-800">
                   Party
                 </th>
-                <th className="w-[16%] px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                <th className="w-[16%] px-2 py-3 text-left text-[12px] font-bold text-slate-800">
                   Customer
                 </th>
-                <th className="w-[16%] px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                <th className="w-[16%] px-2 py-3 text-left text-[12px] font-bold text-slate-800">
                   Shipment
                 </th>
-                <th className="w-[16%] px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                <th className="w-[16%] px-2 py-3 text-left text-[12px] font-bold text-slate-800">
                   Route
                 </th>
-                <th className="w-[11%] px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                <th className="w-[11%] px-2 py-3 text-left text-[12px] font-bold text-slate-800">
                   Payment
                 </th>
-                <th className="w-[9%] px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                <th className="w-[9%] px-2 py-3 text-left text-[12px] font-bold text-slate-800">
                   Weight
                 </th>
-                <th className="w-[10%] px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                <th className="w-[10%] px-2 py-3 text-left text-[12px] font-bold text-slate-800">
                   Created
                 </th>
-                <th className="w-[11%] px-2 py-3 text-center text-[12px] font-medium text-slate-700">
+                <th className="w-[11%] px-2 py-3 text-center text-[12px] font-bold text-slate-800">
                   Actions
                 </th>
               </tr>
@@ -1287,16 +1287,16 @@ const triggerTracking = (awb) => {
                               {getPartyName(order)}
                             </span>
                           ) : (
-                            <span className="text-[12px] text-slate-400 font-normal">—</span>
+                            <span className="text-[12px] text-slate-500 font-medium">—</span>
                           )}
                         </div>
                       </td>
                       <td className="px-2 py-3 align-middle">
                         <div className="min-w-0">
-                          <div className="truncate text-[12px] font-semibold text-slate-800">
+                          <div className="truncate text-[12px] font-bold text-slate-800">
                             {getCustomerName(order)}
                           </div>
-                          <div className="mt-0.5 truncate text-[11px] text-slate-400">
+                          <div className="mt-0.5 truncate text-[11px] font-medium text-slate-600">
                             {valueOrDash(order?.mobile || order?.phone)}
                           </div>
                           <span className=" inline-flex rounded-full bg-amber-50 p-0.5 text-[10px] font-medium text-amber-600">UNDELIVERED</span>
@@ -1309,7 +1309,7 @@ const triggerTracking = (awb) => {
     type="button"
     onClick={() => triggerTracking(getAWB(order))}
     title="Track Shipment"
-    className="min-w-0 truncate text-left text-[12px] font-semibold text-slate-800 hover:text-[#008dd2] "
+    className="min-w-0 truncate text-left text-[12px] font-bold text-slate-900 hover:text-[#008dd2] "
   >
     {valueOrDash(getAWB(order))}
   </button>
@@ -1319,16 +1319,16 @@ const triggerTracking = (awb) => {
     onClick={() => copyText(getAWB(order), "AWB")}
     title="Copy AWB"
     aria-label="Copy AWB"
-    className="shrink-0 rounded p-0.5 text-slate-400 hover:bg-blue-50 hover:text-[#008dd2]"
+    className="shrink-0 rounded p-0.5 text-slate-500 hover:bg-blue-50 hover:text-[#008dd2]"
   >
     <HiOutlineDuplicate className="text-[12px]" />
   </button>
 </div>
 
-                        <div className="mt-1 truncate text-[10px] text-slate-400">
+                        <div className="mt-1 truncate text-[10.5px] font-medium text-slate-600">
                           Pickup ID: {valueOrDash(pickupId)}
                         </div>
-                        <div className="truncate text-[10px] text-slate-400">
+                        <div className="truncate text-[10.5px] font-medium text-slate-600">
                           {shipmentService === "-"
                             ? ""
                             : shipmentService.replace("BY ", "By ")}
@@ -1339,18 +1339,18 @@ const triggerTracking = (awb) => {
                           <div className="flex w-3 shrink-0 flex-col items-center pt-0.5">
                             <HiOutlineLocationMarker className="text-[13px] text-[#008dd2]" />
                             <span className="my-0.5 h-3 border-l border-dashed border-slate-300" />
-                            <HiOutlineLocationMarker className="text-[13px] text-slate-400" />
+                            <HiOutlineLocationMarker className="text-[13px] text-slate-500" />
                           </div>
                           <div className="min-w-0 flex-1">
-                            <div className="truncate text-[11px] font-medium leading-5 text-slate-700">
+                            <div className="truncate text-[11px] font-semibold leading-5 text-slate-800">
                               {pickupCity}{" "}
-                              <span className="text-slate-400">
+                              <span className="text-slate-500 font-medium">
                                 {pickupPin ? `(${pickupPin})` : ""}
                               </span>
                             </div>
-                            <div className="truncate text-[11px] font-medium leading-5 text-slate-700">
+                            <div className="truncate text-[11px] font-semibold leading-5 text-slate-800">
                               {deliveryCity}{" "}
-                              <span className="text-slate-400">
+                              <span className="text-slate-500 font-medium">
                                 {deliveryPin ? `(${deliveryPin})` : ""}
                               </span>
                             </div>
@@ -1358,21 +1358,21 @@ const triggerTracking = (awb) => {
                         </div>
                       </td>
                       <td className="px-2 py-3 align-middle">
-                        <div className="truncate text-[12px] font-semibold text-[#008dd2]">
+                        <div className="truncate text-[12px] font-bold text-[#008dd2]">
                           {payment}
                         </div>
-                        <div className="mt-1 truncate text-[10px] text-slate-400">
+                        <div className="mt-1 truncate text-[10.5px] font-medium text-slate-600">
                           {payment === "COD" ? "Cash on Delivery" : "Prepaid"}
                         </div>
-                        <div className="truncate text-[10px] text-slate-400">
+                        <div className="truncate text-[10.5px] font-medium text-slate-600">
                           Total: ₹{(getCharge(order) ?? 0).toFixed(2)}
                         </div>
                       </td>
                       <td className="px-2 py-3 align-middle">
-                        <div className="truncate text-[11px] font-medium text-slate-700">
+                        <div className="truncate text-[11px] font-bold text-slate-800">
                           Box: {valueOrDash(boxCount)}
                         </div>
-                        <div className="mt-1 truncate text-[10px] text-slate-400">
+                        <div className="mt-1 truncate text-[10.5px] font-medium text-slate-600">
                           Wt:{" "}
                           {weight !== undefined &&
                           weight !== null &&
@@ -1380,7 +1380,7 @@ const triggerTracking = (awb) => {
                             ? `${weight} kg`
                             : "-"}
                         </div>
-                        <div className="truncate text-[10px] text-slate-400">
+                        <div className="truncate text-[10.5px] font-medium text-slate-600">
                           Vol:{" "}
                           {volume !== null &&
                           volume !== undefined &&
@@ -1390,10 +1390,10 @@ const triggerTracking = (awb) => {
                         </div>
                       </td>
                       <td className="px-2 py-3 align-middle">
-                        <div className="truncate text-[12px] font-semibold text-slate-800">
+                        <div className="truncate text-[12px] font-bold text-slate-800">
                           #{getOrderId(order)}
                         </div>
-                        <div className="mt-1 text-[10px] text-slate-400">
+                        <div className="mt-1 text-[10.5px] font-medium text-slate-600">
                           Created: {formatDate(createdDate)}
                         </div>
                       </td>

@@ -1242,25 +1242,25 @@ const AllOrders = () => {
                     className="h-3.5 w-3.5 cursor-pointer rounded border-slate-300 accent-blue-600"
                   />
                 </th>
-                <th className="w-[125px] border-r border-slate-200 px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                <th className="w-[125px] border-r border-slate-200 px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wide text-slate-800">
                   Order
                 </th>
-                <th className="w-[160px] border-r border-slate-200 px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                <th className="w-[160px] border-r border-slate-200 px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wide text-slate-800">
                   Customer
                 </th>
-                <th className="w-[225px] border-r border-slate-200 px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                <th className="w-[225px] border-r border-slate-200 px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wide text-slate-800">
                   AWB
                 </th>
-                <th className="w-[115px] border-r border-slate-200 px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                <th className="w-[115px] border-r border-slate-200 px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wide text-slate-800">
                   Charge
                 </th>
-                <th className="w-[205px] border-r border-slate-200 px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                <th className="w-[205px] border-r border-slate-200 px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wide text-slate-800">
                   Route
                 </th>
-                <th className="w-[145px] border-r border-slate-200 px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                <th className="w-[145px] border-r border-slate-200 px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wide text-slate-800">
                   Dates
                 </th>
-                <th className="w-[115px] px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                <th className="w-[115px] px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wide text-slate-800">
                   Actions
                 </th>
               </tr>
@@ -1322,7 +1322,7 @@ const AllOrders = () => {
                       </td>
 
                       <td className="border-r border-slate-100 px-3 py-3 align-top">
-                        <div className="text-[12px] font-semibold text-slate-800">
+                        <div className="text-[12px] font-bold text-slate-800">
                           #{order.order_id || order.id}
                         </div>
                         <div className="mt-1.5">
@@ -1331,10 +1331,10 @@ const AllOrders = () => {
                       </td>
 
                       <td className="border-r border-slate-100 px-3 py-3 align-top">
-                        <div className="max-w-[145px] truncate text-[12px] font-medium text-slate-700">
+                        <div className="max-w-[145px] truncate text-[12px] font-bold text-slate-800">
                           {order.customer}
                         </div>
-                        <div className="mt-1 text-[10px] text-slate-400">
+                        <div className="mt-1 text-[11px] font-medium text-slate-600">
                           UID: {order.uid}
                         </div>
                       </td>
@@ -1346,7 +1346,7 @@ const AllOrders = () => {
                             onClick={() => trackAwb(order.awb)}
                             disabled={!order.awb || order.awb === "-"}
                             title="Track shipment"
-                            className="text-left text-[11px] font-medium font-mono text-[#008dd2] hover:underline disabled:cursor-default disabled:text-slate-700"
+                            className="text-left text-[11px] font-bold font-mono text-[#008dd2] hover:underline disabled:cursor-default disabled:text-slate-700"
                           >
                             {order.awb}
                           </button>
@@ -1354,23 +1354,23 @@ const AllOrders = () => {
                             <button
                               type="button"
                               onClick={() => copyText(order.awb, "AWB")}
-                              className="text-slate-400 transition hover:text-blue-600"
+                              className="text-slate-500 transition hover:text-blue-600"
                               title="Copy AWB"
                             >
                               <HiOutlineDuplicate className="text-[14px]" />
                             </button>
                           )}
                         </div>
-                        <div className="mt-1 text-[10px] text-slate-400">
+                        <div className="mt-1 text-[10.5px] font-medium text-slate-600">
                           Pickup ID: {order.pickupId}
                         </div>
-                        <div className="mt-0.5 max-w-[170px] truncate text-[10px] text-slate-400">
+                        <div className="mt-0.5 max-w-[170px] truncate text-[10.5px] font-medium text-slate-600">
                           {order.courier}
                         </div>
                       </td>
 
                       <td className="border-r border-slate-100 px-3 py-3 align-top">
-                        <div className="text-[12px] font-semibold text-slate-700">
+                        <div className="text-[12px] font-bold text-slate-800">
                           {order.charge !== null &&
                           order.charge !== undefined &&
                           Number.isFinite(Number(order.charge))
@@ -1380,20 +1380,20 @@ const AllOrders = () => {
                       </td>
 
                       <td className="border-r border-slate-100 px-3 py-3 align-top">
-                        <div className="max-w-[180px] text-[10px] leading-[1.45] text-slate-600">
+                        <div className="max-w-[180px] text-[11px] font-semibold leading-[1.45] text-slate-800">
                           {order.pickup}
                         </div>
-                        <div className="my-1 text-[10px] text-slate-300">
-                          to
+                        <div className="my-0.5 text-[10.5px] font-bold text-slate-400">
+                          ↓ to
                         </div>
-                        <div className="max-w-[180px] text-[10px] leading-[1.45] text-slate-600">
+                        <div className="max-w-[180px] text-[11px] font-semibold leading-[1.45] text-slate-800">
                           {order.destination}
                         </div>
                       </td>
 
                       <td className="border-r border-slate-100 px-3 py-3 align-top">
-                        <div className="text-[10px] leading-[1.45] text-slate-500">
-                          <span className="font-medium text-slate-600">
+                        <div className="text-[11px] leading-[1.45] font-medium text-slate-700">
+                          <span className="font-bold text-slate-800">
                             {order.status}:
                           </span>{" "}
                           {order.date}

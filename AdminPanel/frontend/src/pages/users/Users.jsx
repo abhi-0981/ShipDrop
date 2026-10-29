@@ -504,7 +504,7 @@ function Users() {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-slate-100 bg-slate-50/70 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              <tr className="border-b border-slate-100 bg-slate-50/70 text-[11px] font-bold uppercase tracking-wider text-slate-800">
                 <th className="px-5 py-3.5">User</th>
                 <th className="px-5 py-3.5">Company</th>
                 <th className="px-5 py-3.5">Contact</th>
@@ -551,7 +551,7 @@ function Users() {
                           <p className="truncate text-xs font-bold text-slate-800">
                             {user.full_name || "—"}
                           </p>
-                          <p className="text-[10px] text-slate-400 font-mono">
+                          <p className="text-[10.5px] text-slate-600 font-medium font-mono">
                             #{user.id}
                           </p>
                         </div>
@@ -560,17 +560,17 @@ function Users() {
 
                     {/* COMPANY */}
                     <td className="px-5 py-3.5">
-                      <p className="max-w-[180px] truncate text-slate-700 font-medium">
+                      <p className="max-w-[180px] truncate text-slate-800 font-medium">
                         {user.company_name || "—"}
                       </p>
                     </td>
 
                     {/* CONTACT */}
                     <td className="px-5 py-3.5">
-                      <p className="text-slate-700 font-medium truncate max-w-[200px]">
+                      <p className="text-slate-800 font-medium truncate max-w-[200px]">
                         {user.email || "—"}
                       </p>
-                      <p className="mt-0.5 text-[11px] text-slate-400">
+                      <p className="mt-0.5 text-[11px] font-medium text-slate-600">
                         {user.phone_no || "—"}
                       </p>
                     </td>
@@ -589,7 +589,7 @@ function Users() {
                           {user.rate_card_name}
                         </span>
                       ) : (
-                        <span className="text-xs text-slate-400 italic">
+                        <span className="text-xs text-slate-500 font-medium italic">
                           Not Assigned
                         </span>
                       )}

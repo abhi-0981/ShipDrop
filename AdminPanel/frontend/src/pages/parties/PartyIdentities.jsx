@@ -629,7 +629,7 @@ export default function PartyIdentities() {
             <div className="hidden sm:block overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-slate-50/80 border-b border-slate-200/80 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                <tr className="bg-slate-50/90 border-b border-slate-200/80 text-[11px] font-bold text-slate-800 uppercase tracking-wider">
                   <th className="py-3 px-4">Merchant / User</th>
                   <th className="py-3 px-4">Party Identity</th>
                   <th className="py-3 px-4">Company / Brand</th>
@@ -659,21 +659,21 @@ export default function PartyIdentities() {
                         <div className="space-y-0.5">
                           <Link
                             to={`/users/${party.user_id}`}
-                            className="font-semibold text-slate-900 hover:text-[#008dd2] transition flex items-center gap-1 group/user"
+                            className="font-bold text-slate-900 hover:text-[#008dd2] transition flex items-center gap-1 group/user"
                             title="View Merchant Profile"
                           >
                             <span>{party.user_name || "Unknown Merchant"}</span>
                             <HiOutlineExternalLink
                               size={12}
-                              className="text-slate-400 group-hover/user:text-[#008dd2]"
+                              className="text-slate-500 group-hover/user:text-[#008dd2]"
                             />
                           </Link>
                           {party.user_company && (
-                            <p className="text-[11px] text-slate-500 font-medium">
+                            <p className="text-[11px] text-slate-700 font-semibold">
                               {party.user_company}
                             </p>
                           )}
-                          <div className="text-[10px] text-slate-400 flex items-center gap-1.5 pt-0.5 whitespace-nowrap">
+                          <div className="text-[10.5px] text-slate-600 font-medium flex items-center gap-1.5 pt-0.5 whitespace-nowrap">
                             <span>UID: #{party.user_id}</span>
                             {party.user_phone && <span>• {party.user_phone}</span>}
                           </div>
@@ -691,15 +691,15 @@ export default function PartyIdentities() {
                             {getInitials(party.name)}
                           </div>
                           <div className="space-y-0.5">
-                            <span className="font-semibold text-slate-900 block">
+                            <span className="font-bold text-slate-900 block">
                               {party.name}
                             </span>
                             {party.reference_name && (
-                              <span className="text-[11px] text-slate-500 block">
+                              <span className="text-[11px] font-medium text-slate-600 block">
                                 Ref: {party.reference_name}
                               </span>
                             )}
-                            <span className="text-[10px] text-slate-400 block">
+                            <span className="text-[10.5px] font-medium text-slate-600 block">
                               Created: {formatDate(party.created_at)}
                             </span>
                           </div>

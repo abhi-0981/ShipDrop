@@ -405,22 +405,22 @@ export default function PartyIdentities() {
                 <table className="w-full table-fixed min-w-[850px] border-collapse">
                 <thead>
                   <tr className="border-b border-slate-200 bg-slate-50/70">
-                    <th className="w-[6%] px-3.5 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                    <th className="w-[6%] px-3.5 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-800">
                       Tag
                     </th>
-                    <th className="w-[24%] px-3.5 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                    <th className="w-[24%] px-3.5 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-800">
                       Party & Reference
                     </th>
-                    <th className="w-[24%] px-3.5 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                    <th className="w-[24%] px-3.5 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-800">
                       Company & GST
                     </th>
-                    <th className="w-[24%] px-3.5 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                    <th className="w-[24%] px-3.5 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-800">
                       Contact & Address
                     </th>
-                    <th className="w-[11%] px-3.5 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                    <th className="w-[11%] px-3.5 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-800">
                       Orders
                     </th>
-                    <th className="w-[11%] px-3.5 py-3 text-right text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                    <th className="w-[11%] px-3.5 py-3 text-right text-[11px] font-bold uppercase tracking-wider text-slate-800">
                       Actions
                     </th>
                   </tr>
@@ -444,12 +444,12 @@ export default function PartyIdentities() {
                           {identity.name}
                         </div>
                         {identity.reference_name ? (
-                          <div className="mt-0.5 inline-flex items-center gap-1 text-[11px] text-slate-500 font-medium">
+                          <div className="mt-0.5 inline-flex items-center gap-1 text-[11px] text-slate-600 font-medium">
                             <HiOutlineBookmark size={12} className="text-[#008dd2]" />
                             <span>Ref: {identity.reference_name}</span>
                           </div>
                         ) : (
-                          <div className="text-[11px] text-slate-400">Created {formatDate(identity.created_at)}</div>
+                          <div className="text-[11px] font-medium text-slate-600">Created {formatDate(identity.created_at)}</div>
                         )}
                       </td>
 
@@ -457,11 +457,11 @@ export default function PartyIdentities() {
                       <td className="px-3.5 py-3 align-top">
                         {identity.company_name ? (
                           <div className="flex items-center gap-1 text-xs font-semibold text-slate-700">
-                            <HiOutlineOfficeBuilding size={13} className="text-slate-400 shrink-0" />
+                            <HiOutlineOfficeBuilding size={13} className="text-slate-500 shrink-0" />
                             <span className="truncate">{identity.company_name}</span>
                           </div>
                         ) : (
-                          <span className="text-slate-300 text-xs">—</span>
+                          <span className="text-slate-400 text-xs">—</span>
                         )}
 
                         {identity.gst_no && (
@@ -475,22 +475,22 @@ export default function PartyIdentities() {
                       {/* CONTACT & ADDRESS */}
                       <td className="px-3.5 py-3 align-top">
                         {identity.phone_no && (
-                          <div className="flex items-center gap-1 text-xs font-medium text-slate-700">
-                            <HiOutlinePhone size={13} className="text-emerald-500 shrink-0" />
+                          <div className="flex items-center gap-1 text-xs font-semibold text-slate-800">
+                            <HiOutlinePhone size={13} className="text-emerald-600 shrink-0" />
                             <span>{identity.phone_no}</span>
                           </div>
                         )}
 
                         {identity.address ? (
                           <div
-                            className="mt-0.5 flex items-start gap-1 text-[11px] text-slate-500 line-clamp-2"
+                            className="mt-0.5 flex items-start gap-1 text-[11px] font-medium text-slate-600 line-clamp-2"
                             title={identity.address}
                           >
-                            <HiOutlineLocationMarker size={13} className="text-slate-400 shrink-0 mt-0.5" />
+                            <HiOutlineLocationMarker size={13} className="text-slate-500 shrink-0 mt-0.5" />
                             <span>{identity.address}</span>
                           </div>
                         ) : !identity.phone_no ? (
-                          <span className="text-slate-300 text-xs">—</span>
+                          <span className="text-slate-400 text-xs">—</span>
                         ) : null}
                       </td>
 

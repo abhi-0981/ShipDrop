@@ -1162,7 +1162,7 @@ function ProcessingOrders() {
         <div className="w-full overflow-x-auto">
           <table className="w-full table-fixed min-w-[950px] text-left border-collapse">
             <thead>
-              <tr className="border-b border-slate-100 bg-slate-50/70 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              <tr className="border-b border-slate-100 bg-slate-50/70 text-[11px] font-bold uppercase tracking-wider text-slate-700">
                 <th className="py-2.5 px-2 w-9 text-center">
                   <input
                     type="checkbox"
@@ -1231,7 +1231,7 @@ function ProcessingOrders() {
                               {getParty(order)}
                             </span>
                           ) : (
-                            <span className="text-[12px] text-slate-400 font-normal">—</span>
+                            <span className="text-[12px] text-slate-500 font-medium">—</span>
                           )}
                         </div>
                       </td>
@@ -1241,7 +1241,7 @@ function ProcessingOrders() {
                         <div className="font-bold text-slate-900">
                           {getCustomer(order)}
                         </div>
-                        <div className="text-[11px] text-slate-400">
+                        <div className="text-[11px] font-medium text-slate-600">
                           {getMobile(order)}
                         </div>
                         <span className="mt-1 inline-flex rounded-full bg-[#e8f6fc] px-2 py-0.5 text-[10px] font-bold uppercase text-[#008dd2]">
@@ -1269,10 +1269,10 @@ function ProcessingOrders() {
                               </svg>
                             </span>
                             <div className="flex items-baseline gap-1 text-[13px]">
-                              <span className="font-medium text-slate-900">
+                              <span className="font-semibold text-slate-800">
                                 {getPickupCity(order)}
                               </span>
-                              <span className="text-[12px] text-slate-400">
+                              <span className="text-[12px] font-medium text-slate-500">
                                 ({getPickupPincode(order)})
                               </span>
                             </div>
@@ -1283,7 +1283,7 @@ function ProcessingOrders() {
 
                           {/* Delivery Node */}
                           <div className="flex items-center gap-2">
-                            <span className="flex h-4 w-4 shrink-0 items-center justify-center text-slate-400">
+                            <span className="flex h-4 w-4 shrink-0 items-center justify-center text-slate-500">
                               <svg
                                 className="h-3.5 w-3.5"
                                 viewBox="0 0 24 24"
@@ -1298,10 +1298,10 @@ function ProcessingOrders() {
                               </svg>
                             </span>
                             <div className="flex items-baseline gap-1 text-[13px]">
-                              <span className="font-medium text-slate-900">
+                              <span className="font-semibold text-slate-800">
                                 {getDeliveryCity(order)}
                               </span>
-                              <span className="text-[12px] text-slate-400">
+                              <span className="text-[12px] font-medium text-slate-500">
                                 ({getDeliveryPincode(order)})
                               </span>
                             </div>
@@ -1320,7 +1320,7 @@ function ProcessingOrders() {
                         >
                           {getPayment(order)}
                         </span>
-                        <div className="mt-1 text-[10px] text-slate-400">
+                        <div className="mt-1 text-[10.5px] font-medium text-slate-600">
                           {getDate(order)}
                         </div>
                       </td>
@@ -1330,19 +1330,19 @@ function ProcessingOrders() {
                         <div className="font-bold text-slate-800">
                           #{order.order_id || id}
                         </div>
-                        <div className="text-slate-600 truncate max-w-[150px]">
+                        <div className="text-slate-700 font-medium truncate max-w-[150px]">
                           {getProduct(order)}
                         </div>
-                        <div className="text-[10px] text-slate-400">
+                        <div className="text-[10.5px] font-medium text-slate-600">
                           Qty: {getQty(order)}
                         </div>
                       </td>
 
                       {/* 6. WEIGHT */}
                       <td className="py-2.5 px-2 align-middle">
-                        <div className="font-semibold text-slate-900 whitespace-nowrap leading-5">Wt: {getTotalWeight(order)}</div>
-                        <div className="mt-0.5 text-[10px] font-medium text-slate-500 whitespace-nowrap leading-4">Vol: {getVolumetricWeight(order)}</div>
-                        <div className="text-[10px] text-slate-400 whitespace-nowrap leading-4">{getBoxCount(order)} Box</div>
+                        <div className="font-bold text-slate-800 whitespace-nowrap leading-5">Wt: {getTotalWeight(order)}</div>
+                        <div className="mt-0.5 text-[10.5px] font-medium text-slate-600 whitespace-nowrap leading-4">Vol: {getVolumetricWeight(order)}</div>
+                        <div className="text-[10.5px] font-medium text-slate-600 whitespace-nowrap leading-4">{getBoxCount(order)} Box</div>
                       </td>
 
                      {/* 7. ACTIONS */}

@@ -765,8 +765,8 @@ export default function ShipmentLifecycleReport() {
                       </span>
                     </div>
 
-                    <div className="text-[11px] text-slate-500 flex items-center gap-1">
-                      <HiOutlineLocationMarker className="text-slate-400 shrink-0 text-xs" />
+                    <div className="text-[11px] text-slate-600 font-medium flex items-center gap-1">
+                      <HiOutlineLocationMarker className="text-slate-500 shrink-0 text-xs" />
                       <span className="truncate">
                         {o.city ? `${o.city}, ` : ""}{o.state || ""}{o.pincode ? ` (${o.pincode})` : ""}
                       </span>
@@ -775,7 +775,7 @@ export default function ShipmentLifecycleReport() {
                     {/* AWB BAR */}
                     <div className="flex items-center justify-between font-mono text-[11px] text-slate-700 bg-slate-50/80 px-2.5 py-1.5 rounded-xl border border-slate-100">
                       <div className="flex items-center gap-1.5 min-w-0">
-                        <span className="font-sans text-[10px] text-slate-400 font-semibold uppercase">
+                        <span className="font-sans text-[10.5px] text-slate-600 font-bold uppercase">
                           AWB:
                         </span>
                         <span className="truncate font-bold text-[#008dd2]">
@@ -797,20 +797,20 @@ export default function ShipmentLifecycleReport() {
                     </div>
 
                     {/* SPECS & FREIGHT */}
-                    <div className="flex items-center justify-between text-[11px] text-slate-500 border-t border-slate-50 pt-1.5">
+                    <div className="flex items-center justify-between text-[11px] text-slate-600 font-medium border-t border-slate-50 pt-1.5">
                       <span>
                         {o.carrier || "Delhivery"} • {Number(o.weight || 0.5).toFixed(2)} kg
                       </span>
-                      <span className="font-bold text-slate-800">
+                      <span className="font-bold text-slate-900">
                         ₹{Number(o.shipping_charge || 0).toFixed(2)}
                       </span>
                     </div>
                   </div>
 
                   {/* BOOKING DATE */}
-                  <div className="border-t border-slate-100 pt-2 text-[10px] text-slate-400 flex items-center justify-between">
+                  <div className="border-t border-slate-100 pt-2 text-[10.5px] font-medium text-slate-600 flex items-center justify-between">
                     <span>Booked:</span>
-                    <span>
+                    <span className="text-slate-700">
                       {o.created_at ? new Date(o.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "-"} {o.created_at ? new Date(o.created_at).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) : ""}
                     </span>
                   </div>
@@ -825,7 +825,7 @@ export default function ShipmentLifecycleReport() {
           <div className="hidden sm:block overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-slate-200 bg-white text-[12px] font-medium text-slate-700">
+                <tr className="border-b border-slate-200 bg-slate-50/90 text-[11px] font-bold uppercase tracking-wider text-slate-800">
                   <th className="py-3 px-4">Order ID & AWB</th>
                   <th className="py-3 px-4">Booking Date</th>
                   <th className="py-3 px-4">Consignee & Destination</th>
@@ -899,7 +899,7 @@ export default function ShipmentLifecycleReport() {
                       {/* Order ID & AWB */}
                       <td className="py-3 px-4">
                         <div>
-                          <div className="font-semibold text-slate-900 text-[12px] flex items-center gap-1.5">
+                          <div className="font-bold text-slate-900 text-[12px] flex items-center gap-1.5">
                             <span>#{o.order_id}</span>
                             <button
                               type="button"
@@ -912,7 +912,7 @@ export default function ShipmentLifecycleReport() {
                           </div>
                           {o.awb ? (
                             <div className="flex items-center gap-1.5 mt-0.5">
-                              <span className="text-[11px] font-mono text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">
+                              <span className="text-[11px] font-mono font-semibold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded">
                                 {o.awb}
                               </span>
                               <button
@@ -925,28 +925,28 @@ export default function ShipmentLifecycleReport() {
                               </button>
                             </div>
                           ) : (
-                            <span className="text-[10.5px] text-amber-600 font-medium">AWB Pending</span>
+                            <span className="text-[10.5px] text-amber-700 font-semibold">AWB Pending</span>
                           )}
                         </div>
                       </td>
 
                       {/* Booking Date */}
                       <td className="py-3 px-4 whitespace-nowrap">
-                        <div className="text-[12px] font-medium text-slate-700">
+                        <div className="text-[12px] font-semibold text-slate-800">
                           {o.created_at ? new Date(o.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "-"}
                         </div>
-                        <div className="text-[10.5px] text-slate-400 font-medium">
+                        <div className="text-[10.5px] text-slate-600 font-medium">
                           {o.created_at ? new Date(o.created_at).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) : ""}
                         </div>
                       </td>
 
                       {/* Consignee & Destination */}
                       <td className="py-3 px-4">
-                        <div className="font-semibold text-slate-800 text-[12px] truncate max-w-[180px]">
+                        <div className="font-bold text-slate-900 text-[12px] truncate max-w-[180px]">
                           {o.consignee_name || "Customer"}
                         </div>
-                        <div className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
-                          <HiOutlineLocationMarker className="text-slate-400 shrink-0 text-xs" />
+                        <div className="text-[11px] text-slate-600 font-medium flex items-center gap-1 mt-0.5">
+                          <HiOutlineLocationMarker className="text-slate-500 shrink-0 text-xs" />
                           <span className="truncate max-w-[170px]">
                             {o.city ? `${o.city}, ` : ""}{o.state || ""}{o.pincode ? ` (${o.pincode})` : ""}
                           </span>
@@ -955,7 +955,7 @@ export default function ShipmentLifecycleReport() {
 
                       {/* Carrier & Mode */}
                       <td className="py-3 px-4 whitespace-nowrap">
-                        <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[11px] font-semibold">
+                        <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 text-slate-800 text-[11px] font-bold">
                           <span>{o.carrier || "Delhivery"}</span>
                         </div>
                         <div className="mt-1">
@@ -977,12 +977,12 @@ export default function ShipmentLifecycleReport() {
                       </td>
 
                       {/* Weight */}
-                      <td className="py-3 px-4 text-right whitespace-nowrap font-medium text-slate-600 text-[12px]">
+                      <td className="py-3 px-4 text-right whitespace-nowrap font-bold text-slate-800 text-[12px]">
                         {Number(o.weight || 0.5).toFixed(2)} kg
                       </td>
 
                       {/* Shipping Charge */}
-                      <td className="py-3 px-4 text-right whitespace-nowrap font-bold text-slate-800 text-[12px]">
+                      <td className="py-3 px-4 text-right whitespace-nowrap font-bold text-slate-900 text-[12px]">
                         ₹{Number(o.shipping_charge || 0).toFixed(2)}
                       </td>
                     </tr>

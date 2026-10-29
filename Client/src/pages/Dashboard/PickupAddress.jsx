@@ -1415,33 +1415,33 @@ const setAsDefault = async (warehouseId) => {
 
                   <thead>
 
-                    <tr className="border-b border-slate-200 bg-slate-50/70">
+                    <tr className="border-b border-slate-200 bg-slate-50/90">
 
-                      <th className="w-[16%] px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                      <th className="w-[16%] px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-800">
                         Warehouse
                       </th>
 
-                      <th className="w-[14%] px-3 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                      <th className="w-[14%] px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-800">
                         Contact
                       </th>
 
-                      <th className="w-[30%] px-3 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                      <th className="w-[30%] px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-800">
                         Address
                       </th>
 
-                      <th className="w-[10%] px-3 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                      <th className="w-[10%] px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-800">
                         Pincode
                       </th>
 
-                      <th className="w-[13%] px-3 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                      <th className="w-[13%] px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-800">
                         Status
                       </th>
 
-                      <th className="w-[10%] px-3 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                      <th className="w-[10%] px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-800">
                         Default
                       </th>
 
-                      <th className="w-[7%] px-4 py-3 text-right text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                      <th className="w-[7%] px-4 py-3 text-right text-[11px] font-bold uppercase tracking-wider text-slate-800">
                         Actions
                       </th>
 
@@ -1481,7 +1481,7 @@ const setAsDefault = async (warehouseId) => {
 
                             <td className="px-4 py-3">
 
-                              <p className="truncate text-sm font-semibold text-slate-800">
+                              <p className="truncate text-sm font-bold text-slate-900">
                                 {
                                   warehouse.warehouse_name
                                 }
@@ -1494,14 +1494,14 @@ const setAsDefault = async (warehouseId) => {
 
                             <td className="px-3 py-3">
 
-                              <p className="truncate text-xs font-medium text-slate-700">
+                              <p className="truncate text-xs font-semibold text-slate-800">
                                 {
                                   warehouse.contact_name ||
                                   "—"
                                 }
                               </p>
 
-                              <p className="mt-0.5 truncate text-[11px] text-slate-500">
+                              <p className="mt-0.5 truncate text-[11px] font-medium text-slate-600">
                                 {
                                   warehouse.phone ||
                                   "—"
@@ -1521,7 +1521,7 @@ const setAsDefault = async (warehouseId) => {
                                     warehouse
                                   )
                                 }
-                                className="line-clamp-2 text-xs leading-5 text-slate-600"
+                                className="line-clamp-2 text-xs leading-5 font-medium text-slate-700"
                               >
                                 {
                                   getAddress(
@@ -1537,7 +1537,7 @@ const setAsDefault = async (warehouseId) => {
 
                             <td className="px-3 py-3">
 
-                              <span className="text-xs font-medium text-slate-700">
+                              <span className="text-xs font-bold text-slate-800">
                                 {
                                   warehouse.pincode
                                 }

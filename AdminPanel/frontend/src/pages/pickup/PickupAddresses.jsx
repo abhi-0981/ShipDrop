@@ -633,7 +633,7 @@ export default function PickupAddresses() {
             <div className="hidden sm:block overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-slate-50/80 border-b border-slate-200/80 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                <tr className="bg-slate-50/90 border-b border-slate-200/80 text-[11px] font-bold text-slate-800 uppercase tracking-wider">
                   <th className="py-3 px-4">Merchant / User</th>
                   <th className="py-3 px-4">Pickup Location</th>
                   <th className="py-3 px-4">Contact Info</th>
@@ -664,21 +664,21 @@ export default function PickupAddresses() {
                         <div className="space-y-0.5">
                           <Link
                             to={`/users/${addr.user_id}`}
-                            className="font-semibold text-slate-900 hover:text-[#008dd2] transition flex items-center gap-1 group/user"
+                            className="font-bold text-slate-900 hover:text-[#008dd2] transition flex items-center gap-1 group/user"
                             title="View Merchant Profile"
                           >
                             <span>{addr.user_name || "Unknown Merchant"}</span>
                             <HiOutlineExternalLink
                               size={12}
-                              className="text-slate-400 group-hover/user:text-[#008dd2]"
+                              className="text-slate-500 group-hover/user:text-[#008dd2]"
                             />
                           </Link>
                           {addr.user_company && (
-                            <p className="text-[11px] text-slate-500 font-medium">
+                            <p className="text-[11px] text-slate-700 font-semibold">
                               {addr.user_company}
                             </p>
                           )}
-                          <div className="text-[10px] text-slate-400 flex items-center gap-1.5 pt-0.5 whitespace-nowrap">
+                          <div className="text-[10.5px] text-slate-600 font-medium flex items-center gap-1.5 pt-0.5 whitespace-nowrap">
                             <span>UID: #{addr.user_id}</span>
                             {addr.user_phone && <span>• {addr.user_phone}</span>}
                           </div>
@@ -688,17 +688,17 @@ export default function PickupAddresses() {
                       {/* LOCATION NAME */}
                       <td className="py-3 px-4 align-top">
                         <div className="space-y-0.5">
-                          <span className="font-semibold text-slate-800">
+                          <span className="font-bold text-slate-900">
                             {addr.warehouse_name || "Unnamed Hub"}
                           </span>
                           {(addr.landmark || addr.floor_no) && (
-                            <p className="text-[11px] text-slate-500">
+                            <p className="text-[11px] font-medium text-slate-600">
                               {addr.floor_no ? `Floor ${addr.floor_no}` : ""}
                               {addr.floor_no && addr.landmark ? ", " : ""}
                               {addr.landmark ? `Near ${addr.landmark}` : ""}
                             </p>
                           )}
-                          <span className="block text-[10px] text-slate-400">
+                          <span className="block text-[10.5px] font-medium text-slate-600">
                             Added: {formatDate(addr.created_at)}
                           </span>
                         </div>
@@ -707,30 +707,30 @@ export default function PickupAddresses() {
                       {/* CONTACT PERSON */}
                       <td className="py-3 px-4 align-top">
                         <div className="space-y-0.5">
-                          <p className="font-medium text-slate-800">
+                          <p className="font-semibold text-slate-900">
                             {addr.contact_name || "—"}
                           </p>
                           {addr.phone && (
                             <button
                               type="button"
                               onClick={() => copyToClipboard(addr.phone, `phone_${addr.id}`)}
-                              className="text-[11px] text-slate-600 hover:text-[#008dd2] flex items-center gap-1 transition"
+                              className="text-[11px] font-medium text-slate-700 hover:text-[#008dd2] flex items-center gap-1 transition"
                               title="Click to copy phone"
                             >
-                              <HiOutlinePhone size={11} className="text-slate-400" />
+                              <HiOutlinePhone size={11} className="text-slate-500" />
                               <span>{addr.phone}</span>
                               {copiedField === `phone_${addr.id}` ? (
                                 <HiOutlineCheck size={11} className="text-emerald-500" />
                               ) : (
                                 <HiOutlineDuplicate
                                   size={11}
-                                  className="text-slate-300 hover:text-slate-500"
+                                  className="text-slate-400 hover:text-slate-600"
                                 />
                               )}
                             </button>
                           )}
                           {addr.email && (
-                            <p className="text-[11px] text-slate-400 truncate max-w-[150px]">
+                            <p className="text-[11px] font-medium text-slate-600 truncate max-w-[150px]">
                               {addr.email}
                             </p>
                           )}

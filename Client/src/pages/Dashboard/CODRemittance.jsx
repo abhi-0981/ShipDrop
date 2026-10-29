@@ -685,7 +685,7 @@ export default function CODRemittance() {
           <div className="hidden sm:block overflow-x-auto">
             <table className="w-full min-w-[880px] text-left border-collapse">
               <thead>
-                <tr className="border-b border-slate-200 bg-white text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-800/40 dark:text-slate-400">
+                <tr className="border-b border-slate-200 bg-white text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:border-slate-800 dark:bg-slate-800/40 dark:text-slate-200">
                   <th className="px-4 py-3 text-left">Order ID</th>
                   <th className="px-4 py-3 text-left">Buyer</th>
                   <th className="px-4 py-3 text-left">AWB No</th>
@@ -744,13 +744,13 @@ export default function CODRemittance() {
                     >
                       {/* Order ID */}
                       <td className="px-4 py-3 whitespace-nowrap">
-                        <div className="flex items-center gap-1.5 font-mono text-[12.5px] font-semibold text-slate-900 dark:text-slate-100">
+                        <div className="flex items-center gap-1.5 font-mono text-[12.5px] font-bold text-slate-900 dark:text-slate-100">
                           <span>#{item.order_id}</span>
                           <button
                             type="button"
                             onClick={() => handleCopy(item.order_id, "Order ID")}
                             title="Copy Order ID"
-                            className="text-slate-400 hover:text-[#008dd2] transition p-0.5"
+                            className="text-slate-500 hover:text-[#008dd2] transition p-0.5"
                           >
                             <HiOutlineDuplicate className="text-[13px]" />
                           </button>
@@ -759,7 +759,7 @@ export default function CODRemittance() {
 
                       {/* Buyer */}
                       <td className="px-4 py-3">
-                        <span className="text-[12.5px] font-medium text-slate-800 dark:text-slate-200">
+                        <span className="text-[12.5px] font-semibold text-slate-800 dark:text-slate-200">
                           {item.buyer || "—"}
                         </span>
                       </td>
@@ -767,19 +767,19 @@ export default function CODRemittance() {
                       {/* AWB */}
                       <td className="px-4 py-3 whitespace-nowrap">
                         {item.awb ? (
-                          <div className="flex items-center gap-1.5 font-mono text-[12px] text-slate-700 dark:text-slate-300">
+                          <div className="flex items-center gap-1.5 font-mono text-[12px] font-medium text-slate-800 dark:text-slate-300">
                             <span>{item.awb}</span>
                             <button
                               type="button"
                               onClick={() => handleCopy(item.awb, "AWB")}
                               title="Copy AWB"
-                              className="text-slate-400 hover:text-[#008dd2] transition p-0.5"
+                              className="text-slate-500 hover:text-[#008dd2] transition p-0.5"
                             >
                               <HiOutlineDuplicate className="text-[13px]" />
                             </button>
                           </div>
                         ) : (
-                          <span className="text-slate-400">—</span>
+                          <span className="text-slate-500 font-medium">—</span>
                         )}
                       </td>
 
@@ -789,7 +789,7 @@ export default function CODRemittance() {
                       </td>
 
                       {/* Delivered On */}
-                      <td className="px-4 py-3 whitespace-nowrap text-[12px] text-slate-600 dark:text-slate-300">
+                      <td className="px-4 py-3 whitespace-nowrap text-[12px] font-medium text-slate-700 dark:text-slate-300">
                         {formatDate(item.tracking_updated_at || item.created_at)}
                       </td>
 
@@ -799,12 +799,12 @@ export default function CODRemittance() {
                       </td>
 
                       {/* Transferred On */}
-                      <td className="px-4 py-3 whitespace-nowrap text-[12px] text-slate-600 dark:text-slate-300">
+                      <td className="px-4 py-3 whitespace-nowrap text-[12px] font-medium text-slate-700 dark:text-slate-300">
                         {item.transferred_on ? formatDate(item.transferred_on) : "—"}
                       </td>
 
                       {/* Description */}
-                      <td className="px-4 py-3 text-[12px] text-slate-500 dark:text-slate-400">
+                      <td className="px-4 py-3 text-[12px] font-medium text-slate-600 dark:text-slate-400">
                         {item.description || "—"}
                       </td>
                     </tr>

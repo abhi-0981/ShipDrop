@@ -1433,31 +1433,31 @@ function RTODelivered() {
                     </button>
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[18%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[18%] bg-white px-2 py-3 text-left text-[12px] font-bold text-slate-800">
                     Customer
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[17%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[17%] bg-white px-2 py-3 text-left text-[12px] font-bold text-slate-800">
                     Shipment
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[17%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[17%] bg-white px-2 py-3 text-left text-[12px] font-bold text-slate-800">
                     Route
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[11%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[11%] bg-white px-2 py-3 text-left text-[12px] font-bold text-slate-800">
                     Payment
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[9%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[9%] bg-white px-2 py-3 text-left text-[12px] font-bold text-slate-800">
                     Weight
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[11%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[11%] bg-white px-2 py-3 text-left text-[12px] font-bold text-slate-800">
                     Created
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[13%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[13%] bg-white px-2 py-3 text-left text-[12px] font-bold text-slate-800">
                     Actions
                   </th>
                 </tr>
@@ -1554,12 +1554,12 @@ function RTODelivered() {
                         {/* CUSTOMER */}
                         <td className="px-3 py-3">
                           <div className="min-w-0">
-                            <p className="truncate text-[13px] font-semibold text-slate-800">
+                            <p className="truncate text-[13px] font-bold text-slate-800">
                               {getCustomerName(order)}
                             </p>
 
                             {getMobile(order) && (
-                              <p className="mt-0.5 text-[11px] text-slate-400">
+                              <p className="mt-0.5 text-[11px] font-medium text-slate-600">
                                 {getMobile(order)}
                               </p>
                             )}
@@ -1580,7 +1580,7 @@ function RTODelivered() {
                                     type="button"
                                     onClick={() => handleTrack(order)}
                                     title="Track shipment"
-                                    className="truncate text-left text-[12px] font-semibold text-slate-800 hover:text-[#008dd2] hover:underline"
+                                    className="truncate text-left text-[12px] font-bold text-slate-900 hover:text-[#008dd2] hover:underline"
                                   >
                                     {awb}
                                   </button>
@@ -1588,13 +1588,13 @@ function RTODelivered() {
                                     type="button"
                                     onClick={() => handleCopyAWB(awb)}
                                     title="Copy AWB"
-                                    className="shrink-0 rounded p-0.5 text-slate-400 hover:bg-[#edf8ff] hover:text-[#008dd2]"
+                                    className="shrink-0 rounded p-0.5 text-slate-500 hover:bg-[#edf8ff] hover:text-[#008dd2]"
                                   >
                                     <Icon name="copy" size={12} />
                                   </button>
                                 </div>
 
-                                <p className="mt-0.5 text-[10px] text-slate-400">
+                                <p className="mt-0.5 text-[10.5px] font-medium text-slate-600">
                                   Pickup ID:{" "}
                                   {order?.pickup_id ||
                                     order?.pickupId ||
@@ -1603,7 +1603,7 @@ function RTODelivered() {
                               </>
                             )}
 
-                            <p className="mt-0.5 text-[10px] text-slate-400">
+                            <p className="mt-0.5 text-[10.5px] font-medium text-slate-600">
                               {getShipmentName(order)}{" "}
                               -{" "}
                               {service === "AIR"
@@ -1621,12 +1621,12 @@ function RTODelivered() {
                                 <Icon name="pin" size={12} />
                               </span>
                               <p
-                                className="min-w-0 truncate text-[11px] font-medium text-slate-700"
+                                className="min-w-0 truncate text-[11px] font-semibold text-slate-800"
                                 title={`${getPickupCity(order)} ${getPickupPincode(order)}`}
                               >
                                 {getPickupCity(order)}{" "}
                                 {getPickupPincode(order) && (
-                                  <span className="text-[10px] font-normal text-slate-400">
+                                  <span className="text-[10.5px] font-medium text-slate-500">
                                     ({getPickupPincode(order)})
                                   </span>
                                 )}
@@ -1634,16 +1634,16 @@ function RTODelivered() {
                             </div>
                             <div className="ml-[5px] h-2 border-l border-dashed border-slate-300" />
                             <div className="flex min-w-0 items-start gap-1.5">
-                              <span className="mt-0.5 shrink-0 text-slate-400">
+                              <span className="mt-0.5 shrink-0 text-slate-500">
                                 <Icon name="pin" size={12} />
                               </span>
                               <p
-                                className="min-w-0 truncate text-[11px] font-medium text-slate-700"
+                                className="min-w-0 truncate text-[11px] font-semibold text-slate-800"
                                 title={`${getDeliveryCity(order)} ${getDeliveryPincode(order)}`}
                               >
                                 {getDeliveryCity(order)}{" "}
                                 {getDeliveryPincode(order) && (
-                                  <span className="text-[10px] font-normal text-slate-400">
+                                  <span className="text-[10.5px] font-medium text-slate-500">
                                     ({getDeliveryPincode(order)})
                                   </span>
                                 )}
@@ -1656,7 +1656,7 @@ function RTODelivered() {
                         <td className="px-3 py-3">
                           <div>
                             <p
-                              className={`text-[12px] font-semibold ${
+                              className={`text-[12px] font-bold ${
                                 payment === "COD"
                                   ? "text-amber-600"
                                   : "text-[#008dd2]"
@@ -1665,13 +1665,13 @@ function RTODelivered() {
                               {payment}
                             </p>
 
-                            <p className="mt-0.5 text-[10px] text-slate-400">
+                            <p className="mt-0.5 text-[10.5px] font-medium text-slate-600">
                               {payment === "COD"
                                 ? "Cash on Delivery"
                                 : "Prepaid"}
                             </p>
 
-                            <p className="text-[10px] text-slate-400">
+                            <p className="text-[10.5px] font-medium text-slate-600">
                               Charge: ₹{getAmount(order).toFixed(2)}
                             </p>
                           </div>
@@ -1680,15 +1680,15 @@ function RTODelivered() {
                         {/* WEIGHT */}
                         <td className="px-3 py-3">
                           <div>
-                            <p className="text-[12px] font-semibold text-slate-700">
+                            <p className="text-[12px] font-bold text-slate-800">
                               Box: {getPackageCount(order)}
                             </p>
 
-                            <p className="mt-0.5 text-[10px] text-slate-400">
+                            <p className="mt-0.5 text-[10.5px] font-medium text-slate-600">
                               Wt: {weight.toFixed(2)} kg
                             </p>
 
-                            <p className="text-[10px] text-slate-400">
+                            <p className="text-[10.5px] font-medium text-slate-600">
                               Vol: {getVolumetricWeight(order).toFixed(2)} kg
                             </p>
                           </div>
@@ -1696,11 +1696,11 @@ function RTODelivered() {
 
                         {/* CREATED */}
                         <td className="px-3 py-3">
-                          <p className="text-[12px] font-medium text-slate-700">
+                          <p className="text-[12px] font-bold text-slate-800">
                             #{getOrderId(order)}
                           </p>
 
-                          <p className="mt-0.5 text-[10px] text-slate-400">
+                          <p className="mt-0.5 text-[10.5px] font-medium text-slate-600">
                             Created: {formatDate(getCreatedAt(order))} {formatTime(getCreatedAt(order))}
                           </p>
                         </td>

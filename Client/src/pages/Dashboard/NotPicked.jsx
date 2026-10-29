@@ -1324,31 +1324,31 @@ function NotPicked() {
                     </button>
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[19%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[19%] bg-white px-2 py-3 text-left text-[12px] font-bold text-slate-800">
                     Customer
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[17%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[17%] bg-white px-2 py-3 text-left text-[12px] font-bold text-slate-800">
                     Shipment
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[16%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[16%] bg-white px-2 py-3 text-left text-[12px] font-bold text-slate-800">
                     Route
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[12%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[12%] bg-white px-2 py-3 text-left text-[12px] font-bold text-slate-800">
                     Payment
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[9%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[9%] bg-white px-2 py-3 text-left text-[12px] font-bold text-slate-800">
                     Weight
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[11%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[11%] bg-white px-2 py-3 text-left text-[12px] font-bold text-slate-800">
                     Created
                   </th>
 
-                  <th className="sticky top-0 z-20 w-[12%] bg-white px-2 py-3 text-left text-[12px] font-medium text-slate-700">
+                  <th className="sticky top-0 z-20 w-[12%] bg-white px-2 py-3 text-left text-[12px] font-bold text-slate-800">
                     Actions
                   </th>
                 </tr>
@@ -1414,12 +1414,12 @@ function NotPicked() {
                         {/* CUSTOMER */}
                         <td className="px-2 py-2.5 break-words">
                           <div className="min-w-0">
-                            <p className="truncate text-[13px] font-semibold text-slate-800">
+                            <p className="truncate text-[13px] font-bold text-slate-900">
                               {getCustomerName(order)}
                             </p>
 
                             {getMobile(order) && (
-                              <p className="mt-0.5 text-[11px] text-slate-400">
+                              <p className="mt-0.5 text-[11px] font-medium text-slate-600">
                                 {getMobile(order)}
                               </p>
                             )}
@@ -1439,7 +1439,7 @@ function NotPicked() {
                                   <button
                                     type="button"
                                     onClick={() => triggerTracking(awb)}
-                                    className="truncate text-[13px] font-semibold text-slate-800 hover:text-[#008dd2] text-left cursor-pointer"
+                                    className="truncate text-[13px] font-bold text-slate-900 hover:text-[#008dd2] text-left cursor-pointer"
                                     title="Click to track"
                                   >
                                     {awb}
@@ -1449,21 +1449,21 @@ function NotPicked() {
                                       type="button"
                                       onClick={() => copyAWB(awb)}
                                       title="Copy AWB"
-                                      className="text-slate-400 hover:text-[#008dd2] p-0.5"
+                                      className="text-slate-500 hover:text-[#008dd2] p-0.5"
                                     >
                                       <Icon name="copy" size={12} />
                                     </button>
                                   )}
                                 </div>
 
-                                <p className="mt-0.5 text-[10px] text-slate-400">
+                                <p className="mt-0.5 text-[11px] font-medium text-slate-600">
                                   Pickup ID:{" "}
                                   {order?.pickup_id || order?.pickupId || ""}
                                 </p>
                               </>
                             )}
 
-                            <p className="mt-0.5 text-[10px] text-slate-400">
+                            <p className="mt-0.5 text-[11px] font-medium text-slate-600">
                               {getShipmentName(order)} -{" "}
                               {service === "AIR" ? "Air" : "Road"}
                             </p>
@@ -1473,31 +1473,31 @@ function NotPicked() {
                         {/* ROUTE */}
                         <td className="px-2 py-2.5 break-words">
                           <div>
-                            <p className="text-[12px] font-medium text-slate-700">
+                            <p className="text-[12px] font-semibold text-slate-800">
                               {getPickupCity(order)}
                               {getPickupPincode(order) && (
-                                <span className="text-[10px] text-slate-400">
+                                <span className="text-[10.5px] font-medium text-slate-500">
                                   {" "}
                                   ({getPickupPincode(order)})
                                 </span>
                               )}
                             </p>
 
-                            <p className="my-0.5 text-[10px] text-slate-300">
+                            <p className="my-0.5 text-[10px] text-slate-400">
                               ↓
                             </p>
 
-                            <p className="text-[12px] font-medium text-slate-700">
+                            <p className="text-[12px] font-semibold text-slate-800">
                               {getDeliveryCity(order)}
                               {getDeliveryPincode(order) && (
-                                <span className="text-[10px] text-slate-400">
+                                <span className="text-[10.5px] font-medium text-slate-500">
                                   {" "}
                                   ({getDeliveryPincode(order)})
                                 </span>
                               )}
                             </p>
 
-                            <p className="mt-1 text-[9px] text-slate-400">
+                            <p className="mt-1 text-[10px] font-medium text-slate-500">
                               {getPickupPincode(order) || "—"} →{" "}
                               {getDeliveryPincode(order) || "—"}
                             </p>
@@ -1508,7 +1508,7 @@ function NotPicked() {
                         <td className="px-2 py-2.5 break-words">
                           <div>
                             <p
-                              className={`text-[12px] font-semibold ${
+                              className={`text-[12px] font-bold ${
                                 payment === "COD"
                                   ? "text-amber-600"
                                   : "text-[#008dd2]"
@@ -1517,13 +1517,13 @@ function NotPicked() {
                               {payment}
                             </p>
 
-                            <p className="mt-0.5 text-[10px] text-slate-400">
+                            <p className="mt-0.5 text-[11px] font-medium text-slate-600">
                               {payment === "COD"
                                 ? "Cash on Delivery"
                                 : "Prepaid"}
                             </p>
 
-                            <p className="text-[10px] text-slate-400">
+                            <p className="text-[11px] font-medium text-slate-600">
                               Charge: ₹{getAmount(order).toFixed(2)}
                             </p>
                           </div>
@@ -1532,15 +1532,15 @@ function NotPicked() {
                         {/* WEIGHT */}
                         <td className="px-2 py-2.5 break-words">
                           <div>
-                            <p className="text-[12px] font-semibold text-slate-700">
+                            <p className="text-[12px] font-bold text-slate-800">
                               Box: {getPackageCount(order)}
                             </p>
 
-                            <p className="mt-0.5 text-[10px] text-slate-400">
+                            <p className="mt-0.5 text-[11px] font-medium text-slate-600">
                               Wt: {weight.toFixed(2)} kg
                             </p>
 
-                            <p className="text-[10px] text-slate-400">
+                            <p className="text-[11px] font-medium text-slate-600">
                               Vol: {getVolumetricWeight(order).toFixed(2)} kg
                             </p>
                           </div>
@@ -1548,18 +1548,18 @@ function NotPicked() {
 
                         {/* CREATED */}
                         <td className="px-2 py-2.5 break-words">
-                          <p className="text-[12px] font-medium text-slate-700">
+                          <p className="text-[12px] font-bold text-slate-800">
                             #{getOrderId(order)}
                           </p>
 
-                          <p className="mt-0.5 text-[10px] text-slate-400">
+                          <p className="mt-0.5 text-[11px] font-medium text-slate-600">
                             {status === "MANIFESTED"
                               ? "Manifested: "
                               : "Created: "}
                             {formatDate(getCreatedAt(order))}
                           </p>
 
-                          <p className="text-[10px] text-slate-400">
+                          <p className="text-[11px] font-medium text-slate-600">
                             {formatTime(getCreatedAt(order))}
                           </p>
                         </td>
