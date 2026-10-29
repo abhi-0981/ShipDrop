@@ -492,7 +492,141 @@ export default function PartyIdentities() {
             )}
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+            {/* MOBILE VIEW: APP-STYLE CARDS */}
+            <div className="sm:hidden space-y-3 p-3 bg-slate-50/50">
+              {paginatedParties.map((party) => {
+                const isDeleted = Number(party.is_deleted) === 1;
+                const hasGst = Boolean(party.gst_no && String(party.gst_no).trim());
+
+                return (
+                  <div
+                    key={party.id}
+                    className={`rounded-2xl border bg-white p-3.5 shadow-xs transition space-y-2.5 ${
+                      isDeleted
+                        ? "border-rose-200 bg-rose-50/20"
+                        : "border-slate-200"
+                    }`}
+                  >
+                    {/* TOP: INITIALS, NAME & STATUS */}
+                    <div className="flex items-start justify-between gap-2 border-b border-slate-100 pb-2">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-sky-100 font-mono text-xs font-bold text-[#008dd2]">
+                          {getInitials(party.name)}
+                        </span>
+                        <div className="min-w-0">
+                          <p className="font-bold text-slate-900 text-sm truncate">
+                            {party.name}
+                          </p>
+                          {party.reference_name && (
+                            <p className="text-[11px] text-slate-400 font-medium truncate">
+                              Ref: {party.reference_name}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="shrink-0">
+                        {isDeleted ? (
+                          <span className="inline-flex items-center gap-1 rounded-full border border-rose-200 bg-rose-50 px-2 py-0.5 text-[10px] font-bold text-rose-600">
+                            <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
+                            Deleted
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 shadow-2xs">
+                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                            Active
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* MERCHANT INFO */}
+                    <div className="flex items-center justify-between text-xs text-slate-600">
+                      <Link
+                        to={`/users/${party.user_id}`}
+                        className="font-bold text-slate-800 hover:text-[#008dd2] transition flex items-center gap-1 truncate"
+                      >
+                        <span className="truncate">{party.user_name || "Unknown Merchant"}</span>
+                        <HiOutlineExternalLink size={12} className="text-slate-400 shrink-0" />
+                      </Link>
+                      <span className="text-[10px] font-mono text-slate-400 shrink-0">
+                        UID: #{party.user_id}
+                      </span>
+                    </div>
+
+                    {/* COMPANY & PHONE */}
+                    <div className="space-y-1 text-xs text-slate-600">
+                      {party.company_name && (
+                        <div className="flex items-center gap-1.5 truncate">
+                          <HiOutlineOfficeBuilding size={13} className="text-slate-400 shrink-0" />
+                          <span className="font-semibold text-slate-700 truncate">
+                            {party.company_name}
+                          </span>
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-between text-[11px]">
+                        {party.phone_no ? (
+                          <a
+                            href={`tel:${party.phone_no}`}
+                            className="text-[#008dd2] font-semibold flex items-center gap-1 hover:underline"
+                          >
+                            <HiOutlinePhone size={12} />
+                            {party.phone_no}
+                          </a>
+                        ) : (
+                          <span className="text-slate-400 italic">No phone</span>
+                        )}
+
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-600">
+                          <HiOutlineCube size={12} className="text-slate-400" />
+                          <span>{party.linked_orders_count || 0} orders</span>
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* ADDRESS & GST */}
+                    <div className="rounded-xl bg-slate-50 p-2.5 text-[11.5px] text-slate-600 space-y-1 border border-slate-100">
+                      {party.address ? (
+                        <p className="line-clamp-2 leading-relaxed">
+                          {party.address}
+                        </p>
+                      ) : (
+                        <p className="text-slate-400 italic">No registered address</p>
+                      )}
+
+                      <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                        {hasGst ? (
+                          <span className="rounded bg-sky-50 text-[#008dd2] border border-sky-100 px-1.5 py-0.2 text-[10px] font-mono font-bold">
+                            GST: {party.gst_no}
+                          </span>
+                        ) : (
+                          <span className="rounded bg-slate-100 text-slate-400 px-1.5 py-0.2 text-[10px] font-medium">
+                            Non-GST Entity
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* VIEW DETAILS BUTTON */}
+                    <div className="pt-0.5">
+                      <button
+                        type="button"
+                        onClick={() => setViewingParty(party)}
+                        className="w-full flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition active:scale-95 shadow-2xs"
+                      >
+                        <HiOutlineEye size={15} />
+                        <span>View Party Details</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* DESKTOP TABLE */}
+            <div className="hidden sm:block overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50/80 border-b border-slate-200/80 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
@@ -683,6 +817,7 @@ export default function PartyIdentities() {
               </tbody>
             </table>
           </div>
+          </>
         )}
 
         {/* PAGINATION BAR */}

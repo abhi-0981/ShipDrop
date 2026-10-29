@@ -969,9 +969,116 @@ function ReturnAddresses() {
 
             <div>
 
-              {/* TABLE HEADER */}
+              {/* ======================================== */}
+              {/* MOBILE VIEW: APP-STYLE CARDS (md:hidden) */}
+              {/* ======================================== */}
+              <div className="space-y-3 p-3 md:hidden">
+                {addresses.map((address) => {
+                  const isDefault = Boolean(address.is_default);
 
-              <div className="hidden grid-cols-[18%_17%_35%_12%_18%] border-b border-slate-200 bg-slate-50/70 px-4 py-3 md:grid">
+                  return (
+                    <div
+                      key={address.id}
+                      className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-2xs space-y-2.5 transition"
+                    >
+                      {/* CARD HEADER */}
+                      <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="text-sm font-bold text-slate-800 truncate">
+                            {address.name}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {isDefault ? (
+                            <span className="inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-600">
+                              Default
+                            </span>
+                          ) : (
+                            <span className="text-[10px] text-slate-400">
+                              #{address.id}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* CONTACT & PHONE */}
+                      <div className="space-y-1.5 text-xs">
+                        <div className="flex items-center justify-between">
+                          <span className="font-semibold text-slate-700 flex items-center gap-1">
+                            📞 {address.phone || "—"}
+                          </span>
+                          {address.email && (
+                            <span className="text-slate-500 text-[11px] truncate max-w-[170px]">
+                              {address.email}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* FULL ADDRESS */}
+                        <p className="text-[11px] leading-relaxed text-slate-600 bg-slate-50/80 p-2.5 rounded-xl border border-slate-100">
+                          {getAddress(address)}
+                        </p>
+
+                        <div className="flex items-center justify-between text-[11px] text-slate-500 pt-0.5 font-medium">
+                          <span>PIN: <strong className="text-slate-700">{address.pincode}</strong></span>
+                          <span>{address.city}{address.state ? `, ${address.state}` : ""}</span>
+                        </div>
+                      </div>
+
+                      {/* CARD ACTIONS */}
+                      <div className="flex items-center justify-between border-t border-slate-100 pt-2 text-xs">
+                        <div>
+                          {!isDefault && (
+                            <button
+                              type="button"
+                              onClick={() => setAsDefault(address.id)}
+                              className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600 transition hover:border-[#008dd2] hover:text-[#008dd2] active:scale-95 shadow-2xs"
+                            >
+                              Set Default
+                            </button>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-1.5 ml-auto">
+                          {/* EDIT */}
+                          <button
+                            type="button"
+                            onClick={() => openEdit(address)}
+                            className="flex h-8 items-center gap-1 rounded-lg border border-slate-200 px-2.5 text-[11px] font-semibold text-slate-600 transition hover:border-[#008dd2]/40 hover:bg-[#008dd2]/5 hover:text-[#008dd2] active:scale-95"
+                          >
+                            <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M12 20h9" />
+                              <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z" />
+                            </svg>
+                            <span>Edit</span>
+                          </button>
+
+                          {/* DELETE */}
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(address)}
+                            className="flex h-8 items-center gap-1 rounded-lg border border-rose-200 bg-rose-50/50 px-2 text-[11px] font-semibold text-rose-600 transition hover:bg-rose-100 active:scale-95"
+                          >
+                            <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M3 6h18" />
+                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                              <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                            </svg>
+                            <span>Delete</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* TABLET & DESKTOP: TABLE (hidden md:block) */}
+              <div className="hidden md:block">
+
+                {/* TABLE HEADER */}
+
+                <div className="hidden grid-cols-[18%_17%_35%_12%_18%] border-b border-slate-200 bg-slate-50/70 px-4 py-3 md:grid">
 
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
                   Name
@@ -1192,6 +1299,8 @@ function ReturnAddresses() {
 
               </div>
 
+              </div>
+
 
               {/* FOOTER */}
 
@@ -1217,9 +1326,9 @@ function ReturnAddresses() {
 
       {showModal && (
 
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-[2px]">
+        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-slate-900/50 p-0 sm:p-4 backdrop-blur-[2px]">
 
-          <div className="w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl">
+          <div className="w-full max-w-3xl overflow-hidden rounded-t-3xl sm:rounded-2xl bg-white shadow-2xl max-h-[92vh] flex flex-col">
 
 
             {/* HEADER */}

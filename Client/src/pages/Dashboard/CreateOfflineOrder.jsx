@@ -185,6 +185,116 @@ export default function CreateOfflineOrder() {
     }
   };
 
+  const isEnterFieldComplete = (field) => {
+    const value = String(field.value ?? "").trim();
+    if (!value) return false;
+
+    if (field.dataset?.enterType === "phone") {
+      return /^\d{10}$/.test(value);
+    }
+    if (field.dataset?.enterType === "pincode") {
+      return /^\d{6}$/.test(value);
+    }
+    if (field.dataset?.enterType === "weight" || field.dataset?.enterType === "price") {
+      const number = Number(value);
+      return Number.isFinite(number) && number > 0;
+    }
+    return true;
+  };
+
+  const handleRequiredFieldEnter = (e) => {
+    const isEnter =
+      e.key === "Enter" ||
+      e.keyCode === 13 ||
+      e.which === 13;
+
+    if (!isEnter) return;
+
+    if (
+      e.target.tagName === "TEXTAREA" ||
+      e.target.tagName === "BUTTON"
+    ) {
+      return;
+    }
+
+    e.preventDefault();
+
+    const fields = Array.from(
+      e.currentTarget.querySelectorAll(
+        "[data-enter-required='true']"
+      )
+    ).filter(
+      (field) => !field.disabled && !field.readOnly
+    );
+
+    const currentIndex = fields.indexOf(e.target);
+
+    if (currentIndex !== -1) {
+      if (!isEnterFieldComplete(e.target)) {
+        e.target.focus();
+        e.target.select?.();
+        return;
+      }
+
+      if (currentIndex < fields.length - 1) {
+        const nextField = fields[currentIndex + 1];
+        nextField.focus();
+        nextField.select?.();
+        setTimeout(() => {
+          nextField.scrollIntoView?.({ behavior: "smooth", block: "center" });
+        }, 60);
+        return;
+      }
+
+      const incompleteField = fields.find(
+        (field) => !isEnterFieldComplete(field)
+      );
+
+      if (incompleteField) {
+        incompleteField.focus();
+        incompleteField.select?.();
+        setTimeout(() => {
+          incompleteField.scrollIntoView?.({ behavior: "smooth", block: "center" });
+        }, 60);
+        return;
+      }
+
+      if (!loading) {
+        handleSubmit(e);
+      }
+      return;
+    }
+
+    const nextRequiredAfterTarget = fields.find(
+      (f) =>
+        (e.target.compareDocumentPosition(f) &
+          Node.DOCUMENT_POSITION_FOLLOWING) !==
+        0
+    );
+
+    if (nextRequiredAfterTarget) {
+      nextRequiredAfterTarget.focus();
+      nextRequiredAfterTarget.select?.();
+      setTimeout(() => {
+        nextRequiredAfterTarget.scrollIntoView?.({ behavior: "smooth", block: "center" });
+      }, 60);
+      return;
+    }
+
+    const firstIncomplete = fields.find(
+      (field) => !isEnterFieldComplete(field)
+    );
+    if (firstIncomplete) {
+      firstIncomplete.focus();
+      firstIncomplete.select?.();
+      setTimeout(() => {
+        firstIncomplete.scrollIntoView?.({ behavior: "smooth", block: "center" });
+      }, 60);
+    } else if (!loading) {
+      handleSubmit(e);
+    }
+  };
+
   const inputClass =
     "h-10.5 sm:h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-[13px] sm:text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-[#008dd2] focus:ring-2 focus:ring-[#008dd2]/10";
   const labelClass = "block text-xs font-semibold text-slate-700 mb-1.5";
@@ -263,6 +373,7 @@ export default function CreateOfflineOrder() {
       {/* UNIFIED CLEAN FORM CARD */}
       <form
         onSubmit={handleSubmit}
+        onKeyDown={handleRequiredFieldEnter}
         className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-6 md:p-8 shadow-[0_1px_4px_rgba(15,23,42,0.03)] space-y-6"
       >
         {/* 1. ORDER & DELIVERY DETAILS */}
@@ -281,6 +392,7 @@ export default function CreateOfflineOrder() {
               <label className={labelClass}>Courier Carrier *</label>
               <select
                 name="carrier"
+                tabIndex={-1}
                 value={formData.carrier}
                 onChange={handleChange}
                 className={inputClass}
@@ -300,6 +412,8 @@ export default function CreateOfflineOrder() {
               <input
                 type="text"
                 name="consignment_no"
+                data-enter-required="true"
+                enterKeyHint="next"
                 value={formData.consignment_no}
                 onChange={handleChange}
                 placeholder="1234567890"
@@ -316,6 +430,7 @@ export default function CreateOfflineOrder() {
                 </label>
                 <Link
                   to="/settings/party-identities"
+                  tabIndex={-1}
                   className="text-[11px] font-semibold text-[#008dd2] hover:underline"
                 >
                   + Manage
@@ -323,6 +438,7 @@ export default function CreateOfflineOrder() {
               </div>
               <select
                 name="party_identity_id"
+                tabIndex={-1}
                 value={formData.party_identity_id}
                 onChange={handleChange}
                 className={inputClass}
@@ -347,6 +463,8 @@ export default function CreateOfflineOrder() {
               <input
                 type="text"
                 name="consignee_name"
+                data-enter-required="true"
+                enterKeyHint="next"
                 value={formData.consignee_name}
                 onChange={handleChange}
                 placeholder="Customer Full Name"
@@ -365,6 +483,9 @@ export default function CreateOfflineOrder() {
                 <input
                   type="tel"
                   name="mobile"
+                  data-enter-required="true"
+                  data-enter-type="phone"
+                  enterKeyHint="next"
                   value={formData.mobile}
                   onChange={(e) =>
                     setFormData((prev) => ({
@@ -394,6 +515,9 @@ export default function CreateOfflineOrder() {
               <input
                 type="text"
                 name="pincode"
+                data-enter-required="true"
+                data-enter-type="pincode"
+                enterKeyHint="next"
                 value={formData.pincode}
                 onChange={handlePincodeChange}
                 placeholder="6-digit PIN"
@@ -409,6 +533,8 @@ export default function CreateOfflineOrder() {
               <input
                 type="text"
                 name="city"
+                data-enter-required="true"
+                enterKeyHint="next"
                 value={formData.city}
                 onChange={handleChange}
                 placeholder="City"
@@ -423,6 +549,8 @@ export default function CreateOfflineOrder() {
               <input
                 type="text"
                 name="state"
+                data-enter-required="true"
+                enterKeyHint="next"
                 value={formData.state}
                 onChange={handleChange}
                 placeholder="State"
@@ -439,6 +567,8 @@ export default function CreateOfflineOrder() {
               <input
                 type="text"
                 name="address"
+                data-enter-required="true"
+                enterKeyHint="next"
                 value={formData.address}
                 onChange={handleChange}
                 placeholder="House / Flat No, Building, Street, Landmark, Area"
@@ -453,6 +583,7 @@ export default function CreateOfflineOrder() {
               <input
                 type="text"
                 name="product_name"
+                tabIndex={-1}
                 value={formData.product_name}
                 onChange={handleChange}
                 placeholder="Product Name"
@@ -477,6 +608,7 @@ export default function CreateOfflineOrder() {
               <label className={labelClass}>Package Type</label>
               <select
                 name="package_type"
+                tabIndex={-1}
                 value={formData.package_type}
                 onChange={handleChange}
                 className={inputClass}
@@ -493,6 +625,7 @@ export default function CreateOfflineOrder() {
               <label className={labelClass}>Mode</label>
               <select
                 name="shipping_mode"
+                tabIndex={-1}
                 value={formData.shipping_mode}
                 onChange={handleChange}
                 className={inputClass}
@@ -510,6 +643,9 @@ export default function CreateOfflineOrder() {
                 step="0.01"
                 min="0.01"
                 name="weight"
+                data-enter-required="true"
+                data-enter-type="weight"
+                enterKeyHint="next"
                 value={formData.weight}
                 onChange={handleChange}
                 placeholder="0.50"
@@ -525,6 +661,7 @@ export default function CreateOfflineOrder() {
                 step="0.1"
                 min="0"
                 name="length"
+                tabIndex={-1}
                 value={formData.length}
                 onChange={handleChange}
                 placeholder="10"
@@ -539,6 +676,7 @@ export default function CreateOfflineOrder() {
                 step="0.1"
                 min="0"
                 name="width"
+                tabIndex={-1}
                 value={formData.width}
                 onChange={handleChange}
                 placeholder="10"
@@ -553,6 +691,7 @@ export default function CreateOfflineOrder() {
                 step="0.1"
                 min="0"
                 name="height"
+                tabIndex={-1}
                 value={formData.height}
                 onChange={handleChange}
                 placeholder="10"
@@ -569,6 +708,7 @@ export default function CreateOfflineOrder() {
               <div className="flex items-center rounded-xl border border-slate-200 bg-slate-50 p-1">
                 <button
                   type="button"
+                  tabIndex={-1}
                   onClick={() =>
                     setFormData((prev) => ({
                       ...prev,
@@ -585,6 +725,7 @@ export default function CreateOfflineOrder() {
                 </button>
                 <button
                   type="button"
+                  tabIndex={-1}
                   onClick={() =>
                     setFormData((prev) => ({ ...prev, payment_mode: "COD" }))
                   }
@@ -613,6 +754,9 @@ export default function CreateOfflineOrder() {
                   step="0.01"
                   min="0"
                   name="shipping_charge"
+                  data-enter-required="true"
+                  data-enter-type="price"
+                  enterKeyHint="done"
                   value={formData.shipping_charge}
                   onChange={handleChange}
                   placeholder="0.00"
@@ -630,6 +774,7 @@ export default function CreateOfflineOrder() {
               <input
                 type="text"
                 name="remark"
+                tabIndex={-1}
                 value={formData.remark}
                 onChange={handleChange}
                 placeholder="Remark"

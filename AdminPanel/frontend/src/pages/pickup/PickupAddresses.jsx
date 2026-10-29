@@ -504,7 +504,133 @@ export default function PickupAddresses() {
             )}
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+            {/* MOBILE VIEW: APP-STYLE CARDS */}
+            <div className="sm:hidden space-y-3 p-3 bg-slate-50/50">
+              {paginatedAddresses.map((addr) => {
+                const isDeleted = Number(addr.is_deleted) === 1;
+                const isRegistered =
+                  Number(addr.delhivery_registered) === 1 ||
+                  String(addr.status || "").toLowerCase() === "active";
+
+                return (
+                  <div
+                    key={addr.id}
+                    className={`rounded-2xl border bg-white p-3.5 shadow-xs transition space-y-2.5 ${
+                      isDeleted
+                        ? "border-rose-200 bg-rose-50/20"
+                        : "border-slate-200"
+                    }`}
+                  >
+                    {/* TOP: LOCATION & STATUS */}
+                    <div className="flex items-start justify-between gap-2 border-b border-slate-100 pb-2">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-bold text-slate-900 text-sm truncate">
+                            {addr.nickname || addr.warehouse_name || "Pickup Hub"}
+                          </span>
+                          {addr.warehouse_name && addr.nickname && (
+                            <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[9px] font-mono text-slate-500 truncate max-w-[100px]">
+                              {addr.warehouse_name}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-slate-400 font-mono mt-0.5">
+                          ID: #{addr.id}
+                        </p>
+                      </div>
+
+                      <div className="shrink-0">
+                        {isDeleted ? (
+                          <span className="inline-flex items-center gap-1 rounded-full border border-rose-200 bg-rose-50 px-2 py-0.5 text-[10px] font-bold text-rose-600">
+                            <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
+                            Deleted
+                          </span>
+                        ) : isRegistered ? (
+                          <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 shadow-2xs">
+                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                            Registered
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700 shadow-2xs">
+                            <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                            Pending
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* MERCHANT & CONTACT */}
+                    <div className="space-y-1.5 text-xs text-slate-600">
+                      <div className="flex items-center justify-between">
+                        <Link
+                          to={`/users/${addr.user_id}`}
+                          className="font-bold text-slate-800 hover:text-[#008dd2] transition flex items-center gap-1 truncate"
+                        >
+                          <span className="truncate">{addr.user_name || "Unknown Merchant"}</span>
+                          <HiOutlineExternalLink size={12} className="text-slate-400 shrink-0" />
+                        </Link>
+                        <span className="text-[10px] font-mono text-slate-400 shrink-0">
+                          UID: #{addr.user_id}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="text-slate-700 font-semibold truncate">
+                          {addr.name || addr.contact_person || "—"}
+                        </span>
+                        {addr.phone && (
+                          <a
+                            href={`tel:${addr.phone}`}
+                            className="text-[#008dd2] font-semibold flex items-center gap-1 hover:underline"
+                          >
+                            <HiOutlinePhone size={12} />
+                            {addr.phone}
+                          </a>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* FULL ADDRESS */}
+                    <div className="rounded-xl bg-slate-50 p-2.5 text-[11.5px] text-slate-600 space-y-1 border border-slate-100">
+                      <p className="line-clamp-2 leading-relaxed">
+                        {[addr.address_line1, addr.address_line2].filter(Boolean).join(", ") || "—"}
+                      </p>
+                      <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                        <span className="font-semibold text-slate-800">
+                          {addr.city || "—"}, {addr.state || "—"}
+                        </span>
+                        {addr.pincode && (
+                          <span className="rounded bg-white border border-slate-200 px-1.5 py-0.2 text-[10.5px] font-mono font-bold text-slate-700">
+                            {addr.pincode}
+                          </span>
+                        )}
+                        {addr.gst_no && (
+                          <span className="rounded bg-sky-50 text-[#008dd2] border border-sky-100 px-1.5 py-0.2 text-[10px] font-mono font-semibold ml-auto">
+                            GST: {addr.gst_no}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* VIEW DETAILS BUTTON */}
+                    <div className="pt-0.5">
+                      <button
+                        type="button"
+                        onClick={() => setViewingAddress(addr)}
+                        className="w-full flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition active:scale-95 shadow-2xs"
+                      >
+                        <HiOutlineEye size={15} />
+                        <span>View Complete Details</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* DESKTOP TABLE */}
+            <div className="hidden sm:block overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50/80 border-b border-slate-200/80 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
@@ -709,6 +835,7 @@ export default function PickupAddresses() {
               </tbody>
             </table>
           </div>
+          </>
         )}
 
         {/* PAGINATION BAR */}

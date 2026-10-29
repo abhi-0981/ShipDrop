@@ -639,7 +639,7 @@ function AdminLayout({ children }) {
                 className="flex items-center transition hover:opacity-90 active:scale-95"
                 title="ParcelDrop"
               >
-                <ParcelDropLogo className="mt-1 translate-y-[2px]" height={38} />
+                <ParcelDropLogo height={34} />
               </Link>
             )}
           </div>
@@ -650,8 +650,8 @@ function AdminLayout({ children }) {
             className="relative flex min-w-0 w-full max-w-xl flex-1 mx-2 sm:mx-4"
           >
             <FiSearch
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
-              size={17}
+              className="absolute left-3 sm:left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+              size={16}
             />
             <input
               type="text"
@@ -660,11 +660,11 @@ function AdminLayout({ children }) {
                 setTrackingSearch(event.target.value);
                 setTrackingError("");
               }}
-              placeholder="Track any shipment by AWB or Tracking ID..."
+              placeholder="Track AWB..."
               disabled={trackingLoading}
-              className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/70 pl-10 pr-20 text-xs font-medium text-slate-700 placeholder:text-slate-400 outline-none transition-all duration-200 focus:border-[#008dd2] focus:bg-white focus:ring-4 focus:ring-[#008dd2]/10 disabled:cursor-not-allowed disabled:opacity-70"
+              className="h-9 sm:h-10 w-full rounded-xl border border-slate-200 bg-slate-50/70 pl-8.5 sm:pl-10 pr-12 sm:pr-20 text-xs font-medium text-slate-700 placeholder:text-slate-400 outline-none transition-all duration-200 focus:border-[#008dd2] focus:bg-white focus:ring-4 focus:ring-[#008dd2]/10 disabled:cursor-not-allowed disabled:opacity-70"
             />
-            <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5 pointer-events-none">
+            <div className="absolute right-2 sm:right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5 pointer-events-none">
               {trackingLoading ? (
                 <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-200 border-t-[#008dd2]" />
               ) : (

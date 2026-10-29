@@ -75,13 +75,13 @@ function Toggle({ checked, onChange, disabled = false }) {
 
 function SettingRow({ title, checked, onChange, disabled }) {
   return (
-    <div className="flex w-full items-center justify-between border-b border-slate-100 py-3 last:border-b-0">
-      <span className="text-sm text-slate-700">
+    <div className="flex w-full items-center justify-between border-b border-slate-100 dark:border-white/5 py-3 last:border-b-0">
+      <span className="text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-200">
         {title}
       </span>
 
       <div className="ml-auto flex shrink-0 items-center gap-2">
-        <span className={checked ? "text-xs text-green-700" : "text-xs text-slate-400"}>
+        <span className={checked ? "text-[11px] font-semibold text-green-600 dark:text-green-400" : "text-[11px] text-slate-400 dark:text-slate-500"}>
           {checked ? "On" : "Off"}
         </span>
 
@@ -363,18 +363,22 @@ function LabelSettings() {
   const isBusy = loading || saving;
 
   return (
-    <div className="min-h-full w-full bg-[#f6f8fb] dark:bg-[#090b10] px-3 pb-20 pt-4 sm:px-6 sm:pt-5">
-      <div className="mx-auto max-w-4xl">
+    <div className="min-h-full w-full bg-[#f6f8fb] dark:bg-[#090b10] px-3.5 py-4 sm:px-6 sm:py-6 pb-28 sm:pb-8">
+      <div className="mx-auto max-w-3xl">
 
         {/* Header */}
-        <div className="mb-5 flex items-center justify-between gap-3">
+        <div className="mb-5 flex items-start sm:items-center justify-between gap-3">
           <div>
-            <h1 className="text-xl font-semibold text-slate-900 dark:text-white">
+            <div className="flex items-center gap-2 text-xs font-medium text-slate-400 dark:text-slate-500 mb-1">
+              <span>Dashboard</span>
+              <span>/</span>
+              <span className="text-[#008dd2] font-semibold">Settings</span>
+            </div>
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">
               Label Settings
             </h1>
-
-            <p className="mt-1 text-sm text-slate-500">
-              Customize your shipping label.
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+              Customize what information appears on your shipping labels
             </p>
           </div>
 
@@ -382,7 +386,7 @@ function LabelSettings() {
             type="button"
             onClick={loadSettings}
             disabled={isBusy}
-            className="rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+            className="rounded-xl border border-slate-200 dark:border-white/10 px-3.5 py-2 text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5 disabled:opacity-50 transition active:scale-95 shrink-0"
           >
             Reset
           </button>
@@ -392,34 +396,37 @@ function LabelSettings() {
         {error && (
           <div
             role="alert"
-            className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+            className="mb-4 rounded-xl border border-red-200 bg-red-50 p-3.5 text-xs sm:text-sm text-red-700 dark:border-red-900/40 dark:bg-red-950/20 dark:text-red-400"
           >
             {error}
           </div>
         )}
 
         {loading ? (
-          <div className="py-10 text-center text-sm text-slate-500">
-            Loading settings...
+          <div className="flex min-h-[300px] items-center justify-center p-4">
+            <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#008dd2] border-t-transparent" />
+              <span>Loading label settings...</span>
+            </div>
           </div>
         ) : (
           <div className="space-y-4">
 
             {/* Branding */}
-            <section className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-              <div className="border-b border-slate-100 px-4 py-3">
-                <h2 className="text-sm font-semibold text-slate-800">
-                  Branding
+            <section className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs dark:border-white/10 dark:bg-[#111318]">
+              <div className="border-b border-slate-100 dark:border-white/10 px-4 py-3.5 sm:px-5">
+                <h2 className="text-xs sm:text-sm font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-200">
+                  Branding & Logo
                 </h2>
               </div>
 
-              <div className="flex items-center gap-3 px-4 py-3">
+              <div className="flex flex-col-reverse sm:flex-row sm:items-center gap-4 p-4 sm:p-5">
                 <div className="min-w-0 flex-1">
-                  <label className="mb-1 block text-sm text-slate-700">
-                    Label Logo
+                  <label className="mb-1 block text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300">
+                    Label Brand Logo
                   </label>
 
-                  <p className="mb-2 text-xs text-slate-500">
+                  <p className="mb-2.5 text-xs text-slate-400 dark:text-slate-500">
                     PNG, JPG or WEBP · Maximum 2 MB
                   </p>
 
@@ -428,22 +435,21 @@ function LabelSettings() {
                     type="file"
                     accept="image/png,image/jpeg,image/webp"
                     onChange={handleLogoUpload}
-                    className="block w-full cursor-pointer rounded-md border border-slate-200 text-sm text-slate-600 file:mr-3 file:border-0 file:border-r file:border-slate-200 file:bg-slate-50 file:px-3 file:py-2"
+                    className="block w-full cursor-pointer rounded-xl border border-slate-200 text-xs sm:text-sm text-slate-600 file:mr-3 file:border-0 file:border-r file:border-slate-200 file:bg-slate-50 file:px-3 file:py-2 dark:border-white/10 dark:text-slate-300 dark:file:border-white/10 dark:file:bg-white/5 dark:file:text-slate-200"
                   />
 
                   {settings.rightLogoMode === "custom" && (
                     <button
                       type="button"
                       onClick={removeCustomLogo}
-                      className="mt-2 text-xs hover:underline"
-                      style={{ color: PRIMARY }}
+                      className="mt-2 text-xs font-medium hover:underline text-[#008dd2]"
                     >
-                      Use Delhivery default
+                      Use Delhivery default logo instead
                     </button>
                   )}
                 </div>
 
-                <div className="flex h-14 w-20 shrink-0 items-center justify-center rounded-lg border border-slate-200 p-2">
+                <div className="flex h-16 w-24 shrink-0 items-center justify-center rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] p-2 self-start sm:self-center">
                   <img
                     src={
                       settings.rightLogoMode === "custom" &&
@@ -459,14 +465,14 @@ function LabelSettings() {
             </section>
 
             {/* Editable settings only */}
-            <section className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-              <div className="border-b border-slate-100 px-4 py-3">
-                <h2 className="text-sm font-semibold text-slate-800">
-                  Label Information
+            <section className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs dark:border-white/10 dark:bg-[#111318]">
+              <div className="border-b border-slate-100 dark:border-white/10 px-4 py-3.5 sm:px-5">
+                <h2 className="text-xs sm:text-sm font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-200">
+                  Label Fields Visibility
                 </h2>
               </div>
 
-              <div className="px-4">
+              <div className="px-4 sm:px-5 divide-y divide-slate-100 dark:divide-white/5">
                 <SettingRow
                   title="Sender Name"
                   checked={settings.fromName}
@@ -533,14 +539,14 @@ function LabelSettings() {
             </section>
 
             {/* Label Size */}
-            <section className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-              <div className="border-b border-slate-100 px-4 py-3">
-                <h2 className="text-sm font-semibold text-slate-800">
-                  Label Size
+            <section className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs dark:border-white/10 dark:bg-[#111318]">
+              <div className="border-b border-slate-100 dark:border-white/10 px-4 py-3.5 sm:px-5">
+                <h2 className="text-xs sm:text-sm font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-200">
+                  Label Size Format
                 </h2>
               </div>
 
-              <div className="flex flex-wrap gap-2 p-4">
+              <div className="flex flex-wrap gap-2.5 p-4 sm:p-5">
                 {LABEL_SIZES.map((size) => {
                   const selected =
                     settings.labelSize === size.value;
@@ -553,19 +559,11 @@ function LabelSettings() {
                         updateSetting("labelSize", size.value)
                       }
                       aria-pressed={selected}
-                      className="rounded-md border px-3 py-2 text-sm transition"
-                      style={
+                      className={`rounded-xl border px-4 py-2.5 text-xs sm:text-sm font-semibold transition active:scale-95 ${
                         selected
-                          ? {
-                              borderColor: PRIMARY,
-                              backgroundColor: "#eaf7fd",
-                              color: PRIMARY,
-                            }
-                          : {
-                              borderColor: "#e2e8f0",
-                              color: "#475569",
-                            }
-                      }
+                          ? "border-[#008dd2] bg-sky-50 text-[#008dd2] dark:bg-sky-950/40 dark:border-sky-500 shadow-xs"
+                          : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.02] dark:text-slate-300"
+                      }`}
                     >
                       {size.label}
                     </button>
@@ -573,39 +571,38 @@ function LabelSettings() {
                 })}
               </div>
             </section>
+
+            {/* Save Action Button (in-flow, never hidden behind bottom nav) */}
+            <div className="pt-2 flex flex-col sm:flex-row sm:justify-end gap-3">
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={isBusy}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-[#008dd2] px-6 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-sm shadow-[#008dd2]/30 transition hover:bg-[#007ab6] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {saving ? "Saving Changes..." : "Save Changes"}
+              </button>
+            </div>
           </div>
         )}
-
-        {/* Save button */}
-        <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-200 bg-white p-3 sm:static sm:mt-4 sm:flex sm:justify-end sm:border-0 sm:bg-transparent sm:p-0">
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={isBusy}
-            className="w-full rounded-md px-5 py-2.5 text-sm font-semibold text-white transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
-            style={{ backgroundColor: PRIMARY }}
-          >
-            {saving ? "Saving..." : "Save Changes"}
-          </button>
-        </div>
       </div>
 
       {/* Success toast */}
       {notice && !error && (
         <div
           role="status"
-className="fixed right-4 top-4 z-50 flex items-center gap-2 rounded-lg border border-green-200 bg-white px-4 py-3 text-sm text-green-700 shadow-lg"
+          className="fixed top-16 right-4 sm:top-5 sm:right-5 z-50 flex items-center gap-2 rounded-xl border border-green-200 bg-white px-4 py-3 text-xs sm:text-sm text-green-700 shadow-xl dark:border-green-800 dark:bg-slate-900 dark:text-green-300 max-w-[90vw]"
         >
-          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-green-100 text-xs font-bold">
+          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-green-100 text-xs font-bold text-green-700">
             ✓
           </span>
 
-          {notice}
+          <span className="flex-1">{notice}</span>
 
           <button
             type="button"
             onClick={() => setNotice("")}
-            className="ml-2 text-green-700 hover:text-green-900"
+            className="ml-2 text-green-700 hover:text-green-900 dark:text-green-300"
             aria-label="Dismiss message"
           >
             ×
