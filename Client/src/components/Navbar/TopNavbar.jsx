@@ -1017,30 +1017,30 @@
         >
           {/* ======================================================== */}
           {/* ======================================================== */}
-          {/* LEFT SECTION: HAMBURGER + LOGO (When collapsed) + TRACKING SEARCH */}
+          {/* LEFT SECTION: HAMBURGER + LOGO (When collapsed or mobile) + TRACKING SEARCH */}
           {/* ======================================================== */}
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-            {(isCollapsed || (typeof window !== "undefined" && window.innerWidth < 1024)) && (
-              <button
-                type="button"
-                onClick={handleOpenSidebar}
-                className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-700 transition hover:bg-slate-200 active:scale-90"
-                title="Open Sidebar"
-                aria-label="Open Sidebar"
-              >
-                <FiMenu size={20} />
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={handleOpenSidebar}
+              className={`${
+                isCollapsed ? "flex" : "flex lg:hidden"
+              } h-9 w-9 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 transition hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-90 shrink-0 cursor-pointer`}
+              title="Open Sidebar"
+              aria-label="Open Sidebar"
+            >
+              <FiMenu size={20} />
+            </button>
 
-            {(isCollapsed || (typeof window !== "undefined" && window.innerWidth < 1024)) && (
-              <Link
-                to="/dashboard"
-                className="flex items-center transition hover:opacity-90 active:scale-95 py-1"
-                title="ParcelDrop"
-              >
-                <ParcelDropLogo />
-              </Link>
-            )}
+            <Link
+              to="/dashboard"
+              className={`${
+                isCollapsed ? "flex" : "flex lg:hidden"
+              } h-9 items-center transition hover:opacity-90 active:scale-95 shrink-0`}
+              title="ParcelDrop"
+            >
+              <ParcelDropLogo className="h-6 sm:h-7" />
+            </Link>
 
             {/* TRACKING SEARCH (Cleanly Left-Aligned) */}
             <form
@@ -1090,7 +1090,7 @@
           {/* ======================================================== */}
           {/* RIGHT SECTION: 1. WALLET -> 2. BELL -> 3. COMPANY NAME -> 4. PROFILE */}
           {/* ======================================================== */}
-          <div className="flex items-center gap-2 sm:gap-2.5 lg:gap-3 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2.5 lg:gap-3 shrink-0">
             {/* 1. WALLET PILL (Compact on Mobile: Wallet Icon + '+' Recharge button; Full balance on sm+) */}
             <div
               title={`Wallet Balance: ₹${balance.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`}
@@ -1112,26 +1112,26 @@
               </button>
             </div>
 
-            {/* 2. NOTIFICATION BELL (Hidden on mobile, visible on sm+ screens) */}
-            <div ref={notifRef} className="hidden sm:block relative shrink-0">
+            {/* 2. NOTIFICATION BELL (Shown on mobile & desktop) */}
+            <div ref={notifRef} className="relative shrink-0">
               <button
                 type="button"
                 title={unreadNotifCount > 0 ? `${unreadNotifCount} unread notifications` : "Notifications"}
                 onClick={() => setShowNotifications((prev) => !prev)}
-                className="relative flex h-10 w-10 items-center justify-center rounded-full text-slate-600 dark:text-slate-300 transition hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-90 shrink-0 cursor-pointer"
+                className="relative flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-slate-100/90 dark:bg-slate-800/90 text-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700/60 hover:bg-slate-200/80 dark:hover:bg-slate-700 transition active:scale-90 shrink-0 cursor-pointer shadow-2xs"
+                aria-label="Notifications"
               >
                 <BellIcon />
                 {unreadNotifCount > 0 && (
-                  <span className="absolute right-2.5 top-2.5 flex h-2.5 w-2.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500 ring-2 ring-white dark:ring-[#111827]"></span>
+                  <span className="absolute -top-1 -right-1 flex h-4 min-w-[16px] px-1 items-center justify-center rounded-full bg-rose-500 text-[9px] font-black text-white ring-2 ring-white dark:ring-[#111827] shadow-xs">
+                    {unreadNotifCount > 9 ? "9+" : unreadNotifCount}
                   </span>
                 )}
               </button>
 
               {/* NOTIFICATIONS DROPDOWN */}
               {showNotifications && (
-                <div className="absolute right-[-70px] sm:right-[-20px] md:right-0 top-12 w-[310px] sm:w-[330px] overflow-hidden rounded-xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-[#111827] shadow-xl dark:shadow-2xl z-50 animate-in fade-in-0 zoom-in-95 duration-100 origin-top-right">
+                <div className="fixed inset-x-3 top-16 sm:inset-x-auto sm:absolute sm:right-0 sm:top-12 w-auto sm:w-[330px] max-w-[calc(100vw-24px)] overflow-hidden rounded-xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-[#111827] shadow-xl dark:shadow-2xl z-50 animate-in fade-in-0 zoom-in-95 duration-100 origin-top-right">
                   {/* HEADER */}
                   <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 px-3.5 py-2.5 bg-slate-50/70 dark:bg-slate-850/60">
                     <div className="flex items-center gap-1.5">
@@ -1371,7 +1371,7 @@
                 onClick={() => setShowProfile((prev) => !prev)}
                 title={userName}
                 aria-label="User Profile Menu"
-                className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full transition-transform active:scale-90 cursor-pointer"
+                className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full transition-transform active:scale-90 cursor-pointer shrink-0"
               >
                 <div
                   className={`flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800 transition-all duration-200 ${

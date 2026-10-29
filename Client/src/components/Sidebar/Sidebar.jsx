@@ -525,7 +525,7 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
         <div className="flex h-[64px] shrink-0 items-center justify-between border-b border-slate-100 px-4">
           <Link
             to="/dashboard"
-            className="flex items-center transition hover:opacity-90 active:scale-95 py-1 pl-1"
+            className="flex h-9 items-center transition hover:opacity-90 active:scale-95 pl-1"
             title="ParcelDrop"
           >
             <ParcelDropLogo />
