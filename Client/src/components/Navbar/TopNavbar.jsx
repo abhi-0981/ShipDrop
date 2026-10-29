@@ -1091,26 +1091,29 @@
           {/* RIGHT SECTION: 1. WALLET -> 2. BELL -> 3. COMPANY NAME -> 4. PROFILE */}
           {/* ======================================================== */}
           <div className="flex items-center gap-2 sm:gap-2.5 lg:gap-3 shrink-0">
-            {/* 1. WALLET PILL (40px Height Grid) */}
-            <div className="flex h-10 items-center rounded-[14px] bg-violet-50/90 dark:bg-violet-950/40 px-3 border border-violet-100 dark:border-violet-900/50 shrink-0 gap-1.5 shadow-2xs">
+            {/* 1. WALLET PILL (Compact on Mobile: Wallet Icon + '+' Recharge button; Full balance on sm+) */}
+            <div
+              title={`Wallet Balance: ₹${balance.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`}
+              className="flex h-9 sm:h-10 items-center rounded-xl sm:rounded-[14px] bg-violet-50/90 dark:bg-violet-950/40 px-2 sm:px-3 border border-violet-100 dark:border-violet-900/50 shrink-0 gap-1.5 shadow-2xs"
+            >
               <span className="text-violet-600 dark:text-violet-400 shrink-0">
                 <WalletIcon />
               </span>
-              <span className="text-xs font-bold text-slate-800 dark:text-slate-100">
+              <span className="hidden sm:inline-block text-xs font-bold text-slate-800 dark:text-slate-100">
                 ₹{balance.toLocaleString("en-IN", { maximumFractionDigits: 2 })}
               </span>
               <button
                 type="button"
                 onClick={() => setShowRecharge(true)}
-                className="ml-1 flex h-6 w-6 items-center justify-center rounded-full bg-[#008dd2] text-xs font-bold text-white transition hover:bg-[#007ab6] active:scale-90 shrink-0 shadow-2xs"
+                className="flex h-6 w-6 items-center justify-center rounded-full bg-[#008dd2] text-xs font-bold text-white transition hover:bg-[#007ab6] active:scale-90 shrink-0 shadow-2xs cursor-pointer"
                 title="Recharge Wallet"
               >
                 +
               </button>
             </div>
 
-            {/* 2. NOTIFICATION BELL (40px Height Grid with Popover) */}
-            <div ref={notifRef} className="relative shrink-0">
+            {/* 2. NOTIFICATION BELL (Hidden on mobile, visible on sm+ screens) */}
+            <div ref={notifRef} className="hidden sm:block relative shrink-0">
               <button
                 type="button"
                 title={unreadNotifCount > 0 ? `${unreadNotifCount} unread notifications` : "Notifications"}
@@ -1347,11 +1350,11 @@
 
             {/* 3. COMPANY NAME & 4. PROFILE (Grouped together with Dropdown) */}
             <div ref={profileRef} className="relative flex items-center gap-2 sm:gap-2.5 shrink-0">
-              {/* 3. COMPANY NAME BADGE */}
+              {/* 3. COMPANY NAME BADGE (Hidden on mobile, visible on sm+ screens) */}
               <button
                 type="button"
                 onClick={() => setShowProfile((prev) => !prev)}
-                className="flex h-10 items-center gap-2.5 rounded-[14px] border border-slate-200/90 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/60 pl-1.5 pr-3.5 shadow-2xs transition-all duration-150 hover:bg-slate-100/70 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shrink-0 cursor-pointer text-left"
+                className="hidden sm:flex h-10 items-center gap-2.5 rounded-[14px] border border-slate-200/90 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/60 pl-1.5 pr-3.5 shadow-2xs transition-all duration-150 hover:bg-slate-100/70 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shrink-0 cursor-pointer text-left"
                 title={`Company: ${displayCompanyName} (Click to open menu)`}
               >
                 <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#008dd2] text-[11px] font-black text-white uppercase tracking-wider shadow-xs shadow-[#008dd2]/20">
@@ -1362,16 +1365,16 @@
                 </span>
               </button>
 
-              {/* 4. PROFILE AVATAR */}
+              {/* 4. PROFILE AVATAR (Always visible on mobile & desktop) */}
               <button
                 type="button"
                 onClick={() => setShowProfile((prev) => !prev)}
                 title={userName}
                 aria-label="User Profile Menu"
-                className="flex h-10 w-10 items-center justify-center rounded-full transition-transform active:scale-90"
+                className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full transition-transform active:scale-90 cursor-pointer"
               >
                 <div
-                  className={`flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800 transition-all duration-200 ${
+                  className={`flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800 transition-all duration-200 ${
                     showProfile
                       ? "ring-2 ring-[#008dd2] ring-offset-2 ring-offset-white dark:ring-offset-[#111827] shadow-sm shadow-[#008dd2]/30 scale-105"
                       : "ring-1.5 ring-slate-200/90 dark:ring-slate-700/80 hover:ring-2 hover:ring-[#008dd2]/70 hover:scale-105 hover:shadow-sm"
