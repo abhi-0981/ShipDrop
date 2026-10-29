@@ -1036,10 +1036,10 @@
               to="/dashboard"
               className={`${
                 isCollapsed ? "flex" : "flex lg:hidden"
-              } h-9 items-center transition hover:opacity-90 active:scale-95 shrink-0`}
+              } items-center transition hover:opacity-90 active:scale-95 shrink-0`}
               title="ParcelDrop"
             >
-              <ParcelDropLogo className="h-6 sm:h-7" />
+              <ParcelDropLogo className="mt-1 translate-y-[2px]" height={38} />
             </Link>
 
             {/* TRACKING SEARCH (Cleanly Left-Aligned) */}
