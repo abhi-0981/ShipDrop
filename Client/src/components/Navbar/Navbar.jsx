@@ -1,15 +1,8 @@
-import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import ParcelDropLogo from "../Common/ParcelDropLogo";
 import { hasActiveSession } from "../../utils/auth";
 
 function Navbar() {
-  const [isLoggedIn, setIsLoggedIn] = useState(() => hasActiveSession());
-
-  useEffect(() => {
-    setIsLoggedIn(hasActiveSession());
-  }, []);
-
   const navItems = [
     "Solutions",
     "Features",
@@ -47,31 +40,19 @@ function Navbar() {
 
         {/* Auth Buttons */}
         <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
-          {isLoggedIn ? (
-            <Link
-              to="/dashboard"
-              className="inline-flex items-center gap-2 rounded-xl bg-[#008dd2] px-4 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-[14px] font-semibold text-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#007fbd] hover:shadow-md"
-            >
-              Dashboard
-              <span aria-hidden="true">&rarr;</span>
-            </Link>
-          ) : (
-            <>
-              <Link
-                to="/login"
-                className="rounded-xl px-3 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-[14px] font-semibold text-slate-700 transition-all duration-300 hover:bg-slate-50 hover:text-[#008dd2]"
-              >
-                Login
-              </Link>
+          <Link
+            to={hasActiveSession() ? "/dashboard" : "/login"}
+            className="rounded-xl px-3 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-[14px] font-semibold text-slate-700 transition-all duration-300 hover:bg-slate-50 hover:text-[#008dd2]"
+          >
+            Login
+          </Link>
 
-              <Link
-                to="/register"
-                className="rounded-xl bg-[#008dd2] px-3.5 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-[14px] font-semibold text-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#007fbd] hover:shadow-md"
-              >
-                Sign Up
-              </Link>
-            </>
-          )}
+          <Link
+            to={hasActiveSession() ? "/dashboard" : "/register"}
+            className="rounded-xl bg-[#008dd2] px-3.5 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-[14px] font-semibold text-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#007fbd] hover:shadow-md"
+          >
+            Sign Up
+          </Link>
         </div>
 
       </nav>
