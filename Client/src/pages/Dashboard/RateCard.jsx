@@ -382,7 +382,8 @@ const RateTable = ({
   return (
     <div
       className="
-        overflow-x-hidden
+        overflow-x-auto
+        [scrollbar-width:thin]
         rounded-xl
         border
         border-slate-200
@@ -392,6 +393,7 @@ const RateTable = ({
       <table
         className="
           w-full
+          min-w-[700px]
           border-collapse
         "
       >

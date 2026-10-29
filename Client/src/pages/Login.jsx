@@ -108,8 +108,8 @@ function Login() {
   };
 
   return (
-    <div className="h-dvh overflow-hidden bg-slate-100 px-4">
-      <div className="mx-auto flex h-full w-full max-w-md flex-col justify-center">
+    <div className="min-h-dvh overflow-y-auto bg-slate-100 px-4 py-6 flex flex-col justify-center">
+      <div className="mx-auto flex w-full max-w-md flex-col justify-center my-auto">
         {/* BACK */}
 
         <Link

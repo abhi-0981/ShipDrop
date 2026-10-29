@@ -13,15 +13,15 @@ function Navbar() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-slate-200/70 bg-white/95 backdrop-blur-md">
-      <nav className="mx-auto flex h-[76px] max-w-7xl items-center justify-between px-6 lg:px-8">
+      <nav className="mx-auto flex h-[70px] sm:h-[76px] max-w-7xl items-center justify-between px-3.5 sm:px-6 lg:px-8">
 
         {/* Logo */}
         <Link
           to="/"
-          className="group flex items-center transition-transform hover:scale-[1.02] active:scale-95"
+          className="group flex items-center transition-transform hover:scale-[1.02] active:scale-95 shrink-0"
           title="ParcelDrop"
         >
-          <ParcelDropLogo height={44} />
+          <ParcelDropLogo className="h-8 sm:h-10" />
         </Link>
 
         {/* Old navigation kept safely, currently hidden */}
@@ -38,17 +38,17 @@ function Navbar() {
         </ul>
 
         {/* Auth Buttons */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
           <Link
             to="/login"
-            className="rounded-xl px-5 py-2.5 text-[14px] font-semibold text-slate-700 transition-all duration-300 hover:bg-slate-50 hover:text-[#008dd2]"
+            className="rounded-xl px-3 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-[14px] font-semibold text-slate-700 transition-all duration-300 hover:bg-slate-50 hover:text-[#008dd2]"
           >
             Login
           </Link>
 
           <Link
             to="/register"
-            className="rounded-xl bg-[#008dd2] px-6 py-2.5 text-[14px] font-semibold text-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#007fbd] hover:shadow-md"
+            className="rounded-xl bg-[#008dd2] px-3.5 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-[14px] font-semibold text-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#007fbd] hover:shadow-md"
           >
             Sign Up
           </Link>
