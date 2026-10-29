@@ -110,6 +110,9 @@ export default function CODRemittance() {
   const [drafts, setDrafts] = useState({});
   const [editingId, setEditingId] = useState(null);
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 25;
+
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState(null);
   const [savingId, setSavingId] = useState(null);
@@ -282,6 +285,23 @@ export default function CODRemittance() {
     statusFilter,
     customerFilter,
   ]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, statusFilter, customerFilter]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(1);
+    }
+  }, [totalPages, currentPage]);
+
+  const paginatedRemittances = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, currentPage, pageSize]);
 
   // Bulk selection
   const visiblePending = filtered.filter(
@@ -1059,7 +1079,7 @@ export default function CODRemittance() {
             <>
               {/* Mobile cards */}
               <div className="space-y-4 p-4 sm:hidden">
-                {filtered.map((row) => {
+                {paginatedRemittances.map((row) => {
                   const id = rowId(row);
                   const pending =
                     statusOf(row.status) === "PENDING";
@@ -1177,6 +1197,32 @@ export default function CODRemittance() {
                     </article>
                   );
                 })}
+
+                {filtered.length > pageSize && (
+                  <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs shadow-xs">
+                    <span className="font-semibold text-slate-500">
+                      Page {currentPage} of {totalPages} ({filtered.length} total)
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                        disabled={currentPage <= 1}
+                        className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 font-semibold text-slate-700 disabled:opacity-40"
+                      >
+                        Prev
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+                        disabled={currentPage >= totalPages}
+                        className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 font-semibold text-slate-700 disabled:opacity-40"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Desktop table */}
@@ -1209,7 +1255,7 @@ export default function CODRemittance() {
                   </thead>
 
                   <tbody className="divide-y divide-slate-100 text-sm">
-                    {filtered.map((row) => {
+                    {paginatedRemittances.map((row) => {
                       const id = rowId(row);
                       const pending =
                         statusOf(row.status) === "PENDING";
@@ -1312,8 +1358,32 @@ export default function CODRemittance() {
           )}
 
           <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 bg-slate-50 px-5 py-3 text-xs text-slate-500">
-            <span>ParcelDrop · COD Remittance</span>
-            <span>{filtered.length} records shown</span>
+            <span>
+              Showing {filtered.length === 0 ? 0 : (currentPage - 1) * pageSize + 1} to {Math.min(currentPage * pageSize, filtered.length)} of {filtered.length} records
+            </span>
+            {totalPages > 1 && (
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-slate-500">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                  disabled={currentPage <= 1}
+                  className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 cursor-pointer shadow-2xs"
+                >
+                  Prev
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+                  disabled={currentPage >= totalPages}
+                  className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 cursor-pointer shadow-2xs"
+                >
+                  Next
+                </button>
+              </div>
+            )}
           </div>
         </section>
       </div>

@@ -392,24 +392,28 @@ const DetailCard = ({ title, children }) => {
 
 function Pending() {
   const [orders, setOrders] = useState([]);
-
   const [loading, setLoading] = useState(true);
-
   const [error, setError] = useState("");
-
   const [search, setSearch] = useState("");
-
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalOrderCount, setTotalOrderCount] = useState(0);
   const [statusFilter, setStatusFilter] = useState("ALL");
-
   const [serviceFilter, setServiceFilter] = useState("ALL");
-
   const [paymentFilter, setPaymentFilter] = useState("ALL");
-
   const [selectedIds, setSelectedIds] = useState([]);
-
   const [viewingOrder, setViewingOrder] = useState(null);
-
   const [detailLoading, setDetailLoading] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      setCurrentPage(1);
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [search]);
 
   /* =======================================================
      FETCH USER ORDERS
@@ -422,9 +426,7 @@ function Pending() {
       setOrders([]);
       setLoading(false);
       setError("User ID is required");
-
       toast.error("User ID is required");
-
       return;
     }
 
@@ -432,17 +434,13 @@ function Pending() {
       setLoading(true);
       setError("");
 
-      /*
-        IMPORTANT:
-        User Panel API only.
-        No adminToken.
-        No localhost:5001.
-      */
-
       const response = await api.get("/orders/all", {
         params: {
           user_id: userId,
           status: "PENDING",
+          page: currentPage,
+          limit: 50,
+          search: debouncedSearch.trim(),
           include_tracking: false,
         },
       });
@@ -455,21 +453,9 @@ function Pending() {
 
       const list = Array.isArray(data?.orders) ? data.orders : [];
 
-      /*
-        Keep only NDR/PENDING here.
-        This means even if /orders/all
-        returns every order, this page
-        will only show NDR + Pending.
-      */
-
       const filteredList = list.filter(
         (order) => getOrderStatus(order) === "Pending",
       );
-
-      /*
-        Remove duplicate rows
-        caused by joins.
-      */
 
       const uniqueOrders = Array.from(
         new Map(
@@ -480,19 +466,16 @@ function Pending() {
         ).values(),
       );
 
+      setTotalPages(Number(data?.pagination?.totalPages) || 1);
+      setTotalOrderCount(Number(data?.pagination?.totalOrders) || uniqueOrders.length);
       setOrders(uniqueOrders);
-
       setSelectedIds([]);
     } catch (err) {
       console.error("Get NDR/Pending orders error:", err);
-
       setOrders([]);
-
       const message =
         err?.response?.data?.message || err?.message || "Unable to load orders";
-
       setError(message);
-
       toast.error(message);
     } finally {
       setLoading(false);
@@ -505,7 +488,7 @@ function Pending() {
 
   useEffect(() => {
     fetchOrders();
-  }, []);
+  }, [currentPage, debouncedSearch]);
 
   useEffect(() => {
     const unsubscribe = subscribeToOrderUpdates(() => {
@@ -515,7 +498,7 @@ function Pending() {
     return () => {
       unsubscribe();
     };
-  }, []);
+  }, [currentPage, debouncedSearch]);
 
   /* =======================================================
      FILTERED ORDERS
@@ -1451,6 +1434,60 @@ const triggerTracking = (awb) => {
               )}
             </tbody>
           </table>
+
+          {/* TABLE FOOTER */}
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-white px-5 py-3">
+            <p className="text-[12px] text-slate-500">
+              Page <span className="font-semibold text-slate-700">{currentPage}</span> of{" "}
+              <span className="font-semibold text-slate-700">{totalPages}</span>
+              {totalOrderCount > 0 && ` (${totalOrderCount} total)`}
+            </p>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                disabled={currentPage <= 1}
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[12px] font-semibold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 transition active:scale-95"
+              >
+                Previous
+              </button>
+
+              <button
+                type="button"
+                disabled={currentPage >= totalPages}
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[12px] font-semibold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 transition active:scale-95"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* MOBILE PAGINATION DOCK */}
+        <div className="flex sm:hidden items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3 mt-3 shadow-xs">
+          <span className="text-xs font-semibold text-slate-600">
+            Page {currentPage} of {totalPages}
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              disabled={currentPage <= 1}
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-700 disabled:opacity-40"
+            >
+              Prev
+            </button>
+            <button
+              type="button"
+              disabled={currentPage >= totalPages}
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-700 disabled:opacity-40"
+            >
+              Next
+            </button>
+          </div>
         </div>
       </div>
 

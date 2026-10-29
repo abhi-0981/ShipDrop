@@ -439,8 +439,23 @@ function Tickets() {
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 25;
   const searchTimerRef = useRef(null);
   const chatBottomRef = useRef(null);
+
+  const totalPages = Math.max(1, Math.ceil(tickets.length / pageSize));
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(1);
+    }
+  }, [totalPages, currentPage]);
+
+  const paginatedTickets = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return tickets.slice(start, start + pageSize);
+  }, [tickets, currentPage, pageSize]);
 
   const [showCreate, setShowCreate] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -671,6 +686,7 @@ function Tickets() {
 
   const applyStatus = async (value) => {
     setStatusFilter(value);
+    setCurrentPage(1);
     try {
       await fetchTickets({ searchValue: search, statusValue: value });
     } catch (error) {
@@ -679,6 +695,7 @@ function Tickets() {
   };
 
   const runSearch = async (value) => {
+    setCurrentPage(1);
     try {
       await fetchTickets({ searchValue: value, statusValue: statusFilter });
     } catch (error) {
@@ -1212,47 +1229,75 @@ function Tickets() {
               </p>
             </div>
           ) : (
-            tickets.map((ticket) => (
-              <button
-                key={ticket.id}
-                type="button"
-                onClick={() => openTicket(ticket.id)}
-                className="w-full rounded-2xl border border-slate-200/90 bg-white p-3.5 text-left shadow-xs active:scale-[0.99] transition hover:border-[#008dd2]/40"
-              >
-                <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-xs font-black text-[#008dd2]">
-                      #{ticket.ticket_number}
-                    </span>
-                    <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[9.5px] font-semibold text-slate-600">
-                      {categoryLabel(ticket.category)}
+            <>
+              {paginatedTickets.map((ticket) => (
+                <button
+                  key={ticket.id}
+                  type="button"
+                  onClick={() => openTicket(ticket.id)}
+                  className="w-full rounded-2xl border border-slate-200/90 bg-white p-3.5 text-left shadow-xs active:scale-[0.99] transition hover:border-[#008dd2]/40"
+                >
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs font-black text-[#008dd2]">
+                        #{ticket.ticket_number}
+                      </span>
+                      <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[9.5px] font-semibold text-slate-600">
+                        {categoryLabel(ticket.category)}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <StatusBadge status={ticket.status} />
+                      <PriorityBadge priority={ticket.priority} />
+                    </div>
+                  </div>
+
+                  <div className="py-2.5">
+                    <p className="text-xs font-bold text-slate-900 truncate">
+                      {ticket.subject}
+                    </p>
+                    <p className="text-[11px] text-slate-400 mt-0.5">
+                      {ticket.awb && <span className="font-mono text-slate-500">AWB: {ticket.awb} • </span>}
+                      {ticket.public_order_id && `Order #${ticket.public_order_id}`}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center justify-between border-t border-slate-50 pt-2 text-[10px] text-slate-400 font-medium">
+                    <span>{formatDate(ticket.created_at)}</span>
+                    <span className="flex items-center gap-1 text-[#008dd2] font-bold">
+                      Open Discussion
+                      <Icon name="chevron" size={12} />
                     </span>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <StatusBadge status={ticket.status} />
-                    <PriorityBadge priority={ticket.priority} />
-                  </div>
-                </div>
+                </button>
+              ))}
 
-                <div className="py-2.5">
-                  <p className="text-xs font-bold text-slate-900 truncate">
-                    {ticket.subject}
-                  </p>
-                  <p className="text-[11px] text-slate-400 mt-0.5">
-                    {ticket.awb && <span className="font-mono text-slate-500">AWB: {ticket.awb} • </span>}
-                    {ticket.public_order_id && `Order #${ticket.public_order_id}`}
-                  </p>
-                </div>
-
-                <div className="flex items-center justify-between border-t border-slate-50 pt-2 text-[10px] text-slate-400 font-medium">
-                  <span>{formatDate(ticket.created_at)}</span>
-                  <span className="flex items-center gap-1 text-[#008dd2] font-bold">
-                    Open Discussion
-                    <Icon name="chevron" size={12} />
+              {tickets.length > pageSize && (
+                <div className="flex items-center justify-between rounded-xl border border-slate-200/90 bg-white px-3.5 py-2.5 text-xs shadow-xs">
+                  <span className="font-semibold text-slate-500">
+                    Page {currentPage} of {totalPages} ({tickets.length} total)
                   </span>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                      disabled={currentPage <= 1}
+                      className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 font-semibold text-slate-700 disabled:opacity-40"
+                    >
+                      Prev
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+                      disabled={currentPage >= totalPages}
+                      className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 font-semibold text-slate-700 disabled:opacity-40"
+                    >
+                      Next
+                    </button>
+                  </div>
                 </div>
-              </button>
-            ))
+              )}
+            </>
           )}
         </div>
 
@@ -1314,7 +1359,7 @@ function Tickets() {
                   </td>
                 </tr>
               ) : (
-                tickets.map((ticket) => (
+                paginatedTickets.map((ticket) => (
                   <tr
                     key={ticket.id}
                     onClick={() => openTicket(ticket.id)}
@@ -1379,6 +1424,36 @@ function Tickets() {
               )}
             </tbody>
           </table>
+
+          {/* DESKTOP PAGINATION FOOTER */}
+          {tickets.length > pageSize && (
+            <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/50 px-5 py-3 text-xs">
+              <span className="font-semibold text-slate-500">
+                Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, tickets.length)} of {tickets.length} tickets
+              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-slate-500 font-semibold mr-1">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                  disabled={currentPage <= 1}
+                  className="rounded-lg border border-slate-200 bg-white px-3 py-1 font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 cursor-pointer shadow-2xs"
+                >
+                  Previous
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+                  disabled={currentPage >= totalPages}
+                  className="rounded-lg border border-slate-200 bg-white px-3 py-1 font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 cursor-pointer shadow-2xs"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

@@ -638,6 +638,19 @@ const manifestedCount = useMemo(() => {
     });
   }, [orders, search, statusFilter, paymentFilter, serviceFilter]);
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 50;
+  const totalPages = Math.ceil(filteredOrders.length / pageSize) || 1;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, statusFilter, paymentFilter, serviceFilter]);
+
+  const paginatedOrders = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredOrders.slice(start, start + pageSize);
+  }, [filteredOrders, currentPage, pageSize]);
+
   /* ==========================================================
      SELECTION
   ========================================================== */
@@ -1725,7 +1738,7 @@ const manifestedCount = useMemo(() => {
                     </td>
                   </tr>
                 ) : (
-                  filteredOrders.map((order) => {
+                  paginatedOrders.map((order) => {
                     const key = getSelectedKey(order);
                     const selected = selectedIds.includes(key);
                     const service = getServiceType(order);
@@ -1986,30 +1999,56 @@ const manifestedCount = useMemo(() => {
 
 
 
-          <div className="flex min-h-[45px] items-center justify-between border-t border-slate-100 bg-[#fcfdff] px-5">
-            <div className="text-[11px] text-slate-400">
-              Showing{" "}
-              <span className="font-medium text-slate-600">
-                {filteredOrders.length}
-              </span>{" "}
-              of{" "}
-              <span className="font-medium text-slate-600">
-                {manifestedCount}
-              </span>{" "}
-              manifested shipments
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 bg-[#fcfdff] px-5 py-3">
+            <div className="text-[12px] text-slate-500">
+              Page <span className="font-semibold text-slate-700">{currentPage}</span> of{" "}
+              <span className="font-semibold text-slate-700">{totalPages}</span> ({filteredOrders.length} total shipments)
             </div>
 
-            {selectedIds.length > 0 && (
-              <div className="text-[11px] text-slate-400">
-                <span
-                  className="font-semibold"
-                  style={{ color: PRIMARY }}
-                >
-                  {selectedIds.length}
-                </span>{" "}
-                selected
-              </div>
-            )}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                disabled={currentPage <= 1}
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[12px] font-semibold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 transition active:scale-95"
+              >
+                Previous
+              </button>
+
+              <button
+                type="button"
+                disabled={currentPage >= totalPages}
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[12px] font-semibold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 transition active:scale-95"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* MOBILE PAGINATION DOCK */}
+        <div className="flex sm:hidden items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3 mt-3 shadow-xs">
+          <span className="text-xs font-semibold text-slate-600">
+            Page {currentPage} of {totalPages}
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              disabled={currentPage <= 1}
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-700 disabled:opacity-40"
+            >
+              Prev
+            </button>
+            <button
+              type="button"
+              disabled={currentPage >= totalPages}
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-700 disabled:opacity-40"
+            >
+              Next
+            </button>
           </div>
         </div>
       </div>

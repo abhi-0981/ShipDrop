@@ -111,6 +111,26 @@ export default function PartyIdentities() {
     return identities.reduce((sum, item) => sum + (Number(item.linked_orders_count) || 0), 0);
   }, [identities]);
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 25;
+
+  const totalPages = Math.max(1, Math.ceil(filteredIdentities.length / pageSize));
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(1);
+    }
+  }, [totalPages, currentPage]);
+
+  const paginatedIdentities = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredIdentities.slice(start, start + pageSize);
+  }, [filteredIdentities, currentPage, pageSize]);
+
   // Open Create Modal
   const handleOpenCreate = () => {
     setModalMode("create");
@@ -406,7 +426,7 @@ export default function PartyIdentities() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {filteredIdentities.map((identity) => (
+                  {paginatedIdentities.map((identity) => (
                     <tr
                       key={identity.id}
                       className="hover:bg-slate-50/80 transition"
@@ -508,11 +528,40 @@ export default function PartyIdentities() {
                 </tbody>
               </table>
             </div>
+
+            {filteredIdentities.length > pageSize && (
+              <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/50 px-5 py-3 text-xs">
+                <span className="font-semibold text-slate-500">
+                  Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, filteredIdentities.length)} of {filteredIdentities.length} parties
+                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-slate-500 font-semibold mr-1">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                    disabled={currentPage <= 1}
+                    className="rounded-lg border border-slate-200 bg-white px-3 py-1 font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 cursor-pointer shadow-2xs"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+                    disabled={currentPage >= totalPages}
+                    className="rounded-lg border border-slate-200 bg-white px-3 py-1 font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 cursor-pointer shadow-2xs"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
             {/* MOBILE CARDS */}
             <div className="space-y-2.5 sm:hidden">
-              {filteredIdentities.map((identity) => (
+              {paginatedIdentities.map((identity) => (
                 <div
                   key={identity.id}
                   className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-xs"
@@ -590,6 +639,32 @@ export default function PartyIdentities() {
                   </div>
                 </div>
               ))}
+
+              {filteredIdentities.length > pageSize && (
+                <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs shadow-xs">
+                  <span className="font-semibold text-slate-500">
+                    Page {currentPage} of {totalPages} ({filteredIdentities.length} total)
+                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                      disabled={currentPage <= 1}
+                      className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 font-semibold text-slate-700 disabled:opacity-40"
+                    >
+                      Prev
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+                      disabled={currentPage >= totalPages}
+                      className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 font-semibold text-slate-700 disabled:opacity-40"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </>
         )}

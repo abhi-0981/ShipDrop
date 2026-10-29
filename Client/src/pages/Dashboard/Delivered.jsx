@@ -568,12 +568,25 @@ function Delivered() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalOrderCount, setTotalOrderCount] = useState(0);
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [serviceFilter, setServiceFilter] = useState("ALL");
   const [paymentFilter, setPaymentFilter] = useState("ALL");
   const [selectedIds, setSelectedIds] = useState([]);
   const [viewingOrder, setViewingOrder] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      setCurrentPage(1);
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [search]);
 
   // ====================================================
   // FETCH ALL DELIVERED ORDERS
@@ -597,6 +610,9 @@ function Delivered() {
           params: {
             user_id: userId,
             status: "DELIVERED",
+            page: currentPage,
+            limit: 50,
+            search: debouncedSearch.trim(),
             include_tracking: false,
           },
         }
@@ -615,6 +631,8 @@ function Delivered() {
         ? data.orders
         : [];
 
+      setTotalPages(Number(data?.pagination?.totalPages) || 1);
+      setTotalOrderCount(Number(data?.pagination?.totalOrders) || list.length);
       setOrders(list);
       setSelectedIds([]);
     } catch (error) {
@@ -632,7 +650,7 @@ function Delivered() {
 
   useEffect(() => {
     fetchAllOrders();
-  }, []);
+  }, [currentPage, debouncedSearch]);
 
   useEffect(() => {
     const unsubscribe = subscribeToOrderUpdates(() => {
@@ -642,7 +660,7 @@ function Delivered() {
     return () => {
       unsubscribe();
     };
-  }, []);
+  }, [currentPage, debouncedSearch]);
 
   // ====================================================
   // FILTERED ORDERS
@@ -1718,27 +1736,58 @@ function Delivered() {
           </div>
 
           {/* FOOTER */}
-          {orders.length > 0 && (
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-[#fafbfc] px-5 py-3">
-              <p className="text-[11px] text-slate-400">
-                Showing{" "}
-                <span className="font-semibold text-slate-600">
-                  {filteredOrders.length}
-                </span>{" "}
-                of{" "}
-                <span className="font-semibold text-slate-600">
-                  {totalOrders}
-                </span>{" "}
-                orders
-              </p>
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-white px-5 py-3">
+            <p className="text-[12px] text-slate-500">
+              Page <span className="font-semibold text-slate-700">{currentPage}</span> of{" "}
+              <span className="font-semibold text-slate-700">{totalPages}</span>
+              {totalOrderCount > 0 && ` (${totalOrderCount} total)`}
+            </p>
 
-              <p className="text-[11px] text-slate-400">
-                {selectedIds.length > 0
-                  ? `${selectedIds.length} selected`
-                  : "Select orders to perform actions"}
-              </p>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                disabled={currentPage <= 1}
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[12px] font-semibold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 transition active:scale-95"
+              >
+                Previous
+              </button>
+
+              <button
+                type="button"
+                disabled={currentPage >= totalPages}
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[12px] font-semibold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 transition active:scale-95"
+              >
+                Next
+              </button>
             </div>
-          )}
+          </div>
+        </div>
+
+        {/* MOBILE PAGINATION DOCK */}
+        <div className="flex sm:hidden items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3 mt-3 shadow-xs">
+          <span className="text-xs font-semibold text-slate-600">
+            Page {currentPage} of {totalPages}
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              disabled={currentPage <= 1}
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-700 disabled:opacity-40"
+            >
+              Prev
+            </button>
+            <button
+              type="button"
+              disabled={currentPage >= totalPages}
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-700 disabled:opacity-40"
+            >
+              Next
+            </button>
+          </div>
         </div>
       </div>
 

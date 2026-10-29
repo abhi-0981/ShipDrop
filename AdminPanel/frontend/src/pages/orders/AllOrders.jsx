@@ -647,6 +647,9 @@ const AllOrders = () => {
   const [selectedOrders, setSelectedOrders] = useState([]);
   const [viewingOrder, setViewingOrder] = useState(null);
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 50;
+
   const fetchOrders = async () => {
     try {
       setLoading(true);
@@ -827,6 +830,23 @@ const AllOrders = () => {
     courierFilter,
     paymentFilter,
   ]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredOrders.length / pageSize));
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, activeStatus, statusFilter, courierFilter, paymentFilter]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(1);
+    }
+  }, [totalPages, currentPage]);
+
+  const paginatedOrders = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredOrders.slice(start, start + pageSize);
+  }, [filteredOrders, currentPage, pageSize]);
 
   const allSelected =
     filteredOrders.length > 0 &&
@@ -1282,7 +1302,7 @@ const AllOrders = () => {
                   </td>
                 </tr>
               ) : (
-                filteredOrders.map((order) => {
+                paginatedOrders.map((order) => {
                   const selected = selectedOrders.includes(order.id);
 
                   return (
@@ -1403,19 +1423,45 @@ const AllOrders = () => {
           <div className="text-[11px] text-slate-500">
             Showing{" "}
             <span className="font-semibold text-slate-700">
-              {filteredOrders.length}
+              {filteredOrders.length === 0 ? 0 : (currentPage - 1) * pageSize + 1}
+            </span>{" "}
+            to{" "}
+            <span className="font-semibold text-slate-700">
+              {Math.min(currentPage * pageSize, filteredOrders.length)}
             </span>{" "}
             of{" "}
             <span className="font-semibold text-slate-700">
-              {orders.length}
+              {filteredOrders.length}
             </span>{" "}
             orders
+            {selectedOrders.length > 0 && (
+              <span className="ml-2 font-medium text-blue-600">
+                ({selectedOrders.length} selected)
+              </span>
+            )}
           </div>
 
-          {selectedOrders.length > 0 && (
-            <div className="text-[11px] font-medium text-blue-600">
-              {selectedOrders.length} order
-              {selectedOrders.length > 1 ? "s" : ""} selected
+          {totalPages > 1 && (
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] text-slate-500">
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                disabled={currentPage <= 1}
+                className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 cursor-pointer"
+              >
+                Prev
+              </button>
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+                disabled={currentPage >= totalPages}
+                className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 cursor-pointer"
+              >
+                Next
+              </button>
             </div>
           )}
         </div>

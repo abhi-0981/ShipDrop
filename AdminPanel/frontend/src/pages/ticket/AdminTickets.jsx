@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import toast from "react-hot-toast";
 
 import {
@@ -366,6 +366,26 @@ function AdminTickets() {
   const [statusFilter, setStatusFilter] = useState("");
   const [priorityFilter, setPriorityFilter] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 25;
+
+  const totalPages = Math.max(1, Math.ceil(tickets.length / pageSize));
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, statusFilter, priorityFilter, categoryFilter]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(1);
+    }
+  }, [totalPages, currentPage]);
+
+  const paginatedTickets = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return tickets.slice(start, start + pageSize);
+  }, [tickets, currentPage, pageSize]);
 
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -745,7 +765,7 @@ function AdminTickets() {
                   <span className="text-xs font-bold text-slate-800">
                     Customer Conversation
                   </span>
-                  <span className="rounded-full bg-slate-200/80 px-2 py-0.2 text-[10px] font-bold text-slate-600">
+                  <span className="rounded-full bg-slate-200/80 px-2 py-0.5 text-[10px] font-bold text-slate-600">
                     {messages.length}
                   </span>
                 </div>
@@ -1156,46 +1176,74 @@ function AdminTickets() {
             <p className="mt-0.5 text-[11px] text-slate-400">Try changing your search or filters.</p>
           </div>
         ) : (
-          tickets.map((ticket) => (
-            <div
-              key={ticket.id}
-              onClick={() => openTicket(ticket.id)}
-              className="rounded-2xl border border-slate-200/80 bg-white p-3.5 shadow-xs active:scale-[0.99] transition cursor-pointer space-y-2"
-            >
-              <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                <span className="font-mono text-xs font-bold text-[#008dd2]">
-                  #{ticket.ticket_number}
-                </span>
+          <>
+            {paginatedTickets.map((ticket) => (
+              <div
+                key={ticket.id}
+                onClick={() => openTicket(ticket.id)}
+                className="rounded-2xl border border-slate-200/80 bg-white p-3.5 shadow-xs active:scale-[0.99] transition cursor-pointer space-y-2"
+              >
+                <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                  <span className="font-mono text-xs font-bold text-[#008dd2]">
+                    #{ticket.ticket_number}
+                  </span>
 
+                  <div className="flex items-center gap-1.5">
+                    <StatusBadge status={ticket.status} small />
+                    <PriorityBadge priority={ticket.priority} />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <p className="text-xs font-bold text-slate-900 truncate">
+                    {ticket.subject || "No subject"}
+                  </p>
+                  <div className="flex items-center justify-between text-[11px] text-slate-500">
+                    <span className="truncate max-w-[170px] font-medium">
+                      {ticket.customer_name || "Unknown customer"}
+                    </span>
+                    <span className="text-[10px] text-slate-400">
+                      {categoryLabel(ticket.category)}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between border-t border-slate-50 pt-2 text-[10px] text-slate-400">
+                  <span>{formatDate(ticket.created_at)}</span>
+                  <span className="flex items-center gap-1 text-[#008dd2] font-bold">
+                    Open Conversation
+                    <HiOutlineChevronRight size={12} />
+                  </span>
+                </div>
+              </div>
+            ))}
+
+            {tickets.length > pageSize && (
+              <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs shadow-xs">
+                <span className="font-semibold text-slate-500">
+                  Page {currentPage} of {totalPages} ({tickets.length} total)
+                </span>
                 <div className="flex items-center gap-1.5">
-                  <StatusBadge status={ticket.status} small />
-                  <PriorityBadge priority={ticket.priority} />
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                    disabled={currentPage <= 1}
+                    className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 font-semibold text-slate-700 disabled:opacity-40"
+                  >
+                    Prev
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+                    disabled={currentPage >= totalPages}
+                    className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 font-semibold text-slate-700 disabled:opacity-40"
+                  >
+                    Next
+                  </button>
                 </div>
               </div>
-
-              <div className="space-y-1">
-                <p className="text-xs font-bold text-slate-900 truncate">
-                  {ticket.subject || "No subject"}
-                </p>
-                <div className="flex items-center justify-between text-[11px] text-slate-500">
-                  <span className="truncate max-w-[170px] font-medium">
-                    {ticket.customer_name || "Unknown customer"}
-                  </span>
-                  <span className="text-[10px] text-slate-400">
-                    {categoryLabel(ticket.category)}
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between border-t border-slate-50 pt-2 text-[10px] text-slate-400">
-                <span>{formatDate(ticket.created_at)}</span>
-                <span className="flex items-center gap-1 text-[#008dd2] font-bold">
-                  Open Conversation
-                  <HiOutlineChevronRight size={12} />
-                </span>
-              </div>
-            </div>
-          ))
+            )}
+          </>
         )}
       </div>
 
@@ -1229,7 +1277,7 @@ function AdminTickets() {
                 </td>
               </tr>
             ) : (
-              tickets.map((ticket) => (
+              paginatedTickets.map((ticket) => (
                 <tr
                   key={ticket.id}
                   onClick={() => openTicket(ticket.id)}
@@ -1286,6 +1334,35 @@ function AdminTickets() {
             )}
           </tbody>
         </table>
+
+        {tickets.length > pageSize && (
+          <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/50 px-5 py-3 text-xs">
+            <span className="font-semibold text-slate-500">
+              Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, tickets.length)} of {tickets.length} tickets
+            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-slate-500 font-semibold mr-1">
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                disabled={currentPage <= 1}
+                className="rounded-lg border border-slate-200 bg-white px-3 py-1 font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 cursor-pointer shadow-2xs"
+              >
+                Previous
+              </button>
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+                disabled={currentPage >= totalPages}
+                className="rounded-lg border border-slate-200 bg-white px-3 py-1 font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 cursor-pointer shadow-2xs"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

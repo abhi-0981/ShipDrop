@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   HiOutlineRefresh,
@@ -111,6 +111,26 @@ function Users() {
         .includes(searchText)
     );
   });
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 25;
+
+  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / pageSize));
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(1);
+    }
+  }, [totalPages, currentPage]);
+
+  const paginatedUsers = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredUsers.slice(start, start + pageSize);
+  }, [filteredUsers, currentPage, pageSize]);
 
   // =====================================================
   // OPEN USER
@@ -297,154 +317,182 @@ function Users() {
             <p className="mt-0.5 text-[11px] text-slate-400">Try modifying your search text.</p>
           </div>
         ) : (
-          filteredUsers.map((user) => (
-            <div
-              key={user.id}
-              onClick={() => openUser(user.id)}
-              className="rounded-2xl border border-slate-200/80 bg-white p-3.5 shadow-xs active:scale-[0.99] transition cursor-pointer space-y-2.5"
-            >
-              {/* TOP ROW: USER INFO & ROLE */}
-              <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[#008dd2]/10 text-[#008dd2]">
-                    {user.profile_image ? (
-                      <img
-                        src={user.profile_image}
-                        alt=""
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <HiOutlineUserCircle size={22} />
-                    )}
+          <>
+            {paginatedUsers.map((user) => (
+              <div
+                key={user.id}
+                onClick={() => openUser(user.id)}
+                className="rounded-2xl border border-slate-200/80 bg-white p-3.5 shadow-xs active:scale-[0.99] transition cursor-pointer space-y-2.5"
+              >
+                {/* TOP ROW: USER INFO & ROLE */}
+                <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[#008dd2]/10 text-[#008dd2]">
+                      {user.profile_image ? (
+                        <img
+                          src={user.profile_image}
+                          alt=""
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <HiOutlineUserCircle size={22} />
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-xs font-bold text-slate-900 leading-tight">
+                        {user.full_name || "Unnamed User"}
+                      </p>
+                      <p className="text-[10px] text-slate-400 font-mono mt-0.5">
+                        UID #{user.id}
+                      </p>
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <p className="truncate text-xs font-bold text-slate-900 leading-tight">
-                      {user.full_name || "Unnamed User"}
-                    </p>
-                    <p className="text-[10px] text-slate-400 font-mono mt-0.5">
-                      UID #{user.id}
-                    </p>
-                  </div>
-                </div>
 
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <span className="inline-flex rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-bold capitalize text-slate-600">
-                    {user.role || "user"}
-                  </span>
-                  <div className="relative action-menu-container">
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setOpenMenuId(
-                          openMenuId === `m-${user.id}` ? null : `m-${user.id}`
-                        );
-                      }}
-                      className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 shadow-2xs transition hover:text-[#008dd2]"
-                      title="Actions"
-                    >
-                      <HiOutlineDotsVertical size={14} />
-                    </button>
-
-                    {openMenuId === `m-${user.id}` && (
-                      <div
-                        onClick={(e) => e.stopPropagation()}
-                        className="absolute right-0 z-50 mt-1 w-44 rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg animate-in fade-in zoom-in-95 duration-100"
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span className="inline-flex rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-bold capitalize text-slate-600">
+                      {user.role || "user"}
+                    </span>
+                    <div className="relative action-menu-container">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenMenuId(
+                            openMenuId === `m-${user.id}` ? null : `m-${user.id}`
+                          );
+                        }}
+                        className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 shadow-2xs transition hover:text-[#008dd2]"
+                        title="Actions"
                       >
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setOpenMenuId(null);
-                            openUser(user.id);
-                          }}
-                          className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-[#008dd2]"
+                        <HiOutlineDotsVertical size={14} />
+                      </button>
+
+                      {openMenuId === `m-${user.id}` && (
+                        <div
+                          onClick={(e) => e.stopPropagation()}
+                          className="absolute right-0 z-50 mt-1 w-44 rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg animate-in fade-in zoom-in-95 duration-100"
                         >
-                          <HiOutlineEye size={15} className="text-slate-400" />
-                          View Profile
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setOpenMenuId(null);
-                            navigate(`/pickup-addresses?user_id=${user.id}`);
-                          }}
-                          className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-[#008dd2]"
-                        >
-                          <HiOutlineLocationMarker size={15} className="text-slate-400" />
-                          Pickup Locations
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setOpenMenuId(null);
-                            navigate(`/parties?user_id=${user.id}`);
-                          }}
-                          className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-[#008dd2]"
-                        >
-                          <HiOutlineIdentification size={15} className="text-slate-400" />
-                          Parties Info
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setOpenMenuId(null);
-                            handleOpenImpersonateModal(user);
-                          }}
-                          className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-[#008dd2] hover:bg-[#008dd2]/10"
-                        >
-                          <HiOutlineSwitchHorizontal size={15} />
-                          Login as User
-                        </button>
-                      </div>
-                    )}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setOpenMenuId(null);
+                              openUser(user.id);
+                            }}
+                            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-[#008dd2]"
+                          >
+                            <HiOutlineEye size={15} className="text-slate-400" />
+                            View Profile
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setOpenMenuId(null);
+                              navigate(`/pickup-addresses?user_id=${user.id}`);
+                            }}
+                            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-[#008dd2]"
+                          >
+                            <HiOutlineLocationMarker size={15} className="text-slate-400" />
+                            Pickup Locations
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setOpenMenuId(null);
+                              navigate(`/parties?user_id=${user.id}`);
+                            }}
+                            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-[#008dd2]"
+                          >
+                            <HiOutlineIdentification size={15} className="text-slate-400" />
+                            Parties Info
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setOpenMenuId(null);
+                              handleOpenImpersonateModal(user);
+                            }}
+                            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold text-[#008dd2] hover:bg-[#008dd2]/10"
+                          >
+                            <HiOutlineSwitchHorizontal size={15} />
+                            Login as User
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* DETAILS */}
-              <div className="space-y-1.5 text-xs text-slate-600">
-                {user.company_name && (
+                {/* DETAILS */}
+                <div className="space-y-1.5 text-xs text-slate-600">
+                  {user.company_name && (
+                    <div className="flex items-center gap-2 truncate">
+                      <HiOutlineOfficeBuilding size={14} className="text-slate-400 shrink-0" />
+                      <span className="truncate text-[11.5px] font-medium text-slate-700">
+                        {user.company_name}
+                      </span>
+                    </div>
+                  )}
+
                   <div className="flex items-center gap-2 truncate">
-                    <HiOutlineOfficeBuilding size={14} className="text-slate-400 shrink-0" />
-                    <span className="truncate text-[11.5px] font-medium text-slate-700">
-                      {user.company_name}
+                    <HiOutlineMail size={14} className="text-slate-400 shrink-0" />
+                    <span className="truncate text-[11px] text-slate-500">
+                      {user.email || "—"}
                     </span>
                   </div>
-                )}
 
-                <div className="flex items-center gap-2 truncate">
-                  <HiOutlineMail size={14} className="text-slate-400 shrink-0" />
-                  <span className="truncate text-[11px] text-slate-500">
-                    {user.email || "—"}
-                  </span>
+                  <div className="flex items-center gap-2 truncate">
+                    <HiOutlinePhone size={14} className="text-slate-400 shrink-0" />
+                    <span className="text-[11px] text-slate-500">
+                      {user.phone_no || "—"}
+                    </span>
+                  </div>
                 </div>
 
-                <div className="flex items-center gap-2 truncate">
-                  <HiOutlinePhone size={14} className="text-slate-400 shrink-0" />
-                  <span className="text-[11px] text-slate-500">
-                    {user.phone_no || "—"}
+                {/* BOTTOM: RATE CARD BADGE */}
+                <div className="flex items-center justify-between border-t border-slate-50 pt-2 text-[11px]">
+                  <span className="text-[10.5px] text-slate-400 flex items-center gap-1">
+                    <HiOutlineCreditCard size={13} />
+                    Rate Card:
                   </span>
+                  {user.rate_card_name ? (
+                    <span className="rounded-md bg-[#008dd2]/10 px-2 py-0.5 text-[10px] font-bold text-[#008dd2] truncate max-w-[170px]">
+                      {user.rate_card_name}
+                    </span>
+                  ) : (
+                    <span className="text-[10px] text-slate-400 italic">
+                      Not Assigned
+                    </span>
+                  )}
                 </div>
               </div>
+            ))}
 
-              {/* BOTTOM: RATE CARD BADGE */}
-              <div className="flex items-center justify-between border-t border-slate-50 pt-2 text-[11px]">
-                <span className="text-[10.5px] text-slate-400 flex items-center gap-1">
-                  <HiOutlineCreditCard size={13} />
-                  Rate Card:
+            {filteredUsers.length > pageSize && (
+              <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs shadow-xs">
+                <span className="font-semibold text-slate-500">
+                  Page {currentPage} of {totalPages} ({filteredUsers.length} total)
                 </span>
-                {user.rate_card_name ? (
-                  <span className="rounded-md bg-[#008dd2]/10 px-2 py-0.5 text-[10px] font-bold text-[#008dd2] truncate max-w-[170px]">
-                    {user.rate_card_name}
-                  </span>
-                ) : (
-                  <span className="text-[10px] text-slate-400 italic">
-                    Not Assigned
-                  </span>
-                )}
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                    disabled={currentPage <= 1}
+                    className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 font-semibold text-slate-700 disabled:opacity-40"
+                  >
+                    Prev
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+                    disabled={currentPage >= totalPages}
+                    className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 font-semibold text-slate-700 disabled:opacity-40"
+                  >
+                    Next
+                  </button>
+                </div>
               </div>
-            </div>
-          ))
+            )}
+          </>
         )}
       </div>
 
@@ -479,7 +527,7 @@ function Users() {
                   </td>
                 </tr>
               ) : (
-                filteredUsers.map((user) => (
+                paginatedUsers.map((user) => (
                   <tr
                     key={user.id}
                     onClick={() => openUser(user.id)}
@@ -623,6 +671,35 @@ function Users() {
               )}
             </tbody>
           </table>
+
+          {filteredUsers.length > pageSize && (
+            <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/50 px-5 py-3 text-xs">
+              <span className="font-semibold text-slate-500">
+                Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, filteredUsers.length)} of {filteredUsers.length} users
+              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-slate-500 font-semibold mr-1">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                  disabled={currentPage <= 1}
+                  className="rounded-lg border border-slate-200 bg-white px-3 py-1 font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 cursor-pointer shadow-2xs"
+                >
+                  Previous
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+                  disabled={currentPage >= totalPages}
+                  className="rounded-lg border border-slate-200 bg-white px-3 py-1 font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 cursor-pointer shadow-2xs"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

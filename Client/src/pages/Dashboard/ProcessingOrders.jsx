@@ -501,7 +501,20 @@ function ProcessingOrders() {
     return searchableText.includes(searchText);
   });
 
-  const visibleIds = filteredOrders.map((order, index) => getId(order, index));
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 50;
+  const totalPages = Math.ceil(filteredOrders.length / pageSize) || 1;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
+
+  const paginatedOrders = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredOrders.slice(start, start + pageSize);
+  }, [filteredOrders, currentPage, pageSize]);
+
+  const visibleIds = paginatedOrders.map((order, index) => getId(order, index));
   const allSelected =
     visibleIds.length > 0 &&
     visibleIds.every((id) => selectedOrders.includes(id));
@@ -972,7 +985,7 @@ function ProcessingOrders() {
             </p>
           </div>
         ) : (
-          filteredOrders.map((order, index) => {
+          paginatedOrders.map((order, index) => {
             const id = getId(order, index);
             const selected = selectedOrders.includes(id);
 
@@ -1119,6 +1132,31 @@ function ProcessingOrders() {
         )}
       </div>
 
+      {/* MOBILE PAGINATION DOCK */}
+      <div className="flex lg:hidden items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-xs">
+        <span className="text-xs font-semibold text-slate-600">
+          Page {currentPage} of {totalPages}
+        </span>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            disabled={currentPage <= 1}
+            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-700 disabled:opacity-40"
+          >
+            Prev
+          </button>
+          <button
+            type="button"
+            disabled={currentPage >= totalPages}
+            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-700 disabled:opacity-40"
+          >
+            Next
+          </button>
+        </div>
+      </div>
+
       {/* TABLET & DESKTOP: TABLE VIEW */}
       <div className="hidden lg:block overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_4px_rgba(15,23,42,0.03)]">
         <div className="w-full overflow-x-auto">
@@ -1161,7 +1199,7 @@ function ProcessingOrders() {
                   </td>
                 </tr>
               ) : (
-                filteredOrders.map((order, index) => {
+                paginatedOrders.map((order, index) => {
                   const id = getId(order, index);
                   const selected = selectedOrders.includes(id);
 
@@ -1354,6 +1392,34 @@ function ProcessingOrders() {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* TABLE FOOTER */}
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-white px-5 py-3">
+          <p className="text-[12px] text-slate-500">
+            Page <span className="font-semibold text-slate-700">{currentPage}</span> of{" "}
+            <span className="font-semibold text-slate-700">{totalPages}</span> ({filteredOrders.length} total orders)
+          </p>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              disabled={currentPage <= 1}
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[12px] font-semibold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 transition active:scale-95"
+            >
+              Previous
+            </button>
+
+            <button
+              type="button"
+              disabled={currentPage >= totalPages}
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[12px] font-semibold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 transition active:scale-95"
+            >
+              Next
+            </button>
+          </div>
         </div>
       </div>
 
