@@ -1004,68 +1004,6 @@ function PublicTracking() {
 
               <div className="overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
 
-                {/* ROUTE BANNER */}
-                {(tracking.destination || tracking.origin) && (
-                  <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-sky-100 bg-gradient-to-r from-sky-50/60 via-white to-blue-50/40 p-3.5 sm:p-4 shadow-sm">
-                    <div className="flex flex-wrap items-center gap-3 sm:gap-6">
-                      {tracking.origin && (
-                        <div className="flex items-center gap-2.5">
-                          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
-                            <LocationIcon size={16} />
-                          </div>
-                          <div>
-                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                              Origin
-                            </p>
-                            <p className="text-xs font-bold text-slate-700">
-                              {tracking.origin}
-                            </p>
-                          </div>
-                        </div>
-                      )}
-
-                      {tracking.origin && tracking.destination && (
-                        <div className="hidden sm:flex items-center text-slate-300">
-                          <svg
-                            width="22"
-                            height="22"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
-                            <path d="M5 12h14" />
-                            <path d="m12 5 7 7-7 7" />
-                          </svg>
-                        </div>
-                      )}
-
-                      {tracking.destination && (
-                        <div className="flex items-center gap-2.5">
-                          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600">
-                            <LocationIcon size={16} />
-                          </div>
-                          <div>
-                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                              Destination
-                            </p>
-                            <p className="text-xs font-extrabold text-slate-800">
-                              {tracking.destination}
-                            </p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex items-center gap-2 rounded-full bg-white px-3 py-1 text-[11px] font-bold text-slate-700 border border-slate-200/80 shadow-xs">
-                      <span className={`h-2 w-2 rounded-full ${statusStyle.dot}`} />
-                      {humanizeTrackingStatus(tracking.status)}
-                    </div>
-                  </div>
-                )}
-
                 {/* TOP DETAILS */}
 
                 <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
