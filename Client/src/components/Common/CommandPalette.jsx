@@ -165,7 +165,7 @@ const QUICK_ACTION_CARDS = [
   },
   {
     id: "wallet-passbook",
-    title: "Wallet & Passbook",
+    title: "Wallet History",
     path: "/wallet",
     circleStyle: "bg-violet-50/80 text-violet-600 border border-violet-100/90",
     renderIcon: () => (
