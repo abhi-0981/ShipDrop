@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 
 import Sidebar from "../../components/Sidebar/Sidebar";
 import TopNavbar from "../../components/Navbar/TopNavbar";
+import MobileBottomNav from "../../components/Navbar/MobileBottomNav";
 import ImpersonationBanner from "../../components/Common/ImpersonationBanner";
 import CommandPalette from "../../components/Common/CommandPalette";
 import AnnouncementModal from "../../components/Common/AnnouncementModal";
@@ -49,7 +50,7 @@ function DashboardLayout() {
 
       {/* MAIN CONTENT WRAPPER */}
       <main
-        className={`min-h-screen pt-[64px] bg-[#f6f8fb] dark:bg-[#090b10] transition-all duration-300 ${
+        className={`min-h-screen pt-[64px] bg-[#f6f8fb] dark:bg-[#090b10] transition-all duration-300 pb-20 lg:pb-0 ${
           collapsed ? "pl-0" : "pl-0 lg:pl-[250px]"
         }`}
       >
@@ -60,6 +61,9 @@ function DashboardLayout() {
           <Outlet />
         </div>
       </main>
+
+      {/* MOBILE BOTTOM NAVIGATION BAR */}
+      <MobileBottomNav />
     </div>
   );
 }

@@ -426,7 +426,136 @@ export default function WeightDiscrepancyReport() {
             5. TABLE
         ================================================== */}
         <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
-          <div className="overflow-x-auto">
+          {/* ==================================================
+              MOBILE VIEW: APP-STYLE DISCREPANCY CARDS (sm:hidden)
+          ================================================== */}
+          <div className="space-y-3 p-3 sm:hidden">
+            {loading ? (
+              Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="rounded-2xl border border-slate-200 bg-white p-3.5 space-y-2">
+                  <div className="flex justify-between items-center">
+                    <div className="h-4 w-24 rounded bg-slate-200 skeleton-shimmer" />
+                    <div className="h-5 w-20 rounded-full bg-slate-200 skeleton-shimmer" />
+                  </div>
+                  <div className="h-3 w-36 rounded bg-slate-100 skeleton-shimmer" />
+                  <div className="h-8 w-full rounded-xl bg-slate-100 skeleton-shimmer" />
+                </div>
+              ))
+            ) : currentDiscrepancies.length === 0 ? (
+              <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-slate-400">
+                <div className="h-11 w-11 rounded-xl bg-[#edf8ff] text-[#008dd2] flex items-center justify-center text-2xl mx-auto mb-2">
+                  <HiOutlineScale />
+                </div>
+                <p className="text-xs font-bold text-slate-800">No weight discrepancies found</p>
+                <p className="text-[11px] text-slate-400 mt-1">
+                  There are no weight discrepancies flagged in the selected period.
+                </p>
+              </div>
+            ) : (
+              currentDiscrepancies.map((d) => (
+                <div
+                  key={d.id || d.awb}
+                  className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-2xs space-y-2.5 transition"
+                >
+                  {/* CARD HEADER */}
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-mono text-xs font-bold text-slate-800">
+                        #{d.order_id}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleCopy(d.order_id, "Order ID")}
+                        className="text-slate-400 hover:text-slate-600 transition"
+                        title="Copy Order ID"
+                      >
+                        <HiOutlineDuplicate className="text-xs" />
+                      </button>
+                    </div>
+
+                    <div>
+                      {getDisputeStatusBadge(d.status)}
+                    </div>
+                  </div>
+
+                  {/* AWB BAR */}
+                  <div className="flex items-center justify-between font-mono text-[11px] text-slate-700 bg-slate-50/80 px-2.5 py-1.5 rounded-xl border border-slate-100">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="font-sans text-[10px] text-slate-400 font-semibold uppercase">
+                        AWB:
+                      </span>
+                      <span className="truncate font-bold text-[#008dd2]">
+                        {d.awb}
+                      </span>
+                    </div>
+
+                    {d.awb && (
+                      <button
+                        type="button"
+                        onClick={() => handleCopy(d.awb, "AWB")}
+                        className="flex items-center gap-1 rounded-md bg-[#008dd2]/10 px-2 py-0.5 text-[10px] font-bold text-[#008dd2] active:scale-95 transition shrink-0 cursor-pointer"
+                        title="Copy AWB"
+                      >
+                        <HiOutlineDuplicate className="text-[12px]" />
+                        <span>Copy</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {/* WEIGHT COMPARISON */}
+                  <div className="grid grid-cols-3 gap-2 bg-slate-50/60 p-2.5 rounded-xl border border-slate-100 text-center">
+                    <div>
+                      <div className="text-[9.5px] uppercase font-semibold text-slate-400">Declared</div>
+                      <div className="text-xs font-bold text-slate-700 mt-0.5">
+                        {Number(d.declared_weight || 0).toFixed(3)} kg
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="text-[9.5px] uppercase font-semibold text-rose-500">Billed</div>
+                      <div className="text-xs font-bold text-rose-700 mt-0.5">
+                        {Number(d.actual_weight || 0).toFixed(3)} kg
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="text-[9.5px] uppercase font-semibold text-amber-600">Excess</div>
+                      <div className="text-xs font-bold text-amber-700 mt-0.5">
+                        +{Number(d.weight_difference || 0).toFixed(3)} kg
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* CHARGES */}
+                  <div className="flex items-center justify-between text-xs pt-1">
+                    <span className="text-slate-500 text-[11px]">
+                      Original: <strong>₹{Number(d.original_shipping_charge || 0).toFixed(2)}</strong>
+                    </span>
+                    <span className="font-bold text-rose-600">
+                      Extra Debit: +₹{Number(d.extra_charge || 0).toFixed(2)}
+                    </span>
+                  </div>
+
+                  {/* FOOTER DATE & ZONE */}
+                  <div className="border-t border-slate-100 pt-2 text-[10px] text-slate-400 flex items-center justify-between">
+                    <span>
+                      Flagged: {d.created_at ? new Date(d.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "-"}
+                    </span>
+                    {d.zone && (
+                      <span className="font-semibold text-slate-500">
+                        Zone {d.zone}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* ==================================================
+              DESKTOP VIEW: TABLE (hidden sm:block)
+          ================================================== */}
+          <div className="hidden sm:block overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-slate-200 bg-white text-[12px] font-medium text-slate-700">

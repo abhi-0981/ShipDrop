@@ -698,7 +698,131 @@ export default function ShipmentLifecycleReport() {
             5. TABLE
         ================================================== */}
         <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
-          <div className="overflow-x-auto">
+          {/* ==================================================
+              MOBILE VIEW: APP-STYLE REPORT CARDS (sm:hidden)
+          ================================================== */}
+          <div className="space-y-3 p-3 sm:hidden">
+            {loading ? (
+              Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="rounded-2xl border border-slate-200 bg-white p-3.5 space-y-2">
+                  <div className="flex justify-between items-center">
+                    <div className="h-4 w-24 rounded bg-slate-200 skeleton-shimmer" />
+                    <div className="h-5 w-20 rounded-full bg-slate-200 skeleton-shimmer" />
+                  </div>
+                  <div className="h-3 w-36 rounded bg-slate-100 skeleton-shimmer" />
+                  <div className="h-8 w-full rounded-xl bg-slate-100 skeleton-shimmer" />
+                </div>
+              ))
+            ) : currentOrders.length === 0 ? (
+              <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-slate-400">
+                <div className="h-11 w-11 rounded-xl bg-[#edf8ff] text-[#008dd2] flex items-center justify-center text-2xl mx-auto mb-2">
+                  <HiOutlineDocumentReport />
+                </div>
+                <p className="text-xs font-bold text-slate-800">No shipments in selected range</p>
+                <p className="text-[11px] text-slate-400 mt-1">Try expanding date range or clearing filters.</p>
+              </div>
+            ) : (
+              currentOrders.map((o) => (
+                <div
+                  key={o.id || o.awb}
+                  className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-2xs space-y-2.5 transition"
+                >
+                  {/* CARD HEADER */}
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-mono text-xs font-bold text-slate-800">
+                        #{o.order_id}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleCopy(o.order_id, "Order ID")}
+                        className="text-slate-400 hover:text-slate-600 transition"
+                        title="Copy Order ID"
+                      >
+                        <HiOutlineDuplicate className="text-xs" />
+                      </button>
+                    </div>
+
+                    <div>
+                      {getStatusBadge(o.lifecycle_status)}
+                    </div>
+                  </div>
+
+                  {/* CONSIGNEE & DESTINATION */}
+                  <div className="space-y-1 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-slate-800 truncate">
+                        {o.consignee_name || "Customer"}
+                      </span>
+                      <span
+                        className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                          String(o.payment_type || "").toUpperCase().includes("COD")
+                            ? "bg-amber-100 text-amber-800"
+                            : "bg-emerald-100 text-emerald-800"
+                        }`}
+                      >
+                        {o.payment_type || "Prepaid"}
+                      </span>
+                    </div>
+
+                    <div className="text-[11px] text-slate-500 flex items-center gap-1">
+                      <HiOutlineLocationMarker className="text-slate-400 shrink-0 text-xs" />
+                      <span className="truncate">
+                        {o.city ? `${o.city}, ` : ""}{o.state || ""}{o.pincode ? ` (${o.pincode})` : ""}
+                      </span>
+                    </div>
+
+                    {/* AWB BAR */}
+                    <div className="flex items-center justify-between font-mono text-[11px] text-slate-700 bg-slate-50/80 px-2.5 py-1.5 rounded-xl border border-slate-100">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="font-sans text-[10px] text-slate-400 font-semibold uppercase">
+                          AWB:
+                        </span>
+                        <span className="truncate font-bold text-[#008dd2]">
+                          {o.awb || "Pending"}
+                        </span>
+                      </div>
+
+                      {o.awb && (
+                        <button
+                          type="button"
+                          onClick={() => handleCopy(o.awb, "AWB")}
+                          className="flex items-center gap-1 rounded-md bg-[#008dd2]/10 px-2 py-0.5 text-[10px] font-bold text-[#008dd2] active:scale-95 transition shrink-0 cursor-pointer"
+                          title="Copy AWB"
+                        >
+                          <HiOutlineDuplicate className="text-[12px]" />
+                          <span>Copy</span>
+                        </button>
+                      )}
+                    </div>
+
+                    {/* SPECS & FREIGHT */}
+                    <div className="flex items-center justify-between text-[11px] text-slate-500 border-t border-slate-50 pt-1.5">
+                      <span>
+                        {o.carrier || "Delhivery"} • {Number(o.weight || 0.5).toFixed(2)} kg
+                      </span>
+                      <span className="font-bold text-slate-800">
+                        ₹{Number(o.shipping_charge || 0).toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* BOOKING DATE */}
+                  <div className="border-t border-slate-100 pt-2 text-[10px] text-slate-400 flex items-center justify-between">
+                    <span>Booked:</span>
+                    <span>
+                      {o.created_at ? new Date(o.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "-"} {o.created_at ? new Date(o.created_at).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) : ""}
+                    </span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* ==================================================
+              DESKTOP VIEW: TABLE (hidden sm:block)
+          ================================================== */}
+          <div className="hidden sm:block overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-slate-200 bg-white text-[12px] font-medium text-slate-700">

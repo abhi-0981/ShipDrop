@@ -24,7 +24,7 @@ import {
   downloadShippingLabels,
 } from "../../services/shippingLabelService";
 import OrderStatusNavTabs from "../../components/Common/OrderStatusNavTabs";
-import { TableRowSkeleton } from "../../components/Common/TableSkeleton";
+import { TableRowSkeleton, CardSkeleton } from "../../components/Common/TableSkeleton";
 
 /* =========================================================
    USER ID
@@ -925,6 +925,27 @@ const triggerTracking = (awb) => {
             {filteredOrders.length} results
           </div>
         </div>
+
+        {/* MOBILE SELECT ALL BAR */}
+        {filteredOrders.length > 0 && (
+          <div className="flex items-center justify-between border-t border-slate-100 pt-2 sm:hidden text-xs">
+            <label className="flex items-center gap-2 font-bold text-slate-700 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={allVisibleSelected}
+                onChange={handleSelectAll}
+                className="h-3.5 w-3.5 cursor-pointer rounded border-slate-300 accent-[#008dd2]"
+              />
+              <span>Select All ({filteredOrders.length})</span>
+            </label>
+
+            {selectedIds.length > 0 && (
+              <span className="text-[11px] font-bold text-[#008dd2]">
+                {selectedIds.length} selected
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* ORDER STATUS TABS */}
@@ -955,10 +976,196 @@ const triggerTracking = (awb) => {
       )}
 
       {/* =================================================
-          TABLE
+          1. MOBILE VIEW: APP-STYLE CARD TILES
+      ================================================= */}
+      <div className="space-y-3 sm:hidden">
+        {loading ? (
+          <CardSkeleton count={4} />
+        ) : filteredOrders.length === 0 ? (
+          <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-slate-400">
+            <div className="mx-auto mb-2 flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-50 text-amber-500">
+              <HiOutlineSearch className="text-[20px]" />
+            </div>
+            <h3 className="text-xs font-bold text-slate-800">
+              No undelivered orders found
+            </h3>
+            <p className="mt-1 text-[11px] text-slate-400">
+              Try changing your search or payment filter.
+            </p>
+          </div>
+        ) : (
+          filteredOrders.map((order) => {
+            const orderKey = getOrderKey(order);
+            const selected = selectedIds.includes(orderKey);
+            const payment = getPaymentType(order);
+            const awb = getAWB(order);
+            const pickupCity = order?.pickup_city || order?.pickup_address_city || "-";
+            const pickupPin = order?.pickup_pincode || "";
+            const deliveryCity = order?.city || order?.delivery_city || "-";
+            const deliveryPin = order?.pincode || order?.delivery_pincode || "";
+            const packages = Array.isArray(order?.packages) ? order.packages : [];
+            const firstPackage = packages[0] || {};
+            const boxCount = order?.package_count ?? firstPackage?.package_count ?? firstPackage?.count ?? 1;
+            const weight = order?.weight ?? order?.total_weight ?? firstPackage?.weight ?? 0;
+            const service = getServiceType(order);
+            const createdDate = order?.manifest_created_at || order?.created_at;
+            const partyName = getPartyName(order);
+
+            return (
+              <div
+                key={orderKey}
+                className={`rounded-2xl border bg-white p-3.5 shadow-xs space-y-2.5 transition ${
+                  selected
+                    ? "border-[#008dd2] ring-2 ring-[#008dd2]/10"
+                    : "border-slate-200/80"
+                }`}
+              >
+                {/* CARD HEADER */}
+                <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={selected}
+                      onChange={() => handleSelect(order)}
+                      className="h-4 w-4 cursor-pointer rounded border-slate-300 accent-[#008dd2]"
+                    />
+                    <span className="font-mono text-xs font-bold text-slate-800">
+                      #{getOrderId(order)}
+                    </span>
+                    {partyName !== "-" && (
+                      <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-600 truncate max-w-[90px]">
+                        {partyName}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-1.5">
+                    <span
+                      className={`rounded-md px-2 py-0.5 text-[9.5px] font-bold ${
+                        payment === "COD"
+                          ? "bg-amber-50 text-amber-700"
+                          : "bg-sky-50 text-sky-700"
+                      }`}
+                    >
+                      {payment}
+                    </span>
+                    <span className="rounded-md bg-amber-50 px-2 py-0.5 text-[9.5px] font-bold text-amber-700">
+                      UNDELIVERED
+                    </span>
+                  </div>
+                </div>
+
+                {/* CUSTOMER & AWB BAR */}
+                <div className="space-y-1.5 text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-slate-800 truncate">
+                      {getCustomerName(order)}
+                    </span>
+                    <span className="text-[11px] text-slate-400">
+                      {order?.mobile || order?.phone || "—"}
+                    </span>
+                  </div>
+
+                  {/* AWB BAR */}
+                  <div className="flex items-center justify-between font-mono text-[11px] text-slate-700 bg-slate-50/80 px-2.5 py-1.5 rounded-xl border border-slate-100">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="font-sans text-[10px] text-slate-400 font-semibold uppercase">
+                        AWB:
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => triggerTracking(awb)}
+                        className="truncate font-bold text-[#008dd2] hover:underline cursor-pointer text-left"
+                        title="Click to track"
+                      >
+                        {awb || "—"}
+                      </button>
+                    </div>
+
+                    {awb && awb !== "—" && (
+                      <button
+                        type="button"
+                        onClick={() => copyText(awb, "AWB")}
+                        className="flex items-center gap-1 rounded-md bg-[#008dd2]/10 px-2 py-0.5 text-[10px] font-bold text-[#008dd2] active:scale-95 transition shrink-0 cursor-pointer"
+                        title="Copy AWB"
+                      >
+                        <HiOutlineDuplicate className="text-[12px]" />
+                        <span>Copy</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {/* ROUTE */}
+                  <div className="flex items-center justify-between text-[11px] text-slate-500 pt-0.5">
+                    <span className="truncate max-w-[125px]">
+                      {pickupCity} {pickupPin && `(${pickupPin})`}
+                    </span>
+                    <span className="text-slate-300 font-bold px-1">→</span>
+                    <span className="truncate max-w-[125px] text-right">
+                      {deliveryCity} {deliveryPin && `(${deliveryPin})`}
+                    </span>
+                  </div>
+
+                  {/* SPECS & CHARGE */}
+                  <div className="flex items-center justify-between text-[11px] text-slate-500 border-t border-slate-50 pt-1.5">
+                    <span>
+                      {service.replace("BY ", "By ")} • {Number(weight).toFixed(2)} Kg • {boxCount} Box
+                    </span>
+                    <span className="font-bold text-slate-800">
+                      ₹{(getCharge(order) ?? 0).toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* CARD ACTIONS */}
+                <div className="flex items-center justify-between border-t border-slate-100 pt-2 text-[10px] text-slate-400">
+                  <span className="truncate max-w-[100px]">
+                    {formatDate(createdDate)}
+                  </span>
+
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => handlePrintSingleLabel(order)}
+                      title="Print Shipping Label"
+                      className="flex h-7.5 items-center gap-1 rounded-lg bg-[#008dd2] px-2.5 text-xs font-semibold text-white shadow-2xs transition active:scale-95 cursor-pointer"
+                    >
+                      <HiOutlinePrinter className="text-[13px]" />
+                      <span>Print</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleDuplicate(order)}
+                      title="Duplicate Order"
+                      className="flex h-7.5 items-center gap-1 rounded-lg bg-[#008dd2] px-2.5 text-xs font-semibold text-white shadow-2xs transition active:scale-95 cursor-pointer"
+                    >
+                      <HiOutlineDuplicate className="text-[13px]" />
+                      <span>Duplicate</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleView(order)}
+                      title="View Details"
+                      className="flex h-7.5 items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 active:scale-95 cursor-pointer"
+                    >
+                      <HiOutlineEye className="text-[13px]" />
+                      <span>Details</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* =================================================
+          2. DESKTOP/TABLET VIEW: TABLE (hidden sm:block)
       ================================================= */}
 
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
+      <div className="hidden sm:block overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
         <div className="w-full overflow-x-auto">
           <table className="w-full table-fixed min-w-[950px] border-collapse">
             <thead>

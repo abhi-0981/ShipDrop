@@ -1257,344 +1257,493 @@ const setAsDefault = async (warehouseId) => {
 
           ) : (
 
-            <div className="w-full">
+            <>
+              {/* ======================================== */}
+              {/* MOBILE VIEW: APP-STYLE CARDS (sm:hidden) */}
+              {/* ======================================== */}
+              <div className="space-y-3 p-3 sm:hidden">
+                {warehouses.map((warehouse) => {
+                  const isDefault =
+                    String(defaultWarehouseId) === String(warehouse.id);
+                  const isActive =
+                    String(warehouse.status || "ACTIVE").toUpperCase() === "ACTIVE";
 
-              <table className="w-full table-fixed border-collapse text-[13px]">
-
-                {/* ======================================== */}
-                {/* HEADER */}
-                {/* ======================================== */}
-
-                <thead>
-
-                  <tr className="border-b border-slate-200 bg-slate-50/70">
-
-                    <th className="w-[16%] px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                      Warehouse
-                    </th>
-
-                    <th className="w-[14%] px-3 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                      Contact
-                    </th>
-
-                    <th className="w-[30%] px-3 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                      Address
-                    </th>
-
-                    <th className="w-[10%] px-3 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                      Pincode
-                    </th>
-
-                    <th className="w-[13%] px-3 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                      Status
-                    </th>
-
-                    <th className="w-[10%] px-3 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                      Default
-                    </th>
-
-                    <th className="w-[7%] px-4 py-3 text-right text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                      Actions
-                    </th>
-
-                  </tr>
-
-                </thead>
-
-
-                {/* ======================================== */}
-                {/* BODY */}
-                {/* ======================================== */}
-
-                <tbody>
-
-                  {warehouses.map(
-                    (warehouse) => {
-
-                      const isDefault =
-                        String(
-                          defaultWarehouseId
-                        ) ===
-                        String(
-                          warehouse.id
-                        );
-
-
-                      return (
-
-                        <tr
-                          key={
-                            warehouse.id
-                          }
-                          className="border-b border-slate-100 transition hover:bg-slate-50/60"
-                        >
-
-                          {/* WAREHOUSE */}
-
-                          <td className="px-4 py-3">
-
-                            <p className="truncate text-sm font-semibold text-slate-800">
-                              {
-                                warehouse.warehouse_name
-                              }
-                            </p>
-
-                          </td>
-
-
-                          {/* CONTACT */}
-
-                          <td className="px-3 py-3">
-
-                            <p className="truncate text-xs font-medium text-slate-700">
-                              {
-                                warehouse.contact_name ||
-                                "—"
-                              }
-                            </p>
-
-                            <p className="mt-0.5 truncate text-[11px] text-slate-500">
-                              {
-                                warehouse.phone ||
-                                "—"
-                              }
-                            </p>
-
-                          </td>
-
-
-                          {/* ADDRESS */}
-
-                          <td className="px-3 py-3">
-
-                            <p
-                              title={
-                                getAddress(
-                                  warehouse
-                                )
-                              }
-                              className="line-clamp-2 text-xs leading-5 text-slate-600"
-                            >
-                              {
-                                getAddress(
-                                  warehouse
-                                )
-                              }
-                            </p>
-
-                          </td>
-
-
-                          {/* PINCODE */}
-
-                          <td className="px-3 py-3">
-
-                            <span className="text-xs font-medium text-slate-700">
-                              {
-                                warehouse.pincode
-                              }
+                  return (
+                    <div
+                      key={warehouse.id}
+                      className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-2xs space-y-2.5 transition"
+                    >
+                      {/* CARD HEADER */}
+                      <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="text-sm font-bold text-slate-800 truncate">
+                            {warehouse.warehouse_name}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {isDefault && (
+                            <span className="inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-600">
+                              Default
                             </span>
+                          )}
+                          <span
+                            className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                              isActive
+                                ? "bg-emerald-50 text-emerald-600"
+                                : "bg-slate-100 text-slate-500"
+                            }`}
+                          >
+                            {isActive ? "Active" : "Inactive"}
+                          </span>
+                        </div>
+                      </div>
 
-                          </td>
+                      {/* CONTACT & PHONE */}
+                      <div className="space-y-1 text-xs">
+                        <div className="flex items-center justify-between">
+                          <span className="font-semibold text-slate-700">
+                            {warehouse.contact_name || "—"}
+                          </span>
+                          <span className="text-slate-500 font-mono text-[11px]">
+                            {warehouse.phone || "—"}
+                          </span>
+                        </div>
+
+                        {/* FULL ADDRESS */}
+                        <p className="text-[11px] leading-relaxed text-slate-600 bg-slate-50/80 p-2 rounded-xl border border-slate-100">
+                          {getAddress(warehouse)}
+                        </p>
+
+                        <div className="flex items-center justify-between text-[11px] text-slate-500 pt-0.5">
+                          <span>Pincode: <strong>{warehouse.pincode}</strong></span>
+                          <span>City: <strong>{warehouse.city}</strong></span>
+                        </div>
+                      </div>
+
+                      {/* CARD ACTIONS */}
+                      <div className="flex items-center justify-between border-t border-slate-100 pt-2 text-xs">
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            role="switch"
+                            aria-checked={isActive}
+                            title={isActive ? "Deactivate" : "Activate"}
+                            onClick={() => toggleWarehouseStatus(warehouse)}
+                            className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors duration-200 ${
+                              isActive ? "bg-emerald-500" : "bg-slate-300"
+                            }`}
+                          >
+                            <span
+                              className={`inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${
+                                isActive ? "translate-x-4" : "translate-x-0.5"
+                              }`}
+                            />
+                          </button>
+                          {!isDefault && (
+                            <button
+                              type="button"
+                              onClick={() => setAsDefault(warehouse.id)}
+                              className="text-[11px] font-semibold text-[#008dd2] hover:underline cursor-pointer"
+                            >
+                              Set Default
+                            </button>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => openEdit(warehouse)}
+                            title="Edit"
+                            className="flex h-7.5 items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 active:scale-95 cursor-pointer"
+                          >
+                            <svg
+                              viewBox="0 0 24 24"
+                              className="h-3.5 w-3.5"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="1.8"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <path d="M12 20h9" />
+                              <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z" />
+                            </svg>
+                            <span>Edit</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => deleteWarehouse(warehouse)}
+                            title="Delete"
+                            className="flex h-7.5 items-center gap-1 rounded-lg border border-red-100 bg-red-50/50 px-2.5 text-xs font-semibold text-red-600 transition hover:bg-red-50 active:scale-95 cursor-pointer"
+                          >
+                            <svg
+                              viewBox="0 0 24 24"
+                              className="h-3.5 w-3.5"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="1.8"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <path d="M3 6h18" />
+                              <path d="M8 6V4h8v2" />
+                              <path d="M19 6l-1 14H6L5 6" />
+                              <path d="M10 11v5" />
+                              <path d="M14 11v5" />
+                            </svg>
+                            <span>Delete</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* ======================================== */}
+              {/* DESKTOP VIEW: TABLE (hidden sm:block)    */}
+              {/* ======================================== */}
+              <div className="hidden sm:block w-full">
+
+                <table className="w-full table-fixed border-collapse text-[13px]">
+
+                  {/* ======================================== */}
+                  {/* HEADER */}
+                  {/* ======================================== */}
+
+                  <thead>
+
+                    <tr className="border-b border-slate-200 bg-slate-50/70">
+
+                      <th className="w-[16%] px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                        Warehouse
+                      </th>
+
+                      <th className="w-[14%] px-3 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                        Contact
+                      </th>
+
+                      <th className="w-[30%] px-3 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                        Address
+                      </th>
+
+                      <th className="w-[10%] px-3 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                        Pincode
+                      </th>
+
+                      <th className="w-[13%] px-3 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                        Status
+                      </th>
+
+                      <th className="w-[10%] px-3 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                        Default
+                      </th>
+
+                      <th className="w-[7%] px-4 py-3 text-right text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                        Actions
+                      </th>
+
+                    </tr>
+
+                  </thead>
 
 
-                          {/* STATUS */}
+                  {/* ======================================== */}
+                  {/* BODY */}
+                  {/* ======================================== */}
 
-                          <td className="px-3 py-3">
+                  <tbody>
 
-                            <div className="flex items-center gap-2">
+                    {warehouses.map(
+                      (warehouse) => {
 
-                              <button
-                                type="button"
-                                role="switch"
-                                aria-checked={
-                                  String(warehouse.status || "ACTIVE").toUpperCase() ===
-                                  "ACTIVE"
+                        const isDefault =
+                          String(
+                            defaultWarehouseId
+                          ) ===
+                          String(
+                            warehouse.id
+                          );
+
+
+                        return (
+
+                          <tr
+                            key={
+                              warehouse.id
+                            }
+                            className="border-b border-slate-100 transition hover:bg-slate-50/60"
+                          >
+
+                            {/* WAREHOUSE */}
+
+                            <td className="px-4 py-3">
+
+                              <p className="truncate text-sm font-semibold text-slate-800">
+                                {
+                                  warehouse.warehouse_name
                                 }
+                              </p>
+
+                            </td>
+
+
+                            {/* CONTACT */}
+
+                            <td className="px-3 py-3">
+
+                              <p className="truncate text-xs font-medium text-slate-700">
+                                {
+                                  warehouse.contact_name ||
+                                  "—"
+                                }
+                              </p>
+
+                              <p className="mt-0.5 truncate text-[11px] text-slate-500">
+                                {
+                                  warehouse.phone ||
+                                  "—"
+                                }
+                              </p>
+
+                            </td>
+
+
+                            {/* ADDRESS */}
+
+                            <td className="px-3 py-3">
+
+                              <p
                                 title={
-                                  String(warehouse.status || "ACTIVE").toUpperCase() ===
-                                  "ACTIVE"
-                                    ? "Deactivate pickup address"
-                                    : "Activate pickup address"
+                                  getAddress(
+                                    warehouse
+                                  )
                                 }
-                                onClick={() =>
-                                  toggleWarehouseStatus(warehouse)
-                                }
-                                className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#008dd2]/20 ${
-                                  String(warehouse.status || "ACTIVE").toUpperCase() ===
-                                  "ACTIVE"
-                                    ? "bg-emerald-500"
-                                    : "bg-slate-300"
-                                }`}
-                              >
-
-                                <span
-                                  className={`inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${
-                                    String(warehouse.status || "ACTIVE").toUpperCase() ===
-                                    "ACTIVE"
-                                      ? "translate-x-4"
-                                      : "translate-x-0.5"
-                                  }`}
-                                />
-
-                              </button>
-
-                              <span
-                                className={`inline-flex rounded-full px-2 py-1 text-[9px] font-bold ${
-                                  String(warehouse.status || "ACTIVE").toUpperCase() ===
-                                  "ACTIVE"
-                                    ? "bg-emerald-50 text-emerald-600"
-                                    : "bg-slate-100 text-slate-500"
-                                }`}
+                                className="line-clamp-2 text-xs leading-5 text-slate-600"
                               >
                                 {
-                                  String(warehouse.status || "ACTIVE").toUpperCase() ===
-                                  "ACTIVE"
-                                    ? "Active"
-                                    : "Inactive"
-                                }
-                              </span>
-
-                            </div>
-
-                          </td>
-
-
-                          {/* DEFAULT */}
-
-                          <td className="px-3 py-3">
-
-                            {isDefault ? (
-
-                              <span className="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-[9px] font-bold text-emerald-600">
-                                Default
-                              </span>
-
-                            ) : (
-
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setAsDefault(
-                                    warehouse.id
-                                  )
-                                }
-                                className="whitespace-nowrap rounded-md border border-slate-300 px-2.5 py-1.5 text-[9px] font-semibold text-slate-600 transition hover:border-[#008dd2] hover:text-[#008dd2]"
-                              >
-                                Set Default
-                              </button>
-
-                            )}
-
-                          </td>
-
-
-                          {/* ACTIONS */}
-
-                          <td className="px-4 py-3">
-
-                            <div className="flex justify-end gap-2">
-
-                              {/* EDIT */}
-
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  openEdit(
+                                  getAddress(
                                     warehouse
                                   )
                                 }
-                                title="Edit"
-                                className="flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 text-slate-400 transition hover:border-[#008dd2]/40 hover:bg-[#008dd2]/5 hover:text-[#008dd2]"
-                              >
+                              </p>
 
-                                <svg
-                                  viewBox="0 0 24 24"
-                                  className="h-3.5 w-3.5"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  strokeWidth="1.8"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                >
-                                  <path d="M12 20h9" />
-                                  <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z" />
-                                </svg>
+                            </td>
 
-                              </button>
 
-                              {/* DELETE */}
+                            {/* PINCODE */}
 
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  deleteWarehouse(
-                                    warehouse
-                                  )
+                            <td className="px-3 py-3">
+
+                              <span className="text-xs font-medium text-slate-700">
+                                {
+                                  warehouse.pincode
                                 }
-                                title="Delete"
-                                className="flex h-7 w-7 items-center justify-center rounded-md border border-red-100 text-red-400 transition hover:border-red-200 hover:bg-red-50 hover:text-red-500"
-                              >
+                              </span>
 
-                                <svg
-                                  viewBox="0 0 24 24"
-                                  className="h-3.5 w-3.5"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  strokeWidth="1.8"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
+                            </td>
+
+
+                            {/* STATUS */}
+
+                            <td className="px-3 py-3">
+
+                              <div className="flex items-center gap-2">
+
+                                <button
+                                  type="button"
+                                  role="switch"
+                                  aria-checked={
+                                    String(warehouse.status || "ACTIVE").toUpperCase() ===
+                                    "ACTIVE"
+                                  }
+                                  title={
+                                    String(warehouse.status || "ACTIVE").toUpperCase() ===
+                                    "ACTIVE"
+                                      ? "Deactivate pickup address"
+                                      : "Activate pickup address"
+                                  }
+                                  onClick={() =>
+                                    toggleWarehouseStatus(warehouse)
+                                  }
+                                  className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#008dd2]/20 ${
+                                    String(warehouse.status || "ACTIVE").toUpperCase() ===
+                                    "ACTIVE"
+                                      ? "bg-emerald-500"
+                                      : "bg-slate-300"
+                                  }`}
                                 >
-                                  <path d="M3 6h18" />
-                                  <path d="M8 6V4h8v2" />
-                                  <path d="M19 6l-1 14H6L5 6" />
-                                  <path d="M10 11v5" />
-                                  <path d="M14 11v5" />
-                                </svg>
 
-                              </button>
+                                  <span
+                                    className={`inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${
+                                      String(warehouse.status || "ACTIVE").toUpperCase() ===
+                                      "ACTIVE"
+                                        ? "translate-x-4"
+                                        : "translate-x-0.5"
+                                    }`}
+                                  />
 
-                            </div>
+                                </button>
 
-                          </td>
+                                <span
+                                  className={`inline-flex rounded-full px-2 py-1 text-[9px] font-bold ${
+                                    String(warehouse.status || "ACTIVE").toUpperCase() ===
+                                    "ACTIVE"
+                                      ? "bg-emerald-50 text-emerald-600"
+                                      : "bg-slate-100 text-slate-500"
+                                  }`}
+                                >
+                                  {
+                                    String(warehouse.status || "ACTIVE").toUpperCase() ===
+                                    "ACTIVE"
+                                      ? "Active"
+                                      : "Inactive"
+                                  }
+                                </span>
 
-                        </tr>
+                              </div>
 
-                      );
-
-                    }
-                  )}
-
-                </tbody>
+                            </td>
 
 
-                {/* ======================================== */}
-                {/* FOOTER */}
-                {/* ======================================== */}
+                            {/* DEFAULT */}
 
-                <tfoot>
+                            <td className="px-3 py-3">
 
-                  <tr>
+                              {isDefault ? (
 
-                    <td
-                      colSpan="7"
-                      className="px-4 py-2.5 text-[10px] text-slate-400"
-                    >
+                                <span className="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-[9px] font-bold text-emerald-600">
+                                  Default
+                                </span>
 
-                      {warehouses.length} pickup address
-                      {warehouses.length !== 1
-                        ? "es"
-                        : ""}
+                              ) : (
 
-                    </td>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setAsDefault(
+                                      warehouse.id
+                                    )
+                                  }
+                                  className="whitespace-nowrap rounded-md border border-slate-300 px-2.5 py-1.5 text-[9px] font-semibold text-slate-600 transition hover:border-[#008dd2] hover:text-[#008dd2]"
+                                >
+                                  Set Default
+                                </button>
 
-                  </tr>
+                              )}
 
-                </tfoot>
+                            </td>
 
-              </table>
 
-            </div>
+                            {/* ACTIONS */}
+
+                            <td className="px-4 py-3">
+
+                              <div className="flex justify-end gap-2">
+
+                                {/* EDIT */}
+
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    openEdit(
+                                      warehouse
+                                    )
+                                  }
+                                  title="Edit"
+                                  className="flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 text-slate-400 transition hover:border-[#008dd2]/40 hover:bg-[#008dd2]/5 hover:text-[#008dd2]"
+                                >
+
+                                  <svg
+                                    viewBox="0 0 24 24"
+                                    className="h-3.5 w-3.5"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="1.8"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  >
+                                    <path d="M12 20h9" />
+                                    <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z" />
+                                  </svg>
+
+                                </button>
+
+                                {/* DELETE */}
+
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    deleteWarehouse(
+                                      warehouse
+                                    )
+                                  }
+                                  title="Delete"
+                                  className="flex h-7 w-7 items-center justify-center rounded-md border border-red-100 text-red-400 transition hover:border-red-200 hover:bg-red-50 hover:text-red-500"
+                                >
+
+                                  <svg
+                                    viewBox="0 0 24 24"
+                                    className="h-3.5 w-3.5"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="1.8"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  >
+                                    <path d="M3 6h18" />
+                                    <path d="M8 6V4h8v2" />
+                                    <path d="M19 6l-1 14H6L5 6" />
+                                    <path d="M10 11v5" />
+                                    <path d="M14 11v5" />
+                                  </svg>
+
+                                </button>
+
+                              </div>
+
+                            </td>
+
+                          </tr>
+
+                        );
+
+                      }
+                    )}
+
+                  </tbody>
+
+
+                  {/* ======================================== */}
+                  {/* FOOTER */}
+                  {/* ======================================== */}
+
+                  <tfoot>
+
+                    <tr>
+
+                      <td
+                        colSpan="7"
+                        className="px-4 py-2.5 text-[10px] text-slate-400"
+                      >
+
+                        {warehouses.length} pickup address
+                        {warehouses.length !== 1
+                          ? "es"
+                          : ""}
+
+                      </td>
+
+                    </tr>
+
+                  </tfoot>
+
+                </table>
+
+              </div>
+            </>
 
           )}
 
