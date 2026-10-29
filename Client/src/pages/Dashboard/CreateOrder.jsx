@@ -1756,9 +1756,15 @@ function CreateOrder() {
 
 
   const handleRequiredFieldEnter = (e) => {
-    if (e.key !== "Enter") return;
+    // Recognize Enter on laptop and Android/iOS mobile virtual keyboards
+    const isEnter =
+      e.key === "Enter" ||
+      e.keyCode === 13 ||
+      e.which === 13;
 
-    // Textarea mein Enter se new line aane do
+    if (!isEnter) return;
+
+    // Textarea mein Enter se new line aane do, aur button clicks ko rokne ki zaroorat nahi
     if (
       e.target.tagName === "TEXTAREA" ||
       e.target.tagName === "BUTTON"
@@ -1768,6 +1774,10 @@ function CreateOrder() {
 
     e.preventDefault();
 
+    // Dropdown popups band karo agar open hain
+    setShowWarehouseDropdown?.(false);
+    setShowPreviousCustomers?.(false);
+
     const fields = Array.from(
       e.currentTarget.querySelectorAll(
         "[data-enter-required='true']"
@@ -1776,19 +1786,79 @@ function CreateOrder() {
       (field) => !field.disabled && !field.readOnly
     );
 
-    const firstIncompleteField = fields.find(
-      (field) => !isEnterFieldComplete(field)
-    );
+    const currentIndex = fields.indexOf(e.target);
 
-    // Koi required field incomplete hai
-    if (firstIncompleteField) {
-      firstIncompleteField.focus();
-      firstIncompleteField.select?.();
+    // If currently focused on a required field
+    if (currentIndex !== -1) {
+      // Agar current field incomplete hai (e.g. mobile 10 digit nahi, pincode 6 digit nahi),
+      // toh usi field pe focus rakho
+      if (!isEnterFieldComplete(e.target)) {
+        e.target.focus();
+        e.target.select?.();
+        return;
+      }
+
+      // Agar aage koi next required field hai, sequentially uspe move karo
+      if (currentIndex < fields.length - 1) {
+        const nextField = fields[currentIndex + 1];
+        nextField.focus();
+        nextField.select?.();
+        setTimeout(() => {
+          nextField.scrollIntoView?.({ behavior: "smooth", block: "center" });
+        }, 60);
+        return;
+      }
+
+      // Agar last required field pe enter mara hai, check karo kya koi field incomplete to nahi reh gaya
+      const incompleteField = fields.find(
+        (field) => !isEnterFieldComplete(field)
+      );
+
+      if (incompleteField) {
+        incompleteField.focus();
+        incompleteField.select?.();
+        setTimeout(() => {
+          incompleteField.scrollIntoView?.({ behavior: "smooth", block: "center" });
+        }, 60);
+        return;
+      }
+
+      // Sab required fields complete hain -> Form submit karo
+      if (!loading) {
+        handleSubmit(e);
+      }
       return;
     }
 
-    // Sab required fields complete hain toh save karo
-    if (!loading) {
+    // Agar user kisi optional field (jaise email ya SKU) me tha aur Enter mara,
+    // toh document me uske baad aane wale pehle required field pe le jao
+    const nextRequiredAfterTarget = fields.find(
+      (f) =>
+        (e.target.compareDocumentPosition(f) &
+          Node.DOCUMENT_POSITION_FOLLOWING) !==
+        0
+    );
+
+    if (nextRequiredAfterTarget) {
+      nextRequiredAfterTarget.focus();
+      nextRequiredAfterTarget.select?.();
+      setTimeout(() => {
+        nextRequiredAfterTarget.scrollIntoView?.({ behavior: "smooth", block: "center" });
+      }, 60);
+      return;
+    }
+
+    // Default fallback
+    const firstIncomplete = fields.find(
+      (field) => !isEnterFieldComplete(field)
+    );
+    if (firstIncomplete) {
+      firstIncomplete.focus();
+      firstIncomplete.select?.();
+      setTimeout(() => {
+        firstIncomplete.scrollIntoView?.({ behavior: "smooth", block: "center" });
+      }, 60);
+    } else if (!loading) {
       handleSubmit(e);
     }
   };
@@ -2009,6 +2079,7 @@ function CreateOrder() {
                     <input
                       name="pickup_address"
                       data-enter-required="true"
+                      enterKeyHint="next"
                       value={
                         selectedWarehouse
                           ? getWarehouseDisplayAddress(selectedWarehouse)
@@ -2049,6 +2120,7 @@ function CreateOrder() {
                             <button
                               key={w.id}
                               type="button"
+                              tabIndex={-1}
                               onClick={() => applyWarehouseToPickup(w)}
                               className="flex w-full flex-col rounded-lg p-2.5 text-left hover:bg-sky-50/60 transition cursor-pointer"
                             >
@@ -2071,6 +2143,7 @@ function CreateOrder() {
 
                   <button
                     type="button"
+                    tabIndex={-1}
                     onClick={openWarehouseModal}
                     className="flex h-10.5 sm:h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#008dd2] text-white shadow-xs transition hover:bg-[#007ab6] active:scale-90 cursor-pointer"
                     title="Add New Warehouse"
@@ -2107,6 +2180,7 @@ function CreateOrder() {
                 <div className="relative">
                   <select
                     name="party_identity_id"
+                    tabIndex={-1}
                     value={selectedPartyIdentityId || ""}
                     onChange={(e) =>
                       setSelectedPartyIdentityId(e.target.value ? Number(e.target.value) : null)
@@ -2143,6 +2217,7 @@ function CreateOrder() {
                         </span>
                         <button
                           type="button"
+                          tabIndex={-1}
                           onClick={() => setSelectedPartyIdentityId(null)}
                           className="text-slate-400 hover:text-slate-600 text-[10px] underline shrink-0 cursor-pointer"
                         >
@@ -2178,6 +2253,7 @@ function CreateOrder() {
                   <input
                     name="consignee_name"
                     data-enter-required="true"
+                    enterKeyHint="next"
                     value={formData.consignee_name}
                     onChange={(e) => {
                       handleChange(e);
@@ -2210,6 +2286,7 @@ function CreateOrder() {
                       <button
                         key={`${customer.id}-${customer.mobile || ""}`}
                         type="button"
+                        tabIndex={-1}
                         onMouseDown={(e) => e.preventDefault()}
                         onClick={() => selectPreviousCustomer(customer)}
                         className="flex w-full items-start justify-between gap-3 rounded-lg px-2.5 py-2.5 text-left transition hover:bg-sky-50"
@@ -2238,6 +2315,7 @@ function CreateOrder() {
                   name="mobile"
                   data-enter-required="true"
                   data-enter-type="phone"
+                  enterKeyHint="next"
                   value={formData.mobile}
                   onChange={handleChange}
                   placeholder="10-digit phone"
@@ -2253,6 +2331,7 @@ function CreateOrder() {
                 <input
                   name="address_line1"
                   data-enter-required="true"
+                  enterKeyHint="next"
                   value={formData.address_line1}
                   onChange={handleChange}
                   placeholder="Flat/House No, Building, Road, Area"
@@ -2266,6 +2345,7 @@ function CreateOrder() {
                 <input
                   type="email"
                   name="email"
+                  tabIndex={-1}
                   value={formData.email}
                   onChange={handleChange}
                   placeholder="email"
@@ -2280,6 +2360,7 @@ function CreateOrder() {
                     name="pincode"
                     data-enter-required="true"
                     data-enter-type="pincode"
+                    enterKeyHint="next"
                     value={formData.pincode}
                     onChange={handlePincodeChange}
                     placeholder="6-digit PIN"
@@ -2322,6 +2403,7 @@ function CreateOrder() {
                 <label className={labelClass}>City</label>
                 <input
                   name="city"
+                  tabIndex={-1}
                   value={formData.city}
                   readOnly
                   placeholder="Auto-detected"
@@ -2333,6 +2415,7 @@ function CreateOrder() {
                 <label className={labelClass}>State</label>
                 <input
                   name="state"
+                  tabIndex={-1}
                   value={formData.state}
                   readOnly
                   placeholder="Auto-detected"
@@ -2355,6 +2438,7 @@ function CreateOrder() {
               </div>
               <button
                 type="button"
+                tabIndex={-1}
                 onClick={addProduct}
                 className="text-xs font-bold text-[#008dd2] hover:underline"
               >
@@ -2373,6 +2457,7 @@ function CreateOrder() {
                     {products.length > 1 && (
                       <button
                         type="button"
+                        tabIndex={-1}
                         onClick={() => removeProduct(index)}
                         className="absolute right-3 top-3 flex h-6 w-6 items-center justify-center rounded-full bg-rose-50 text-xs font-bold text-rose-500 hover:bg-rose-100"
                       >
@@ -2385,6 +2470,7 @@ function CreateOrder() {
                         <label className={labelClass}>Product Name *</label>
                         <input
                           data-enter-required="true"
+                          enterKeyHint="next"
                           value={product.product}
                           onChange={(e) =>
                             handleProductChange(
@@ -2401,6 +2487,7 @@ function CreateOrder() {
                       <div className="col-span-1 sm:col-span-1">
                         <label className={labelClass}>SKU</label>
                         <input
+                          tabIndex={-1}
                           value={product.sku}
                           onChange={(e) =>
                             handleProductChange(index, "sku", e.target.value)
@@ -2418,6 +2505,7 @@ function CreateOrder() {
                           step="0.01"
                           data-enter-required="true"
                           data-enter-type="price"
+                          enterKeyHint="next"
                           value={product.price}
                           onChange={(e) =>
                             handleProductChange(index, "price", e.target.value)
@@ -2434,6 +2522,7 @@ function CreateOrder() {
                           min="1"
                           data-enter-required="true"
                           data-enter-type="quantity"
+                          enterKeyHint="next"
                           value={product.qty}
                           onChange={(e) =>
                             handleProductChange(index, "qty", e.target.value)
@@ -2467,6 +2556,7 @@ function CreateOrder() {
                 >
                   <input
                     type="checkbox"
+                    tabIndex={-1}
                     checked={!!formData.fragile_shipment}
                     onChange={(e) =>
                       setFormData((prev) => ({
@@ -2488,6 +2578,7 @@ function CreateOrder() {
                 >
                   <input
                     type="checkbox"
+                    tabIndex={-1}
                     checked={!!formData.dangerous_good}
                     onChange={(e) =>
                       setFormData((prev) => ({
@@ -2524,6 +2615,7 @@ function CreateOrder() {
               </div>
               <button
                 type="button"
+                tabIndex={-1}
                 onClick={addPackage}
                 className="text-xs font-bold text-[#008dd2] hover:underline"
               >
@@ -2540,6 +2632,7 @@ function CreateOrder() {
                   {packages.length > 1 && (
                     <button
                       type="button"
+                      tabIndex={-1}
                       onClick={() => removePackage(index)}
                       className="absolute right-3 top-3 flex h-6 w-6 items-center justify-center rounded-full bg-rose-50 text-xs font-bold text-rose-500 hover:bg-rose-100"
                     >
@@ -2555,6 +2648,7 @@ function CreateOrder() {
                         min="0"
                         data-enter-required="true"
                         data-enter-type="dimension"
+                        enterKeyHint="next"
                         required
                         value={item.length}
                         onChange={(e) =>
@@ -2572,6 +2666,7 @@ function CreateOrder() {
                         min="0"
                         data-enter-required="true"
                         data-enter-type="dimension"
+                        enterKeyHint="next"
                         required
                         value={item.width}
                         onChange={(e) =>
@@ -2589,6 +2684,7 @@ function CreateOrder() {
                         min="0"
                         data-enter-required="true"
                         data-enter-type="dimension"
+                        enterKeyHint="next"
                         required
                         value={item.height}
                         onChange={(e) =>
@@ -2607,6 +2703,7 @@ function CreateOrder() {
                         step="0.01"
                         data-enter-required="true"
                         data-enter-type="weight"
+                        enterKeyHint={index === packages.length - 1 ? "done" : "next"}
                         value={item.weight}
                         onChange={(e) =>
                           handlePackageChange(index, "weight", e.target.value)
@@ -2656,6 +2753,7 @@ function CreateOrder() {
                 <div className="inline-flex rounded-xl border border-slate-200 bg-slate-50 p-1">
                   <button
                     type="button"
+                    tabIndex={-1}
                     onClick={() =>
                       setFormData((p) => ({ ...p, payment_type: "Prepaid" }))
                     }
@@ -2668,6 +2766,7 @@ function CreateOrder() {
                   </button>
                   <button
                     type="button"
+                    tabIndex={-1}
                     onClick={() =>
                       setFormData((p) => ({ ...p, payment_type: "COD" }))
                     }
@@ -2685,6 +2784,7 @@ function CreateOrder() {
               <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:gap-2.5 pt-2 sm:pt-0">
                 <button
                   type="button"
+                  tabIndex={-1}
                   onClick={handleShip}
                   disabled={rateLoading}
                   className="flex h-11 items-center justify-center rounded-xl bg-[#008dd2] px-5 text-xs font-bold text-white shadow-sm shadow-[#008dd2]/20 transition hover:bg-[#007ab6] active:scale-95 disabled:opacity-60 cursor-pointer"
