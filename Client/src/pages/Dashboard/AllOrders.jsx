@@ -1476,42 +1476,47 @@ useEffect(() => {
                   </div>
 
                   {/* CARD ACTIONS */}
-                  <div className="flex items-center justify-end gap-1.5 border-t border-slate-100 pt-2">
+                  <div className="grid grid-cols-4 gap-1.5 border-t border-slate-100 pt-2.5">
                     <button
                       type="button"
                       onClick={() => handleView(order)}
-                      className="flex h-8 items-center gap-1 rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-600 hover:bg-slate-50 active:scale-95"
+                      title="View Details"
+                      className="flex h-8 items-center justify-center gap-1 rounded-lg border border-slate-200 bg-white px-1 text-[11px] font-semibold text-slate-700 transition hover:bg-slate-50 active:scale-95 shadow-2xs min-w-0"
                     >
-                      <Icon name="eye" size={13} />
-                      View
+                      <Icon name="eye" size={12} className="shrink-0 text-slate-500" />
+                      <span className="truncate">View</span>
                     </button>
 
                     <button
                       type="button"
                       onClick={() => handleDuplicate(order)}
-                      className="flex h-8 items-center gap-1 rounded-lg border border-violet-200 bg-violet-50/50 px-3 text-xs font-semibold text-violet-600 hover:bg-violet-100 active:scale-95"
+                      title="Duplicate Order"
+                      className="flex h-8 items-center justify-center gap-1 rounded-lg border border-violet-200/90 bg-violet-50/70 px-1 text-[11px] font-semibold text-violet-700 transition hover:bg-violet-100 active:scale-95 shadow-2xs min-w-0"
                     >
-                      <Icon name="copy" size={13} />
-                      Duplicate
+                      <Icon name="copy" size={12} className="shrink-0 text-violet-600" />
+                      <span className="hidden min-[380px]:inline truncate">Duplicate</span>
+                      <span className="min-[380px]:hidden truncate">Copy</span>
                     </button>
 
                     <button
                       type="button"
                       onClick={() => handlePrintSingleLabel(order)}
                       title="Print Shipping Label"
-                      className="flex h-8 items-center gap-1 rounded-lg bg-[#008dd2] px-3 text-xs font-bold text-white shadow-xs active:scale-95"
+                      className="flex h-8 items-center justify-center gap-1 rounded-lg bg-[#008dd2] px-1 text-[11px] font-bold text-white shadow-2xs transition hover:bg-[#007dbb] active:scale-95 min-w-0"
                     >
-                      <Icon name="printer" size={13} />
-                      Print
+                      <Icon name="printer" size={12} className="shrink-0" />
+                      <span className="truncate">Print</span>
                     </button>
+
                     <button
                       type="button"
                       onClick={() => handleDownloadSingleLabel(order)}
                       title="Download Shipping Label"
-                      className="flex h-8 items-center gap-1 rounded-lg border border-[#b9dff0] bg-white px-3 text-xs font-bold text-[#008dd2] active:scale-95"
+                      className="flex h-8 items-center justify-center gap-1 rounded-lg border border-[#008dd2]/30 bg-white px-1 text-[11px] font-bold text-[#008dd2] transition hover:bg-sky-50 active:scale-95 shadow-2xs min-w-0"
                     >
-                      <Icon name="download" size={13} />
-                      Download
+                      <Icon name="download" size={12} className="shrink-0" />
+                      <span className="hidden min-[380px]:inline truncate">Download</span>
+                      <span className="min-[380px]:hidden truncate">Label</span>
                     </button>
                   </div>
                 </div>
