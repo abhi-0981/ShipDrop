@@ -827,14 +827,27 @@ function Dashboard() {
                 </p>
               </div>
 
-              <button
-                type="button"
-                onClick={handleCreateOrder}
-                className="flex h-9 items-center justify-center gap-1.5 rounded-xl bg-[#111827] px-3 text-[12px] font-semibold text-white shadow-sm transition hover:bg-[#1f2937] active:scale-95"
-              >
-                <Icon name="plus" size={14} />
-                <span>Create Order</span>
-              </button>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => navigate("/tracking")}
+                  className="flex-1 sm:flex-initial flex h-9 items-center justify-center gap-1.5 rounded-xl border border-slate-200/90 dark:border-slate-700 bg-white dark:bg-slate-800 px-3.5 text-[12px] font-semibold text-slate-700 dark:text-slate-200 shadow-2xs transition hover:bg-slate-50 dark:hover:bg-slate-750 hover:border-[#008dd2]/40 hover:text-[#008dd2] dark:hover:text-[#38bdf8] active:scale-95 cursor-pointer"
+                  title="Track Shipment"
+                >
+                  <Icon name="truck" size={14} />
+                  <span>Track Order</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleCreateOrder}
+                  className="flex-1 sm:flex-initial flex h-9 items-center justify-center gap-1.5 rounded-xl bg-[#111827] dark:bg-slate-100 px-3.5 text-[12px] font-semibold text-white dark:text-slate-900 shadow-sm transition hover:bg-[#1f2937] dark:hover:bg-white active:scale-95 cursor-pointer"
+                  title="Create Order"
+                >
+                  <Icon name="plus" size={14} />
+                  <span>Create Order</span>
+                </button>
+              </div>
             </div>
           </div>
 
