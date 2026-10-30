@@ -159,10 +159,9 @@ export default function ParcelDropLogo({
                   if (darkness <= 0.06) {
                     sPix[i + 3] = 0;
                   } else {
-                    // Soft, elegant light-blue shade (halka blue tint: rgb(178, 208, 244))
-                    sPix[i] = 178;
-                    sPix[i + 1] = 208;
-                    sPix[i + 2] = 244;
+                    sPix[i] = 250;
+                    sPix[i + 1] = 252;
+                    sPix[i + 2] = 255;
                     sPix[i + 3] = Math.round(Math.min(255, (darkness > 0.4 ? 1 : darkness * 1.5) * 255));
                   }
                 } else {
