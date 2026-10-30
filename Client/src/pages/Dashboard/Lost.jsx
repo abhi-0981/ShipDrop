@@ -36,7 +36,7 @@ const Icon = ({
     stroke: "currentColor",
     strokeWidth,
     strokeLinecap: "round",
-    strokeLinejoin="round",
+    strokeLinejoin: "round",
   };
 
   switch (name) {
