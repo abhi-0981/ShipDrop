@@ -550,6 +550,51 @@ function CreateOrder() {
     resetShippingRate();
   };
 
+  const isEnterFieldComplete = (field) => {
+    if (!field) return false;
+    const value = String(field.value ?? "").trim();
+
+    // Empty field
+    if (!value) return false;
+
+    // Mobile number: exactly 10 digits
+    if (field.dataset.enterType === "phone") {
+      return /^\d{10}$/.test(value);
+    }
+
+    // Pincode: exactly 6 digits
+    if (field.dataset.enterType === "pincode") {
+      return /^\d{6}$/.test(value);
+    }
+
+    // Product price: zero or greater
+    if (field.dataset.enterType === "price") {
+      const number = Number(value);
+      return Number.isFinite(number) && number >= 0;
+    }
+
+    // Quantity: whole number, minimum 1
+    if (field.dataset.enterType === "quantity") {
+      const number = Number(value);
+      return Number.isInteger(number) && number >= 1;
+    }
+
+    // Package weight: greater than zero
+    if (field.dataset.enterType === "weight") {
+      const number = Number(value);
+      return Number.isFinite(number) && number > 0;
+    }
+
+    // Package dimensions: greater than zero
+    if (field.dataset.enterType === "dimension") {
+      const number = Number(value);
+      return Number.isFinite(number) && number > 0;
+    }
+
+    // Other required fields: non-empty
+    return true;
+  };
+
   const handleWarehouseKeyDown = (e) => {
     if (!showWarehouseDropdown || filteredWarehouses.length === 0) {
       if ((e.key === "ArrowDown" || e.key === "ArrowUp") && filteredWarehouses.length > 0) {
@@ -579,9 +624,18 @@ function CreateOrder() {
         const chosen = filteredWarehouses[selectedWarehouseIndex];
         applyWarehouseToPickup(chosen);
         setTimeout(() => {
-          const nextField = document.querySelector('input[name="consignee_name"]');
-          nextField?.focus();
-          nextField?.select?.();
+          const form = document.querySelector("form");
+          const allRequired = Array.from(
+            form?.querySelectorAll?.("[data-enter-required='true']") || []
+          ).filter((f) => !f.disabled && !f.readOnly);
+          const wIdx = allRequired.findIndex((f) => f.name === "pickup_address");
+          const remaining = wIdx !== -1 ? allRequired.slice(wIdx + 1) : allRequired;
+          const nextTarget = remaining.find((f) => !isEnterFieldComplete(f)) || remaining[0];
+          if (nextTarget) {
+            nextTarget.focus();
+            nextTarget.select?.();
+            nextTarget.scrollIntoView?.({ behavior: "smooth", block: "center" });
+          }
         }, 60);
       }
     } else if (e.key === "Escape") {
@@ -1358,9 +1412,18 @@ function CreateOrder() {
         const chosen = previousCustomers[selectedCustomerIndex];
         selectPreviousCustomer(chosen);
         setTimeout(() => {
-          const mobileField = document.querySelector('input[name="mobile"]');
-          mobileField?.focus();
-          mobileField?.select?.();
+          const form = document.querySelector("form");
+          const allRequired = Array.from(
+            form?.querySelectorAll?.("[data-enter-required='true']") || []
+          ).filter((f) => !f.disabled && !f.readOnly);
+          const nameIdx = allRequired.findIndex((f) => f.name === "consignee_name");
+          const remaining = nameIdx !== -1 ? allRequired.slice(nameIdx + 1) : allRequired;
+          const nextTarget = remaining.find((f) => !isEnterFieldComplete(f)) || remaining[0];
+          if (nextTarget) {
+            nextTarget.focus();
+            nextTarget.select?.();
+            nextTarget.scrollIntoView?.({ behavior: "smooth", block: "center" });
+          }
         }, 60);
       }
     } else if (e.key === "Escape") {
@@ -1809,53 +1872,6 @@ function CreateOrder() {
     setShippingRate(optionMap[normalized]);
   };
 
-  const isEnterFieldComplete = (field) => {
-    const value = String(field.value ?? "").trim();
-
-    // Empty field
-    if (!value) return false;
-
-    // Mobile number: exactly 10 digits
-    if (field.dataset.enterType === "phone") {
-      return /^\d{10}$/.test(value);
-    }
-
-    // Pincode: exactly 6 digits
-    if (field.dataset.enterType === "pincode") {
-      return /^\d{6}$/.test(value);
-    }
-
-    // Product price: zero or greater
-    if (field.dataset.enterType === "price") {
-      const number = Number(value);
-      return Number.isFinite(number) && number >= 0;
-    }
-
-    // Quantity: whole number, minimum 1
-    if (field.dataset.enterType === "quantity") {
-      const number = Number(value);
-      return Number.isInteger(number) && number >= 1;
-    }
-
-
-    // Package weight: greater than zero
-    if (field.dataset.enterType === "weight") {
-      const number = Number(value);
-      return Number.isFinite(number) && number > 0;
-    }
-
-    // Package dimensions: greater than zero
-    if (field.dataset.enterType === "dimension") {
-      const number = Number(value);
-      return Number.isFinite(number) && number > 0;
-    }
-
-    // Other required fields: non-empty
-    return true;
-
-  };
-
-
   const handleRequiredFieldEnter = (e) => {
     // Recognize Enter on laptop and Android/iOS mobile virtual keyboards
     const isEnter =
@@ -1873,8 +1889,7 @@ function CreateOrder() {
       return;
     }
 
-    // Agar previous customer dropdown khula hai aur koi customer highlighted hai,
-    // toh us customer ko select karo aur aage bado
+    // Agar previous customer dropdown khula hai aur koi customer highlighted hai:
     if (
       showPreviousCustomers &&
       selectedCustomerIndex >= 0 &&
@@ -1884,10 +1899,18 @@ function CreateOrder() {
       const chosen = previousCustomers[selectedCustomerIndex];
       selectPreviousCustomer(chosen);
       setTimeout(() => {
-        const nextField = e.currentTarget.querySelector('input[name="mobile"]');
-        nextField?.focus();
-        nextField?.select?.();
-      }, 50);
+        const allRequired = Array.from(
+          e.currentTarget?.querySelectorAll?.("[data-enter-required='true']") || []
+        ).filter((f) => !f.disabled && !f.readOnly);
+        const nameIdx = allRequired.findIndex((f) => f.name === "consignee_name");
+        const remaining = nameIdx !== -1 ? allRequired.slice(nameIdx + 1) : allRequired;
+        const nextTarget = remaining.find((f) => !isEnterFieldComplete(f)) || remaining[0];
+        if (nextTarget) {
+          nextTarget.focus();
+          nextTarget.select?.();
+          nextTarget.scrollIntoView?.({ behavior: "smooth", block: "center" });
+        }
+      }, 60);
       return;
     }
 
@@ -1901,10 +1924,18 @@ function CreateOrder() {
       const chosenW = filteredWarehouses[selectedWarehouseIndex];
       applyWarehouseToPickup(chosenW);
       setTimeout(() => {
-        const nextField = e.currentTarget.querySelector('input[name="consignee_name"]');
-        nextField?.focus();
-        nextField?.select?.();
-      }, 50);
+        const allRequired = Array.from(
+          e.currentTarget?.querySelectorAll?.("[data-enter-required='true']") || []
+        ).filter((f) => !f.disabled && !f.readOnly);
+        const wIdx = allRequired.findIndex((f) => f.name === "pickup_address");
+        const remaining = wIdx !== -1 ? allRequired.slice(wIdx + 1) : allRequired;
+        const nextTarget = remaining.find((f) => !isEnterFieldComplete(f)) || remaining[0];
+        if (nextTarget) {
+          nextTarget.focus();
+          nextTarget.select?.();
+          nextTarget.scrollIntoView?.({ behavior: "smooth", block: "center" });
+        }
+      }, 60);
       return;
     }
 
@@ -1929,15 +1960,30 @@ function CreateOrder() {
     // If currently focused on a required field
     if (currentIndex !== -1) {
       // Agar current field incomplete hai (e.g. mobile 10 digit nahi, pincode 6 digit nahi),
-      // toh usi field pe focus rakho
+      // toh usi field pe focus rakho (incomplete me aage mat bado)
       if (!isEnterFieldComplete(e.target)) {
         e.target.focus();
         e.target.select?.();
         return;
       }
 
-      // Agar aage koi next required field hai, sequentially uspe move karo
+      // Current field complete hai! Jo inputs pehle se bhare hue hain unhe skip karo:
+      // Current field ke aage aane wale fields me se pehla incomplete/empty field dhundo
+      const remainingAhead = fields.slice(currentIndex + 1);
+      const nextIncompleteField = remainingAhead.find((field) => !isEnterFieldComplete(field));
+
+      if (nextIncompleteField) {
+        nextIncompleteField.focus();
+        nextIncompleteField.select?.();
+        setTimeout(() => {
+          nextIncompleteField.scrollIntoView?.({ behavior: "smooth", block: "center" });
+        }, 60);
+        return;
+      }
+
+      // Agar aage ke sabhi required fields pehle se bhare hue hain:
       if (currentIndex < fields.length - 1) {
+        // Aage badho (kabhi peeche/wapas mat jao)
         const nextField = fields[currentIndex + 1];
         nextField.focus();
         nextField.select?.();
@@ -1947,57 +1993,56 @@ function CreateOrder() {
         return;
       }
 
-      // Agar last required field pe enter mara hai, check karo kya koi field incomplete to nahi reh gaya
-      const incompleteField = fields.find(
-        (field) => !isEnterFieldComplete(field)
-      );
-
-      if (incompleteField) {
-        incompleteField.focus();
-        incompleteField.select?.();
+      // Agar form ke bilkul last required field pe hain aur sabhi bhare hue hain:
+      // Form ko auto-reset/clear hone se roko aur peeche wapas jane ke bajaye Submit button pe focus karo
+      const submitBtn = e.currentTarget.querySelector('button[type="submit"]');
+      if (submitBtn) {
+        submitBtn.focus();
         setTimeout(() => {
-          incompleteField.scrollIntoView?.({ behavior: "smooth", block: "center" });
+          submitBtn.scrollIntoView?.({ behavior: "smooth", block: "center" });
         }, 60);
-        return;
-      }
-
-      // Sab required fields complete hain -> Form submit karo
-      if (!loading) {
-        handleSubmit(e);
       }
       return;
     }
 
-    // Agar user kisi optional field (jaise email ya SKU) me tha aur Enter mara,
-    // toh document me uske baad aane wale pehle required field pe le jao
-    const nextRequiredAfterTarget = fields.find(
+    // Agar user kisi optional field (jaise email ya SKU) me tha aur Enter mara:
+    const remainingAfterTarget = fields.filter(
       (f) =>
         (e.target.compareDocumentPosition(f) &
           Node.DOCUMENT_POSITION_FOLLOWING) !==
         0
     );
 
-    if (nextRequiredAfterTarget) {
-      nextRequiredAfterTarget.focus();
-      nextRequiredAfterTarget.select?.();
+    const nextIncompleteAfterTarget = remainingAfterTarget.find(
+      (field) => !isEnterFieldComplete(field)
+    );
+
+    if (nextIncompleteAfterTarget) {
+      nextIncompleteAfterTarget.focus();
+      nextIncompleteAfterTarget.select?.();
       setTimeout(() => {
-        nextRequiredAfterTarget.scrollIntoView?.({ behavior: "smooth", block: "center" });
+        nextIncompleteAfterTarget.scrollIntoView?.({ behavior: "smooth", block: "center" });
       }, 60);
       return;
     }
 
-    // Default fallback
-    const firstIncomplete = fields.find(
-      (field) => !isEnterFieldComplete(field)
-    );
-    if (firstIncomplete) {
-      firstIncomplete.focus();
-      firstIncomplete.select?.();
+    if (remainingAfterTarget.length > 0) {
+      const nextField = remainingAfterTarget[0];
+      nextField.focus();
+      nextField.select?.();
       setTimeout(() => {
-        firstIncomplete.scrollIntoView?.({ behavior: "smooth", block: "center" });
+        nextField.scrollIntoView?.({ behavior: "smooth", block: "center" });
       }, 60);
-    } else if (!loading) {
-      handleSubmit(e);
+      return;
+    }
+
+    // Submit button pe focus
+    const submitBtn = e.currentTarget.querySelector('button[type="submit"]');
+    if (submitBtn) {
+      submitBtn.focus();
+      setTimeout(() => {
+        submitBtn.scrollIntoView?.({ behavior: "smooth", block: "center" });
+      }, 60);
     }
   };
 
