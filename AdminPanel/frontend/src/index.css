@@ -147,3 +147,20 @@ html {
   animation: logoPinFloat 2.2s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
   will-change: transform;
 }
+
+/* ======================================================
+   PARCEL DROP LOGO ADAPTIVE DUAL-MODE CONTROLLER
+   ====================================================== */
+.parcel-drop-logo-dark {
+  display: none !important;
+}
+.parcel-drop-logo-light {
+  display: flex !important;
+}
+
+html.dark .parcel-drop-logo-light {
+  display: none !important;
+}
+html.dark .parcel-drop-logo-dark {
+  display: flex !important;
+}
