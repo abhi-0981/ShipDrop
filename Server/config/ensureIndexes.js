@@ -5,6 +5,7 @@ const db = require("./db");
  * without blocking server startup or throwing if already existing.
  */
 async function ensureIndexes() {
+  const indexesToEnsure = [
     {
       table: "orders",
       name: "idx_orders_user_status_id",
