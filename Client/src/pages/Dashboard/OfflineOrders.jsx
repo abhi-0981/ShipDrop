@@ -347,7 +347,7 @@ export default function OfflineOrders() {
               type="button"
               onClick={handleExport}
               disabled={orders.length === 0}
-              className="inline-flex h-9 flex-1 sm:flex-initial items-center justify-center gap-1.5 rounded-xl bg-[#10b981] px-3.5 text-xs font-semibold text-white transition hover:bg-[#059669] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 shadow-xs"
+              className="inline-flex h-9 flex-1 sm:flex-initial items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 text-xs font-semibold text-white transition hover:bg-emerald-700 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 shadow-xs"
             >
               <svg
                 width="15"

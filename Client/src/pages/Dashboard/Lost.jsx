@@ -758,7 +758,7 @@ export default function Lost() {
               type="button"
               onClick={handlePrintSelected}
               disabled={selectedOrders.length === 0}
-              className="inline-flex h-9 flex-1 sm:flex-initial items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 shadow-xs"
+              className="inline-flex h-9 flex-1 sm:flex-initial items-center justify-center gap-1.5 rounded-xl bg-[#008dd2] px-3.5 text-xs font-semibold text-white shadow-2xs transition hover:bg-[#007ab6] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
             >
               <Icon name="printer" size={14} />
               <span>Print Label {selectedOrders.length > 0 ? `(${selectedOrders.length})` : ""}</span>
@@ -768,7 +768,7 @@ export default function Lost() {
               type="button"
               onClick={handleDownloadSelected}
               disabled={selectedOrders.length === 0}
-              className="inline-flex h-9 flex-1 sm:flex-initial items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 shadow-xs"
+              className="inline-flex h-9 flex-1 sm:flex-initial items-center justify-center gap-1.5 rounded-xl bg-[#008dd2] px-3.5 text-xs font-semibold text-white shadow-2xs transition hover:bg-[#007ab6] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
             >
               <Icon name="download" size={14} />
               <span>Download {selectedOrders.length > 0 ? `(${selectedOrders.length})` : ""}</span>
@@ -778,7 +778,7 @@ export default function Lost() {
               type="button"
               onClick={handleExport}
               disabled={orders.length === 0}
-              className="inline-flex h-9 flex-1 sm:flex-initial items-center justify-center gap-1.5 rounded-xl bg-[#10b981] px-3.5 text-xs font-semibold text-white transition hover:bg-[#059669] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 shadow-xs"
+              className="inline-flex h-9 flex-1 sm:flex-initial items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 text-xs font-semibold text-white shadow-2xs transition hover:bg-emerald-700 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
             >
               <Icon name="download" size={14} />
               <span>Export</span>

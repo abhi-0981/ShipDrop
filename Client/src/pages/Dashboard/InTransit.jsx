@@ -1491,7 +1491,7 @@ function InTransit() {
                   selectedOrders.length ===
                   0
                 }
-                className="inline-flex h-9 items-center gap-1.5 rounded-md bg-[#8fcce8] px-3.5 text-[12px] font-medium text-white transition hover:bg-[#7fc2e1] disabled:cursor-not-allowed disabled:opacity-55"
+                className="inline-flex h-9 items-center gap-1.5 rounded-md bg-[#008dd2] px-3.5 text-[12px] font-semibold text-white shadow-2xs transition hover:bg-[#007ab6] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <Icon
                   name="printer"
@@ -1509,7 +1509,7 @@ function InTransit() {
                 disabled={
                   orders.length === 0
                 }
-                className="inline-flex h-9 items-center gap-1.5 rounded-md bg-[#10b981] px-3.5 text-[12px] font-medium text-white transition hover:bg-[#059669] disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-9 items-center gap-1.5 rounded-md bg-emerald-600 px-3.5 text-[12px] font-semibold text-white shadow-2xs transition hover:bg-emerald-700 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <Icon
                   name="download"

@@ -910,7 +910,7 @@ function RTOInTransit() {
                 type="button"
                 onClick={handlePrintLabels}
                 disabled={selectedOrders.length === 0}
-                className="flex-1 sm:flex-initial inline-flex h-9.5 items-center justify-center gap-1.5 rounded-xl bg-[#008dd2] px-3.5 text-xs font-semibold text-white shadow-2xs transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex-1 sm:flex-initial inline-flex h-9.5 items-center justify-center gap-1.5 rounded-xl bg-[#008dd2] px-3.5 text-xs font-semibold text-white shadow-2xs transition hover:bg-[#007ab6] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <Icon name="printer" size={15} />
                 <span>Print Label</span>
@@ -920,7 +920,7 @@ function RTOInTransit() {
                 type="button"
                 onClick={handleExport}
                 disabled={orders.length === 0}
-                className="flex-1 sm:flex-initial inline-flex h-9.5 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 text-xs font-semibold text-white shadow-2xs transition hover:bg-emerald-700 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex-1 sm:flex-initial inline-flex h-9.5 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 text-xs font-semibold text-white shadow-2xs transition hover:bg-emerald-700 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <Icon name="download" size={15} />
                 <span>Export</span>

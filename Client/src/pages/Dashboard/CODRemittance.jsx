@@ -370,7 +370,7 @@ export default function CODRemittance() {
                 type="button"
                 onClick={handleExportCSV}
                 disabled={loading || exporting || filteredRemittances.length === 0}
-                className="inline-flex h-9 items-center gap-1.5 rounded-md bg-[#10b981] px-3.5 text-[12px] font-medium text-white shadow-xs transition hover:bg-[#059669] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-9 items-center gap-1.5 rounded-md bg-emerald-600 px-3.5 text-[12px] font-medium text-white shadow-xs transition hover:bg-emerald-700 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <HiOutlineDownload className="text-[15px]" />
                 <span>{exporting ? "Exporting..." : "Export CSV"}</span>
