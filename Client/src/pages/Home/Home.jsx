@@ -6,7 +6,7 @@ function Home() {
     <>
       <Navbar />
 
-      <main>
+      <main className="min-h-screen bg-white transition-colors duration-200 dark:bg-[#090b10]">
         <PublicTracking />
       </main>
     </>

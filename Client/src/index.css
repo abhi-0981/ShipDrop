@@ -240,7 +240,10 @@ html.dark .bg-\[\#f4f6fb\],
 html.dark .bg-\[\#F4F6FB\],
 html.dark .bg-\[\#fbfcfd\],
 html.dark .bg-\[\#fcfdff\],
-html.dark .bg-\[\#f8fcff\] {
+html.dark .bg-\[\#f8fcff\],
+html.dark .public-tracking-hero,
+html.dark [class*="min-h-[calc(100vh-78px)]"] {
+  background-image: linear-gradient(to bottom, #090b10, #0c1017, #090b10) !important;
   background-color: #090b10 !important;
   color: #f1f5f9;
 }
