@@ -7,8 +7,91 @@ const db = require("../config/db");
 const getAdminOrders = async (req, res) => {
   try {
     /* =====================================================
-       GET ORDERS
+       PAGINATION & FILTER PARAMS
     ===================================================== */
+    const {
+      page,
+      limit,
+      status,
+      search,
+      courier,
+      payment,
+    } = req.query;
+
+    const whereClauses = [];
+    const queryParams = [];
+
+    // Filter by status if provided
+    if (status && status !== "All") {
+      if (status === "NDR & Pending") {
+        whereClauses.push(`(
+          UPPER(TRIM(COALESCE(o.status, ''))) = 'PENDING'
+          OR UPPER(TRIM(COALESCE(o.tracking_status, ''))) = 'PENDING'
+          OR UPPER(TRIM(COALESCE(o.tracking_status, ''))) = 'NDR'
+        )`);
+      } else if (status === "Lost") {
+        whereClauses.push(`(
+          UPPER(TRIM(COALESCE(o.status, ''))) = 'LOST'
+          OR UPPER(TRIM(COALESCE(o.tracking_status, ''))) = 'LOST'
+        )`);
+      } else {
+        whereClauses.push(`UPPER(TRIM(COALESCE(o.status, ''))) = ?`);
+        queryParams.push(String(status).trim().toUpperCase());
+      }
+    }
+
+    // Filter by search query if provided
+    if (search && String(search).trim() !== "") {
+      const term = `%${String(search).trim()}%`;
+      whereClauses.push(`(
+        o.order_id LIKE ? OR
+        o.awb LIKE ? OR
+        o.consignee_name LIKE ? OR
+        o.mobile LIKE ? OR
+        u.full_name LIKE ? OR
+        u.company_name LIKE ? OR
+        CAST(o.user_id AS CHAR) LIKE ?
+      )`);
+      queryParams.push(term, term, term, term, term, term, term);
+    }
+
+    // Filter by courier/carrier if provided
+    if (courier && courier !== "All") {
+      whereClauses.push(`o.carrier = ?`);
+      queryParams.push(courier);
+    }
+
+    // Filter by payment type if provided
+    if (payment && payment !== "All") {
+      whereClauses.push(`o.payment_type = ?`);
+      queryParams.push(payment);
+    }
+
+    const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(" AND ")}` : "";
+
+    // Count matching rows when pagination is requested
+    let totalFiltered = null;
+    let pageNum = 1;
+    let limitNum = 50;
+
+    const isPaginated = limit && limit !== "all";
+    if (isPaginated) {
+      pageNum = Math.max(1, parseInt(page, 10) || 1);
+      limitNum = Math.max(1, Math.min(500, parseInt(limit, 10) || 50));
+      const [countResult] = await db.query(
+        `SELECT COUNT(*) AS total FROM orders o LEFT JOIN users u ON u.id = o.user_id ${whereSql}`,
+        queryParams
+      );
+      totalFiltered = Number(countResult[0]?.total || 0);
+    }
+
+    /* =====================================================
+       GET ORDERS (OPTIMIZED: NO CARTESIAN DUPLICATES)
+    ===================================================== */
+    const paginationSql = isPaginated ? `LIMIT ? OFFSET ?` : "";
+    const finalParams = isPaginated
+      ? [...queryParams, limitNum, (pageNum - 1) * limitNum]
+      : queryParams;
 
     const [orders] = await db.query(`
       SELECT
@@ -19,7 +102,6 @@ const getAdminOrders = async (req, res) => {
         /* =================================================
            CUSTOMER
         ================================================= */
-
         u.full_name AS customer_name,
         u.company_name AS customer_company,
         u.email AS customer_email,
@@ -28,7 +110,6 @@ const getAdminOrders = async (req, res) => {
         /* =================================================
            ORDER
         ================================================= */
-
         o.pickup_address_id,
         o.warehouse_id,
         o.awb,
@@ -49,7 +130,6 @@ const getAdminOrders = async (req, res) => {
         /* =================================================
            RTO / RETURN ADDRESS
         ================================================= */
-
         o.return_address_id,
         o.return_name,
         o.return_phone,
@@ -65,20 +145,16 @@ const getAdminOrders = async (req, res) => {
         o.payment_type,
         o.risk_type,
         o.status,
+        o.tracking_status,
         o.created_at,
 
         /* =================================================
-           SHIPPING CHARGE
-
-           LATEST MANIFEST CHARGE
+           SHIPPING CHARGE (LATEST MANIFEST CHARGE)
         ================================================= */
-
         (
-          SELECT
-            m.shipping_charge
+          SELECT m.shipping_charge
           FROM manifests m
-          WHERE
-            m.order_id = o.id
+          WHERE m.order_id = o.id
             AND m.user_id = o.user_id
           ORDER BY m.id DESC
           LIMIT 1
@@ -87,7 +163,6 @@ const getAdminOrders = async (req, res) => {
         /* =================================================
            PICKUP
         ================================================= */
-
         pa.pickup_address,
         pa.pickup_pincode,
         pa.pickup_city,
@@ -95,7 +170,6 @@ const getAdminOrders = async (req, res) => {
         /* =================================================
            WAREHOUSE
         ================================================= */
-
         w.id AS warehouse_id_joined,
         w.warehouse_name,
         w.contact_name AS warehouse_contact_name,
@@ -112,9 +186,8 @@ const getAdminOrders = async (req, res) => {
         w.country AS warehouse_country,
 
         /* =================================================
-           PRODUCT
+           PRODUCT (DEDUPLICATED PRIMARY PRODUCT)
         ================================================= */
-
         op.product_name,
         op.sku,
         op.price,
@@ -122,9 +195,8 @@ const getAdminOrders = async (req, res) => {
         op.tax,
 
         /* =================================================
-           PACKAGE
+           PACKAGE (DEDUPLICATED PRIMARY PACKAGE)
         ================================================= */
-
         pkg.length,
         pkg.width,
         pkg.height,
@@ -133,48 +205,46 @@ const getAdminOrders = async (req, res) => {
 
       FROM orders o
 
-      /* =================================================
-         USER
-      ================================================= */
-
+      /* USER */
       LEFT JOIN users u
         ON u.id = o.user_id
 
-      /* =================================================
-         PICKUP ADDRESS
-      ================================================= */
-
+      /* PICKUP ADDRESS */
       LEFT JOIN pickup_addresses pa
         ON pa.id = o.pickup_address_id
 
-      /* =================================================
-         WAREHOUSE
-      ================================================= */
-
+      /* WAREHOUSE */
       LEFT JOIN warehouses w
         ON w.id = o.warehouse_id
         AND w.user_id = o.user_id
 
-      /* =================================================
-         PRODUCTS
-      ================================================= */
+      /* PRIMARY PRODUCT (JOIN VIA MIN ID TO ELIMINATE ROW MULTIPLICATION) */
+      LEFT JOIN (
+        SELECT op1.order_id, op1.product_name, op1.sku, op1.price, op1.qty, op1.tax
+        FROM order_products op1
+        INNER JOIN (
+          SELECT order_id, MIN(id) AS min_id
+          FROM order_products
+          GROUP BY order_id
+        ) op2 ON op1.id = op2.min_id
+      ) op ON op.order_id = o.id
 
-      LEFT JOIN order_products op
-        ON op.order_id = o.id
+      /* PRIMARY PACKAGE (JOIN VIA MIN ID TO ELIMINATE ROW MULTIPLICATION) */
+      LEFT JOIN (
+        SELECT pkg1.order_id, pkg1.length, pkg1.width, pkg1.height, pkg1.weight, pkg1.package_count
+        FROM order_packages pkg1
+        INNER JOIN (
+          SELECT order_id, MIN(id) AS min_id
+          FROM order_packages
+          GROUP BY order_id
+        ) pkg2 ON pkg1.id = pkg2.min_id
+      ) pkg ON pkg.order_id = o.id
 
-      /* =================================================
-         PACKAGE
-      ================================================= */
-
-      LEFT JOIN order_packages pkg
-        ON pkg.order_id = o.id
-
-      /* =================================================
-         ORDER
-      ================================================= */
+      ${whereSql}
 
       ORDER BY o.id DESC
-    `);
+      ${paginationSql}
+    `, finalParams);
 
     /* =====================================================
        STATUS COUNTS
@@ -403,6 +473,16 @@ const getAdminOrders = async (req, res) => {
       success: true,
       orders,
       counts,
+      ...(totalFiltered !== null
+        ? {
+            pagination: {
+              total: totalFiltered,
+              page: pageNum,
+              limit: limitNum,
+              totalPages: Math.max(1, Math.ceil(totalFiltered / limitNum)),
+            },
+          }
+        : {}),
     });
 
   } catch (error) {

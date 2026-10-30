@@ -24,10 +24,13 @@ const impersonateRoutes = require("./routes/impersonateRoutes");
 const analyticsRoutes = require("./routes/analyticsRoutes");
 const announcementRoutes = require("./routes/announcementRoutes");
 const { ensureTables } = require("./config/ensureTables");
+const { ensureIndexes } = require("./config/ensureIndexes");
 
-ensureTables().catch((err) =>
-  console.warn("AdminPanel ensureTables notice:", err.message)
-);
+ensureTables()
+  .then(() => ensureIndexes())
+  .catch((err) =>
+    console.warn("AdminPanel startup check notice:", err.message)
+  );
 
 // =====================================================
 // APP

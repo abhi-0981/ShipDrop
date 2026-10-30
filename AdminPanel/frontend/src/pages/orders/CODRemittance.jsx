@@ -111,7 +111,7 @@ export default function CODRemittance() {
   const [editingId, setEditingId] = useState(null);
 
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 25;
+  const [pageSize, setPageSize] = useState(25);
 
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState(null);
@@ -1242,6 +1242,7 @@ export default function CODRemittance() {
                         />
                       </th>
 
+                      <th className="w-12 px-2 py-4 text-center">#</th>
                       <th className="px-4 py-4">Order / Customer</th>
                       <th className="px-4 py-4">Buyer</th>
                       <th className="px-4 py-4">AWB</th>
@@ -1255,11 +1256,12 @@ export default function CODRemittance() {
                   </thead>
 
                   <tbody className="divide-y divide-slate-100 text-sm">
-                    {paginatedRemittances.map((row) => {
+                    {paginatedRemittances.map((row, index) => {
                       const id = rowId(row);
                       const pending =
                         statusOf(row.status) === "PENDING";
                       const selected = selectedIds.includes(id);
+                      const serialNo = (currentPage - 1) * pageSize + index + 1;
 
                       return (
                         <tr
@@ -1278,6 +1280,10 @@ export default function CODRemittance() {
                                 className="h-4 w-4 accent-[#008dd2]"
                               />
                             )}
+                          </td>
+
+                          <td className="px-2 py-4 text-center font-mono text-xs font-semibold text-slate-400">
+                            {serialNo}
                           </td>
 
                           <td className="px-4 py-4">
@@ -1357,30 +1363,88 @@ export default function CODRemittance() {
             </>
           )}
 
-          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 bg-slate-50 px-5 py-3 text-xs text-slate-500">
-            <span>
-              Showing {filtered.length === 0 ? 0 : (currentPage - 1) * pageSize + 1} to {Math.min(currentPage * pageSize, filtered.length)} of {filtered.length} records
-            </span>
+          <div className="flex flex-col gap-3 border-t border-slate-100 bg-slate-50 px-5 py-3 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-wrap items-center gap-3">
+              <span>
+                Showing <b className="text-slate-800">{filtered.length === 0 ? 0 : (currentPage - 1) * pageSize + 1}</b> to <b className="text-slate-800">{Math.min(currentPage * pageSize, filtered.length)}</b> of <b className="text-slate-800">{filtered.length}</b> records
+              </span>
+              <div className="flex items-center gap-1.5 text-xs">
+                <span className="text-slate-300">|</span>
+                <span>Show</span>
+                <select
+                  value={pageSize}
+                  onChange={(e) => {
+                    setPageSize(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="h-7 rounded-lg border border-slate-200 bg-white px-2 text-xs font-semibold text-slate-700 outline-none focus:border-[#008dd2] cursor-pointer shadow-2xs"
+                >
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+                <span>per page</span>
+              </div>
+            </div>
+
             {totalPages > 1 && (
-              <div className="flex items-center gap-2">
-                <span className="font-semibold text-slate-500">
-                  Page {currentPage} of {totalPages}
-                </span>
+              <div className="flex flex-wrap items-center gap-1.5">
                 <button
                   type="button"
                   onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
                   disabled={currentPage <= 1}
-                  className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 cursor-pointer shadow-2xs"
+                  className="h-7 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 cursor-pointer shadow-2xs transition"
                 >
-                  Prev
+                  ‹ Prev
                 </button>
+
+                {(() => {
+                  const pages = [];
+                  if (totalPages <= 7) {
+                    for (let i = 1; i <= totalPages; i++) pages.push(i);
+                  } else {
+                    pages.push(1);
+                    if (currentPage > 3) pages.push("...");
+                    const start = Math.max(2, currentPage - 1);
+                    const end = Math.min(totalPages - 1, currentPage + 1);
+                    for (let i = start; i <= end; i++) pages.push(i);
+                    if (currentPage < totalPages - 2) pages.push("...");
+                    pages.push(totalPages);
+                  }
+
+                  return pages.map((p, idx) => {
+                    if (p === "...") {
+                      return (
+                        <span key={`ellipsis-${idx}`} className="px-1 text-xs text-slate-400">
+                          ...
+                        </span>
+                      );
+                    }
+                    const isActive = p === currentPage;
+                    return (
+                      <button
+                        key={`page-${p}`}
+                        type="button"
+                        onClick={() => setCurrentPage(p)}
+                        className={`h-7 min-w-7 rounded-lg px-2 text-xs font-bold transition shadow-2xs cursor-pointer ${
+                          isActive
+                            ? "bg-[#008dd2] text-white"
+                            : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                        }`}
+                      >
+                        {p}
+                      </button>
+                    );
+                  });
+                })()}
+
                 <button
                   type="button"
                   onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
                   disabled={currentPage >= totalPages}
-                  className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 cursor-pointer shadow-2xs"
+                  className="h-7 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 cursor-pointer shadow-2xs transition"
                 >
-                  Next
+                  Next ›
                 </button>
               </div>
             )}

@@ -655,7 +655,8 @@ const AllOrders = () => {
   const [viewingOrder, setViewingOrder] = useState(null);
 
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 50;
+  const [pageSize, setPageSize] = useState(50);
+  const [jumpPage, setJumpPage] = useState("");
 
   const fetchOrders = async () => {
     try {
@@ -844,7 +845,7 @@ const AllOrders = () => {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, activeStatus, statusFilter, courierFilter, paymentFilter]);
+  }, [search, activeStatus, statusFilter, courierFilter, paymentFilter, pageSize]);
 
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -1127,8 +1128,9 @@ const AllOrders = () => {
             </button>
           </div>
         ) : (
-          filteredOrders.map((order) => {
+          paginatedOrders.map((order, index) => {
             const selected = selectedOrders.includes(order.id);
+            const serialNo = (currentPage - 1) * pageSize + index + 1;
 
             return (
               <div
@@ -1140,6 +1142,9 @@ const AllOrders = () => {
                 {/* CARD HEADER */}
                 <div className="flex items-center justify-between border-b border-slate-100 pb-2">
                   <div className="flex items-center gap-2">
+                    <span className="font-mono text-[11px] font-bold text-slate-400">
+                      #{serialNo}
+                    </span>
                     <input
                       type="checkbox"
                       checked={selected}
@@ -1234,6 +1239,40 @@ const AllOrders = () => {
             );
           })
         )}
+
+        {/* MOBILE PAGINATION DOCK */}
+        {filteredOrders.length > 0 && (
+          <div className="flex flex-col gap-2 rounded-2xl border border-slate-200 bg-white p-3 shadow-xs">
+            <div className="flex items-center justify-between text-xs text-slate-500">
+              <span>
+                Showing <b className="text-slate-800">{(currentPage - 1) * pageSize + 1}</b>–<b className="text-slate-800">{Math.min(currentPage * pageSize, filteredOrders.length)}</b> of <b className="text-slate-800">{filteredOrders.length}</b>
+              </span>
+              <span className="font-semibold text-slate-600">
+                Page {currentPage} of {totalPages}
+              </span>
+            </div>
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                  disabled={currentPage <= 1}
+                  className="flex-1 rounded-xl border border-slate-200 bg-white py-1.5 text-xs font-bold text-slate-700 disabled:opacity-40"
+                >
+                  ‹ Prev
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+                  disabled={currentPage >= totalPages}
+                  className="flex-1 rounded-xl bg-[#008dd2] py-1.5 text-xs font-bold text-white disabled:opacity-40"
+                >
+                  Next ›
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* =========================================================
@@ -1244,13 +1283,16 @@ const AllOrders = () => {
           <table className="min-w-[1180px] w-full border-collapse">
             <thead>
               <tr className="border-b border-slate-200 bg-slate-50/70">
-                <th className="w-[52px] border-r border-slate-200 px-3 py-3 text-center">
+                <th className="w-[45px] border-r border-slate-200 px-2 py-3 text-center">
                   <input
                     type="checkbox"
                     checked={allSelected}
                     onChange={toggleSelectAll}
                     className="h-3.5 w-3.5 cursor-pointer rounded border-slate-300 accent-blue-600"
                   />
+                </th>
+                <th className="w-[48px] border-r border-slate-200 px-2 py-3 text-center text-[11px] font-bold uppercase tracking-wide text-slate-500">
+                  #
                 </th>
                 <th className="w-[125px] border-r border-slate-200 px-3 py-3 text-left text-[11px] font-bold uppercase tracking-wide text-slate-800">
                   Order
@@ -1279,7 +1321,7 @@ const AllOrders = () => {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="8" className="px-6 py-16 text-center">
+                  <td colSpan="9" className="px-6 py-16 text-center">
                     <div className="flex flex-col items-center">
                       <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-200 border-t-blue-600" />
                       <p className="mt-3 text-[12px] font-medium text-slate-500">
@@ -1290,7 +1332,7 @@ const AllOrders = () => {
                 </tr>
               ) : filteredOrders.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="px-6 py-16 text-center">
+                  <td colSpan="9" className="px-6 py-16 text-center">
                     <div className="mx-auto flex max-w-sm flex-col items-center">
                       <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-slate-100">
                         <HiOutlineSearch className="text-[20px] text-slate-400" />
@@ -1312,8 +1354,9 @@ const AllOrders = () => {
                   </td>
                 </tr>
               ) : (
-                paginatedOrders.map((order) => {
+                paginatedOrders.map((order, index) => {
                   const selected = selectedOrders.includes(order.id);
+                  const serialNo = (currentPage - 1) * pageSize + index + 1;
 
                   return (
                     <tr
@@ -1322,13 +1365,17 @@ const AllOrders = () => {
                         selected ? "bg-blue-50/40" : "hover:bg-slate-50/50"
                       }`}
                     >
-                      <td className="border-r border-slate-100 px-3 py-3 text-center align-top">
+                      <td className="border-r border-slate-100 px-2 py-3 text-center align-top">
                         <input
                           type="checkbox"
                           checked={selected}
                           onChange={() => toggleSelect(order.id)}
                           className="mt-1 h-3.5 w-3.5 cursor-pointer rounded border-slate-300 accent-blue-600"
                         />
+                      </td>
+
+                      <td className="border-r border-slate-100 px-2 py-3 text-center align-top font-mono text-[11px] font-semibold text-slate-400">
+                        {serialNo}
                       </td>
 
                       <td className="border-r border-slate-100 px-3 py-3 align-top">
@@ -1428,50 +1475,161 @@ const AllOrders = () => {
           </table>
         </div>
 
-        {/* FOOTER */}
-        <div className="flex flex-col gap-2 border-t border-slate-200 bg-slate-50/50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="text-[11px] text-slate-500">
-            Showing{" "}
-            <span className="font-semibold text-slate-700">
-              {filteredOrders.length === 0 ? 0 : (currentPage - 1) * pageSize + 1}
-            </span>{" "}
-            to{" "}
-            <span className="font-semibold text-slate-700">
-              {Math.min(currentPage * pageSize, filteredOrders.length)}
-            </span>{" "}
-            of{" "}
-            <span className="font-semibold text-slate-700">
-              {filteredOrders.length}
-            </span>{" "}
-            orders
-            {selectedOrders.length > 0 && (
-              <span className="ml-2 font-medium text-blue-600">
-                ({selectedOrders.length} selected)
-              </span>
-            )}
+        {/* FOOTER & PAGINATION DOCK */}
+        <div className="flex flex-col gap-3 border-t border-slate-200 bg-slate-50/60 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="text-[11.5px] text-slate-500">
+              Showing{" "}
+              <span className="font-semibold text-slate-800">
+                {filteredOrders.length === 0 ? 0 : (currentPage - 1) * pageSize + 1}
+              </span>{" "}
+              to{" "}
+              <span className="font-semibold text-slate-800">
+                {Math.min(currentPage * pageSize, filteredOrders.length)}
+              </span>{" "}
+              of{" "}
+              <span className="font-semibold text-slate-800">
+                {filteredOrders.length}
+              </span>{" "}
+              orders
+              {selectedOrders.length > 0 && (
+                <span className="ml-2 font-medium text-[#008dd2]">
+                  ({selectedOrders.length} selected)
+                </span>
+              )}
+            </div>
+
+            <div className="flex items-center gap-1.5 text-[11.5px] text-slate-500">
+              <span className="text-slate-300">|</span>
+              <span>Show</span>
+              <select
+                value={pageSize}
+                onChange={(e) => {
+                  setPageSize(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+                className="h-7 rounded-lg border border-slate-200 bg-white px-2 text-[11px] font-semibold text-slate-700 outline-none focus:border-[#008dd2] cursor-pointer shadow-2xs"
+              >
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+                <option value={200}>200</option>
+              </select>
+              <span>per page</span>
+            </div>
           </div>
 
           {totalPages > 1 && (
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] text-slate-500">
-                Page {currentPage} of {totalPages}
-              </span>
+            <div className="flex flex-wrap items-center gap-1.5">
+              {/* FIRST */}
+              <button
+                type="button"
+                onClick={() => setCurrentPage(1)}
+                disabled={currentPage <= 1}
+                title="First Page"
+                className="h-7 rounded-lg border border-slate-200 bg-white px-2 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 cursor-pointer shadow-2xs transition"
+              >
+                « First
+              </button>
+
+              {/* PREV */}
               <button
                 type="button"
                 onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
                 disabled={currentPage <= 1}
-                className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 cursor-pointer"
+                title="Previous Page"
+                className="h-7 rounded-lg border border-slate-200 bg-white px-2.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 cursor-pointer shadow-2xs transition"
               >
-                Prev
+                ‹ Prev
               </button>
+
+              {/* PAGE NUMBER BUTTONS */}
+              {(() => {
+                const pages = [];
+                if (totalPages <= 7) {
+                  for (let i = 1; i <= totalPages; i++) pages.push(i);
+                } else {
+                  pages.push(1);
+                  if (currentPage > 3) pages.push("...");
+                  const start = Math.max(2, currentPage - 1);
+                  const end = Math.min(totalPages - 1, currentPage + 1);
+                  for (let i = start; i <= end; i++) pages.push(i);
+                  if (currentPage < totalPages - 2) pages.push("...");
+                  pages.push(totalPages);
+                }
+
+                return pages.map((p, idx) => {
+                  if (p === "...") {
+                    return (
+                      <span key={`ellipsis-${idx}`} className="px-1 text-[11px] text-slate-400">
+                        ...
+                      </span>
+                    );
+                  }
+                  const isActive = p === currentPage;
+                  return (
+                    <button
+                      key={`page-${p}`}
+                      type="button"
+                      onClick={() => setCurrentPage(p)}
+                      className={`h-7 min-w-7 rounded-lg px-2 text-[11px] font-bold transition shadow-2xs cursor-pointer ${
+                        isActive
+                          ? "bg-[#008dd2] text-white"
+                          : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                      }`}
+                    >
+                      {p}
+                    </button>
+                  );
+                });
+              })()}
+
+              {/* NEXT */}
               <button
                 type="button"
                 onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
                 disabled={currentPage >= totalPages}
-                className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 cursor-pointer"
+                title="Next Page"
+                className="h-7 rounded-lg border border-slate-200 bg-white px-2.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 cursor-pointer shadow-2xs transition"
               >
-                Next
+                Next ›
               </button>
+
+              {/* LAST */}
+              <button
+                type="button"
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={currentPage >= totalPages}
+                title="Last Page"
+                className="h-7 rounded-lg border border-slate-200 bg-white px-2 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 cursor-pointer shadow-2xs transition"
+              >
+                Last »
+              </button>
+
+              {/* JUMP TO PAGE */}
+              {totalPages > 5 && (
+                <div className="ml-1.5 flex items-center gap-1 text-[11px] text-slate-500">
+                  <span>Go to</span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={totalPages}
+                    value={jumpPage}
+                    onChange={(e) => setJumpPage(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        const val = parseInt(jumpPage, 10);
+                        if (val >= 1 && val <= totalPages) {
+                          setCurrentPage(val);
+                          setJumpPage("");
+                        }
+                      }
+                    }}
+                    placeholder={String(currentPage)}
+                    className="h-7 w-12 rounded-lg border border-slate-200 bg-white px-1.5 text-center text-[11px] font-semibold text-slate-700 outline-none focus:border-[#008dd2]"
+                  />
+                </div>
+              )}
             </div>
           )}
         </div>

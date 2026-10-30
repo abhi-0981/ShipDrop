@@ -5,11 +5,55 @@ const db = require("./db");
  * without blocking server startup or throwing if already existing.
  */
 async function ensureIndexes() {
-  const indexesToEnsure = [
     {
       table: "orders",
       name: "idx_orders_user_status_id",
       columns: "user_id, status, id",
+    },
+    {
+      table: "orders",
+      name: "idx_orders_status_id",
+      columns: "status, id DESC",
+    },
+    {
+      table: "orders",
+      name: "idx_orders_tracking_status_global",
+      columns: "tracking_status",
+    },
+    {
+      table: "orders",
+      name: "idx_orders_order_id_global",
+      columns: "order_id",
+    },
+    {
+      table: "orders",
+      name: "idx_orders_awb_global",
+      columns: "awb",
+    },
+    {
+      table: "orders",
+      name: "idx_orders_created_at_desc",
+      columns: "created_at DESC",
+    },
+    {
+      table: "orders",
+      name: "idx_orders_payment_type",
+      columns: "payment_type",
+    },
+    {
+      table: "orders",
+      name: "idx_orders_mobile",
+      columns: "mobile",
+    },
+    {
+      table: "orders",
+      name: "idx_orders_pickup_addr",
+      columns: "pickup_address_id",
+    },
+    {
+      table: "orders",
+      name: "idx_orders_warehouse",
+      columns: "warehouse_id",
     },
     {
       table: "orders",
@@ -35,6 +79,11 @@ async function ensureIndexes() {
       table: "orders",
       name: "idx_orders_consignment_no",
       columns: "consignment_no",
+    },
+    {
+      table: "manifests",
+      name: "idx_manifests_order_user_id",
+      columns: "order_id, user_id, id DESC",
     },
     {
       table: "manifests",
