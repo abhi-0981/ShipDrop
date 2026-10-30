@@ -90,6 +90,8 @@ export default function MobileBottomNav() {
     "/pending",
     "/cancelled",
     "/offline-orders",
+    "/lost",
+    "/orders/lost",
   ].includes(location.pathname);
   const isCreateActive =
     location.pathname === "/create-order" ||

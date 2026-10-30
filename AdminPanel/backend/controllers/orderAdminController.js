@@ -286,6 +286,19 @@ const getAdminOrders = async (req, res) => {
         ) AS rto_delivered,
 
         /* =================================================
+           LOST
+        ================================================= */
+
+        SUM(
+          CASE
+            WHEN UPPER(TRIM(status)) = 'LOST'
+              OR UPPER(TRIM(COALESCE(tracking_status, ''))) = 'LOST'
+            THEN 1
+            ELSE 0
+          END
+        ) AS lost,
+
+        /* =================================================
            RETURNED
         ================================================= */
 
@@ -363,6 +376,10 @@ const getAdminOrders = async (req, res) => {
 
       "RTO Delivered": Number(
         countRows[0]?.rto_delivered || 0
+      ),
+
+      Lost: Number(
+        countRows[0]?.lost || 0
       ),
 
       Returned: Number(

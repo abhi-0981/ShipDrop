@@ -52,6 +52,10 @@ const STATUS_CONFIG = {
     label: "RTO Delivered",
     color: "text-red-600",
   },
+  Lost: {
+    label: "Lost",
+    color: "text-rose-600",
+  },
   Returned: {
     label: "Returned",
     color: "text-orange-600",
@@ -84,6 +88,7 @@ const StatusBadge = ({ status }) => {
     Delivered: "bg-emerald-50 text-emerald-600 border-emerald-100",
     "RTO In Transit": "bg-red-50 text-red-500 border-red-100",
     "RTO Delivered": "bg-red-50 text-red-600 border-red-100",
+    Lost: "bg-rose-50 text-rose-600 border-rose-100",
     Returned: "bg-orange-50 text-orange-600 border-orange-100",
     Cancelled: "bg-red-50 text-red-600 border-red-100",
     Pending: "bg-slate-50 text-slate-500 border-slate-200",
@@ -125,6 +130,7 @@ const normalizeStatus = (status) => {
     value === "RETURN_ACCEPTED" ||
     value.includes("RETURN ACCEPT")
   ) return "RTO Delivered";
+  if (value === "LOST") return "Lost";
   if (value === "RETURNED") return "Returned";
   if (value === "CANCELLED" || value === "CANCELED") return "Cancelled";
   if (value === "PENDING") return "Pending";
@@ -631,6 +637,7 @@ const AllOrders = () => {
     Delivered: 0,
     "RTO In Transit": 0,
     "RTO Delivered": 0,
+    Lost: 0,
     Returned: 0,
     Cancelled: 0,
     Pending: 0,
@@ -735,6 +742,7 @@ const AllOrders = () => {
           Delivered: Number(data.counts.Delivered || 0),
           "RTO In Transit": Number(data.counts["RTO In Transit"] || 0),
           "RTO Delivered": Number(data.counts["RTO Delivered"] || 0),
+          Lost: Number(data.counts.Lost || 0),
           Returned: Number(data.counts.Returned || 0),
           Cancelled: Number(data.counts.Cancelled || 0),
           Pending: Number(data.counts.Pending || 0),
@@ -753,6 +761,7 @@ const AllOrders = () => {
           Delivered: normalizedOrders.filter((o) => o.status === "Delivered").length,
           "RTO In Transit": normalizedOrders.filter((o) => o.status === "RTO In Transit").length,
           "RTO Delivered": normalizedOrders.filter((o) => o.status === "RTO Delivered").length,
+          Lost: normalizedOrders.filter((o) => o.status === "Lost").length,
           Returned: normalizedOrders.filter((o) => o.status === "Returned").length,
           Cancelled: normalizedOrders.filter((o) => o.status === "Cancelled").length,
           Pending: normalizedOrders.filter((o) => o.status === "Pending").length,
@@ -918,6 +927,7 @@ const AllOrders = () => {
     "Delivered",
     "RTO In Transit",
     "RTO Delivered",
+    "Lost",
     "Returned",
     "Cancelled",
     "NDR & Pending",

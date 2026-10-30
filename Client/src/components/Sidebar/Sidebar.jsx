@@ -165,6 +165,7 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
     "/rto-delivered",
     "/cancelled",
     "/pending",
+    "/offline-orders",
     "/lost",
     "/orders/lost",
   ].includes(location.pathname);
@@ -176,7 +177,8 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
     "/tracking",
   ].includes(location.pathname);
 
-  const [showOrders, setShowOrders] = useState(isOrderPath);
+  // Default Orders accordion to open so all order status items are immediately visible
+  const [showOrders, setShowOrders] = useState(true);
   const [showTools, setShowTools] = useState(isToolPath);
   const [showFinance, setShowFinance] = useState(
     location.pathname === "/wallet" ||
@@ -188,6 +190,12 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
   const [showReports, setShowReports] = useState(
     location.pathname.startsWith("/reports"),
   );
+
+  useEffect(() => {
+    if (isOrderPath) {
+      setShowOrders(true);
+    }
+  }, [location.pathname, isOrderPath]);
 
   useEffect(() => {
     if (
@@ -729,6 +737,11 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
                       path: "/rto-delivered",
                       count: statusCounts["RTO DELIVERED"],
                     },
+                    {
+                      name: "Lost",
+                      path: "/lost",
+                      count: statusCounts.LOST ?? statusCounts.lost_count ?? 0,
+                    },
 
                      {
                       name: "UnDelivered",
@@ -740,11 +753,6 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
                       name: "Cancelled",
                       path: "/cancelled",
                       count: statusCounts.CANCELLED,
-                    },
-                    {
-                      name: "Lost",
-                      path: "/lost",
-                      count: statusCounts.LOST ?? statusCounts.lost_count ?? 0,
                     },
                    
                   ].map((item) => (
