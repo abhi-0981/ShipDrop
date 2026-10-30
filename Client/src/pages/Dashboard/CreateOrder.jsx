@@ -95,9 +95,9 @@ function CreateOrder() {
   const [serviceabilityStatus, setServiceabilityStatus] = useState(null);
 
   // Previous customer autocomplete
-  // Previous customer autocomplete
   const [previousCustomers, setPreviousCustomers] = useState([]);
   const [showPreviousCustomers, setShowPreviousCustomers] = useState(false);
+  const [selectedCustomerIndex, setSelectedCustomerIndex] = useState(-1);
   const [previousCustomersLoading, setPreviousCustomersLoading] =
     useState(false);
   const previousCustomerDropdownRef = useRef(null);
@@ -135,6 +135,7 @@ function CreateOrder() {
   const [warehousesLoading, setWarehousesLoading] = useState(false);
   const [warehouseSaving, setWarehouseSaving] = useState(false);
   const [showWarehouseDropdown, setShowWarehouseDropdown] = useState(false);
+  const [selectedWarehouseIndex, setSelectedWarehouseIndex] = useState(-1);
   const [warehouseSearch, setWarehouseSearch] = useState("");
   const [showWarehouseModal, setShowWarehouseModal] = useState(false);
   const [warehouseForm, setWarehouseForm] = useState({
@@ -545,7 +546,56 @@ function CreateOrder() {
 
     setWarehouseSearch("");
     setShowWarehouseDropdown(false);
+    setSelectedWarehouseIndex(-1);
     resetShippingRate();
+  };
+
+  const handleWarehouseKeyDown = (e) => {
+    if (!showWarehouseDropdown || filteredWarehouses.length === 0) {
+      if ((e.key === "ArrowDown" || e.key === "ArrowUp") && filteredWarehouses.length > 0) {
+        e.preventDefault();
+        setShowWarehouseDropdown(true);
+        setSelectedWarehouseIndex(0);
+      }
+      return;
+    }
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      e.stopPropagation();
+      setSelectedWarehouseIndex((prev) =>
+        prev < filteredWarehouses.length - 1 ? prev + 1 : 0
+      );
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      e.stopPropagation();
+      setSelectedWarehouseIndex((prev) =>
+        prev > 0 ? prev - 1 : filteredWarehouses.length - 1
+      );
+    } else if (e.key === "Enter") {
+      if (selectedWarehouseIndex >= 0 && selectedWarehouseIndex < filteredWarehouses.length) {
+        e.preventDefault();
+        e.stopPropagation();
+        const chosen = filteredWarehouses[selectedWarehouseIndex];
+        applyWarehouseToPickup(chosen);
+        setTimeout(() => {
+          const nextField = document.querySelector('input[name="consignee_name"]');
+          nextField?.focus();
+          nextField?.select?.();
+        }, 60);
+      }
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      setShowWarehouseDropdown(false);
+      setSelectedWarehouseIndex(-1);
+    } else if (e.key === "Tab") {
+      if (selectedWarehouseIndex >= 0 && selectedWarehouseIndex < filteredWarehouses.length) {
+        const chosen = filteredWarehouses[selectedWarehouseIndex];
+        applyWarehouseToPickup(chosen);
+      } else {
+        setShowWarehouseDropdown(false);
+      }
+    }
   };
 
   const getStoredDefaultWarehouse = (userId, list) => {
@@ -1187,10 +1237,12 @@ function CreateOrder() {
 
         setPreviousCustomers(customers);
         setShowPreviousCustomers(customers.length > 0);
+        setSelectedCustomerIndex(-1);
       } catch (error) {
         if (!cancelled) {
           setPreviousCustomers([]);
           setShowPreviousCustomers(false);
+          setSelectedCustomerIndex(-1);
           console.log("Previous customer search errorrrrrrrr:", error);
         }
       } finally {
@@ -1251,6 +1303,7 @@ function CreateOrder() {
 
     setPreviousCustomers([]);
     setShowPreviousCustomers(false);
+    setSelectedCustomerIndex(-1);
     resetShippingRate();
 
     if (customer.pincode && /^\d{6}$/.test(String(customer.pincode).trim())) {
@@ -1273,6 +1326,54 @@ function CreateOrder() {
         .catch(() => { });
     } else {
       setServiceabilityStatus(null);
+    }
+  };
+
+  const handleCustomerNameKeyDown = (e) => {
+    if (!showPreviousCustomers || previousCustomers.length === 0) {
+      if ((e.key === "ArrowDown" || e.key === "ArrowUp") && previousCustomers.length > 0) {
+        e.preventDefault();
+        setShowPreviousCustomers(true);
+        setSelectedCustomerIndex(0);
+      }
+      return;
+    }
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      e.stopPropagation();
+      setSelectedCustomerIndex((prev) =>
+        prev < previousCustomers.length - 1 ? prev + 1 : 0
+      );
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      e.stopPropagation();
+      setSelectedCustomerIndex((prev) =>
+        prev > 0 ? prev - 1 : previousCustomers.length - 1
+      );
+    } else if (e.key === "Enter") {
+      if (selectedCustomerIndex >= 0 && selectedCustomerIndex < previousCustomers.length) {
+        e.preventDefault();
+        e.stopPropagation();
+        const chosen = previousCustomers[selectedCustomerIndex];
+        selectPreviousCustomer(chosen);
+        setTimeout(() => {
+          const mobileField = document.querySelector('input[name="mobile"]');
+          mobileField?.focus();
+          mobileField?.select?.();
+        }, 60);
+      }
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      setShowPreviousCustomers(false);
+      setSelectedCustomerIndex(-1);
+    } else if (e.key === "Tab") {
+      if (selectedCustomerIndex >= 0 && selectedCustomerIndex < previousCustomers.length) {
+        const chosen = previousCustomers[selectedCustomerIndex];
+        selectPreviousCustomer(chosen);
+      } else {
+        setShowPreviousCustomers(false);
+      }
     }
   };
 
@@ -1772,11 +1873,48 @@ function CreateOrder() {
       return;
     }
 
+    // Agar previous customer dropdown khula hai aur koi customer highlighted hai,
+    // toh us customer ko select karo aur aage bado
+    if (
+      showPreviousCustomers &&
+      selectedCustomerIndex >= 0 &&
+      selectedCustomerIndex < previousCustomers.length
+    ) {
+      e.preventDefault();
+      const chosen = previousCustomers[selectedCustomerIndex];
+      selectPreviousCustomer(chosen);
+      setTimeout(() => {
+        const nextField = e.currentTarget.querySelector('input[name="mobile"]');
+        nextField?.focus();
+        nextField?.select?.();
+      }, 50);
+      return;
+    }
+
+    // Agar warehouse dropdown khula hai aur koi warehouse highlighted hai:
+    if (
+      showWarehouseDropdown &&
+      selectedWarehouseIndex >= 0 &&
+      selectedWarehouseIndex < filteredWarehouses.length
+    ) {
+      e.preventDefault();
+      const chosenW = filteredWarehouses[selectedWarehouseIndex];
+      applyWarehouseToPickup(chosenW);
+      setTimeout(() => {
+        const nextField = e.currentTarget.querySelector('input[name="consignee_name"]');
+        nextField?.focus();
+        nextField?.select?.();
+      }, 50);
+      return;
+    }
+
     e.preventDefault();
 
     // Dropdown popups band karo agar open hain
     setShowWarehouseDropdown?.(false);
     setShowPreviousCustomers?.(false);
+    setSelectedWarehouseIndex(-1);
+    setSelectedCustomerIndex(-1);
 
     const fields = Array.from(
       e.currentTarget.querySelectorAll(
@@ -2097,11 +2235,14 @@ function CreateOrder() {
                         }));
 
                         setShowWarehouseDropdown(true);
+                        setSelectedWarehouseIndex(-1);
                         resetShippingRate();
                       }}
+                      onKeyDown={handleWarehouseKeyDown}
                       onFocus={() => {
                         setWarehouseSearch("");
                         setShowWarehouseDropdown(true);
+                        setSelectedWarehouseIndex(-1);
                       }}
                       placeholder="Search saved warehouse address..."
                       className={`${inputClass} pr-10`}
@@ -2116,22 +2257,37 @@ function CreateOrder() {
                             <div className="h-3 w-48 rounded bg-slate-100 skeleton-shimmer" />
                           </div>
                         ) : filteredWarehouses.length > 0 ? (
-                          filteredWarehouses.map((w) => (
-                            <button
-                              key={w.id}
-                              type="button"
-                              tabIndex={-1}
-                              onClick={() => applyWarehouseToPickup(w)}
-                              className="flex w-full flex-col rounded-lg p-2.5 text-left hover:bg-sky-50/60 transition cursor-pointer"
-                            >
-                              <span className="text-xs font-bold text-slate-800">
-                                {w.warehouse_name}
-                              </span>
-                              <span className="mt-0.5 text-[11px] text-slate-500 truncate">
-                                {getWarehouseDisplayAddress(w)}
-                              </span>
-                            </button>
-                          ))
+                          filteredWarehouses.map((w, idx) => {
+                            const isSelected = idx === selectedWarehouseIndex;
+                            return (
+                              <button
+                                key={w.id}
+                                type="button"
+                                tabIndex={-1}
+                                ref={(el) => {
+                                  if (isSelected && el) {
+                                    el.scrollIntoView({ block: "nearest" });
+                                  }
+                                }}
+                                onMouseEnter={() => setSelectedWarehouseIndex(idx)}
+                                onClick={() => applyWarehouseToPickup(w)}
+                                className={`flex w-full flex-col rounded-lg p-2.5 text-left transition cursor-pointer ${
+                                  isSelected
+                                    ? "bg-sky-100 ring-1 ring-[#008dd2]/40"
+                                    : "hover:bg-sky-50/60"
+                                }`}
+                              >
+                                <span className={`text-xs font-bold ${
+                                  isSelected ? "text-[#008dd2]" : "text-slate-800"
+                                }`}>
+                                  {w.warehouse_name}
+                                </span>
+                                <span className="mt-0.5 text-[11px] text-slate-500 truncate">
+                                  {getWarehouseDisplayAddress(w)}
+                                </span>
+                              </button>
+                            );
+                          })
                         ) : (
                           <p className="p-3 text-center text-xs text-slate-400">
                             No warehouse found
@@ -2258,10 +2414,13 @@ function CreateOrder() {
                     onChange={(e) => {
                       handleChange(e);
                       setShowPreviousCustomers(true);
+                      setSelectedCustomerIndex(-1);
                     }}
+                    onKeyDown={handleCustomerNameKeyDown}
                     onFocus={() => {
                       if (previousCustomers.length > 0) {
                         setShowPreviousCustomers(true);
+                        setSelectedCustomerIndex(-1);
                       }
                     }}
                     placeholder="Receiver's name"
@@ -2282,29 +2441,46 @@ function CreateOrder() {
                       Previous Customers
                     </div>
 
-                    {previousCustomers.map((customer) => (
-                      <button
-                        key={`${customer.id}-${customer.mobile || ""}`}
-                        type="button"
-                        tabIndex={-1}
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => selectPreviousCustomer(customer)}
-                        className="flex w-full items-start justify-between gap-3 rounded-lg px-2.5 py-2.5 text-left transition hover:bg-sky-50"
-                      >
-                        <span className="min-w-0">
-                          <span className="block truncate text-xs font-bold text-slate-800">
-                            {customer.consignee_name}
+                    {previousCustomers.map((customer, idx) => {
+                      const isSelected = idx === selectedCustomerIndex;
+                      return (
+                        <button
+                          key={`${customer.id}-${customer.mobile || ""}-${idx}`}
+                          type="button"
+                          tabIndex={-1}
+                          ref={(el) => {
+                            if (isSelected && el) {
+                              el.scrollIntoView({ block: "nearest" });
+                            }
+                          }}
+                          onMouseEnter={() => setSelectedCustomerIndex(idx)}
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => selectPreviousCustomer(customer)}
+                          className={`flex w-full items-start justify-between gap-3 rounded-lg px-2.5 py-2.5 text-left transition ${
+                            isSelected
+                              ? "bg-sky-100 ring-1 ring-[#008dd2]/40"
+                              : "hover:bg-sky-50"
+                          }`}
+                        >
+                          <span className="min-w-0">
+                            <span className={`block truncate text-xs font-bold ${
+                              isSelected ? "text-[#008dd2]" : "text-slate-800"
+                            }`}>
+                              {customer.consignee_name}
+                            </span>
+                            <span className="mt-0.5 block truncate text-[11px] text-slate-500">
+                              {customer.mobile || "No mobile"}
+                              {customer.city ? ` • ${customer.city}` : ""}
+                            </span>
                           </span>
-                          <span className="mt-0.5 block truncate text-[11px] text-slate-500">
-                            {customer.mobile || "No mobile"}
-                            {customer.city ? ` • ${customer.city}` : ""}
+                          <span className={`shrink-0 text-[10px] font-semibold ${
+                            isSelected ? "text-[#008dd2] underline" : "text-[#008dd2]"
+                          }`}>
+                            Use
                           </span>
-                        </span>
-                        <span className="shrink-0 text-[10px] font-semibold text-[#008dd2]">
-                          Use
-                        </span>
-                      </button>
-                    ))}
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
               </div>
