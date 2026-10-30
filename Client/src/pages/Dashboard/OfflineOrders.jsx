@@ -618,7 +618,7 @@ export default function OfflineOrders() {
                     </th>
 
                     <th className="sticky top-0 z-20 w-[15%] bg-white px-2 py-3 text-left text-[12px] font-bold text-slate-800">
-                      Center
+                      Destination
                     </th>
 
                     <th className="sticky top-0 z-20 w-[9%] bg-white px-2 py-3 text-left text-[12px] font-bold text-slate-800">
@@ -794,68 +794,35 @@ export default function OfflineOrders() {
                           </div>
                         </td>
 
-                        {/* ROUTE (CONNECTED 2-STOP TIMELINE MATCHING ALL ORDERS) */}
+                        {/* DESTINATION */}
                         <td className="px-2 py-2.5">
-                          <div className="flex flex-col gap-0">
-                            {/* Pickup */}
-                            <div className="flex min-w-0 items-center gap-1.5">
-                              <svg
-                                width="13"
-                                height="13"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="#008dd2"
-                                strokeWidth="1.8"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                className="shrink-0"
-                              >
-                                <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" />
-                                <circle cx="12" cy="10" r="2.5" />
-                              </svg>
+                          <div className="flex min-w-0 items-center gap-1.5">
+                            <svg
+                              width="13"
+                              height="13"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="#008dd2"
+                              strokeWidth="1.8"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              className="shrink-0 text-[#008dd2]"
+                            >
+                              <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" />
+                              <circle cx="12" cy="10" r="2.5" />
+                            </svg>
 
-                              <p className="truncate text-[11px] font-semibold text-slate-800">
-                                {getPickupCity(o)}
-                                {getPickupPincode(o) && (
-                                  <span className="ml-1 text-[10.5px] font-medium text-slate-500">
-                                    ({getPickupPincode(o)})
-                                  </span>
-                                )}
-                              </p>
-                            </div>
-
-                            {/* Route connector */}
-                            <div className="ml-[5px] flex h-2.5 flex-col justify-between">
-                              <span className="h-1 border-l border-dashed border-slate-300" />
-                              <span className="h-1 border-l border-dashed border-slate-300" />
-                            </div>
-
-                            {/* Delivery */}
-                            <div className="flex min-w-0 items-center gap-1.5">
-                              <svg
-                                width="13"
-                                height="13"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="#64748b"
-                                strokeWidth="1.8"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                className="shrink-0"
-                              >
-                                <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" />
-                                <circle cx="12" cy="10" r="2.5" />
-                              </svg>
-
-                              <p className="truncate text-[11px] font-semibold text-slate-800">
-                                {o.city || "—"}
-                                {o.pincode && (
-                                  <span className="ml-1 text-[10.5px] font-medium text-slate-500">
-                                    ({o.pincode})
-                                  </span>
-                                )}
-                              </p>
-                            </div>
+                            <p
+                              className="truncate text-[11px] font-semibold text-slate-800"
+                              title={`${o.city || "—"}${o.state ? `, ${o.state}` : ""}${o.pincode ? ` (${o.pincode})` : ""}`}
+                            >
+                              {o.city || "—"}
+                              {o.pincode && (
+                                <span className="ml-1 text-[10.5px] font-medium text-slate-500">
+                                  ({o.pincode})
+                                </span>
+                              )}
+                            </p>
                           </div>
                         </td>
 
@@ -1120,14 +1087,28 @@ export default function OfflineOrders() {
                       )}
                     </div>
 
-                    {/* ROUTE */}
-                    <div className="flex items-center justify-between text-[11px] text-slate-500 pt-0.5">
-                      <span className="truncate max-w-[130px]">
-                        {getPickupCity(o)} ({getPickupPincode(o)})
-                      </span>
-                      <span className="text-slate-400 font-bold px-1">→</span>
-                      <span className="truncate max-w-[130px] text-right">
-                        {o.city || "—"} ({o.pincode || "—"})
+                    {/* DESTINATION */}
+                    <div className="flex items-center gap-1.5 text-[11px] text-slate-700 pt-0.5">
+                      <svg
+                        width="13"
+                        height="13"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="#008dd2"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="shrink-0 text-[#008dd2]"
+                      >
+                        <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" />
+                        <circle cx="12" cy="10" r="2.5" />
+                      </svg>
+                      <span className="text-slate-400 font-medium">Destination:</span>
+                      <span
+                        className="font-semibold text-slate-800 truncate"
+                        title={`${o.city || "—"}${o.state ? `, ${o.state}` : ""}${o.pincode ? ` (${o.pincode})` : ""}`}
+                      >
+                        {o.city || "—"}{o.pincode ? ` (${o.pincode})` : ""}
                       </span>
                     </div>
 
