@@ -663,6 +663,15 @@ export default function Lost() {
     }
   };
 
+  const handleTrack = (order) => {
+    const awb = typeof order === "string" ? order : getAWB(order);
+    if (!awb || awb === "—") {
+      toast.error("AWB is not available for tracking");
+      return;
+    }
+    window.dispatchEvent(new CustomEvent("shipdrop:openTracking", { detail: String(awb) }));
+  };
+
   // Export to CSV
   const handleExport = () => {
     const list = selectedOrders.length > 0 ? selectedOrders : filteredOrders;
@@ -1016,12 +1025,14 @@ export default function Lost() {
                         <td className="px-2 py-2.5">
                           <div className="min-w-0">
                             <div className="flex items-center gap-1.5">
-                              <p
-                                className="font-mono text-[12px] font-bold text-slate-800 truncate"
-                                title={awb}
+                              <button
+                                type="button"
+                                onClick={() => handleTrack(order)}
+                                className="font-mono text-[12px] font-bold text-slate-800 hover:text-[#008dd2] hover:underline cursor-pointer truncate text-left"
+                                title="Click to track"
                               >
                                 {awb}
-                              </p>
+                              </button>
 
                               {awb && awb !== "—" && (
                                 <button
@@ -1259,9 +1270,19 @@ export default function Lost() {
 
                     {/* AWB BAR */}
                     <div className="flex items-center justify-between font-mono text-[11px] text-slate-600 bg-slate-50/70 px-2 py-1.5 rounded-lg border border-slate-100">
-                      <span className="truncate font-semibold select-none">
-                        AWB: {awb}
-                      </span>
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="font-sans text-[10px] text-slate-400 font-semibold uppercase">
+                          AWB:
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleTrack(order)}
+                          className="truncate font-bold text-[#008dd2] hover:underline cursor-pointer text-left"
+                          title="Click to track"
+                        >
+                          {awb}
+                        </button>
+                      </div>
 
                       {awb && awb !== "—" && (
                         <button
@@ -1380,6 +1401,14 @@ export default function Lost() {
           order={viewingOrder}
           onClose={() => setViewingOrder(null)}
           loading={detailLoading}
+          onTrack={(orderOrAwb) => {
+            const awb = typeof orderOrAwb === "string"
+              ? orderOrAwb
+              : getAWB(orderOrAwb || viewingOrder);
+            if (awb && awb !== "—") {
+              window.dispatchEvent(new CustomEvent("shipdrop:openTracking", { detail: String(awb) }));
+            }
+          }}
         />
       )}
     </div>

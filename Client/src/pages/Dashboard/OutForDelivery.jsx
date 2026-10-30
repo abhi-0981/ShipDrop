@@ -862,19 +862,32 @@ function OutForDelivery() {
     await downloadShippingLabels([order]);
   };
 
-  const handleCopyAWB = (awb) => {
+  const handleCopyAWB = async (awb) => {
     if (!awb || awb === "—") return;
-    navigator.clipboard.writeText(awb);
-    toast.success("AWB copied to clipboard!");
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(String(awb));
+      } else {
+        const textArea = document.createElement("textarea");
+        textArea.value = String(awb);
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textArea);
+      }
+      toast.success("AWB copied to clipboard!");
+    } catch {
+      toast.error("Unable to copy AWB");
+    }
   };
 
   const handleTrack = (order) => {
-    const awb = getAWB(order);
+    const awb = typeof order === "string" ? order : getAWB(order);
     if (!awb || awb === "—") {
       toast.error("AWB not assigned yet");
       return;
     }
-    window.dispatchEvent(new CustomEvent("shipdrop:openTracking", { detail: awb }));
+    window.dispatchEvent(new CustomEvent("shipdrop:openTracking", { detail: String(awb) }));
   };
 
   const handleDuplicate = async (order) => {
@@ -2026,9 +2039,26 @@ function OutForDelivery() {
 
                              {status !== "PROCESSING" && (
   <>
-    <p className="truncate text-[13px] font-bold text-slate-900">
-      {awb}
-    </p>
+    <div className="flex min-w-0 items-center gap-1">
+      <button
+        type="button"
+        onClick={() => handleTrack(order)}
+        title="Track shipment"
+        className="truncate text-left text-[12px] font-bold text-slate-900 hover:text-[#008dd2] hover:underline cursor-pointer"
+      >
+        {awb}
+      </button>
+      {awb && awb !== "—" && (
+        <button
+          type="button"
+          onClick={() => handleCopyAWB(awb)}
+          title="Copy AWB"
+          className="shrink-0 rounded p-0.5 text-slate-500 hover:bg-[#edf8ff] hover:text-[#008dd2] cursor-pointer"
+        >
+          <Icon name="copy" size={12} />
+        </button>
+      )}
+    </div>
 
     <p className="mt-0.5 text-[11px] font-medium text-slate-600">
       Pickup ID:{" "}
