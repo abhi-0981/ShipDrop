@@ -98,6 +98,10 @@ const prefetchRoute = (path) => {
       case "/settings/return-addresses":
         import("../../pages/Dashboard/ReturnAddresses");
         break;
+      case "/lost":
+      case "/orders/lost":
+        import("../../pages/Dashboard/Lost");
+        break;
       default:
         break;
     }
@@ -161,6 +165,8 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
     "/rto-delivered",
     "/cancelled",
     "/pending",
+    "/lost",
+    "/orders/lost",
   ].includes(location.pathname);
 
   const isToolPath = [
@@ -235,6 +241,8 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
     { name: "RTO In Transit", path: "/rto-in-transit" },
     { name: "RTO Delivered", path: "/rto-delivered" },
     { name: "Cancelled", path: "/cancelled" },
+    { name: "Lost", path: "/lost" },
+    { name: "Lost Orders", path: "/lost" },
     { name: "Pending", path: "/pending" },
     { name: "Serviceability", path: "/serviceability" },
     { name: "Tracking", path: "/tracking" },
@@ -412,6 +420,7 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
                 prev.manifested_count !== counts.manifested_count ||
                 prev.all_count !== counts.all_count ||
                 prev.cancelled_count !== counts.cancelled_count ||
+                prev.lost_count !== counts.lost_count ||
                 prev.rto_in_transit_count !== counts.rto_in_transit_count ||
                 prev.pending_count !== counts.pending_count ||
                 prev.processing_count !== counts.processing_count;
@@ -731,6 +740,11 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
                       name: "Cancelled",
                       path: "/cancelled",
                       count: statusCounts.CANCELLED,
+                    },
+                    {
+                      name: "Lost",
+                      path: "/lost",
+                      count: statusCounts.LOST ?? statusCounts.lost_count ?? 0,
                     },
                    
                   ].map((item) => (

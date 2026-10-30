@@ -42,6 +42,10 @@ const prefetchRoute = (path) => {
       case "/offline-orders":
         import("../../pages/Dashboard/OfflineOrders");
         break;
+      case "/lost":
+      case "/orders/lost":
+        import("../../pages/Dashboard/Lost");
+        break;
       default:
         break;
     }
@@ -207,6 +211,12 @@ function OrderStatusNavTabs({ className = "" }) {
         path: "/cancelled",
         aliases: ["/cancelled"],
         getCount: (c) => c.CANCELLED ?? c.cancelled_count ?? 0,
+      },
+      {
+        name: "Lost",
+        path: "/lost",
+        aliases: ["/lost", "/orders/lost"],
+        getCount: (c) => c.LOST ?? c.lost_count ?? 0,
       },
     ],
     []

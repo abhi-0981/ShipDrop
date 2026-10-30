@@ -543,6 +543,8 @@ const getAllOrders = (user_id, page = 1, limit = 50, search = "", status = "", c
       statusCondition = "AND UPPER(TRIM(COALESCE(o.status, ''))) NOT IN ('PROCESSING', 'CANCELLED', 'CANCELED') AND (UPPER(TRIM(COALESCE(o.status, ''))) IN ('RTO IN TRANSIT', 'RTO_IN_TRANSIT') OR UPPER(TRIM(COALESCE(o.tracking_status, ''))) IN ('RTO IN TRANSIT', 'RTO_IN_TRANSIT'))";
     } else if (normalizedStatus === "RTO DELIVERED" || normalizedStatus === "RETURN ACCEPTED") {
       statusCondition = "AND UPPER(TRIM(COALESCE(o.status, ''))) NOT IN ('PROCESSING', 'CANCELLED', 'CANCELED') AND (UPPER(TRIM(COALESCE(o.status, ''))) IN ('RTO DELIVERED', 'RTO_DELIVERED', 'RETURN ACCEPTED', 'RETURN_ACCEPTED') OR UPPER(TRIM(COALESCE(o.tracking_status, ''))) IN ('RTO DELIVERED', 'RTO_DELIVERED', 'RETURN ACCEPTED', 'RETURN_ACCEPTED') OR o.tracking_data LIKE '%RETURN Accepted%' OR o.tracking_data LIKE '%return accepted%' OR o.tracking_data LIKE '%RETURN_ACCEPTED%')";
+    } else if (normalizedStatus === "LOST") {
+      statusCondition = "AND UPPER(TRIM(COALESCE(o.status, ''))) NOT IN ('PROCESSING') AND (UPPER(TRIM(COALESCE(o.status, ''))) = 'LOST' OR UPPER(TRIM(COALESCE(o.tracking_status, ''))) = 'LOST' OR o.tracking_data LIKE '%\"Status\":\"LOST\"%' OR o.tracking_data LIKE '%lost in transit%')";
     } else {
       statusCondition = "AND UPPER(TRIM(COALESCE(o.status, ''))) NOT IN ('PROCESSING', 'CANCELLED', 'CANCELED') AND (UPPER(TRIM(COALESCE(o.status, ''))) = ? OR UPPER(TRIM(COALESCE(o.tracking_status, ''))) = ?)";
       statusParams.push(normalizedStatus, normalizedStatus);
@@ -1677,7 +1679,8 @@ const getOrderStatusCounts = async (userId) => {
       SUM(CASE WHEN UPPER(TRIM(COALESCE(o.status, ''))) <> 'PROCESSING' AND UPPER(TRIM(COALESCE(o.status, ''))) NOT IN ('CANCELLED', 'CANCELED') AND (UPPER(TRIM(COALESCE(o.tracking_status, ''))) IN ('RTO IN TRANSIT', 'RTO_IN_TRANSIT') OR UPPER(TRIM(COALESCE(o.status, ''))) IN ('RTO IN TRANSIT', 'RTO_IN_TRANSIT')) THEN 1 ELSE 0 END) AS rto_in_transit_count,
       SUM(CASE WHEN UPPER(TRIM(COALESCE(o.status, ''))) <> 'PROCESSING' AND UPPER(TRIM(COALESCE(o.status, ''))) NOT IN ('CANCELLED', 'CANCELED') AND (UPPER(TRIM(COALESCE(o.tracking_status, ''))) IN ('RTO DELIVERED', 'RTO_DELIVERED', 'RETURN ACCEPTED', 'RETURN_ACCEPTED') OR UPPER(TRIM(COALESCE(o.status, ''))) IN ('RTO DELIVERED', 'RTO_DELIVERED', 'RETURN ACCEPTED', 'RETURN_ACCEPTED') OR o.tracking_data LIKE '%RETURN Accepted%' OR o.tracking_data LIKE '%return accepted%' OR o.tracking_data LIKE '%RETURN_ACCEPTED%') THEN 1 ELSE 0 END) AS rto_delivered_count,
       SUM(CASE WHEN UPPER(TRIM(COALESCE(o.status, ''))) <> 'PROCESSING' AND UPPER(TRIM(COALESCE(o.status, ''))) NOT IN ('CANCELLED', 'CANCELED') AND (UPPER(TRIM(COALESCE(o.tracking_status, ''))) = 'RETURNED' OR UPPER(TRIM(COALESCE(o.status, ''))) = 'RETURNED') THEN 1 ELSE 0 END) AS returned_count,
-      SUM(CASE WHEN UPPER(TRIM(COALESCE(o.status, ''))) <> 'PROCESSING' AND UPPER(TRIM(COALESCE(o.status, ''))) NOT IN ('CANCELLED', 'CANCELED') AND (UPPER(TRIM(COALESCE(o.tracking_status, ''))) = 'PENDING' OR UPPER(TRIM(COALESCE(o.status, ''))) = 'PENDING') THEN 1 ELSE 0 END) AS pending_count
+      SUM(CASE WHEN UPPER(TRIM(COALESCE(o.status, ''))) <> 'PROCESSING' AND UPPER(TRIM(COALESCE(o.status, ''))) NOT IN ('CANCELLED', 'CANCELED') AND (UPPER(TRIM(COALESCE(o.tracking_status, ''))) = 'PENDING' OR UPPER(TRIM(COALESCE(o.status, ''))) = 'PENDING') THEN 1 ELSE 0 END) AS pending_count,
+      SUM(CASE WHEN UPPER(TRIM(COALESCE(o.status, ''))) <> 'PROCESSING' AND (UPPER(TRIM(COALESCE(o.status, ''))) = 'LOST' OR UPPER(TRIM(COALESCE(o.tracking_status, ''))) = 'LOST' OR o.tracking_data LIKE '%\"Status\":\"LOST\"%' OR o.tracking_data LIKE '%lost in transit%') THEN 1 ELSE 0 END) AS lost_count
     FROM orders o
     WHERE o.user_id = ?
   `;
@@ -1727,6 +1730,7 @@ const getOrderStatusCounts = async (userId) => {
     RETURNED: Number(row.returned_count || 0),
     CANCELLED: Number(row.cancelled_count || 0),
     PENDING: Number(row.pending_count || 0),
+    LOST: Number(row.lost_count || 0),
     OFFLINE: offlineCount,
     OFFLINE_ORDERS: offlineCount,
   };

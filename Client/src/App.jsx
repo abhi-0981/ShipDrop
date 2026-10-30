@@ -35,6 +35,7 @@ const OutForDelivery = lazy(() => import("./pages/Dashboard/OutForDelivery"));
 const Delivered = lazy(() => import("./pages/Dashboard/Delivered"));
 const RTOInTransit = lazy(() => import("./pages/Dashboard/RTOInTransit"));
 const RTODelivered = lazy(() => import("./pages/Dashboard/RTODelivered"));
+const Lost = lazy(() => import("./pages/Dashboard/Lost"));
 const Cancelled = lazy(() => import("./pages/Dashboard/Cancelled"));
 const Pending = lazy(() => import("./pages/Dashboard/Pending"));
 const CODRemittance = lazy(() => import("./pages/Dashboard/CODRemittance"));
@@ -214,6 +215,15 @@ function App() {
             />
 
             <Route
+              path="/lost"
+              element={
+                <Suspense fallback={<RouteLoader />}>
+                  <Lost />
+                </Suspense>
+              }
+            />
+
+            <Route
               path="/pending"
               element={
                 <Suspense fallback={<RouteLoader />}>
@@ -283,7 +293,7 @@ function App() {
               path="/orders/lost"
               element={
                 <Suspense fallback={<RouteLoader />}>
-                  <AllOrders statusScope="LOST" pageTitle="Lost" />
+                  <Lost />
                 </Suspense>
               }
             />

@@ -37,10 +37,12 @@ const isOrderActive = (order) => {
     status === "CANCELLED" ||
     status === "CANCELED" ||
     status === "RTO DELIVERED" ||
+    status === "LOST" ||
     trackingStatus === "DELIVERED" ||
     trackingStatus === "CANCELLED" ||
     trackingStatus === "CANCELED" ||
-    trackingStatus === "RTO DELIVERED";
+    trackingStatus === "RTO DELIVERED" ||
+    trackingStatus === "LOST";
   return !isTerminal;
 };
 

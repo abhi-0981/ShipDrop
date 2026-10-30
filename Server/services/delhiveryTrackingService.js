@@ -145,6 +145,21 @@ const normalizeTrackingStatus = (
   }
 
   // ----------------------------------------------
+  // 1.1 LOST
+  // ----------------------------------------------
+
+  if (
+    rawUpper === "LOST" ||
+    rawUpper.includes("LOST") ||
+    rawUpper.includes("SHIPMENT LOST") ||
+    statusType === "LT" ||
+    instructions.includes("lost") ||
+    instructions.includes("shipment lost")
+  ) {
+    return "LOST";
+  }
+
+  // ----------------------------------------------
   // 2. RTO DELIVERED / RETURN ACCEPTED
   // (Must be checked BEFORE forward DELIVERED so
   // "RETURN Accepted" goes to RTO DELIVERED, not DELIVERED)
@@ -309,6 +324,12 @@ const orderStatusMap = {
 
   MANIFESTED:
     "Manifested",
+
+  LOST:
+    "Lost",
+
+  "SHIPMENT LOST":
+    "Lost",
 };
 
 // ======================================================
