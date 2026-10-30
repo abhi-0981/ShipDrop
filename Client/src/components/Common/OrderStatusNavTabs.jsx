@@ -194,12 +194,6 @@ function OrderStatusNavTabs({ className = "" }) {
         getCount: (c) => c["RTO DELIVERED"] ?? c.rto_delivered_count ?? 0,
       },
       {
-        name: "Lost",
-        path: "/lost",
-        aliases: ["/lost", "/orders/lost"],
-        getCount: (c) => c.LOST ?? c.lost_count ?? 0,
-      },
-      {
         name: "Not Picked",
         path: "/not-picked",
         aliases: ["/not-picked"],
@@ -217,6 +211,12 @@ function OrderStatusNavTabs({ className = "" }) {
         path: "/cancelled",
         aliases: ["/cancelled"],
         getCount: (c) => c.CANCELLED ?? c.cancelled_count ?? 0,
+      },
+      {
+        name: "Lost",
+        path: "/lost",
+        aliases: ["/lost", "/orders/lost"],
+        getCount: (c) => c.LOST ?? c.lost_count ?? 0,
       },
     ],
     []

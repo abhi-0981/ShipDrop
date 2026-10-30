@@ -737,11 +737,6 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
                       path: "/rto-delivered",
                       count: statusCounts["RTO DELIVERED"],
                     },
-                    {
-                      name: "Lost",
-                      path: "/lost",
-                      count: statusCounts.LOST ?? statusCounts.lost_count ?? 0,
-                    },
 
                      {
                       name: "UnDelivered",
@@ -753,6 +748,12 @@ function Sidebar({ collapsed: propCollapsed, setCollapsed: propSetCollapsed }) {
                       name: "Cancelled",
                       path: "/cancelled",
                       count: statusCounts.CANCELLED,
+                    },
+
+                    {
+                      name: "Lost",
+                      path: "/lost",
+                      count: statusCounts.LOST ?? statusCounts.lost_count ?? 0,
                     },
                    
                   ].map((item) => (

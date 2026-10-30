@@ -927,10 +927,10 @@ const AllOrders = () => {
     "Delivered",
     "RTO In Transit",
     "RTO Delivered",
-    "Lost",
     "Returned",
     "Cancelled",
     "NDR & Pending",
+    "Lost",
   ];
 
   return (
